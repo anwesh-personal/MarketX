@@ -1,83 +1,91 @@
 /**
  * MINIMALIST LIGHT THEME
- * Clean, spacious, uncluttered design with neutral grays
+ * Philosophy: Less is more. Calm, spacious, refined.
+ * Typography: Geometric sans-serif
+ * Interactions: Subtle, smooth, unhurried
  */
 
-[data-theme="minimalist-light"] {
-    /* ===== COLORS ===== */
-    --color-primary: #1f2937;
-    --color-secondary: #6b7280;
-    --color-accent: #3b82f6;
+:root[data-theme="minimalist-light"] {
+    /* ===== COLOR PALETTE ===== */
+    --color-primary: #18181b;
+    --color-secondary: #52525b;
+    --color-accent: #8b5cf6;
+    --color-background: #fafafa;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f4f4f5;
+    --color-text-primary: #09090b;
+    --color-text-secondary: #52525b;
+    --color-text-tertiary: #a1a1aa;
+    --color-border: #e4e4e7;
+    --color-border-hover: #d4d4d8;
+    --color-border-focus: #8b5cf6;
+    --color-success: #16a34a;
+    --color-warning: #ea580c;
+    --color-error: #dc2626;
+    --color-info: #2563eb;
+    --color-overlay: rgba(0, 0, 0, 0.6);
+    --color-shadow: rgba(0, 0, 0, 0.06);
+    --color-glow: rgba(139, 92, 246, 0.12);
 
-    --color-background: #ffffff;
-    --color-surface: #f9fafb;
-    --color-surface-hover: #f3f4f6;
+    /* ===== UNIQUE TYPOGRAPHY ===== */
+    --font-sans: 'Outfit', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --font-display: 'Outfit', sans-serif;
 
-    --color-text-primary: #111827;
-    --color-text-secondary: #6b7280;
-    --color-text-tertiary: #9ca3af;
+    --text-xs: 0.8125rem;
+    --text-sm: 0.9375rem;
+    --text-base: 1.0625rem;
+    --text-lg: 1.1875rem;
+    --text-xl: 1.375rem;
+    --text-2xl: 1.625rem;
+    --text-3xl: 2rem;
+    --text-4xl: 2.5rem;
 
-    --color-border: #e5e7eb;
-    --color-border-hover: #d1d5db;
-    --color-border-focus: #3b82f6;
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.6;
+    --line-height-loose: 1.9;
 
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-error: #ef4444;
-    --color-info: #3b82f6;
+    --font-weight-normal: 300;
+    --font-weight-medium: 400;
+    --font-weight-semibold: 500;
+    --font-weight-bold: 600;
 
-    --color-overlay: rgba(0, 0, 0, 0.3);
-    --color-shadow: rgba(0, 0, 0, 0.1);
+    /* ===== GENEROUS SPACING ===== */
+    --spacing-xs: 0.625rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.75rem;
+    --spacing-lg: 3rem;
+    --spacing-xl: 5rem;
+    --spacing-2xl: 8rem;
 
-    /* ===== TYPOGRAPHY ===== */
-    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
-    --font-display: 'Inter', sans-serif;
-
-    --text-xs: 0.75rem;
-    --text-sm: 0.875rem;
-    --text-base: 1rem;
-    --text-lg: 1.125rem;
-    --text-xl: 1.25rem;
-    --text-2xl: 1.5rem;
-    --text-3xl: 1.875rem;
-    --text-4xl: 2.25rem;
-
-    --line-height-tight: 1.25;
-    --line-height-normal: 1.75;
-    --line-height-loose: 2;
-
-    --font-weight-normal: 400;
-    --font-weight-medium: 500;
-    --font-weight-semibold: 600;
-    --font-weight-bold: 700;
-
-    /* ===== SPACING ===== */
-    --spacing-xs: 0.5rem;
-    --spacing-sm: 0.75rem;
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2.5rem;
-    --spacing-xl: 4rem;
-    --spacing-2xl: 6rem;
-
-    /* ===== BORDERS & SHADOWS ===== */
-    --radius-sm: 0.25rem;
-    --radius-md: 0.5rem;
-    --radius-lg: 0.75rem;
-    --radius-xl: 1rem;
+    /* ===== SUBTLE BORDERS & SHADOWS ===== */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
     --radius-full: 9999px;
 
     --border-width: 1px;
     --border-width-thick: 1px;
 
-    --shadow-sm: 0 1px 2px 0 var(--color-shadow);
-    --shadow-md: 0 4px 6px -1px var(--color-shadow);
-    --shadow-lg: 0 10px 15px -3px var(--color-shadow);
-    --shadow-xl: 0 20px 25px -5px var(--color-shadow);
+    --shadow-sm: 0 2px 8px 0 rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 8px 16px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 16px 32px 0 rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 24px 48px 0 rgba(0, 0, 0, 0.10);
+    --shadow-glow: 0 0 0 4px var(--color-glow);
+    --shadow-glow-lg: 0 0 0 6px var(--color-glow), 0 12px 24px -6px rgba(139, 92, 246, 0.2);
 
-    /* ===== ANIMATIONS ===== */
-    --duration-fast: 150ms;
-    --duration-normal: 200ms;
-    --duration-slow: 300ms;
-    --easing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* ===== SLOW, SMOOTH ANIMATIONS ===== */
+    --duration-fast: 200ms;
+    --duration-normal: 350ms;
+    --duration-slow: 500ms;
+    --easing: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --easing-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* ===== UNIQUE INTERACTION STYLES ===== */
+    --hover-scale: 1.02;
+    --active-scale: 0.99;
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 3px;
 }

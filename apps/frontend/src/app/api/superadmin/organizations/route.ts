@@ -90,18 +90,81 @@ export async function POST(request: NextRequest) {
 
         if (orgError) throw orgError;
 
+        let ownerCredentials: { email: string; password: string } | null = null;
+
         // Create owner user if email provided
         if (owner_email) {
-            await supabase.from('users').insert({
-                org_id: org.id,
-                email: owner_email,
-                role: 'owner',
-                is_active: true,
-                can_upload_kb: true,
-                can_trigger_runs: true,
-                can_view_analytics: true,
-                can_manage_team: true,
-            });
+            // Generate secure password
+            const generatePassword = () => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+                let password = '';
+                for (let i = 0; i < 16; i++) {
+                    password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return password;
+            };
+
+            const ownerPassword = generatePassword();
+
+            try {
+                // Create Supabase Auth user
+                const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+                    email: owner_email,
+                    password: ownerPassword,
+                    email_confirm: true, // Auto-confirm
+                    user_metadata: {
+                        full_name: `${name} Owner`,
+                        org_id: org.id,
+                    },
+                });
+
+                if (authError) {
+                    console.error('Failed to create owner auth user:', authError);
+                    throw new Error(`Failed to create owner: ${authError.message}`);
+                }
+
+                // Create database record
+                const { error: userError } = await supabase.from('users').insert({
+                    id: authUser.user.id,
+                    org_id: org.id,
+                    email: owner_email,
+                    full_name: `${name} Owner`,
+                    role: 'owner',
+                    is_active: true,
+                    can_upload_kb: true,
+                    can_trigger_runs: true,
+                    can_view_analytics: true,
+                    can_manage_team: true,
+                });
+
+                if (userError) {
+                    // Rollback: delete auth user if database insert fails
+                    await supabase.auth.admin.deleteUser(authUser.user.id);
+                    throw new Error(`Failed to create owner record: ${userError.message}`);
+                }
+
+                // Store credentials for response
+                ownerCredentials = {
+                    email: owner_email,
+                    password: ownerPassword,
+                };
+
+                // TODO: Send welcome email with credentials
+                // await sendWelcomeEmail(owner_email, ownerPassword, org.name);
+
+                console.log('==========================================');
+                console.log('OWNER CREATED - SHARE THESE CREDENTIALS:');
+                console.log('==========================================');
+                console.log(`Email: ${owner_email}`);
+                console.log(`Password: ${ownerPassword}`);
+                console.log(`Organization: ${org.name}`);
+                console.log('==========================================');
+            } catch (error) {
+                console.error('Error creating owner user:', error);
+                // Don't fail org creation if owner creation fails
+                // But log it prominently
+                console.error('⚠️  Organization created but owner user creation failed!');
+            }
         }
 
         // Log transaction
@@ -112,7 +175,13 @@ export async function POST(request: NextRequest) {
             quota_changes: orgQuotas,
         });
 
-        return NextResponse.json({ organization: org }, { status: 201 });
+        return NextResponse.json({
+            organization: org,
+            owner_credentials: ownerCredentials, // Send credentials in response
+            message: ownerCredentials
+                ? 'Organization and owner created successfully. Owner credentials returned - send them securely!'
+                : 'Organization created successfully'
+        }, { status: 201 });
     } catch (error) {
         console.error('Organization POST error:', error);
         return NextResponse.json({ error: 'Failed to create organization' }, { status: 500 });

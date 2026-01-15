@@ -2,38 +2,223 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import all theme CSS files */
-@import '../styles/themes/minimalist-light.css';
-@import '../styles/themes/minimalist-dark.css';
-@import '../styles/themes/aqua-light.css';
-@import '../styles/themes/aqua-dark.css';
-@import '../styles/themes/modern-light.css';
-@import '../styles/themes/modern-dark.css';
+/* Import all refined theme CSS files */
+@import '../styles/themes/minimalist.css';
+@import '../styles/themes/modern.css';
+@import '../styles/themes/aqua.css';
 
-/* Default to minimalist-light if no theme set */
+/* Import theme-specific micro-interactions */
+@import '../styles/theme-interactions.css';
+
+/* Default theme (minimalist-light) */
 :root {
-  --color-primary: #1f2937;
-  --color-secondary: #6b7280;
-  --color-accent: #3b82f6;
-  --color-background: #ffffff;
-  --color-surface: #f9fafb;
-  --color-surface-hover: #f3f4f6;
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
-  --color-border: #e5e7eb;
-  --color-border-hover: #d1d5db;
-  --color-border-focus: #3b82f6;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
-  --color-overlay: rgba(0, 0, 0, 0.3);
-  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-primary: #18181b;
+  --color-secondary: #52525b;
+  --color-accent: #8b5cf6;
+  --color-background: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f4f4f5;
+  --color-text-primary: #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-tertiary: #a1a1aa;
+  --color-border: #e4e4e7;
+  --color-border-hover: #d4d4d8;
+  --color-border-focus: #8b5cf6;
+  --color-success: #16a34a;
+  --color-warning: #ea580c;
+  --color-error: #dc2626;
+  --color-info: #2563eb;
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-shadow: rgba(0, 0, 0, 0.08);
+  --color-glow: rgba(139, 92, 246, 0.12);
 }
 
 @layer base {
-  body {
-    @apply bg-background text-textPrimary antialiased;
+
+  /* Smooth font rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  body {
+    @apply bg-background text-textPrimary;
+    font-family: var(--font-sans);
+  }
+
+  /* Disable transitions during theme change for instant switch */
+  .theme-transitioning,
+  .theme-transitioning * {
+    transition: none !important;
+  }
+
+  /* Premium scroll behavior */
+  * {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar (webkit) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--color-background);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-hover);
+    border-radius: var(--radius-full);
+    transition: background var(--duration-normal) var(--easing);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-tertiary);
+  }
+
+  /* Focus ring improvements */
+  :focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Better selection colors */
+  ::selection {
+    background: var(--color-accent);
+    color: white;
+  }
+}
+
+@layer components {
+
+  /* Premium button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center gap-xs;
+    @apply px-md py-sm rounded-[var(--radius-md)];
+    @apply font-medium text-sm;
+    @apply transition-all duration-[var(--duration-normal)];
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply active:scale-[0.98];
+  }
+
+  /* Premium card styles */
+  .card {
+    @apply bg-surface border border-border rounded-[var(--radius-lg)];
+    @apply p-lg shadow-[var(--shadow-sm)];
+    @apply transition-all duration-[var(--duration-normal)];
+  }
+
+  .card:hover {
+    @apply shadow-[var(--shadow-md)];
+  }
+
+  /* Premium input styles */
+  .input {
+    @apply w-full bg-background text-textPrimary;
+    @apply border border-border rounded-[var(--radius-md)];
+    @apply px-sm py-xs;
+    @apply transition-all duration-[var(--duration-normal)];
+    @apply focus:outline-none focus:ring-2 focus:ring-borderFocus;
+  }
+
+  .input:hover {
+    @apply border-borderHover;
+  }
+}
+
+@layer utilities {
+
+  /* Animation utilities */
+  .animate-slide-in-left {
+    animation: slide-in-left var(--duration-slow) var(--easing-smooth);
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right var(--duration-slow) var(--easing-smooth);
+  }
+
+  .animate-fade-in {
+    animation: fade-in var(--duration-normal) var(--easing);
+  }
+
+  .animate-scale-in {
+    animation: scale-in var(--duration-normal) var(--easing-bounce);
+  }
+
+  /* Glassmorphism utility */
+  .glass {
+    background: rgba(var(--color-surface), 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  /* Glow effect utility */
+  .glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-lg {
+    box-shadow: var(--shadow-glow-lg);
+  }
+}
+
+/* Keyframe animations */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Smooth transitions for theme changes */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: var(--duration-normal);
+  transition-timing-function: var(--easing);
+}
+
+/* Prevent transitions on page load */
+.preload * {
+  transition: none !important;
 }

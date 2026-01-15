@@ -60,7 +60,10 @@ export const ThemeSelector: React.FC = () => {
 
             {/* Day/Night Toggle */}
             <button
-                onClick={toggleMode}
+                onClick={() => {
+                    console.log('[ThemeSelector] Button clicked');
+                    toggleMode();
+                }}
                 className="
           p-[var(--spacing-sm)]
           bg-[var(--color-surface)]

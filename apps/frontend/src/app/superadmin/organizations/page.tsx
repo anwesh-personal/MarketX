@@ -12,6 +12,7 @@ import {
     Activity,
     Loader2,
 } from 'lucide-react';
+import CreateOrgModal from '@/components/modals/CreateOrgModal';
 
 interface Organization {
     id: string;
@@ -341,6 +342,13 @@ export default function OrganizationsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Create Organization Modal */}
+            <CreateOrgModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={loadOrganizations}
+            />
         </div>
     );
 }

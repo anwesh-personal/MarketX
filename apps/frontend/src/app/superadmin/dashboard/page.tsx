@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
     Building2,
     Users,
@@ -10,6 +11,7 @@ import {
     Activity,
     ArrowUp,
     ArrowDown,
+    RefreshCw,
 } from 'lucide-react';
 
 interface PlatformStats {
@@ -54,69 +56,11 @@ export default function SuperadminDashboard() {
         }
     };
 
-    const statCards = [
-        {
-            title: 'Active Organizations',
-            value: stats?.active_orgs || 0,
-            icon: Building2,
-            color: 'text-primary',
-            bgColor: 'bg-primary/10',
-        },
-        {
-            title: 'Total Users',
-            value: stats?.total_users || 0,
-            icon: Users,
-            color: 'text-info',
-            bgColor: 'bg-info/10',
-        },
-        {
-            title: 'Knowledge Bases',
-            value: stats?.total_kbs || 0,
-            icon: Database,
-            color: 'text-success',
-            bgColor: 'bg-success/10',
-        },
-        {
-            title: 'Total Runs',
-            value: stats?.total_runs || 0,
-            icon: Activity,
-            color: 'text-secondary',
-            bgColor: 'bg-secondary/10',
-        },
-        {
-            title: 'Runs (30 Days)',
-            value: stats?.runs_last_30_days || 0,
-            icon: TrendingUp,
-            color: 'text-accent',
-            bgColor: 'bg-accent/10',
-            change: '+12%',
-            changeType: 'positive',
-        },
-        {
-            title: 'Monthly Recurring Revenue',
-            value: `$${(stats?.mrr_usd || 0).toLocaleString()}`,
-            icon: DollarSign,
-            color: 'text-success',
-            bgColor: 'bg-success/10',
-            change: '+8%',
-            changeType: 'positive',
-        },
-    ];
-
     if (isLoading) {
         return (
-            <div className="space-y-lg">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold text-textPrimary">Dashboard</h1>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                        <div
-                            key={i}
-                            className="bg-surface border border-border rounded-[var(--radius-lg)] p-md h-32 animate-pulse"
-                        />
-                    ))}
+            <div className="flex items-center justify-center h-96">
+                <div className="loading">
+                    <RefreshCw className="w-8 h-8 text-primary animate-spin" />
                 </div>
             </div>
         );
@@ -134,154 +78,216 @@ export default function SuperadminDashboard() {
                         Welcome back! Here's what's happening with your platform.
                     </p>
                 </div>
+                <button
+                    onClick={loadStats}
+                    className="
+                        flex items-center gap-xs
+                        bg-surfaceHover text-textPrimary
+                        border border-border
+                        px-md py-sm
+                        rounded-[var(--radius-md)]
+                        hover:bg-surface hover:scale-[var(--hover-scale)]
+                        active:scale-[var(--active-scale)]
+                        transition-all duration-[var(--duration-fast)]
+                    "
+                >
+                    <RefreshCw className="w-4 h-4" />
+                    <span className="text-sm font-medium">Refresh</span>
+                </button>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
-                {statCards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <div
-                            key={card.title}
-                            className="
-                bg-surface
-                border border-border
-                rounded-[var(--radius-lg)]
-                p-md
-                shadow-[var(--shadow-sm)]
-                hover:shadow-[var(--shadow-md)]
-                transition-all duration-[var(--duration-normal)]
-                group
-              "
-                        >
-                            <div className="flex items-start justify-between mb-md">
-                                <div className={`p-sm rounded-[var(--radius-md)] ${card.bgColor}`}>
-                                    <Icon className={`w-6 h-6 ${card.color}`} />
-                                </div>
-                                {card.change && (
-                                    <div
-                                        className={`
-                      flex items-center gap-xs text-sm font-medium
-                      ${card.changeType === 'positive' ? 'text-success' : 'text-error'}
-                    `}
-                                    >
-                                        {card.changeType === 'positive' ? (
-                                            <ArrowUp className="w-4 h-4" />
-                                        ) : (
-                                            <ArrowDown className="w-4 h-4" />
-                                        )}
-                                        <span>{card.change}</span>
-                                    </div>
-                                )}
-                            </div>
+                {/* Active Organizations Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
 
-                            <div>
-                                <p className="text-textSecondary text-sm mb-xs">
-                                    {card.title}
-                                </p>
-                                <p className="text-textPrimary text-2xl font-bold">
-                                    {card.value}
-                                </p>
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
+                                <Building2 className="w-6 h-6 text-primary" />
                             </div>
                         </div>
-                    );
-                })}
+                        <p className="text-sm text-textSecondary mb-xs">Active Organizations</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            {stats?.active_orgs || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Total Users Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-info/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-info/10">
+                                <Users className="w-6 h-6 text-info" />
+                            </div>
+                        </div>
+                        <p className="text-sm text-textSecondary mb-xs">Total Users</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            {stats?.total_users || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Knowledge Bases Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
+                                <Database className="w-6 h-6 text-success" />
+                            </div>
+                        </div>
+                        <p className="text-sm text-textSecondary mb-xs">Knowledge Bases</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            {stats?.total_kbs || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Total Runs Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-accent/10">
+                                <Activity className="w-6 h-6 text-accent" />
+                            </div>
+                        </div>
+                        <p className="text-sm text-textSecondary mb-xs">Total Runs</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            {stats?.total_runs || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Runs (30 Days) Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-warning/10">
+                                <TrendingUp className="w-6 h-6 text-warning" />
+                            </div>
+                            <div className="flex items-center gap-xs text-sm font-medium text-success">
+                                <ArrowUp className="w-4 h-4" />
+                                <span>+12%</span>
+                            </div>
+                        </div>
+                        <p className="text-sm text-textSecondary mb-xs">Runs (30 Days)</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            {stats?.runs_last_30_days || 0}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Monthly Revenue Card */}
+                <div className="card group relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+
+                    <div className="relative">
+                        <div className="flex items-start justify-between mb-md">
+                            <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
+                                <DollarSign className="w-6 h-6 text-success" />
+                            </div>
+                            <div className="flex items-center gap-xs text-sm font-medium text-success">
+                                <ArrowUp className="w-4 h-4" />
+                                <span>+8%</span>
+                            </div>
+                        </div>
+                        <p className="text-sm text-textSecondary mb-xs">Monthly Recurring Revenue</p>
+                        <p className="text-3xl font-bold text-textPrimary">
+                            ${(stats?.mrr_usd || 0).toLocaleString()}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-lg">
+            <div className="card">
                 <h2 className="text-xl font-bold text-textPrimary mb-md">
                     Quick Actions
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-sm">
-                    <a
+                    <Link
                         href="/superadmin/organizations?action=create"
                         className="
-              flex items-center gap-sm
-              bg-background
-              border border-border
-              rounded-[var(--radius-md)]
-              p-sm
-              hover:bg-surfaceHover
-              hover:border-borderHover
-              transition-all
-              group
-            "
+                            group relative overflow-hidden
+                            flex items-center justify-center gap-sm
+                            p-md
+                            bg-primary/5 border border-primary/20
+                            rounded-[var(--radius-lg)]
+                            hover:bg-primary/10 hover:border-primary/40
+                            hover:scale-[var(--hover-scale)]
+                            active:scale-[var(--active-scale)]
+                            transition-all duration-[var(--duration-normal)]
+                        "
                     >
-                        <div className="p-xs rounded-[var(--radius-sm)] bg-primary/10">
-                            <Building2 className="w-5 h-5 text-primary" />
-                        </div>
-                        <span className="text-textPrimary font-medium">Create Organization</span>
-                    </a>
+                        <Building2 className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium text-textPrimary">Create Organization</span>
+                    </Link>
 
-                    <a
+                    <Link
                         href="/superadmin/users"
                         className="
-              flex items-center gap-sm
-              bg-background
-              border border-border
-              rounded-[var(--radius-md)]
-              p-sm
-              hover:bg-surfaceHover
-              hover:border-borderHover
-              transition-all
-            "
+                            group relative overflow-hidden
+                            flex items-center justify-center gap-sm
+                            p-md
+                            bg-info/5 border border-info/20
+                            rounded-[var(--radius-lg)]
+                            hover:bg-info/10 hover:border-info/40
+                            hover:scale-[var(--hover-scale)]
+                            active:scale-[var(--active-scale)]
+                            transition-all duration-[var(--duration-normal)]
+                        "
                     >
-                        <div className="p-xs rounded-[var(--radius-sm)] bg-info/10">
-                            <Users className="w-5 h-5 text-info" />
-                        </div>
-                        <span className="text-textPrimary font-medium">View All Users</span>
-                    </a>
+                        <Users className="w-5 h-5 text-info" />
+                        <span className="text-sm font-medium text-textPrimary">View All Users</span>
+                    </Link>
 
-                    <a
-                        href="/superadmin/licenses/transactions"
+                    <Link
+                        href="/superadmin/licenses"
                         className="
-              flex items-center gap-sm
-              bg-background
-              border border-border
-              rounded-[var(--radius-md)]
-              p-sm
-              hover:bg-surfaceHover
-              hover:border-borderHover
-              transition-all
-            "
+                            group relative overflow-hidden
+                            flex items-center justify-center gap-sm
+                            p-md
+                            bg-success/5 border border-success/20
+                            rounded-[var(--radius-lg)]
+                            hover:bg-success/10 hover:border-success/40
+                            hover:scale-[var(--hover-scale)]
+                            active:scale-[var(--active-scale)]
+                            transition-all duration-[var(--duration-normal)]
+                        "
                     >
-                        <div className="p-xs rounded-[var(--radius-sm)] bg-success/10">
-                            <TrendingUp className="w-5 h-5 text-success" />
-                        </div>
-                        <span className="text-textPrimary font-medium">License History</span>
-                    </a>
+                        <TrendingUp className="w-5 h-5 text-success" />
+                        <span className="text-sm font-medium text-textPrimary">License History</span>
+                    </Link>
 
-                    <a
+                    <Link
                         href="/superadmin/analytics"
                         className="
-              flex items-center gap-sm
-              bg-background
-              border border-border
-              rounded-[var(--radius-md)]
-              p-sm
-              hover:bg-surfaceHover
-              hover:border-borderHover
-              transition-all
-            "
+                            group relative overflow-hidden
+                            flex items-center justify-center gap-sm
+                            p-md
+                            bg-accent/5 border border-accent/20
+                            rounded-[var(--radius-lg)]
+                            hover:bg-accent/10 hover:border-accent/40
+                            hover:scale-[var(--hover-scale)]
+                            active:scale-[var(--active-scale)]
+                            transition-all duration-[var(--duration-normal)]
+                        "
                     >
-                        <div className="p-xs rounded-[var(--radius-sm)] bg-accent/10">
-                            <Activity className="w-5 h-5 text-accent" />
-                        </div>
-                        <span className="text-textPrimary font-medium">Platform Analytics</span>
-                    </a>
+                        <Activity className="w-5 h-5 text-accent" />
+                        <span className="text-sm font-medium text-textPrimary">Platform Analytics</span>
+                    </Link>
                 </div>
-            </div>
-
-            {/* Recent Activity Placeholder */}
-            <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-lg">
-                <h2 className="text-xl font-bold text-textPrimary mb-md">
-                    Recent Activity
-                </h2>
-                <p className="text-textSecondary">
-                    Coming soon: Real-time activity feed of platform events
-                </p>
             </div>
         </div>
     );

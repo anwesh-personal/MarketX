@@ -14,7 +14,11 @@ import {
     Loader2,
     ExternalLink,
     AlertTriangle,
+    UserPlus,
+    Key,
 } from 'lucide-react';
+import CreateUserModal from '@/components/modals/CreateUserModal';
+import EditUserModal from '@/components/modals/EditUserModal';
 
 interface User {
     id: string;
@@ -28,6 +32,10 @@ interface User {
     org_slug: string;
     org_plan: string;
     org_status: string;
+    can_upload_kb: boolean;
+    can_trigger_runs: boolean;
+    can_view_analytics: boolean;
+    can_manage_team: boolean;
 }
 
 export default function UsersPage() {
@@ -37,6 +45,9 @@ export default function UsersPage() {
     const [filterPlan, setFilterPlan] = useState('all');
     const [filterRole, setFilterRole] = useState('all');
     const [impersonating, setImpersonating] = useState<string | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [resettingPassword, setResettingPassword] = useState<string | null>(null);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
     useEffect(() => {
         loadUsers();
@@ -109,6 +120,52 @@ export default function UsersPage() {
         }
     };
 
+    const handleResetPassword = async (user: User) => {
+        if (!confirm(`Send password reset email to ${user.email}?`)) {
+            return;
+        }
+
+        setResettingPassword(user.id);
+
+        try {
+            const session = localStorage.getItem('superadmin_session');
+            if (!session) return;
+
+            const { token } = JSON.parse(session);
+
+            const response = await fetch('/api/superadmin/users/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: user.email }),
+            });
+
+            if (!response.ok) throw new Error('Failed to send reset email');
+
+            const data = await response.json();
+
+            // Show success with option to copy reset link
+            const resetLink = data.reset_link;
+            const shouldCopy = confirm(
+                `✅ Password reset email sent to ${user.email}!\n\n` +
+                `If email doesn't arrive, click OK to copy the reset link manually.`
+            );
+
+            if (shouldCopy && resetLink) {
+                await navigator.clipboard.writeText(resetLink);
+                alert('Reset link copied to clipboard!');
+            }
+        } catch (error) {
+            console.error('Error sending reset email:', error);
+            alert('Failed to send password reset email');
+        } finally {
+            setResettingPassword(null);
+        }
+    };
+
+
     const filteredUsers = users.filter((user) => {
         const matchesSearch =
             user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -142,13 +199,31 @@ export default function UsersPage() {
     return (
         <div className="space-y-lg">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-textPrimary mb-xs">
-                    All Users
-                </h1>
-                <p className="text-textSecondary">
-                    Manage users across all organizations
-                </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md">
+                <div>
+                    <h1 className="text-3xl font-bold text-textPrimary mb-xs">
+                        All Users
+                    </h1>
+                    <p className="text-textSecondary">
+                        Manage users across all organizations
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="
+                        flex items-center gap-xs
+                        bg-primary text-white font-semibold
+                        px-md py-sm
+                        rounded-[var(--radius-md)]
+                        hover:opacity-90
+                        active:scale-[0.98]
+                        transition-all
+                    "
+                >
+                    <UserPlus className="w-5 h-5" />
+                    <span>Add User</span>
+                </button>
             </div>
 
             {/* Filters */}
@@ -364,6 +439,32 @@ export default function UsersPage() {
                                             </button>
 
                                             <button
+                                                onClick={() => handleResetPassword(user)}
+                                                disabled={resettingPassword === user.id}
+                                                className="
+                          flex items-center gap-xs
+                          px-sm py-xs
+                          text-warning
+                          hover:bg-warning/10
+                          rounded-[var(--radius-sm)]
+                          transition-all
+                          text-sm
+                          font-medium
+                          disabled:opacity-50
+                          disabled:cursor-not-allowed
+                        "
+                                                title="Reset password"
+                                            >
+                                                {resettingPassword === user.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Key className="w-4 h-4" />
+                                                )}
+                                                <span>Reset Password</span>
+                                            </button>
+
+                                            <button
+                                                onClick={() => setEditingUser(user)}
                                                 className="
                           p-xs
                           text-textSecondary
@@ -404,6 +505,21 @@ export default function UsersPage() {
             <p className="text-textSecondary text-sm text-center">
                 Showing {filteredUsers.length} of {users.length} users
             </p>
+
+            {/* Create User Modal */}
+            <CreateUserModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={loadUsers}
+            />
+
+            {/* Edit User Modal */}
+            <EditUserModal
+                isOpen={!!editingUser}
+                user={editingUser}
+                onClose={() => setEditingUser(null)}
+                onSuccess={loadUsers}
+            />
         </div>
     );
 }

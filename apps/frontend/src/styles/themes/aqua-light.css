@@ -1,38 +1,36 @@
 /**
  * AQUA LIGHT THEME
- * Oceanic, calming design with blue/teal tones
+ * Philosophy: Flowing, fluid, ocean-like. Smooth and calming.
+ * Typography: Rounded humanist sans
+ * Interactions: Wave-like, flowing, organic
  */
 
-[data-theme="aqua-light"] {
-    /* ===== COLORS ===== */
+:root[data-theme="aqua-light"] {
+    /* ===== COLOR PALETTE ===== */
     --color-primary: #0891b2;
-    --color-secondary: #06b6d4;
+    --color-secondary: #14b8a6;
     --color-accent: #8b5cf6;
-
     --color-background: #f0fdfa;
     --color-surface: #ffffff;
     --color-surface-hover: #ccfbf1;
-
-    --color-text-primary: #134e4a;
-    --color-text-secondary: #0f766e;
-    --color-text-tertiary: #2dd4bf;
-
-    --color-border: #5eead4;
-    --color-border-hover: #2dd4bf;
+    --color-text-primary: #083344;
+    --color-text-secondary: #0e7490;
+    --color-text-tertiary: #22d3ee;
+    --color-border: #99f6e4;
+    --color-border-hover: #5eead4;
     --color-border-focus: #0891b2;
+    --color-success: #059669;
+    --color-warning: #d97706;
+    --color-error: #dc2626;
+    --color-info: #0284c7;
+    --color-overlay: rgba(8, 51, 68, 0.6);
+    --color-shadow: rgba(8, 145, 178, 0.06);
+    --color-glow: rgba(8, 145, 178, 0.15);
 
-    --color-success: #10b981;
-    --color-warning: #f59e0b;
-    --color-error: #ef4444;
-    --color-info: #06b6d4;
-
-    --color-overlay: rgba(6, 182, 212, 0.2);
-    --color-shadow: rgba(6, 182, 212, 0.15);
-
-    /* ===== TYPOGRAPHY ===== */
-    --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
-    --font-mono: 'Fira Code', 'Courier New', monospace;
-    --font-display: 'Poppins', sans-serif;
+    /* ===== UNIQUE TYPOGRAPHY ===== */
+    --font-sans: 'Manrope', 'Lexend', -apple-system, sans-serif;
+    --font-mono: 'Victor Mono', 'Courier New', monospace;
+    --font-display: 'Manrope', sans-serif;
 
     --text-xs: 0.75rem;
     --text-sm: 0.875rem;
@@ -41,43 +39,53 @@
     --text-xl: 1.25rem;
     --text-2xl: 1.5rem;
     --text-3xl: 1.875rem;
-    --text-4xl: 2.25rem;
+    --text-4xl: 2.375rem;
 
-    --line-height-tight: 1.375;
-    --line-height-normal: 1.625;
-    --line-height-loose: 1.875;
+    --line-height-tight: 1.3;
+    --line-height-normal: 1.55;
+    --line-height-loose: 1.8;
 
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
 
-    /* ===== SPACING ===== */
-    --spacing-xs: 0.375rem;
-    --spacing-sm: 0.625rem;
-    --spacing-md: 1.25rem;
-    --spacing-lg: 2rem;
-    --spacing-xl: 3rem;
-    --spacing-2xl: 4.5rem;
+    /* ===== BALANCED, FLOWING SPACING ===== */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.875rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2.75rem;
+    --spacing-xl: 4.5rem;
+    --spacing-2xl: 7rem;
 
-    /* ===== BORDERS & SHADOWS ===== */
-    --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --radius-lg: 1rem;
-    --radius-xl: 1.5rem;
+    /* ===== ROUNDED BORDERS & SOFT SHADOWS ===== */
+    --radius-sm: 0.625rem;
+    --radius-md: 0.875rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.875rem;
     --radius-full: 9999px;
 
-    --border-width: 1px;
+    --border-width: 1.5px;
     --border-width-thick: 2px;
 
-    --shadow-sm: 0 2px 4px 0 var(--color-shadow);
-    --shadow-md: 0 6px 12px -2px var(--color-shadow);
-    --shadow-lg: 0 12px 24px -4px var(--color-shadow);
-    --shadow-xl: 0 25px 50px -12px var(--color-shadow);
+    --shadow-sm: 0 2px 6px 0 rgba(8, 145, 178, 0.06), 0 1px 3px 0 rgba(8, 145, 178, 0.04);
+    --shadow-md: 0 6px 12px 0 rgba(8, 145, 178, 0.08), 0 3px 6px 0 rgba(8, 145, 178, 0.06);
+    --shadow-lg: 0 12px 24px 0 rgba(8, 145, 178, 0.1), 0 6px 12px 0 rgba(8, 145, 178, 0.08);
+    --shadow-xl: 0 20px 40px 0 rgba(8, 145, 178, 0.12), 0 10px 20px 0 rgba(8, 145, 178, 0.1);
+    --shadow-glow: 0 0 0 3px var(--color-glow), 0 0 12px rgba(8, 145, 178, 0.3);
+    --shadow-glow-lg: 0 0 0 5px var(--color-glow), 0 0 24px rgba(8, 145, 178, 0.4), 0 0 40px rgba(8, 145, 178, 0.2);
 
-    /* ===== ANIMATIONS ===== */
-    --duration-fast: 200ms;
+    /* ===== FLOWING, WAVE-LIKE ANIMATIONS ===== */
+    --duration-fast: 150ms;
     --duration-normal: 300ms;
-    --duration-slow: 400ms;
-    --easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --duration-slow: 450ms;
+    --easing: cubic-bezier(0.32, 0.72, 0, 1);
+    --easing-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --easing-bounce: cubic-bezier(0.5, 1.5, 0.5, 1);
+
+    /* ===== UNIQUE INTERACTION STYLES ===== */
+    --hover-scale: 1.03;
+    --active-scale: 0.98;
+    --focus-ring-width: 2.5px;
+    --focus-ring-offset: 2.5px;
 }

@@ -1,0 +1,385 @@
+/**
+ * THEME-SPECIFIC MICRO-INTERACTIONS & ANIMATIONS
+ * Each theme gets unique button styles, hover effects, and animations
+ * This is EXPENSIVE, PREMIUM shit.
+ */
+
+/* ========================================
+   MINIMALIST THEMES - Slow, Elegant, Spacious
+   ======================================== */
+
+[data-theme="minimalist-dark"],
+[data-theme="minimalist-light"] {
+
+    /* Sidebar navigation items - Minimal with smooth expand */
+    .nav-item {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .nav-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--color-primary);
+        transform: scaleY(0);
+        transition: transform var(--duration-slow) var(--easing-smooth);
+        transform-origin: top;
+    }
+
+    .nav-item:hover::before {
+        transform: scaleY(1);
+    }
+
+    .nav-item:hover {
+        transform: translateX(6px);
+        transition: transform var(--duration-slow) var(--easing-smooth);
+    }
+
+    /* Buttons - Soft glow on hover */
+    button,
+    .btn {
+        transition: all var(--duration-slow) var(--easing-smooth);
+    }
+
+    button:hover,
+    .btn:hover {
+        transform: translateY(-2px) scale(var(--hover-scale));
+        box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-border-hover);
+    }
+
+    button:active,
+    .btn:active {
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
+
+    /* Cards - Subtle lift */
+    .card {
+        transition: all var(--duration-slow) var(--easing-smooth);
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    /* Inputs - Gentle expand */
+    input:focus,
+    textarea:focus,
+    select:focus {
+        transform: scale(1.01);
+        transition: all var(--duration-slow) var(--easing-smooth);
+    }
+}
+
+/* ========================================
+   MODERN THEMES - Fast, Snappy, Sharp
+   ======================================== */
+
+[data-theme="modern-dark"],
+[data-theme="modern-light"] {
+
+    /* Sidebar navigation items - Quick slide with accent bar */
+    .nav-item {
+        position: relative;
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .nav-item::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%) scaleX(0);
+        width: 3px;
+        height: 60%;
+        background: linear-gradient(to bottom, var(--color-accent), var(--color-primary));
+        transition: transform var(--duration-normal) var(--easing-bounce);
+        transform-origin: right;
+        border-radius: var(--radius-full);
+    }
+
+    .nav-item:hover::after {
+        transform: translateY(-50%) scaleX(1);
+    }
+
+    .nav-item:hover {
+        background: var(--color-surface-hover);
+        padding-left: calc(var(--spacing-md) + 4px);
+        border-left: 2px solid var(--color-accent);
+    }
+
+    /* Buttons - Punchy scale with sharp shadow */
+    button,
+    .btn {
+        transition: all var(--duration-fast) var(--easing);
+        position: relative;
+    }
+
+    button::before,
+    .btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        opacity: 0;
+        transition: opacity var(--duration-fast) var(--easing);
+        border-radius: inherit;
+        z-index: -1;
+    }
+
+    button:hover,
+    .btn:hover {
+        transform: scale(var(--hover-scale));
+        box-shadow: var(--shadow-glow-lg);
+    }
+
+    button:hover::before,
+    .btn:hover::before {
+        opacity: 0.1;
+    }
+
+    button:active,
+    .btn:active {
+        transform: scale(var(--active-scale));
+        box-shadow: var(--shadow-sm);
+        transition-duration: 50ms;
+    }
+
+    /* Cards - Quick pop */
+    .card {
+        transition: all var(--duration-fast) var(--easing);
+        border-width: var(--border-width-thick);
+    }
+
+    .card:hover {
+        transform: translateY(-2px) scale(1.01);
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-glow);
+    }
+
+    /* Inputs - Instant highlight */
+    input:focus,
+    textarea:focus,
+    select:focus {
+        border-width: var(--border-width-thick);
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px var(--color-glow);
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    /* Fast ripple effect on click */
+    button:active::after,
+    .btn:active::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--color-primary);
+        opacity: 0.3;
+        border-radius: inherit;
+        animation: ripple var(--duration-normal) var(--easing);
+    }
+}
+
+/* ========================================
+   AQUA THEMES - Flowing, Wave-like, Organic
+   ======================================== */
+
+[data-theme="aqua-dark"],
+[data-theme="aqua-light"] {
+
+    /* Sidebar navigation items - Wave ripple effect */
+    .nav-item {
+        position: relative;
+        overflow: hidden;
+        transition: all var(--duration-normal) var(--easing);
+    }
+
+    .nav-item::before {
+        content: '';
+        position: absolute;
+        left: -100%;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg,
+                transparent,
+                var(--color-primary) 50%,
+                transparent);
+        opacity: 0.1;
+        transition: left var(--duration-slow) var(--easing-smooth);
+    }
+
+    .nav-item:hover::before {
+        left: 100%;
+    }
+
+    .nav-item:hover {
+        background: var(--color-surface-hover);
+        border-radius: var(--radius-lg);
+        padding-left: calc(var(--spacing-md) + 6px);
+        box-shadow: 0 0 20px rgba(var(--color-primary), 0.2);
+    }
+
+    /* Buttons - Floating, wave-like */
+    button,
+    .btn {
+        transition: all var(--duration-normal) var(--easing-smooth);
+        position: relative;
+    }
+
+    button::before,
+    .btn::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        opacity: 0;
+        filter: blur(8px);
+        transition: opacity var(--duration-normal) var(--easing-smooth);
+        border-radius: inherit;
+        z-index: -1;
+    }
+
+    button:hover,
+    .btn:hover {
+        transform: translateY(-3px) scale(var(--hover-scale));
+        box-shadow: var(--shadow-glow-lg);
+    }
+
+    button:hover::before,
+    .btn:hover::before {
+        opacity: 0.4;
+    }
+
+    button:active,
+    .btn:active {
+        transform: translateY(-1px) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
+
+    /* Cards - Gentle float with glow */
+    .card {
+        transition: all var(--duration-normal) var(--easing-smooth);
+        position: relative;
+    }
+
+    .card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(circle at 50% 0%, var(--color-primary), transparent 70%);
+        opacity: 0;
+        transition: opacity var(--duration-slow) var(--easing-smooth);
+        pointer-events: none;
+    }
+
+    .card:hover {
+        transform: translateY(-6px) rotate(0.5deg);
+        box-shadow: 0 12px 40px rgba(var(--color-primary), 0.3);
+    }
+
+    .card:hover::after {
+        opacity: 0.08;
+    }
+
+    /* Inputs - Wave ripple on focus */
+    input:focus,
+    textarea:focus,
+    select:focus {
+        transform: scale(1.01);
+        box-shadow: var(--shadow-glow);
+        transition: all var(--duration-normal) var(--easing-smooth);
+        animation: wave-pulse 2s var(--easing-smooth) infinite;
+    }
+}
+
+/* ========================================
+   KEYFRAME ANIMATIONS
+   ======================================== */
+
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes wave-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 var(--color-glow);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px transparent;
+    }
+}
+
+/* ========================================
+   THEME-SPECIFIC SCROLLBAR
+   ======================================== */
+
+[data-theme="minimalist-dark"] ::-webkit-scrollbar-thumb,
+[data-theme="minimalist-light"] ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-full);
+    transition: background var(--duration-slow) var(--easing-smooth);
+}
+
+[data-theme="modern-dark"] ::-webkit-scrollbar-thumb,
+[data-theme="modern-light"] ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-sm);
+    transition: background var(--duration-fast) var(--easing);
+}
+
+[data-theme="aqua-dark"] ::-webkit-scrollbar-thumb,
+[data-theme="aqua-light"] ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-lg);
+    background: linear-gradient(to bottom, var(--color-primary), var(--color-accent));
+    transition: all var(--duration-normal) var(--easing-smooth);
+}
+
+/* ========================================
+   LOADING STATES - Theme-specific
+   ======================================== */
+
+[data-theme^="minimalist"] .loading {
+    animation: spin 1.2s linear infinite;
+}
+
+[data-theme^="modern"] .loading {
+    animation: spin 0.6s linear infinite;
+}
+
+[data-theme^="aqua"] .loading {
+    animation: wave-spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes wave-spin {
+
+    0%,
+    100% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(1.1);
+    }
+}

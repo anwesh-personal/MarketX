@@ -425,6 +425,118 @@ ON learning_rules FOR SELECT
 USING (org_id IN (SELECT org_id FROM users WHERE id = auth.uid()));
 
 -- ============================================================
+-- MIGRATION 5: AI Provider Management
+-- ============================================================
+
+-- Add password support for authentication
+ALTER TABLE platform_admins 
+ADD COLUMN password_hash VARCHAR(255);
+
+ALTER TABLE users 
+ADD COLUMN password_hash VARCHAR(255);
+
+-- AI Providers table (API Keys Management)
+CREATE TABLE ai_providers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL CHECK (provider IN (
+        'openai', 'anthropic', 'google', 'mistral', 
+        'perplexity', 'xai', 'cohere', 'groq'
+    )),
+    name VARCHAR(255) NOT NULL,
+    api_key TEXT NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT true,
+    failures INTEGER DEFAULT 0,
+    usage_count INTEGER DEFAULT 0,
+    last_used TIMESTAMPTZ,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_ai_providers_user_id ON ai_providers(user_id);
+CREATE INDEX idx_ai_providers_org_id ON ai_providers(org_id);
+CREATE INDEX idx_ai_providers_provider ON ai_providers(provider);
+CREATE INDEX idx_ai_providers_is_active ON ai_providers(is_active);
+
+-- AI Model Metadata table (Discovered Models)
+CREATE TABLE ai_model_metadata (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    org_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    model_id VARCHAR(255) NOT NULL,
+    model_name VARCHAR(255),
+    key_name VARCHAR(255),
+    key_model VARCHAR(255) UNIQUE,
+    input_cost_per_million DECIMAL(10, 6),
+    output_cost_per_million DECIMAL(10, 6),
+    context_window_tokens INTEGER,
+    tokens_per_page INTEGER,
+    max_output_tokens INTEGER,
+    specialties TEXT[],
+    description TEXT,
+    supports_vision BOOLEAN DEFAULT false,
+    supports_function_calling BOOLEAN DEFAULT false,
+    supports_streaming BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT true,
+    test_passed BOOLEAN,
+    test_error TEXT,
+    last_tested TIMESTAMPTZ,
+    last_updated TIMESTAMPTZ DEFAULT NOW(),
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_ai_model_metadata_user_id ON ai_model_metadata(user_id);
+CREATE INDEX idx_ai_model_metadata_org_id ON ai_model_metadata(org_id);
+CREATE INDEX idx_ai_model_metadata_provider ON ai_model_metadata(provider);
+CREATE INDEX idx_ai_model_metadata_model_id ON ai_model_metadata(model_id);
+CREATE INDEX idx_ai_model_metadata_is_active ON ai_model_metadata(is_active);
+
+-- System Configs table
+CREATE TABLE system_configs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key VARCHAR(255) UNIQUE NOT NULL,
+    value JSONB NOT NULL,
+    description TEXT,
+    updated_by UUID REFERENCES platform_admins(id),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_system_configs_key ON system_configs(key);
+
+-- Auto-update triggers
+CREATE OR REPLACE FUNCTION update_ai_providers_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_ai_providers_timestamp
+BEFORE UPDATE ON ai_providers
+FOR EACH ROW
+EXECUTE FUNCTION update_ai_providers_timestamp();
+
+-- RLS for AI tables
+ALTER TABLE ai_providers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ai_model_metadata ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_configs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users see org AI providers"
+ON ai_providers FOR SELECT
+USING (org_id IN (SELECT org_id FROM users WHERE id = auth.uid()));
+
+CREATE POLICY "Users see org AI models"
+ON ai_model_metadata FOR SELECT
+USING (org_id IN (SELECT org_id FROM users WHERE id = auth.uid()));
+
+-- ============================================================
 -- INITIAL DATA (Optional - for testing)
 -- ============================================================
 
@@ -435,6 +547,6 @@ VALUES ('admin@axiom.com', 'Platform Administrator', true);
 -- ============================================================
 -- COMPLETE!
 -- ============================================================
--- All tables created successfully
+-- All 17 tables created successfully (including AI management)
 -- You can now start using the Axiom Engine platform
 -- ============================================================

@@ -1,228 +1,111 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import React, { createContext, useContext, useState, useLayoutEffect, useEffect } from 'react';
 
-// ============================================================
-// TYPES
-// ============================================================
-
+// Types
 export type ThemeVariant = 'minimalist' | 'aqua' | 'modern';
 export type ThemeMode = 'light' | 'dark';
 export type Theme = `${ThemeVariant}-${ThemeMode}`;
 
-interface ThemeContextValue {
-    // Current theme state
+interface ThemeContextType {
     theme: Theme;
     variant: ThemeVariant;
     mode: ThemeMode;
-
-    // Actions
-    setTheme: (theme: Theme) => Promise<void>;
-    setVariant: (variant: ThemeVariant) => Promise<void>;
-    setMode: (mode: ThemeMode) => Promise<void>;
-    toggleMode: () => Promise<void>;
-
-    // Loading state
+    setTheme: (theme: Theme) => void;
+    setVariant: (variant: ThemeVariant) => void;
+    setMode: (mode: ThemeMode) => void;
+    toggleMode: () => void;
     isLoading: boolean;
 }
 
-// ============================================================
-// CONTEXT
-// ============================================================
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
-
-// ============================================================
-// THEME PROVIDER
-// ============================================================
-
-interface ThemeProviderProps {
-    children: ReactNode;
-    defaultTheme?: Theme;
-}
-
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({
-    children,
-    defaultTheme = 'minimalist-light'
-}) => {
-    const [theme, setThemeState] = useState<Theme>(defaultTheme);
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const [theme, setThemeState] = useState<Theme>('minimalist-light');
     const [isLoading, setIsLoading] = useState(true);
 
-    // Initialize Supabase client
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-
-    // Derive variant and mode from theme
+    // Parse variant and mode from theme
     const [variant, mode] = theme.split('-') as [ThemeVariant, ThemeMode];
 
-    // ============================================================
-    // LOAD THEME FROM DATABASE
-    // ============================================================
-
+    // Initialize theme from localStorage (runs once on mount)
     useEffect(() => {
-        loadUserTheme();
+        const saved = localStorage.getItem('theme') as Theme;
+        if (saved && isValidTheme(saved)) {
+            applyTheme(saved, true); // Skip transition on initial load
+        }
+        setIsLoading(false);
     }, []);
 
-    const loadUserTheme = async () => {
-        try {
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
+    // Apply theme: update DOM and localStorage
+    function applyTheme(newTheme: Theme, skipTransition = false) {
+        const html = document.documentElement;
 
-            if (user) {
-                // Fetch user's theme preference
-                const { data, error } = await supabase
-                    .from('users')
-                    .select('theme_preference')
-                    .eq('id', user.id)
-                    .single();
-
-                if (data?.theme_preference && !error) {
-                    applyTheme(data.theme_preference as Theme);
-                } else {
-                    // No theme saved, apply default
-                    applyTheme(defaultTheme);
-                }
-            } else {
-                // Not logged in, check localStorage
-                const savedTheme = localStorage.getItem('theme');
-                if (savedTheme && isValidTheme(savedTheme)) {
-                    applyTheme(savedTheme as Theme);
-                } else {
-                    applyTheme(defaultTheme);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading theme:', error);
-            applyTheme(defaultTheme);
-        } finally {
-            setIsLoading(false);
+        // Temporarily disable transitions for instant theme change
+        if (skipTransition) {
+            html.classList.add('theme-transitioning');
         }
-    };
 
-    // ============================================================
-    // APPLY THEME
-    // ============================================================
+        // Set theme attribute
+        html.setAttribute('data-theme', newTheme);
 
-    const applyTheme = (newTheme: Theme) => {
-        // Set data attribute on <html> element
-        document.documentElement.setAttribute('data-theme', newTheme);
-
-        // Import theme CSS dynamically
-        import(`@/styles/themes/${newTheme}.css`).catch((err) => {
-            console.error(`Failed to load theme: ${newTheme}`, err);
-        });
-
-        // Save to localStorage (for non-logged-in users)
+        // Save to localStorage
         localStorage.setItem('theme', newTheme);
 
-        // Update state
+        // Update React state
         setThemeState(newTheme);
-    };
 
-    // ============================================================
-    // SET THEME (PERSIST TO DATABASE)
-    // ============================================================
-
-    const setTheme = async (newTheme: Theme) => {
-        // Apply theme immediately (optimistic update)
-        applyTheme(newTheme);
-
-        try {
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-
-            if (user) {
-                // Persist to database
-                const { error } = await supabase
-                    .from('users')
-                    .update({ theme_preference: newTheme })
-                    .eq('id', user.id);
-
-                if (error) {
-                    console.error('Error saving theme:', error);
-                }
-            }
-        } catch (error) {
-            console.error('Error setting theme:', error);
+        // Re-enable transitions after a tick
+        if (skipTransition) {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    html.classList.remove('theme-transitioning');
+                });
+            });
         }
-    };
+    }
 
-    // ============================================================
-    // SET VARIANT (KEEP CURRENT MODE)
-    // ============================================================
+    // Setters
+    function setTheme(newTheme: Theme) {
+        applyTheme(newTheme, true);
+    }
 
-    const setVariant = async (newVariant: ThemeVariant) => {
-        const newTheme: Theme = `${newVariant}-${mode}`;
-        await setTheme(newTheme);
-    };
+    function setVariant(newVariant: ThemeVariant) {
+        applyTheme(`${newVariant}-${mode}`, true);
+    }
 
-    // ============================================================
-    // SET MODE (KEEP CURRENT VARIANT)
-    // ============================================================
+    function setMode(newMode: ThemeMode) {
+        applyTheme(`${variant}-${newMode}`, true);
+    }
 
-    const setMode = async (newMode: ThemeMode) => {
-        const newTheme: Theme = `${variant}-${newMode}`;
-        await setTheme(newTheme);
-    };
-
-    // ============================================================
-    // TOGGLE MODE (DAY/NIGHT)
-    // ============================================================
-
-    const toggleMode = async () => {
-        const newMode: ThemeMode = mode === 'light' ? 'dark' : 'light';
-        await setMode(newMode);
-    };
-
-    // ============================================================
-    // CONTEXT VALUE
-    // ============================================================
-
-    const value: ThemeContextValue = {
-        theme,
-        variant,
-        mode,
-        setTheme,
-        setVariant,
-        setMode,
-        toggleMode,
-        isLoading,
-    };
+    function toggleMode() {
+        setMode(mode === 'light' ? 'dark' : 'light');
+    }
 
     return (
-        <ThemeContext.Provider value={value}>
+        <ThemeContext.Provider
+            value={{
+                theme,
+                variant,
+                mode,
+                setTheme,
+                setVariant,
+                setMode,
+                toggleMode,
+                isLoading,
+            }}
+        >
             {children}
         </ThemeContext.Provider>
     );
-};
+}
 
-// ============================================================
-// USE THEME HOOK
-// ============================================================
-
-export const useTheme = (): ThemeContextValue => {
+export function useTheme() {
     const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within a ThemeProvider');
-    }
+    if (!context) throw new Error('useTheme must be used within ThemeProvider');
     return context;
-};
+}
 
-// ============================================================
-// UTILITY FUNCTIONS
-// ============================================================
-
-const isValidTheme = (theme: string): theme is Theme => {
-    const validThemes: Theme[] = [
-        'minimalist-light',
-        'minimalist-dark',
-        'aqua-light',
-        'aqua-dark',
-        'modern-light',
-        'modern-dark',
-    ];
-    return validThemes.includes(theme as Theme);
-};
+// Validation
+function isValidTheme(theme: string): theme is Theme {
+    return /^(minimalist|aqua|modern)-(light|dark)$/.test(theme);
+}
