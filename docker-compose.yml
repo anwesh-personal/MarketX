@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # The Brain: Node.js (Express)
+  api:
+    build: ./apps/backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://user:pass@db:5432/market_writer
+      - NODE_ENV=production
+    depends_on:
+      - db
+
+  # The Face: Next.js
+  web:
+    build: ./apps/frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+
+  # The Memory: Postgres
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=market_writer
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
