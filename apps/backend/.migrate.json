@@ -1,0 +1,13 @@
+{
+    "host": "localhost",
+    "port": 5432,
+    "database": "market_writer",
+    "user": "postgres",
+    "password": "postgres",
+    "schema": "public",
+    "migrations-table": "pgmigrations",
+    "dir": "migrations",
+    "check-order": true,
+    "ignore-pattern": "\\..*",
+    "run-in-transaction": true
+}
