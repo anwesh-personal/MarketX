@@ -6,23 +6,28 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "create-superadmin": "tsx src/scripts/create-superadmin.ts",
     "migrate:create": "node-pg-migrate create -m migrations",
     "migrate:up": "node-pg-migrate up -m migrations",
     "migrate:down": "node-pg-migrate down -m migrations",
     "migrate:status": "node-pg-migrate status -m migrations"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
     "node-cron": "^3.0.2",
     "pg": "^8.11.0",
     "uuid": "^9.0.0",
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.0",
     "@types/express": "^4.17.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.0.0",
     "@types/node-cron": "^3.0.0",
     "@types/pg": "^8.10.0",

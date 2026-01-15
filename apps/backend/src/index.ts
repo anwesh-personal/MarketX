@@ -3,6 +3,7 @@ import cors from "cors";
 import { startDailyCron } from "./core/ops.scheduler";
 import { router } from "./routes/api";
 import superadminRouter from "./routes/superadmin";
+import superadminAuthRouter from "./routes/auth-superadmin";
 
 const app = express();
 app.use(express.json());
@@ -11,6 +12,7 @@ app.use(cors()); // Allow frontend access
 // API Routes
 app.use("/api", router);
 app.use("/api/superadmin", superadminRouter);
+app.use("/api/superadmin/auth", superadminAuthRouter);
 
 // Health check
 app.get("/health", (req, res) => {
@@ -24,5 +26,6 @@ app.listen(8080, () => {
     console.log("🚀 Market Writer SaaS API running on port 8080");
     console.log("📍 API Routes: http://localhost:8080/api");
     console.log("🔐 Superadmin: http://localhost:8080/api/superadmin");
+    console.log("🔑 Auth: http://localhost:8080/api/superadmin/auth");
 });
 
