@@ -14,6 +14,7 @@ import {
     Menu,
     X,
     Shield,
+    Bot,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 
@@ -26,6 +27,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [adminEmail, setAdminEmail] = useState('');
+    const [isReady, setIsReady] = useState(false);
 
     // Check authentication
     useEffect(() => {
@@ -36,11 +38,17 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
             try {
                 const sessionData = JSON.parse(session);
                 setAdminEmail(sessionData.email);
+                setIsReady(true);
             } catch {
                 router.push('/superadmin/login');
             }
         }
     }, [router]);
+
+    // Show nothing until ready (prevents FOUC)
+    if (!isReady) {
+        return null;
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('superadmin_session');
@@ -51,6 +59,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2 },
         { name: 'Users', href: '/superadmin/users', icon: Users },
+        { name: 'AI Management', href: '/superadmin/ai-management', icon: Bot },
         { name: 'Licenses', href: '/superadmin/licenses', icon: FileText },
         { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3 },
         { name: 'Workers', href: '/superadmin/workers', icon: Server },
