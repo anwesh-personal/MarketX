@@ -48,16 +48,29 @@ export async function GET(request: NextRequest) {
             mrrUsd += pricing[org.plan] || 0;
         });
 
+        // Get today's brain requests
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { count: requestsToday } = await supabase
+            .from('brain_request_logs')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', today.toISOString());
+
         return NextResponse.json({
+            // Original stats format
             stats: {
                 active_orgs: activeOrgs || 0,
                 total_users: totalUsers || 0,
                 total_kbs: totalKbs || 0,
                 total_runs: totalRuns || 0,
                 runs_last_30_days: runsLast30Days || 0,
-                runs_this_month: runsLast30Days || 0, // Same for now
+                runs_this_month: runsLast30Days || 0,
                 mrr_usd: mrrUsd,
             },
+            // Brain management stats (simpler format for brain page)
+            organizations: activeOrgs || 0,
+            requestsToday: requestsToday || 0,
         });
     } catch (error) {
         console.error('Stats error:', error);

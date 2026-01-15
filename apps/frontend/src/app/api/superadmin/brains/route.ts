@@ -129,7 +129,8 @@ export async function GET(req: NextRequest) {
         const templates = await brainConfigService.listTemplates(tier || undefined)
 
         return NextResponse.json({
-            templates,
+            brains: templates,
+            templates, // Keep for backwards compatibility
             count: templates.length
         })
     } catch (error: any) {

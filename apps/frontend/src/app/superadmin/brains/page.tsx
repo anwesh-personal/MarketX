@@ -30,6 +30,10 @@ export default function BrainManagementPage() {
     const [selectedBrain, setSelectedBrain] = useState<BrainTemplate | null>(null)
     const [showCreateModal, setShowCreateModal] = useState(false)
     const [isCreating, setIsCreating] = useState(false)
+    const [stats, setStats] = useState({
+        totalOrgs: 0,
+        requestsToday: 0
+    })
 
     // Form state
     const [formData, setFormData] = useState({
@@ -43,6 +47,7 @@ export default function BrainManagementPage() {
     // Load brain templates
     useEffect(() => {
         loadBrains()
+        loadStats()
     }, [])
 
     const loadBrains = async () => {
@@ -56,6 +61,24 @@ export default function BrainManagementPage() {
             console.error('Failed to load brains:', error)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    const loadStats = async () => {
+        try {
+            // Load real stats from API
+            const response = await fetch('/api/superadmin/stats')
+            if (response.ok) {
+                const data = await response.json()
+                setStats({
+                    totalOrgs: data.organizations || 0,
+                    requestsToday: data.requestsToday || 0
+                })
+            }
+        } catch (error) {
+            console.error('Failed to load stats:', error)
+            // Set to 0 if API fails
+            setStats({ totalOrgs: 0, requestsToday: 0 })
         }
     }
 
@@ -194,13 +217,13 @@ export default function BrainManagementPage() {
                 />
                 <StatCard
                     label="Organizations"
-                    value="---"
+                    value={stats.totalOrgs.toString()}
                     icon={Users}
                     color="from-purple-500 to-pink-500"
                 />
                 <StatCard
                     label="Requests Today"
-                    value="---"
+                    value={stats.requestsToday.toLocaleString()}
                     icon={Zap}
                     color="from-orange-500 to-red-500"
                 />
