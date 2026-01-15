@@ -32,10 +32,10 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const { provider, name, api_key, description, org_id, user_id } = body;
 
-        // Validate required fields
-        if (!provider || !name || !api_key || !org_id) {
+        // Validate required fields (org_id optional for platform-level keys)
+        if (!provider || !name || !api_key) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: 'Missing required fields: provider, name, api_key' },
                 { status: 400 }
             );
         }
@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
                 provider,
                 name,
                 api_key,
-                description,
-                org_id,
-                user_id,
+                description: description || null,
+                org_id: org_id || null,
+                user_id: user_id || null,
                 is_active: true,
             })
             .select()
