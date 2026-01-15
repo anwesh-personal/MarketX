@@ -1,25 +1,45 @@
 import { Job } from 'bullmq'
 import { createClient } from '@supabase/supabase-js'
-import OpenAI from 'openai'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY!,
-})
-
 interface SummaryJob {
     conversationId: string
+    orgId: string  // REQUIRED to fetch AI provider
     messageCount?: number
 }
 
+/**
+ * Get AI provider for chat/summarization
+ * Fetches from AI Management, NOT hardcoded
+ */
+async function getChatProvider(orgId: string) {
+    const { data: provider, error } = await supabase
+        .from('ai_providers')
+        .select('*')
+        .eq('org_id', orgId)
+        .eq('provider_type', 'openai')
+        .eq('is_active', true)
+        .single()
+
+    if (error || !provider) {
+        throw new Error('No active AI provider found for chat')
+    }
+
+    return provider
+}
+
 export async function summarizeConversation(job: Job<SummaryJob>) {
-    const { conversationId, messageCount = 50 } = job.data
+    const { conversationId, orgId, messageCount = 50 } = job.data
 
     console.log(`💬 Summarizing conversation ${conversationId}`)
+
+    if (!orgId) {
+        throw new Error('orgId is required to fetch AI provider')
+    }
 
     try {
         // 1. Fetch conversation messages
@@ -46,36 +66,52 @@ export async function summarizeConversation(job: Job<SummaryJob>) {
 
         job.updateProgress(40)
 
-        // 3. Generate summary using GPT
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4-turbo-preview',
-            messages: [
-                {
-                    role: 'system',
-                    content: `Summarize the following conversation concisely. Extract:
+        // 3. Get AI provider from database
+        const provider = await getChatProvider(orgId)
+
+        // 4. Generate summary using org's AI provider
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${provider.api_key}`,  // From database
+            },
+            body: JSON.stringify({
+                model: provider.model || 'gpt-4-turbo-preview',  // From provider config
+                messages: [
+                    {
+                        role: 'system',
+                        content: `Summarize the following conversation concisely. Extract:
 1. Main topics discussed
 2. Key decisions or conclusions
 3. Action items or follow-ups
 4. Important facts or data mentioned
 
 Provide a structured summary in clear paragraphs.`,
-                },
-                {
-                    role: 'user',
-                    content: conversationText,
-                },
-            ],
-            temperature: 0.3,
-            max_tokens: 500,
+                    },
+                    {
+                        role: 'user',
+                        content: conversationText,
+                    },
+                ],
+                temperature: 0.3,
+                max_tokens: 500,
+            }),
         })
+
+        if (!response.ok) {
+            throw new Error(`Chat API failed: ${response.statusText}`)
+        }
+
+        const result = await response.json()
 
         job.updateProgress(70)
 
-        const summary = response.choices[0].message.content || ''
+        const summary = result.choices[0].message.content || ''
 
         console.log(`📝 Generated summary (${summary.length} chars)`)
 
-        // 4. Store summary
+        // 5. Store summary
         const { error: insertError } = await supabase
             .from('conversation_summaries')
             .insert({
@@ -89,7 +125,7 @@ Provide a structured summary in clear paragraphs.`,
             console.warn('Could not insert summary:', insertError)
         }
 
-        // 5. Update conversation metadata
+        // 6. Update conversation metadata
         const { error: updateError } = await supabase
             .from('conversations')
             .update({

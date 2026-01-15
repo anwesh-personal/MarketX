@@ -4,6 +4,7 @@ export async function enqueueKBProcessing(data: {
     kbId: string
     documentId: string
     content: string
+    orgId: string  // REQUIRED - used to fetch AI provider from AI Management
     metadata?: Record<string, any>
 }) {
     const job = await queues.kbProcessing.add('process-document', data, {
@@ -18,6 +19,7 @@ export async function enqueueKBProcessing(data: {
 
 export async function enqueueConversationSummary(data: {
     conversationId: string
+    orgId: string  // REQUIRED - used to fetch AI provider from AI Management
     messageCount?: number
 }) {
     const job = await queues.conversationSummary.add('summarize', data, {

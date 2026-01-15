@@ -12,13 +12,18 @@ interface KBProcessingJob {
     kbId: string
     documentId: string
     content: string
+    orgId: string  // REQUIRED to fetch AI provider
     metadata?: Record<string, any>
 }
 
 export async function processKBDocument(job: Job<KBProcessingJob>) {
-    const { kbId, documentId, content, metadata } = job.data
+    const { kbId, documentId, content, orgId, metadata } = job.data
 
     console.log(`📄 Processing document ${documentId} for KB ${kbId}`)
+
+    if (!orgId) {
+        throw new Error('orgId is required to fetch AI provider')
+    }
 
     await updateProcessingStatus(kbId, documentId, 'processing')
 
@@ -34,15 +39,15 @@ export async function processKBDocument(job: Job<KBProcessingJob>) {
             processedChunks: 0,
         })
 
-        // 2. Generate embeddings for each chunk
+        // 2. Generate embeddings for each chunk using org's AI provider
         job.updateProgress(30)
         const embeddings = []
 
         for (let i = 0; i < chunks.length; i++) {
             const chunk = chunks[i]
 
-            // Generate embedding
-            const embedding = await generateEmbedding(chunk.text)
+            // Generate embedding - uses AI Management, NOT hardcoded
+            const embedding = await generateEmbedding(chunk.text, orgId)
 
             embeddings.push({
                 kb_id: kbId,
