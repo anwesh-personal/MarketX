@@ -1,0 +1,83 @@
+/**
+ * MINIMALIST LIGHT THEME
+ * Clean, spacious, uncluttered design with neutral grays
+ */
+
+[data-theme="minimalist-light"] {
+    /* ===== COLORS ===== */
+    --color-primary: #1f2937;
+    --color-secondary: #6b7280;
+    --color-accent: #3b82f6;
+
+    --color-background: #ffffff;
+    --color-surface: #f9fafb;
+    --color-surface-hover: #f3f4f6;
+
+    --color-text-primary: #111827;
+    --color-text-secondary: #6b7280;
+    --color-text-tertiary: #9ca3af;
+
+    --color-border: #e5e7eb;
+    --color-border-hover: #d1d5db;
+    --color-border-focus: #3b82f6;
+
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    --color-overlay: rgba(0, 0, 0, 0.3);
+    --color-shadow: rgba(0, 0, 0, 0.1);
+
+    /* ===== TYPOGRAPHY ===== */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --font-display: 'Inter', sans-serif;
+
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.25rem;
+
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.75;
+    --line-height-loose: 2;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* ===== SPACING ===== */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2.5rem;
+    --spacing-xl: 4rem;
+    --spacing-2xl: 6rem;
+
+    /* ===== BORDERS & SHADOWS ===== */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-full: 9999px;
+
+    --border-width: 1px;
+    --border-width-thick: 1px;
+
+    --shadow-sm: 0 1px 2px 0 var(--color-shadow);
+    --shadow-md: 0 4px 6px -1px var(--color-shadow);
+    --shadow-lg: 0 10px 15px -3px var(--color-shadow);
+    --shadow-xl: 0 20px 25px -5px var(--color-shadow);
+
+    /* ===== ANIMATIONS ===== */
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
