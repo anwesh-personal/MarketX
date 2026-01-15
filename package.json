@@ -7,6 +7,11 @@
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "dev:backend": "cd apps/backend && npm run dev",
         "dev:frontend": "cd apps/frontend && npm run dev",
+        "workers": "tsx watch apps/workers/src/index.ts",
+        "workers:kb": "tsx watch apps/workers/src/workers/kb-worker.ts",
+        "workers:conversation": "tsx watch apps/workers/src/workers/conversation-worker.ts",
+        "workers:analytics": "tsx watch apps/workers/src/workers/analytics-worker.ts",
+        "dev:all": "concurrently \"npm run dev:frontend\" \"npm run workers\"",
         "build:backend": "cd apps/backend && npm run build",
         "build:frontend": "cd apps/frontend && npm run build",
         "docker:up": "docker-compose up -d",
@@ -20,10 +25,15 @@
     ],
     "author": "Axiom Team",
     "devDependencies": {
-        "concurrently": "^8.2.2"
+        "@types/ioredis": "^4.28.10",
+        "concurrently": "^8.2.2",
+        "tsx": "^4.21.0"
     },
     "dependencies": {
         "@types/react-syntax-highlighter": "^15.5.13",
+        "bullmq": "^5.66.5",
+        "ioredis": "^5.9.2",
+        "openai": "^6.16.0",
         "react-markdown": "^10.1.0",
         "react-syntax-highlighter": "^16.1.0",
         "rehype-raw": "^7.0.0",
