@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { queues } from '../../../../../../../../workers/src/config/queues'
+import { queues } from '@/lib/worker-queues'
 
 export async function POST(
     request: NextRequest,

@@ -86,10 +86,9 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Users', href: '/superadmin/users', icon: Users },
         { name: 'AI Management', href: '/superadmin/ai-management', icon: Bot },
         { name: 'Brain Management', href: '/superadmin/brains', icon: Brain },
-        { name: 'Redis & Workers', href: '/superadmin/redis', icon: Database },
+        { name: 'Background Jobs', href: '/superadmin/redis', icon: Database },
         { name: 'Licenses', href: '/superadmin/licenses', icon: FileText },
         { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3 },
-        { name: 'Workers', href: '/superadmin/workers', icon: Server },
         { name: 'Settings', href: '/superadmin/settings', icon: Settings },
     ];
 

@@ -1,4 +1,4 @@
-import { queues } from '../../../workers/src/config/queues'
+import { queues } from './worker-queues'
 
 export async function enqueueKBProcessing(data: {
     kbId: string

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { queues } from '../../../../../../workers/src/config/queues'
-import { redisConnection } from '../../../../../../workers/src/config/redis'
+import { queues } from '@/lib/worker-queues'
+import { redisConnection } from '@/lib/redis'
 
 export async function GET(request: NextRequest) {
     try {
