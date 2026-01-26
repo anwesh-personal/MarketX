@@ -215,7 +215,7 @@ const { data: workflows, mutate } = useSWR(
 [x] Critical #1 - Wire Execute (DONE - backend endpoint + frontend proxy)
 [x] Critical #2 - Remove console.logs (DONE - V1 deleted entirely)
 [x] Critical #3 - Input validation (DONE - Zod schemas for POST/PATCH)
-[ ] Critical #4 - Error boundaries
+[x] Critical #4 - Error boundaries (DONE - react-error-boundary wrapper)
 [ ] High #5 - Execution logs viewer
 [ ] High #6 - Node config forms
 [x] High #7 - Toast notifications (DONE - replaced all alerts)
@@ -226,7 +226,7 @@ const { data: workflows, mutate } = useSWR(
 [x] Medium #12 - Deprecate V1 (DONE - V1 deleted, 5937 lines removed)
 ```
 
-**Progress: 5/12 completed**
+**Progress: 6/12 completed (ALL CRITICAL ITEMS DONE)**
 
 ---
 

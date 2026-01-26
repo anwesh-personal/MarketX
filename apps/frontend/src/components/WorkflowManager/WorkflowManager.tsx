@@ -139,18 +139,59 @@ interface NodeConfigModalProps {
     onSave: (nodeId: string, newLabel: string, newConfig: Record<string, any>) => void;
 }
 
+// Node types that require AI configuration
+const AI_REQUIRED_NODES = [
+    'generate-email-reply',
+    'generate-email-flow',
+    'generate-website-page',
+    'generate-website-bundle',
+    'generate-social-post',
+    'analyze-intent',
+    'enrich-web-search',
+    'validate-quality',
+    'validate-constitution',
+    'transform-personalize',
+    // Legacy AI nodes
+    'generate-llm'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
-    const [configJson, setConfigJson] = useState(JSON.stringify(node.data.config, null, 2));
+
+    // AI Config state
+    const [aiConfig, setAiConfig] = useState<any[]>(node.data.config?.aiConfig || []);
+    const [systemPrompt, setSystemPrompt] = useState(node.data.config?.systemPrompt || '');
+
+    // Other config (for non-AI fields)
+    const [otherConfig, setOtherConfig] = useState(() => {
+        const { aiConfig: _, systemPrompt: __, ...rest } = node.data.config || {};
+        return rest;
+    });
+    const [otherConfigJson, setOtherConfigJson] = useState(JSON.stringify(otherConfig, null, 2));
     const [jsonError, setJsonError] = useState<string | null>(null);
 
     const v2Def = V2_ALL_NODES.find(n => n.nodeType === node.data.nodeType);
     const Icon = node.data.icon || Workflow;
+    const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
 
     const handleSave = () => {
         try {
-            const parsedConfig = JSON.parse(configJson);
-            onSave(node.id, label, parsedConfig);
+            let finalConfig: Record<string, any>;
+
+            if (requiresAI) {
+                // Parse other config and merge with AI config
+                const parsedOther = JSON.parse(otherConfigJson);
+                finalConfig = {
+                    ...parsedOther,
+                    aiConfig,
+                    systemPrompt
+                };
+            } else {
+                // Non-AI node - just parse the JSON
+                finalConfig = JSON.parse(otherConfigJson);
+            }
+
+            onSave(node.id, label, finalConfig);
         } catch (e) {
             setJsonError('Invalid JSON format');
         }
@@ -158,7 +199,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className="wm-config-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="wm-config-modal wm-config-modal-wide" onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -206,16 +247,34 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
-                    {/* Config JSON */}
+                    {/* AI Config Section - Only for AI nodes */}
+                    {requiresAI && (
+                        <div className="wm-config-ai-section">
+                            <AIConfig
+                                config={aiConfig}
+                                onChange={setAiConfig}
+                                systemPrompt={systemPrompt}
+                                onSystemPromptChange={setSystemPrompt}
+                                systemPromptLabel={
+                                    node.data.nodeType.includes('generate') ? 'Generation Instructions' :
+                                        node.data.nodeType.includes('analyze') ? 'Analysis Instructions' :
+                                            node.data.nodeType.includes('validate') ? 'Validation Criteria' :
+                                                'System Instructions'
+                                }
+                            />
+                        </div>
+                    )}
+
+                    {/* Other Config JSON */}
                     <div className="wm-config-field">
-                        <label>Configuration (JSON)</label>
+                        <label>Additional Configuration (JSON)</label>
                         <textarea
-                            value={configJson}
+                            value={otherConfigJson}
                             onChange={(e) => {
-                                setConfigJson(e.target.value);
+                                setOtherConfigJson(e.target.value);
                                 setJsonError(null);
                             }}
-                            rows={8}
+                            rows={requiresAI ? 4 : 8}
                             spellCheck={false}
                             className={jsonError ? 'error' : ''}
                         />
@@ -236,6 +295,9 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         </div>
     );
 }
+
+// Import AIConfig component
+import { AIConfig } from './AIConfig';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -840,7 +902,7 @@ function WorkflowErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
             <div className="wm-error-content">
                 <AlertCircle className="wm-error-icon" />
                 <h2>Something went wrong</h2>
-                <p className="wm-error-message">{error.message}</p>
+                <p className="wm-error-message">{error instanceof Error ? error.message : String(error)}</p>
                 <button
                     onClick={resetErrorBoundary}
                     className="wm-error-button"

@@ -593,12 +593,16 @@ class WorkflowExecutionService {
         // Route to appropriate handler based on node type
         switch (nodeType) {
             // =========================================================
-            // TRIGGER NODES (V2)
+            // TRIGGER NODES (V2 naming: trigger-*)
             // =========================================================
+            case 'trigger-webhook':
+            case 'trigger-schedule':
+            case 'trigger-manual':
+            case 'trigger-email-inbound':
+            // Legacy triggers
             case 'webhook-trigger':
             case 'schedule-trigger':
             case 'manual-trigger':
-            // Legacy triggers
             case 'email-trigger':
                 return this.executeTriggerNode(node, pipelineData);
 
@@ -623,41 +627,63 @@ class WorkflowExecutionService {
                 return this.executeGeneratorNode(node, pipelineData, executionId);
 
             // =========================================================
-            // PROCESSOR NODES (V2) - Data Transformation
+            // PROCESSOR / ENRICHER NODES (V2 naming: enrich-*, analyze-*)
             // =========================================================
             case 'analyze-intent':
+            case 'enrich-web-search':
+            case 'enrich-company-data':
+            case 'enrich-contact-data':
+            case 'enrich-context':
+            // Legacy processors
             case 'web-search':
             case 'seo-optimize':
-            case 'add-content-locker':
-            // Legacy processors
             case 'generate-llm':
-            case 'validate-constitution':
+                return this.executeProcessNode(node, pipelineData, executionId);
+
+            // =========================================================
+            // TRANSFORM NODES (V2 naming: transform-*)
+            // =========================================================
+            case 'transform-locker':
+            case 'transform-format':
+            case 'transform-personalize':
+            // Legacy transforms
+            case 'add-content-locker':
             case 'content-locker':
             case 'seo-optimizer':
                 return this.executeProcessNode(node, pipelineData, executionId);
 
             // =========================================================
-            // VALIDATOR NODES (V2)
+            // VALIDATOR NODES (V2 naming: validate-*)
             // =========================================================
             case 'validate-quality':
+            case 'validate-constitution':
                 return this.executeValidatorNode(node, pipelineData, executionId);
 
             // =========================================================
-            // CONDITION NODES (V2) - Routing/Branching
+            // CONDITION / UTILITY NODES (V2 naming: condition-*, loop-*, etc.)
             // =========================================================
+            case 'condition-if-else':
+            case 'condition-switch':
+            case 'loop-foreach':
+            case 'merge-combine':
+            case 'delay-wait':
+            case 'human-review':
+            case 'error-handler':
+            case 'split-parallel':
+            // Legacy conditions
             case 'route-by-stage':
             case 'route-by-validation':
             case 'route-by-type':
-            // Legacy conditions
             case 'logic-gate':
             case 'validation-check':
                 return this.executeConditionNode(node, pipelineData);
 
             // =========================================================
-            // OUTPUT NODES (V2)
+            // OUTPUT NODES (V2 naming: output-*)
             // =========================================================
             case 'output-webhook':
             case 'output-store':
+            case 'output-email':
             case 'output-analytics':
             // Legacy outputs
             case 'output-n8n':
