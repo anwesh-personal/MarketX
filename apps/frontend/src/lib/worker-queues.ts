@@ -10,6 +10,11 @@ export enum QueueName {
     LEARNING_LOOP = 'learning-loop',
     DREAM_STATE = 'dream-state',
     FINE_TUNING = 'fine-tuning',
+
+    // Execution (From Backend Consolidation)
+    WORKFLOW_EXECUTION = 'workflow-execution',
+    ENGINE_EXECUTION = 'engine-execution',
+    SCHEDULED_TASK = 'scheduled-task',
 }
 
 // Support REDIS_URL (Railway format) or separate host/port/password
@@ -43,6 +48,9 @@ let _queues: {
     learningLoop: Queue
     dreamState: Queue
     fineTuning: Queue
+    workflowExecution: Queue
+    engineExecution: Queue
+    scheduledTask: Queue
 } | null = null
 
 function getQueues() {
@@ -101,6 +109,37 @@ function getQueues() {
                     attempts: 3,
                 },
             }),
+
+            workflowExecution: new Queue(QueueName.WORKFLOW_EXECUTION, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1, // Critical - user-facing execution
+                    attempts: 3,
+                },
+            }),
+
+            engineExecution: new Queue(QueueName.ENGINE_EXECUTION, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1, // Critical - user-facing execution
+                    attempts: 3,
+                },
+            }),
+
+            scheduledTask: new Queue(QueueName.SCHEDULED_TASK, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 2, // Medium priority - scheduled tasks
+                    attempts: 5,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 60000, // Longer backoff for scheduled tasks
+                    },
+                },
+            }),
         }
     }
     return _queues
@@ -114,13 +153,16 @@ export const queues = new Proxy({} as {
     learningLoop: Queue
     dreamState: Queue
     fineTuning: Queue
+    workflowExecution: Queue
+    engineExecution: Queue
+    scheduledTask: Queue
 }, {
     get(target, prop: string) {
         const actualQueues = getQueues()
         return actualQueues[prop as keyof typeof actualQueues]
     },
     ownKeys() {
-        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning']
+        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning', 'workflowExecution', 'engineExecution', 'scheduledTask']
     },
     getOwnPropertyDescriptor(target, prop) {
         return {
