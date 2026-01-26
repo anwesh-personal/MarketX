@@ -12,4 +12,5 @@ export { TriggerConfig } from './TriggerConfig';
 export { GeneratorConfig } from './GeneratorConfig';
 export { ValidatorConfig } from './ValidatorConfig';
 export { OutputConfig } from './OutputConfig';
+export { EnricherConfig } from './EnricherConfig';
 export * from './v2-node-definitions';
