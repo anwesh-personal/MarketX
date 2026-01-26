@@ -2933,3 +2933,522 @@
         width: 100%;
     }
 }
+
+/* ============================================================================
+   VALIDATOR CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.validator-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.validator-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.validator-config-icon {
+    color: var(--color-primary);
+}
+
+.validator-config-ai-section {
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+}
+
+.validator-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.validator-config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.validator-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.validator-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.validator-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.validator-config-field input[type="text"],
+.validator-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.validator-config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.validator-config-select-wrapper {
+    position: relative;
+}
+
+.validator-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.validator-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.validator-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+/* Row Layout */
+.validator-config-row {
+    display: flex;
+    gap: 12px;
+}
+
+.validator-config-field-half {
+    flex: 1;
+}
+
+/* Inline Fields */
+.validator-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.validator-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.validator-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* Action Grid (for fail actions) */
+.validator-config-action-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.validator-config-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.validator-config-action-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.validator-config-action-btn.active {
+    border-color: var(--color-primary);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.validator-config-action-btn svg {
+    color: var(--color-text-muted);
+}
+
+.validator-config-action-btn.active svg {
+    color: var(--color-primary);
+}
+
+.validator-config-action-btn .action-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+}
+
+.validator-config-action-btn .action-desc {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+}
+
+/* Checks Grid (for quality checks) */
+.validator-config-checks-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.validator-config-check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.validator-config-check-item:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.validator-config-check-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.validator-config-check-item .check-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.validator-config-check-item .check-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.validator-config-check-item .check-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Custom Checks List */
+.validator-config-checks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.validator-config-check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.validator-config-check-row .check-name {
+    flex: 0 0 120px;
+}
+
+.validator-config-check-row .check-type {
+    flex: 0 0 140px;
+}
+
+.validator-config-check-row .check-type select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+.validator-config-check-row .check-value {
+    flex: 1;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+/* Add Button */
+.validator-config-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.validator-config-add-btn:hover {
+    background: var(--color-primary-hover);
+}
+
+/* Remove Button */
+.validator-config-remove-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.validator-config-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+/* Empty State */
+.validator-config-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+}
+
+/* Tag Input */
+.validator-config-tag-input {
+    display: flex;
+    gap: 8px;
+}
+
+.validator-config-tag-input input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+.validator-config-tag-input input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.validator-config-tag-input button {
+    padding: 10px 14px;
+    background: var(--color-primary);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.validator-config-tag-input button:hover {
+    background: var(--color-primary-hover);
+}
+
+/* Tags */
+.validator-config-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.validator-config-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.validator-config-tag.forbidden {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.validator-config-tag.required {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--color-success);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.validator-config-tag button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.validator-config-tag button:hover {
+    opacity: 1;
+}
+
+/* Intents Grid */
+.validator-config-intents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+}
+
+.validator-config-intent-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+}
+
+.validator-config-intent-item:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.validator-config-intent-item.active {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: var(--color-primary);
+}
+
+.validator-config-intent-item input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--color-primary);
+}
+
+/* Checkbox Grid */
+.validator-config-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+}
+
+.validator-config-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.validator-config-checkbox-item:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.validator-config-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+}
+
+/* Validator Section in Modal */
+.wm-config-validator-section {
+    margin: 8px 0 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .validator-config-row {
+        flex-direction: column;
+    }
+
+    .validator-config-action-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .validator-config-intents-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .validator-config-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .validator-config-check-row {
+        flex-wrap: wrap;
+    }
+
+    .validator-config-check-row .check-name,
+    .validator-config-check-row .check-type {
+        flex: 1;
+        width: 100%;
+    }
+}

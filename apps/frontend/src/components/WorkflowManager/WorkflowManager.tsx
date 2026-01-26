@@ -148,12 +148,16 @@ const GENERATOR_NODES = [
     'generate-social-post',
 ];
 
-// Other AI nodes that use AIConfig directly (not generators)
-const AI_REQUIRED_NODES = [
-    'analyze-intent',
-    'enrich-web-search',
+// Validator nodes - use ValidatorConfig (which includes AIConfig)
+const VALIDATOR_NODES = [
     'validate-quality',
     'validate-constitution',
+    'analyze-intent',
+];
+
+// Other AI nodes that use AIConfig directly (not generators or validators)
+const AI_REQUIRED_NODES = [
+    'enrich-web-search',
     'transform-personalize',
     // Legacy AI nodes
     'generate-llm'
@@ -199,6 +203,11 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         return node.data.config || {};
     });
 
+    // Validator Config state
+    const [validatorConfig, setValidatorConfig] = useState(() => {
+        return node.data.config || {};
+    });
+
     // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
@@ -210,6 +219,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const v2Def = V2_ALL_NODES.find(n => n.nodeType === node.data.nodeType);
     const Icon = node.data.icon || Workflow;
     const isGenerator = GENERATOR_NODES.includes(node.data.nodeType);
+    const isValidator = VALIDATOR_NODES.includes(node.data.nodeType);
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
     const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
@@ -224,6 +234,13 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                 finalConfig = {
                     ...parsedAdvanced,
                     ...generatorConfig
+                };
+            } else if (isValidator) {
+                // Validator node - use validator config
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...validatorConfig
                 };
             } else if (requiresAI) {
                 // AI node - merge AI config with other config
@@ -260,7 +277,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className={`wm-config-modal ${(isGenerator || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(isGenerator || isValidator || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -319,7 +336,18 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
-                    {/* AI Config Section - Only for non-generator AI nodes */}
+                    {/* Validator Config Section - Full config for validators */}
+                    {isValidator && (
+                        <div className="wm-config-validator-section">
+                            <ValidatorConfig
+                                nodeType={node.data.nodeType}
+                                config={validatorConfig as any}
+                                onChange={(newConfig) => setValidatorConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
+                    {/* AI Config Section - Only for non-generator, non-validator AI nodes */}
                     {requiresAI && (
                         <div className="wm-config-ai-section">
                             <AIConfig
@@ -360,7 +388,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Advanced JSON Toggle for specialized nodes */}
-                    {(isGenerator || isResolver || isTrigger) && (
+                    {(isGenerator || isValidator || isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -374,16 +402,16 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Other Config JSON - Show for AI nodes, regular nodes, or advanced mode */}
-                    {(!isGenerator && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
+                    {(!isGenerator && !isValidator && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{(isGenerator || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isGenerator || isValidator || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isGenerator || isResolver || isTrigger ? 4 : 8}
+                                rows={requiresAI || isGenerator || isValidator || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -411,6 +439,7 @@ import { AIConfig } from './AIConfig';
 import { ResolverConfig } from './ResolverConfig';
 import { TriggerConfig } from './TriggerConfig';
 import { GeneratorConfig } from './GeneratorConfig';
+import { ValidatorConfig } from './ValidatorConfig';
 
 // ============================================================================
 // MAIN COMPONENT

@@ -10,4 +10,5 @@ export { AIConfig } from './AIConfig';
 export { ResolverConfig } from './ResolverConfig';
 export { TriggerConfig } from './TriggerConfig';
 export { GeneratorConfig } from './GeneratorConfig';
+export { ValidatorConfig } from './ValidatorConfig';
 export * from './v2-node-definitions';
