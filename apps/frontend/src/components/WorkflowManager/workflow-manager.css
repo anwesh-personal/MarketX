@@ -1886,3 +1886,201 @@
         max-width: none;
     }
 }
+
+/* ============================================================================
+   RESOLVER CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.resolver-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.resolver-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.resolver-config-icon {
+    color: var(--color-primary);
+}
+
+.resolver-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.resolver-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.resolver-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.resolver-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.resolver-config-field input[type="text"],
+.resolver-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resolver-config-field input[type="text"]:focus,
+.resolver-config-field input[type="number"]:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.resolver-config-field input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.resolver-config-select-wrapper {
+    position: relative;
+}
+
+.resolver-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.resolver-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.resolver-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+.resolver-config-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+}
+
+.resolver-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.resolver-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.resolver-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+.resolver-config-field-inline .resolver-config-hint {
+    flex-basis: 100%;
+    margin-left: 26px;
+}
+
+.resolver-config-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.resolver-config-info svg {
+    flex-shrink: 0;
+    color: var(--color-primary);
+    margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .resolver-config-section {
+        padding: 12px;
+    }
+}
+
+/* ============================================================================
+   RESOLVER SECTION IN MODAL
+   ============================================================================ */
+
+.wm-config-resolver-section {
+    margin: 8px 0 16px 0;
+    padding: 16px;
+    background: var(--color-background);
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+}
+
+.wm-config-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.wm-config-toggle-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}

@@ -155,6 +155,15 @@ const AI_REQUIRED_NODES = [
     'generate-llm'
 ];
 
+// Node types that are resolvers
+const RESOLVER_NODES = [
+    'resolve-icp',
+    'resolve-offer',
+    'resolve-angle',
+    'resolve-blueprint',
+    'resolve-cta'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
@@ -162,32 +171,46 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [aiConfig, setAiConfig] = useState<any[]>(node.data.config?.aiConfig || []);
     const [systemPrompt, setSystemPrompt] = useState(node.data.config?.systemPrompt || '');
 
-    // Other config (for non-AI fields)
-    const [otherConfig, setOtherConfig] = useState(() => {
+    // Resolver Config state
+    const [resolverConfig, setResolverConfig] = useState(() => {
         const { aiConfig: _, systemPrompt: __, ...rest } = node.data.config || {};
         return rest;
     });
-    const [otherConfigJson, setOtherConfigJson] = useState(JSON.stringify(otherConfig, null, 2));
+
+    // Other config (for non-AI, non-resolver fields) - shown as JSON
+    const [showAdvancedJson, setShowAdvancedJson] = useState(false);
+    const [otherConfigJson, setOtherConfigJson] = useState(() => {
+        const { aiConfig: _, systemPrompt: __, selectionMode: ___, fallbackBehavior: ____, cacheResults: _____, ...rest } = node.data.config || {};
+        return JSON.stringify(rest, null, 2);
+    });
     const [jsonError, setJsonError] = useState<string | null>(null);
 
     const v2Def = V2_ALL_NODES.find(n => n.nodeType === node.data.nodeType);
     const Icon = node.data.icon || Workflow;
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
+    const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
 
     const handleSave = () => {
         try {
             let finalConfig: Record<string, any>;
 
             if (requiresAI) {
-                // Parse other config and merge with AI config
+                // AI node - merge AI config with other config
                 const parsedOther = JSON.parse(otherConfigJson);
                 finalConfig = {
                     ...parsedOther,
                     aiConfig,
                     systemPrompt
                 };
+            } else if (isResolver) {
+                // Resolver node - merge resolver config with advanced JSON
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...resolverConfig
+                };
             } else {
-                // Non-AI node - just parse the JSON
+                // Other nodes - just parse the JSON
                 finalConfig = JSON.parse(otherConfigJson);
             }
 
@@ -199,7 +222,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className="wm-config-modal wm-config-modal-wide" onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(requiresAI || isResolver) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -265,21 +288,48 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
-                    {/* Other Config JSON */}
-                    <div className="wm-config-field">
-                        <label>Additional Configuration (JSON)</label>
-                        <textarea
-                            value={otherConfigJson}
-                            onChange={(e) => {
-                                setOtherConfigJson(e.target.value);
-                                setJsonError(null);
-                            }}
-                            rows={requiresAI ? 4 : 8}
-                            spellCheck={false}
-                            className={jsonError ? 'error' : ''}
-                        />
-                        {jsonError && <span className="wm-config-error">{jsonError}</span>}
-                    </div>
+                    {/* Resolver Config Section - Only for resolver nodes */}
+                    {isResolver && (
+                        <div className="wm-config-resolver-section">
+                            <ResolverConfig
+                                nodeType={node.data.nodeType}
+                                config={resolverConfig as any}
+                                onChange={(newConfig) => setResolverConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Advanced JSON Toggle for resolvers */}
+                    {isResolver && (
+                        <div className="wm-config-field">
+                            <label className="wm-config-toggle-label">
+                                <input
+                                    type="checkbox"
+                                    checked={showAdvancedJson}
+                                    onChange={(e) => setShowAdvancedJson(e.target.checked)}
+                                />
+                                Show Advanced JSON Config
+                            </label>
+                        </div>
+                    )}
+
+                    {/* Other Config JSON - Show for AI nodes (reduced), non-AI nodes, or resolver advanced mode */}
+                    {(!isResolver || showAdvancedJson || requiresAI) && (
+                        <div className="wm-config-field">
+                            <label>{isResolver ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <textarea
+                                value={otherConfigJson}
+                                onChange={(e) => {
+                                    setOtherConfigJson(e.target.value);
+                                    setJsonError(null);
+                                }}
+                                rows={requiresAI || isResolver ? 4 : 8}
+                                spellCheck={false}
+                                className={jsonError ? 'error' : ''}
+                            />
+                            {jsonError && <span className="wm-config-error">{jsonError}</span>}
+                        </div>
+                    )}
                 </div>
 
                 <div className="wm-config-modal-footer">
@@ -296,8 +346,9 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     );
 }
 
-// Import AIConfig component
+// Import AIConfig and ResolverConfig components
 import { AIConfig } from './AIConfig';
+import { ResolverConfig } from './ResolverConfig';
 
 // ============================================================================
 // MAIN COMPONENT
