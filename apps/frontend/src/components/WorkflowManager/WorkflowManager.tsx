@@ -129,6 +129,114 @@ function serializeNodeForDB(node: Node<V2NodeData>): any {
 }
 
 // ============================================================================
+// NODE CONFIGURATION MODAL (Inline V2 Version)
+// ============================================================================
+
+interface NodeConfigModalProps {
+    node: { id: string; data: V2NodeData };
+    onClose: () => void;
+    onSave: (nodeId: string, newLabel: string, newConfig: Record<string, any>) => void;
+}
+
+function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
+    const [label, setLabel] = useState(node.data.label);
+    const [configJson, setConfigJson] = useState(JSON.stringify(node.data.config, null, 2));
+    const [jsonError, setJsonError] = useState<string | null>(null);
+
+    const v2Def = V2_ALL_NODES.find(n => n.nodeType === node.data.nodeType);
+    const Icon = node.data.icon || Workflow;
+
+    const handleSave = () => {
+        try {
+            const parsedConfig = JSON.parse(configJson);
+            onSave(node.id, label, parsedConfig);
+        } catch (e) {
+            setJsonError('Invalid JSON format');
+        }
+    };
+
+    return (
+        <div className="wm-config-modal-backdrop" onClick={onClose}>
+            <div className="wm-config-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="wm-config-modal-header">
+                    <div className="wm-config-modal-title">
+                        <div
+                            className="wm-config-modal-icon"
+                            style={{ background: node.data.color }}
+                        >
+                            <Icon size={20} color="white" />
+                        </div>
+                        <div>
+                            <h3>Configure Node</h3>
+                            <span className="wm-config-modal-type">{v2Def?.name || node.data.nodeType}</span>
+                        </div>
+                    </div>
+                    <button className="wm-config-modal-close" onClick={onClose}>
+                        <X size={20} />
+                    </button>
+                </div>
+
+                <div className="wm-config-modal-body">
+                    {/* Description */}
+                    {v2Def?.description && (
+                        <p className="wm-config-modal-description">{v2Def.description}</p>
+                    )}
+
+                    {/* Label */}
+                    <div className="wm-config-field">
+                        <label>Node Label</label>
+                        <input
+                            type="text"
+                            value={label}
+                            onChange={(e) => setLabel(e.target.value)}
+                            placeholder="Enter node label..."
+                        />
+                    </div>
+
+                    {/* Features */}
+                    {v2Def?.features && v2Def.features.length > 0 && (
+                        <div className="wm-config-features">
+                            <label>Capabilities</label>
+                            <div className="wm-config-features-list">
+                                {v2Def.features.map((f, i) => (
+                                    <span key={i} className="wm-config-feature-tag">{f}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Config JSON */}
+                    <div className="wm-config-field">
+                        <label>Configuration (JSON)</label>
+                        <textarea
+                            value={configJson}
+                            onChange={(e) => {
+                                setConfigJson(e.target.value);
+                                setJsonError(null);
+                            }}
+                            rows={8}
+                            spellCheck={false}
+                            className={jsonError ? 'error' : ''}
+                        />
+                        {jsonError && <span className="wm-config-error">{jsonError}</span>}
+                    </div>
+                </div>
+
+                <div className="wm-config-modal-footer">
+                    <button className="wm-btn wm-btn-secondary" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button className="wm-btn wm-btn-primary" onClick={handleSave}>
+                        <Save size={16} />
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -157,6 +265,12 @@ function WorkflowManagerInner() {
     const [isExecuting, setIsExecuting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
+    // Node Configuration state
+    const [configuringNode, setConfiguringNode] = useState<{
+        id: string;
+        data: V2NodeData;
+    } | null>(null);
+
     // ========================================================================
     // FETCH WORKFLOWS
     // ========================================================================
@@ -184,6 +298,21 @@ function WorkflowManagerInner() {
     useEffect(() => {
         fetchWorkflows();
     }, [fetchWorkflows]);
+
+    // Listen for node configure events from V2WorkflowNode
+    useEffect(() => {
+        const handleConfigureEvent = (e: CustomEvent<{ nodeId: string; nodeData: V2NodeData }>) => {
+            setConfiguringNode({
+                id: e.detail.nodeId,
+                data: e.detail.nodeData,
+            });
+        };
+
+        window.addEventListener('nodeConfigureRequest', handleConfigureEvent as EventListener);
+        return () => {
+            window.removeEventListener('nodeConfigureRequest', handleConfigureEvent as EventListener);
+        };
+    }, []);
 
     // ========================================================================
     // NODE/EDGE HANDLERS
@@ -229,6 +358,25 @@ function WorkflowManagerInner() {
         setEdges((eds) => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
         setHasUnsavedChanges(true);
     }, [setNodes, setEdges]);
+
+    // Save node configuration
+    const handleSaveNodeConfig = useCallback((nodeId: string, newLabel: string, newConfig: Record<string, any>) => {
+        setNodes((nds) => nds.map(n => {
+            if (n.id === nodeId) {
+                return {
+                    ...n,
+                    data: {
+                        ...n.data,
+                        label: newLabel,
+                        config: newConfig,
+                    }
+                };
+            }
+            return n;
+        }));
+        setHasUnsavedChanges(true);
+        setConfiguringNode(null);
+    }, [setNodes]);
 
     // ========================================================================
     // WORKFLOW OPERATIONS
@@ -647,6 +795,15 @@ function WorkflowManagerInner() {
                 onClose={() => setIsAddNodeModalOpen(false)}
                 onAddNode={handleAddNode}
             />
+
+            {/* Node Configuration Modal */}
+            {configuringNode && (
+                <NodeConfigModal
+                    node={configuringNode}
+                    onClose={() => setConfiguringNode(null)}
+                    onSave={handleSaveNodeConfig}
+                />
+            )}
         </div>
     );
 }

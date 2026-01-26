@@ -1367,3 +1367,183 @@
     margin-top: 4px;
     font-size: 12px;
 }
+
+/* ============================================================================
+   NODE CONFIGURATION MODAL
+   ============================================================================ */
+
+.wm-config-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+
+.wm-config-modal {
+    width: 500px;
+    max-width: 90vw;
+    max-height: 80vh;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.wm-config-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.wm-config-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.wm-config-modal-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.wm-config-modal-title h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.wm-config-modal-type {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.wm-config-modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wm-config-modal-close:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.wm-config-modal-body {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.wm-config-modal-description {
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    background: var(--color-glow);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+}
+
+.wm-config-field {
+    margin-bottom: 20px;
+}
+
+.wm-config-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.wm-config-field input,
+.wm-config-field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    transition: border-color 0.15s ease;
+}
+
+.wm-config-field input:focus,
+.wm-config-field textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.wm-config-field textarea {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    resize: vertical;
+}
+
+.wm-config-field textarea.error {
+    border-color: var(--color-error, #EF4444);
+}
+
+.wm-config-error {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--color-error, #EF4444);
+}
+
+.wm-config-features {
+    margin-bottom: 20px;
+}
+
+.wm-config-features label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.wm-config-features-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wm-config-feature-tag {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    border-radius: 6px;
+}
+
+.wm-config-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-background);
+}
