@@ -829,14 +829,43 @@ function WorkflowManagerInner() {
 }
 
 // ============================================================================
-// WRAPPER WITH PROVIDER
+// WRAPPER WITH PROVIDER + ERROR BOUNDARY
 // ============================================================================
+
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+
+function WorkflowErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+    return (
+        <div className="wm-error-fallback">
+            <div className="wm-error-content">
+                <AlertCircle className="wm-error-icon" />
+                <h2>Something went wrong</h2>
+                <p className="wm-error-message">{error.message}</p>
+                <button
+                    onClick={resetErrorBoundary}
+                    className="wm-error-button"
+                >
+                    Try Again
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export function WorkflowManager() {
     return (
-        <ReactFlowProvider>
-            <WorkflowManagerInner />
-        </ReactFlowProvider>
+        <ErrorBoundary
+            FallbackComponent={WorkflowErrorFallback}
+            onReset={() => window.location.reload()}
+            onError={(error: unknown, info: React.ErrorInfo) => {
+                console.error('WorkflowManager Error:', error);
+                console.error('Component Stack:', info.componentStack);
+            }}
+        >
+            <ReactFlowProvider>
+                <WorkflowManagerInner />
+            </ReactFlowProvider>
+        </ErrorBoundary>
     );
 }
 

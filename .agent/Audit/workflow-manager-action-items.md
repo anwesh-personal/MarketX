@@ -209,20 +209,24 @@ const { data: workflows, mutate } = useSWR(
 
 ## COMPLETION TRACKING
 
+**Updated: 2026-01-26**
+
 ```
-[ ] Critical #1 - Wire Execute
-[ ] Critical #2 - Remove console.logs
-[ ] Critical #3 - Input validation
+[x] Critical #1 - Wire Execute (DONE - backend endpoint + frontend proxy)
+[x] Critical #2 - Remove console.logs (DONE - V1 deleted entirely)
+[x] Critical #3 - Input validation (DONE - Zod schemas for POST/PATCH)
 [ ] Critical #4 - Error boundaries
 [ ] High #5 - Execution logs viewer
 [ ] High #6 - Node config forms
-[ ] High #7 - Toast notifications
+[x] High #7 - Toast notifications (DONE - replaced all alerts)
 [ ] High #8 - Workflow validation
 [ ] Medium #9 - SWR caching
 [ ] Medium #10 - Split CSS
 [ ] Medium #11 - Undo/redo
-[ ] Medium #12 - Deprecate V1
+[x] Medium #12 - Deprecate V1 (DONE - V1 deleted, 5937 lines removed)
 ```
+
+**Progress: 5/12 completed**
 
 ---
 
