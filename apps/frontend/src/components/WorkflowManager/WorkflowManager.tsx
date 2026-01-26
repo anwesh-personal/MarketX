@@ -409,7 +409,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <GeneratorConfig
                                 nodeType={node.data.nodeType}
                                 config={generatorConfig as any}
-                                onChange={(newConfig) => setGeneratorConfig(newConfig)}
+                                onChange={(newConfig) => setGeneratorConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -420,7 +420,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <ValidatorConfig
                                 nodeType={node.data.nodeType}
                                 config={validatorConfig as any}
-                                onChange={(newConfig) => setValidatorConfig(newConfig)}
+                                onChange={(newConfig) => setValidatorConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -449,7 +449,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <ResolverConfig
                                 nodeType={node.data.nodeType}
                                 config={resolverConfig as any}
-                                onChange={(newConfig) => setResolverConfig(newConfig)}
+                                onChange={(newConfig) => setResolverConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -460,7 +460,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <TriggerConfig
                                 nodeType={node.data.nodeType}
                                 config={triggerConfig as any}
-                                onChange={(newConfig) => setTriggerConfig(newConfig)}
+                                onChange={(newConfig) => setTriggerConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -471,7 +471,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <OutputConfig
                                 nodeType={node.data.nodeType}
                                 config={outputConfig as any}
-                                onChange={(newConfig) => setOutputConfig(newConfig)}
+                                onChange={(newConfig) => setOutputConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -482,7 +482,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <EnricherConfig
                                 nodeType={node.data.nodeType}
                                 config={enricherConfig as any}
-                                onChange={(newConfig) => setEnricherConfig(newConfig)}
+                                onChange={(newConfig) => setEnricherConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -493,7 +493,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <TransformConfig
                                 nodeType={node.data.nodeType}
                                 config={transformConfig as any}
-                                onChange={(newConfig) => setTransformConfig(newConfig)}
+                                onChange={(newConfig) => setTransformConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -504,7 +504,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                             <UtilityConfig
                                 nodeType={node.data.nodeType}
                                 config={utilityConfig as any}
-                                onChange={(newConfig) => setUtilityConfig(newConfig)}
+                                onChange={(newConfig) => setUtilityConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}

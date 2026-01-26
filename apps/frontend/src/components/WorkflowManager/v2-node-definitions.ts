@@ -376,40 +376,40 @@ const enricherNodes: V2NodeDefinition[] = [
         defaultConfig: { maxResults: 5, summarize: true }
     },
     {
-        id: 'nd-enrich-company',
-        nodeType: 'enrich-company-data',
+        id: 'nd-enrich-linkedin',
+        nodeType: 'enrich-linkedin',
         category: 'enricher',
-        name: 'Company Data',
-        description: 'Enrich with company information',
-        icon: Building,
-        color: '#EC4899',
-        features: ['Firmographics', 'Tech Stack', 'Funding Info'],
-        capabilities: ['Fetches company data', 'Adds firmographics', 'Tech detection'],
-        defaultConfig: { includetech: true }
-    },
-    {
-        id: 'nd-enrich-contact',
-        nodeType: 'enrich-contact-data',
-        category: 'enricher',
-        name: 'Contact Data',
-        description: 'Enrich with contact information',
+        name: 'LinkedIn Enrichment',
+        description: 'Enrich with LinkedIn profile and company data',
         icon: Users,
         color: '#EC4899',
-        features: ['Email Verification', 'Social Profiles', 'Job History'],
-        capabilities: ['Verifies email', 'Finds social', 'Gets job info'],
-        defaultConfig: { verifyEmail: true }
+        features: ['Profile Data', 'Company Info', 'Job History'],
+        capabilities: ['Fetches LinkedIn profiles', 'Gets company data', 'Extracts experience'],
+        defaultConfig: { enrichProfile: true, enrichCompany: false }
     },
     {
-        id: 'nd-enrich-context',
-        nodeType: 'enrich-context',
+        id: 'nd-enrich-crm',
+        nodeType: 'enrich-crm',
         category: 'enricher',
-        name: 'Context Enricher',
-        description: 'Add additional context from various sources',
+        name: 'CRM Lookup',
+        description: 'Enrich with data from your CRM',
         icon: Database,
         color: '#EC4899',
-        features: ['Multi-Source', 'Context Building', 'Data Fusion'],
-        capabilities: ['Pulls from sources', 'Builds context', 'Merges data'],
-        defaultConfig: { sources: ['kb', 'previous_outputs'] }
+        features: ['HubSpot', 'Salesforce', 'Pipedrive'],
+        capabilities: ['Looks up contacts', 'Fetches deal data', 'Gets company info'],
+        defaultConfig: { crmProvider: 'hubspot', crmObject: 'contact' }
+    },
+    {
+        id: 'nd-enrich-email',
+        nodeType: 'enrich-email-validation',
+        category: 'enricher',
+        name: 'Email Validation',
+        description: 'Validate and enrich email addresses',
+        icon: Mail,
+        color: '#EC4899',
+        features: ['MX Check', 'Deliverability', 'Disposable Detection'],
+        capabilities: ['Validates emails', 'Checks deliverability', 'Detects disposable'],
+        defaultConfig: { checkMxRecords: true, rejectInvalid: true }
     }
 ];
 
