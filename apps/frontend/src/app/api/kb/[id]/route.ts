@@ -84,16 +84,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
         };
 
         if (name !== undefined) updates.name = name;
-        if (description !== undefined) updates.description = description;
         if (kbData !== undefined) {
             updates.data = kbData;
 
-            // Update kb_version in the data itself
+            // Increment version
             if (incrementVersion) {
-                const parts = (current.version || '1.0.0').split('.').map(Number);
-                parts[2] = (parts[2] || 0) + 1;
-                updates.version = parts.join('.');
-                updates.data.kb_version = updates.version;
+                updates.version = (current.version || 0) + 1;
             }
         }
 

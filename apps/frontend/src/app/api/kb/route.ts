@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
         let query = supabase
             .from('knowledge_bases')
-            .select('id, name, description, version, stage, is_active, created_at, updated_at')
+            .select('id, name, version, data, created_at, updated_at')
             .order('created_at', { ascending: false });
 
         if (orgId) {
@@ -50,13 +50,49 @@ export async function POST(request: Request) {
     try {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         const body = await request.json();
-        const { name, description, orgId, data: kbData } = body;
+        const { name, orgId, data: kbData } = body;
 
         if (!name) {
             return NextResponse.json(
                 { success: false, error: 'Name is required' },
                 { status: 400 }
             );
+        }
+
+        // Get or create a default org for demo/development
+        let finalOrgId = orgId;
+        if (!finalOrgId) {
+            // Check if default org exists
+            const { data: defaultOrg } = await supabase
+                .from('organizations')
+                .select('id')
+                .eq('slug', 'default')
+                .single();
+
+            if (defaultOrg) {
+                finalOrgId = defaultOrg.id;
+            } else {
+                // Create default org for demo
+                const { data: newOrg, error: orgError } = await supabase
+                    .from('organizations')
+                    .insert({
+                        name: 'Default Organization',
+                        slug: 'default',
+                        plan: 'pro',
+                        status: 'active',
+                    })
+                    .select('id')
+                    .single();
+
+                if (orgError) {
+                    console.error('Failed to create default org:', orgError);
+                    return NextResponse.json(
+                        { success: false, error: 'No organization found. Please log in first.' },
+                        { status: 400 }
+                    );
+                }
+                finalOrgId = newOrg.id;
+            }
         }
 
         // Validate KB data if provided
@@ -211,12 +247,9 @@ export async function POST(request: Request) {
             .insert({
                 id: uuidv4(),
                 name,
-                description: description || null,
-                org_id: orgId || null,
+                org_id: finalOrgId,
                 data: kbData || defaultKB,
-                version: '1.0.0',
-                stage: 'pre-embeddings',
-                is_active: true,
+                version: 1,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
             })

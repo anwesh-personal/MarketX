@@ -23,10 +23,8 @@ import toast from 'react-hot-toast';
 interface KBListItem {
     id: string;
     name: string;
-    description: string | null;
-    version: string;
-    stage: string;
-    is_active: boolean;
+    version: number;
+    data?: KnowledgeBase;
     created_at: string;
     updated_at: string;
 }
@@ -79,7 +77,7 @@ export default function KBManagerPage() {
             const res = await fetch('/api/kb' + (orgId ? `?orgId=${orgId}` : ''));
             const data = await res.json();
             if (data.success) {
-                setKbs((data.kbs || []).filter((kb: KBListItem) => kb.is_active !== false));
+                setKbs(data.kbs || []);
             } else {
                 toast.error(data.error || 'Failed to fetch KBs');
             }
@@ -278,8 +276,8 @@ export default function KBManagerPage() {
                                     key={kb.id}
                                     onClick={() => selectKb(kb)}
                                     className={`w-full text-left p-3 rounded-lg transition ${selectedKb?.id === kb.id
-                                            ? 'bg-primary/10 border border-primary/30'
-                                            : 'hover:bg-surfaceHover border border-transparent'
+                                        ? 'bg-primary/10 border border-primary/30'
+                                        : 'hover:bg-surfaceHover border border-transparent'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between">
@@ -299,8 +297,8 @@ export default function KBManagerPage() {
                                                     {new Date(kb.updated_at).toLocaleDateString()}
                                                 </span>
                                                 <span className={`px-1.5 py-0.5 rounded ${kb.stage === 'embeddings-enabled'
-                                                        ? 'bg-success/20 text-success'
-                                                        : 'bg-warning/20 text-warning'
+                                                    ? 'bg-success/20 text-success'
+                                                    : 'bg-warning/20 text-warning'
                                                     }`}>
                                                     v{kb.version || '1.0.0'}
                                                 </span>
