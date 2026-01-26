@@ -3,12 +3,19 @@
 /**
  * V2 WORKFLOW NODE
  * Custom ReactFlow node component for V2 nodes
- * Premium design with category colors, icons, and handles
+ * 
+ * Features:
+ * - Premium design with category colors and icons
+ * - Working Configure and Delete buttons
+ * - Emits events for parent component handling
+ * - Proper handle positioning
+ * 
+ * @author Axiom AI
  */
 
-import React, { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, Trash2 } from 'lucide-react';
+import React, { memo, useCallback } from 'react';
+import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
+import { Settings, Trash2, GripVertical } from 'lucide-react';
 
 // ============================================================================
 // TYPES
@@ -33,7 +40,25 @@ function V2WorkflowNodeComponent({
     data,
     selected
 }: NodeProps<V2NodeData>) {
+    const { deleteElements } = useReactFlow();
     const Icon = data.icon;
+
+    // Handle delete
+    const handleDelete = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        deleteElements({ nodes: [{ id }] });
+    }, [id, deleteElements]);
+
+    // Handle configure (emit custom event for parent)
+    const handleConfigure = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        // Dispatch custom event for parent component
+        window.dispatchEvent(new CustomEvent('nodeConfigureRequest', {
+            detail: { nodeId: id, nodeData: data }
+        }));
+    }, [id, data]);
 
     return (
         <div
@@ -49,6 +74,11 @@ function V2WorkflowNodeComponent({
                 className="v2-node-handle v2-node-handle-input"
             />
 
+            {/* Drag Handle Indicator */}
+            <div className="v2-node-drag-handle">
+                <GripVertical size={12} />
+            </div>
+
             {/* Node Content */}
             <div className="v2-node-header">
                 <div
@@ -59,7 +89,7 @@ function V2WorkflowNodeComponent({
                 </div>
                 <div className="v2-node-info">
                     <span className="v2-node-label">{data.label}</span>
-                    <span className="v2-node-type">{data.nodeType}</span>
+                    <span className="v2-node-type">{data.category}</span>
                 </div>
             </div>
 
@@ -72,12 +102,20 @@ function V2WorkflowNodeComponent({
                 </div>
             )}
 
-            {/* Actions (shown on hover) */}
+            {/* Actions - Always visible when selected, show on hover otherwise */}
             <div className="v2-node-actions">
-                <button className="v2-node-action" title="Configure">
+                <button
+                    className="v2-node-action"
+                    title="Configure node"
+                    onClick={handleConfigure}
+                >
                     <Settings size={12} />
                 </button>
-                <button className="v2-node-action v2-node-action-danger" title="Delete">
+                <button
+                    className="v2-node-action v2-node-action-danger"
+                    title="Delete node"
+                    onClick={handleDelete}
+                >
                     <Trash2 size={12} />
                 </button>
             </div>

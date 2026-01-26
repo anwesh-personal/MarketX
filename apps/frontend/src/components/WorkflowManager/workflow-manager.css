@@ -715,6 +715,7 @@
     line-height: 1.4;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1221,4 +1222,148 @@
 
 .v2-node-handle-output {
     right: -6px !important;
+}
+
+/* ============================================================================
+   ADDITIONAL V2 STYLES
+   ============================================================================ */
+
+/* Flow Name Input */
+.wm-flow-name-input {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-text-primary);
+    min-width: 180px;
+    transition: all 0.2s ease;
+}
+
+.wm-flow-name-input:hover {
+    background: var(--color-surface-hover);
+}
+
+.wm-flow-name-input:focus {
+    outline: none;
+    background: var(--color-background);
+    border-color: var(--color-accent);
+}
+
+/* Unsaved Changes Indicator */
+.wm-unsaved-indicator {
+    width: 8px;
+    height: 8px;
+    background: var(--color-warning, #F59E0B);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Button Badge */
+.wm-btn-badge {
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+.wm-btn-secondary .wm-btn-badge {
+    background: var(--color-surface);
+}
+
+/* Disabled Button State */
+.wm-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Flow Item Actions */
+.wm-flow-item-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.wm-flow-item:hover .wm-flow-item-actions {
+    opacity: 1;
+}
+
+.wm-flow-item-action {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wm-flow-item-action:hover {
+    background: var(--color-error, #EF4444);
+    color: white;
+}
+
+/* V2 Node Drag Handle */
+.v2-node-drag-handle {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    color: var(--color-text-tertiary);
+}
+
+.v2-workflow-node:hover .v2-node-drag-handle {
+    opacity: 0.5;
+}
+
+/* Loading Animation */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Line Clamp Fix - Use standard property alongside vendor prefix */
+.add-node-card-description {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Flows Panel Empty State Enhancement */
+.wm-flows-empty p {
+    margin-top: 4px;
+    font-size: 12px;
 }
