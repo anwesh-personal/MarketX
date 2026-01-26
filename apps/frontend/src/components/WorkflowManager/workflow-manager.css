@@ -2508,3 +2508,428 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================================
+   GENERATOR CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.generator-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.generator-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.generator-config-icon {
+    color: var(--color-success);
+}
+
+.generator-config-ai-section {
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+}
+
+.generator-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.generator-config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.generator-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.generator-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.generator-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.generator-config-field input[type="text"],
+.generator-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.generator-config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.generator-config-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.generator-config-field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.generator-config-select-wrapper {
+    position: relative;
+}
+
+.generator-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.generator-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.generator-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+/* Row Layout */
+.generator-config-row {
+    display: flex;
+    gap: 12px;
+}
+
+.generator-config-field-half {
+    flex: 1;
+}
+
+.generator-config-field-third {
+    flex: 1;
+}
+
+/* Inline Fields */
+.generator-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.generator-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.generator-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* Style Grid (for reply styles) */
+.generator-config-style-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.generator-config-style-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.generator-config-style-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.generator-config-style-btn.active {
+    border-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.generator-config-style-btn .style-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.generator-config-style-btn .style-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Timeline (for email flow) */
+.generator-config-timeline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 16px;
+    background: var(--color-surface);
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 48px;
+    position: relative;
+}
+
+.timeline-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 100%;
+    width: 100%;
+    height: 2px;
+    background: var(--color-border);
+}
+
+.timeline-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-success);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+.timeline-label {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+}
+
+/* Checkbox Grid */
+.generator-config-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.generator-config-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.generator-config-checkbox-item:hover {
+    background: var(--color-background);
+    border-color: var(--color-primary);
+}
+
+.generator-config-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+}
+
+/* Add Button */
+.generator-config-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-success);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.generator-config-add-btn:hover {
+    background: var(--color-success-hover, #059669);
+}
+
+/* Empty State */
+.generator-config-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+}
+
+/* Pages List (for bundle) */
+.generator-config-pages-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.generator-config-page-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.generator-config-page-row .page-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.generator-config-page-row .page-title {
+    flex: 1;
+    min-width: 100px;
+}
+
+.generator-config-page-row .page-type {
+    flex: 0 0 140px;
+}
+
+.generator-config-page-row .page-type select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+.generator-config-page-row .page-slug {
+    flex: 0 0 100px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+.generator-config-remove-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.generator-config-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+/* Generator Section in Modal */
+.wm-config-generator-section {
+    margin: 8px 0 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .generator-config-row {
+        flex-direction: column;
+    }
+
+    .generator-config-style-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .generator-config-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .generator-config-page-row {
+        flex-wrap: wrap;
+    }
+
+    .generator-config-page-row .page-type,
+    .generator-config-page-row .page-slug {
+        flex: 1;
+        width: 100%;
+    }
+}
