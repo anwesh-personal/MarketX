@@ -11,4 +11,5 @@ export { ResolverConfig } from './ResolverConfig';
 export { TriggerConfig } from './TriggerConfig';
 export { GeneratorConfig } from './GeneratorConfig';
 export { ValidatorConfig } from './ValidatorConfig';
+export { OutputConfig } from './OutputConfig';
 export * from './v2-node-definitions';

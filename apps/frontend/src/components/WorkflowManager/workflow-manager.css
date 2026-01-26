@@ -3452,3 +3452,470 @@
         width: 100%;
     }
 }
+
+/* ============================================================================
+   OUTPUT CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.output-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.output-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.output-config-icon {
+    color: var(--color-warning);
+}
+
+.output-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.output-config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.output-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.output-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.output-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.output-config-field input[type="text"],
+.output-config-field input[type="email"],
+.output-config-field input[type="password"],
+.output-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.output-config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.output-config-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.output-config-field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.output-config-code {
+    font-family: 'SF Mono', Monaco, 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.output-config-select-wrapper {
+    position: relative;
+}
+
+.output-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.output-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.output-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+/* Row Layout */
+.output-config-row {
+    display: flex;
+    gap: 12px;
+}
+
+.output-config-field-half {
+    flex: 1;
+}
+
+.output-config-field-third {
+    flex: 1;
+}
+
+/* Inline Fields */
+.output-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.output-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.output-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* Mode Grid (for store modes) */
+.output-config-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.output-config-mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.output-config-mode-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.output-config-mode-btn.active {
+    border-color: var(--color-warning);
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.output-config-mode-btn .mode-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+}
+
+.output-config-mode-btn .mode-desc {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+/* Provider Grid (for email providers) */
+.output-config-provider-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.output-config-provider-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.output-config-provider-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.output-config-provider-btn.active {
+    border-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.output-config-provider-btn .provider-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.output-config-provider-btn .provider-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Lists */
+.output-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Header Row */
+.output-config-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.output-config-header-row .header-key {
+    flex: 0 0 150px;
+}
+
+.output-config-header-row .header-value {
+    flex: 1;
+}
+
+/* Mapping Row */
+.output-config-mapping-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.output-config-mapping-row .mapping-source {
+    flex: 1;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+.output-config-mapping-row .mapping-arrow {
+    color: var(--color-text-muted);
+    font-weight: bold;
+}
+
+.output-config-mapping-row .mapping-target {
+    flex: 0 0 120px;
+}
+
+.output-config-mapping-row .mapping-transform {
+    flex: 0 0 140px;
+}
+
+.output-config-mapping-row .mapping-transform select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+/* Property Row */
+.output-config-property-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.output-config-property-row .property-name {
+    flex: 0 0 140px;
+}
+
+.output-config-property-row .property-type {
+    flex: 0 0 100px;
+}
+
+.output-config-property-row .property-type select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+.output-config-property-row .property-value {
+    flex: 1;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.8rem;
+}
+
+/* Add Button */
+.output-config-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-warning);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.output-config-add-btn:hover {
+    background: #d97706;
+}
+
+/* Remove Button */
+.output-config-remove-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.output-config-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+/* Empty State */
+.output-config-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+}
+
+/* Hint */
+.output-config-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+.output-config-hint code {
+    background: var(--color-surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.7rem;
+}
+
+/* Output Section in Modal */
+.wm-config-output-section {
+    margin: 8px 0 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .output-config-row {
+        flex-direction: column;
+    }
+
+    .output-config-mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .output-config-provider-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .output-config-header-row {
+        flex-wrap: wrap;
+    }
+
+    .output-config-header-row .header-key,
+    .output-config-header-row .header-value {
+        flex: 1;
+        width: 100%;
+    }
+
+    .output-config-mapping-row {
+        flex-wrap: wrap;
+    }
+
+    .output-config-mapping-row .mapping-source,
+    .output-config-mapping-row .mapping-target,
+    .output-config-mapping-row .mapping-transform {
+        flex: 1;
+        width: 100%;
+    }
+
+    .output-config-mapping-row .mapping-arrow {
+        display: none;
+    }
+
+    .output-config-property-row {
+        flex-wrap: wrap;
+    }
+
+    .output-config-property-row .property-name,
+    .output-config-property-row .property-type,
+    .output-config-property-row .property-value {
+        flex: 1;
+        width: 100%;
+    }
+}

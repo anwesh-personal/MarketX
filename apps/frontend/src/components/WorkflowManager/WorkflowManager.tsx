@@ -180,6 +180,14 @@ const TRIGGER_NODES = [
     'trigger-email-inbound'
 ];
 
+// Output nodes - use OutputConfig
+const OUTPUT_NODES = [
+    'output-webhook',
+    'output-store',
+    'output-email',
+    'output-analytics'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
@@ -208,6 +216,11 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         return node.data.config || {};
     });
 
+    // Output Config state
+    const [outputConfig, setOutputConfig] = useState(() => {
+        return node.data.config || {};
+    });
+
     // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
@@ -220,6 +233,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const Icon = node.data.icon || Workflow;
     const isGenerator = GENERATOR_NODES.includes(node.data.nodeType);
     const isValidator = VALIDATOR_NODES.includes(node.data.nodeType);
+    const isOutput = OUTPUT_NODES.includes(node.data.nodeType);
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
     const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
@@ -264,6 +278,13 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     ...parsedAdvanced,
                     ...triggerConfig
                 };
+            } else if (isOutput) {
+                // Output node - use output config
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...outputConfig
+                };
             } else {
                 // Other nodes - just parse the JSON
                 finalConfig = JSON.parse(otherConfigJson);
@@ -277,7 +298,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className={`wm-config-modal ${(isGenerator || isValidator || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -387,8 +408,19 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
+                    {/* Output Config Section - Only for output nodes */}
+                    {isOutput && (
+                        <div className="wm-config-output-section">
+                            <OutputConfig
+                                nodeType={node.data.nodeType}
+                                config={outputConfig as any}
+                                onChange={(newConfig) => setOutputConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
                     {/* Advanced JSON Toggle for specialized nodes */}
-                    {(isGenerator || isValidator || isResolver || isTrigger) && (
+                    {(isGenerator || isValidator || isOutput || isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -402,16 +434,16 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Other Config JSON - Show for AI nodes, regular nodes, or advanced mode */}
-                    {(!isGenerator && !isValidator && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
+                    {(!isGenerator && !isValidator && !isOutput && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{(isGenerator || isValidator || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isGenerator || isValidator || isOutput || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isGenerator || isValidator || isResolver || isTrigger ? 4 : 8}
+                                rows={requiresAI || isGenerator || isValidator || isOutput || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -440,6 +472,7 @@ import { ResolverConfig } from './ResolverConfig';
 import { TriggerConfig } from './TriggerConfig';
 import { GeneratorConfig } from './GeneratorConfig';
 import { ValidatorConfig } from './ValidatorConfig';
+import { OutputConfig } from './OutputConfig';
 
 // ============================================================================
 // MAIN COMPONENT
