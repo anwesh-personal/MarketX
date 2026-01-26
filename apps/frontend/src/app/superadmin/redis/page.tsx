@@ -591,7 +591,7 @@ function QueueCard({ queue, onAction, onRetryJob, onViewDetails, isLoading }: Qu
             {/* Progress Bar */}
             {totalActive > 0 && (
                 <div className="px-4 pb-2">
-                    <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-neutral-700 overflow-hidden flex">
+                    <div className="h-1.5 rounded-full bg-surface-hover overflow-hidden flex">
                         <div
                             className="bg-primary-500 transition-all"
                             style={{ width: `${(queue.waiting / totalActive) * 100}%` }}
