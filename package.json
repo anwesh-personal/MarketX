@@ -25,6 +25,8 @@
     ],
     "author": "Axiom Team",
     "devDependencies": {
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
         "@types/ioredis": "^4.28.10",
         "concurrently": "^8.2.2",
         "tsx": "^4.21.0"
@@ -33,6 +35,8 @@
         "@supabase/supabase-js": "^2.47.14",
         "@types/react-syntax-highlighter": "^15.5.13",
         "bullmq": "^5.66.5",
+        "cors": "^2.8.6",
+        "express": "^5.2.1",
         "framer-motion": "^12.26.2",
         "ioredis": "^5.9.2",
         "openai": "^6.16.0",

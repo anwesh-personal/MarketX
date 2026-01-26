@@ -12,11 +12,14 @@ export enum QueueName {
     FINE_TUNING = 'fine-tuning',
 }
 
-const connectionOptions = {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD || undefined,
-}
+// Support REDIS_URL (Railway format) or separate host/port/password
+const connectionOptions = process.env.REDIS_URL
+    ? { url: process.env.REDIS_URL }
+    : {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+    }
 
 const defaultOptions: QueueOptions = {
     connection: connectionOptions,

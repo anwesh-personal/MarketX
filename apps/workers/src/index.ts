@@ -4,6 +4,11 @@ import analyticsWorker from './workers/analytics-worker'
 import dreamStateWorker from './workers/dream-state-worker'
 import fineTuningWorker from './workers/fine-tuning-worker'
 import learningLoopWorker from './workers/learning-loop-worker'
+import { startApiServer } from './api/server'
+
+// Start the API server for queue management
+const API_PORT = parseInt(process.env.API_PORT || '3100')
+startApiServer(API_PORT)
 
 console.log('═══════════════════════════════════════════════════════════')
 console.log('               AXIOM WORKER SYSTEM                          ')
@@ -18,6 +23,10 @@ console.log('🧠 Brain Workers:')
 console.log('   - Dream State (2 concurrent) - Memory consolidation, cleanup')
 console.log('   - Fine-Tuning (1 concurrent) - Training pipeline')
 console.log('   - Learning Loop (1 concurrent) - Daily optimization')
+console.log('')
+console.log('🌐 Management API:')
+console.log(`   - Running on port ${API_PORT}`)
+console.log('   - Endpoints: /api/health, /api/stats, /api/action')
 console.log('')
 console.log('═══════════════════════════════════════════════════════════')
 console.log('No internal scheduler. Jobs triggered by:')
@@ -50,3 +59,4 @@ process.on('SIGINT', () => shutdown('SIGINT'))
 
 // Keep process alive
 setInterval(() => { }, 1000)
+

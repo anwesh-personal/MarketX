@@ -1,5 +1,12 @@
+/**
+ * Worker API Proxy - Job Retry
+ * 
+ * Proxies job retry requests to the Worker API.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
-import { queues } from '@/lib/worker-queues'
+
+const WORKER_API_URL = process.env.WORKER_API_URL || 'http://localhost:3100'
 
 export async function POST(
     request: NextRequest,
@@ -7,28 +14,38 @@ export async function POST(
 ) {
     try {
         const { jobId } = params
-        const { queueName } = await request.json()
+        const body = await request.json()
+        const { queueName } = body
 
-        if (!queueName || !queues[queueName as keyof typeof queues]) {
-            return NextResponse.json({ error: 'Invalid queue name' }, { status: 400 })
+        if (!queueName) {
+            return NextResponse.json(
+                { error: 'Queue name is required' },
+                { status: 400 }
+            )
         }
 
-        const queue = queues[queueName as keyof typeof queues]
-        const job = await queue.getJob(jobId)
-
-        if (!job) {
-            return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-        }
-
-        // Retry the job
-        await job.retry()
-
-        return NextResponse.json({
-            success: true,
-            message: `Job ${jobId} queued for retry`
+        const response = await fetch(`${WORKER_API_URL}/api/jobs/${jobId}/retry`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queueName }),
+            signal: AbortSignal.timeout(10000),
         })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            return NextResponse.json(
+                { error: data.error || 'Retry failed' },
+                { status: response.status }
+            )
+        }
+
+        return NextResponse.json(data)
     } catch (error: any) {
-        console.error('Job retry failed:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('[Job Retry] Failed:', error.message)
+        return NextResponse.json(
+            { error: error.message || 'Worker API not reachable' },
+            { status: 500 }
+        )
     }
 }

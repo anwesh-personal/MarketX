@@ -1,42 +1,47 @@
+/**
+ * Worker API Proxy - Queue Actions
+ * 
+ * Proxies queue actions (pause, resume, clean, etc.) to the Worker API.
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
-import { queues } from '@/lib/worker-queues'
+
+const WORKER_API_URL = process.env.WORKER_API_URL || 'http://localhost:3100'
 
 export async function POST(request: NextRequest) {
     try {
-        const { queueName, action } = await request.json()
+        const body = await request.json()
+        const { queueName, action } = body
 
-        if (!queueName || !queues[queueName as keyof typeof queues]) {
-            return NextResponse.json({ error: 'Invalid queue name' }, { status: 400 })
+        if (!queueName || !action) {
+            return NextResponse.json(
+                { error: 'Queue name and action are required' },
+                { status: 400 }
+            )
         }
 
-        const queue = queues[queueName as keyof typeof queues]
+        const response = await fetch(`${WORKER_API_URL}/api/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ queueName, action }),
+            signal: AbortSignal.timeout(10000),
+        })
 
-        switch (action) {
-            case 'pause':
-                await queue.pause()
-                return NextResponse.json({ success: true, message: `Queue ${queueName} paused` })
+        const data = await response.json()
 
-            case 'resume':
-                await queue.resume()
-                return NextResponse.json({ success: true, message: `Queue ${queueName} resumed` })
-
-            case 'clean-completed':
-                await queue.clean(0, 100, 'completed')
-                return NextResponse.json({ success: true, message: 'Completed jobs cleaned' })
-
-            case 'clean-failed':
-                await queue.clean(0, 100, 'failed')
-                return NextResponse.json({ success: true, message: 'Failed jobs cleaned' })
-
-            case 'obliterate':
-                await queue.obliterate()
-                return NextResponse.json({ success: true, message: `Queue ${queueName} cleared completely` })
-
-            default:
-                return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+        if (!response.ok) {
+            return NextResponse.json(
+                { error: data.error || 'Action failed' },
+                { status: response.status }
+            )
         }
+
+        return NextResponse.json(data)
     } catch (error: any) {
-        console.error('Queue action failed:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('[Queue Action] Failed:', error.message)
+        return NextResponse.json(
+            { error: error.message || 'Worker API not reachable' },
+            { status: 500 }
+        )
     }
 }
