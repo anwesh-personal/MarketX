@@ -19,7 +19,6 @@ import {
     Brain,
     Database,
     ChevronRight,
-    GitBranch,
     Cpu,
     Workflow,
 } from 'lucide-react';
@@ -116,7 +115,6 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow },
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2 },
         { name: 'Users', href: '/superadmin/users', icon: Users },
-        { name: 'Workflow Templates', href: '/superadmin/workflows', icon: GitBranch },
         { name: 'Engine Instances', href: '/superadmin/engines', icon: Cpu },
         { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot },
         { name: 'AI Management', href: '/superadmin/ai-management', icon: Settings },
