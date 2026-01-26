@@ -30,11 +30,13 @@
         "tsx": "^4.21.0"
     },
     "dependencies": {
+        "@supabase/supabase-js": "^2.47.14",
         "@types/react-syntax-highlighter": "^15.5.13",
         "bullmq": "^5.66.5",
         "framer-motion": "^12.26.2",
         "ioredis": "^5.9.2",
         "openai": "^6.16.0",
+        "pg": "^8.13.1",
         "react-markdown": "^10.1.0",
         "react-syntax-highlighter": "^16.1.0",
         "rehype-raw": "^7.0.0",
