@@ -30,6 +30,10 @@
 | **Workflow Execution Service** | ✅ 100% | 910 lines | Execute, state, handlers |
 | **Worker Management API** | ✅ 100% | 363 lines | REST API for queue management |
 | **Redis Management UI** | ✅ 100% | 835 lines | Full queue controls, theme-aware |
+| **KB Schema (12 sections)** | ✅ 100% | 383 lines | Full Tommy spec compliance |
+| **KB Manager UI** | ✅ 100% | 433 lines | Create, edit, import/export, markdown |
+| **KB Resolution Service** | ✅ 100% | 600 lines | ICP, Offer, Angle, Blueprint, CTA |
+| **Content Generator Service** | ✅ 100% | 950 lines | Website, Email, Social content |
 
 ### 🟡 IN PROGRESS / PARTIAL
 
@@ -38,7 +42,6 @@
 | **Execution Progress UI** | 🟡 30% | Need WebSocket/SSE | Backend executes, no live feedback |
 | **Variable Picker** | 🟡 0% | Phase 4 item | Manual `{{node.field}}` typing |
 | **Workers Deployment** | 🟡 Built | Need Railway deploy | Workers + API ready, need cloud deploy |
-| **KB Libraries** | 🟡 30% | Need schema work | Brand, ICP, Offer partial; others missing |
 | **Learning Loop** | 🟡 10% | Need policies | Skeleton exists, needs full implementation |
 | **Constitution Validation** | 🟡 Skeleton | Need integration | Tables exist, not wired |
 
