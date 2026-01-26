@@ -2,31 +2,26 @@
  * WORKFLOW EXECUTE API
  * POST /api/superadmin/workflows/[id]/execute
  * 
- * Executes a workflow template with optional input data.
- * Currently returns mock execution result - will connect to backend execution service.
+ * Proxies execution request to the backend engine execution service.
+ * The backend handles:
+ * - Topological node sorting
+ * - Node-by-node execution with AI calls
+ * - Token tracking and cost calculation
+ * - Progress callbacks and checkpointing
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
 
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-interface ExecuteRequest {
-    input?: Record<string, any>;
-    dryRun?: boolean;
-}
+// Backend API URL - configurable via environment
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 // ============================================================================
-// POST - Execute Workflow
+// POST - Execute Workflow via Backend
 // ============================================================================
 
 export async function POST(
@@ -53,109 +48,79 @@ export async function POST(
         }
 
         // Parse request body
-        let body: ExecuteRequest = {};
+        let body: { input?: Record<string, any>; dryRun?: boolean } = {};
         try {
             body = await request.json();
         } catch {
             // Empty body is acceptable
         }
 
-        // Fetch the workflow template
-        const { data: workflow, error: fetchError } = await supabase
-            .from('workflow_templates')
-            .select('*')
-            .eq('id', workflowId)
-            .single();
+        // Call backend execution service
+        const backendResponse = await fetch(`${BACKEND_URL}/api/engines/workflows/${workflowId}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                input: body.input || {},
+                triggeredBy: admin.email,
+                userId: admin.id,
+            }),
+        });
 
-        if (fetchError || !workflow) {
+        // Handle backend errors
+        if (!backendResponse.ok) {
+            const errorData = await backendResponse.json().catch(() => ({}));
+
+            // Map backend status codes
+            if (backendResponse.status === 404) {
+                return NextResponse.json(
+                    { error: 'Workflow not found', message: errorData.error },
+                    { status: 404 }
+                );
+            }
+
+            if (backendResponse.status === 400) {
+                return NextResponse.json(
+                    { error: 'Invalid workflow', message: errorData.error },
+                    { status: 400 }
+                );
+            }
+
             return NextResponse.json(
-                { error: 'Workflow not found', message: fetchError?.message },
-                { status: 404 }
+                { error: 'Execution failed', message: errorData.error || 'Backend error' },
+                { status: backendResponse.status }
             );
         }
 
-        // Check if workflow is active
-        if (workflow.status !== 'active') {
-            return NextResponse.json(
-                { error: 'Workflow is not active', status: workflow.status },
-                { status: 400 }
-            );
-        }
-
-        // Generate execution ID
-        const executionId = `exec-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-        // If dry run, just validate and return
-        if (body.dryRun) {
-            return NextResponse.json({
-                success: true,
-                dryRun: true,
-                executionId,
-                workflow: {
-                    id: workflow.id,
-                    name: workflow.name,
-                    nodeCount: workflow.nodes?.length || 0,
-                },
-                message: 'Dry run successful. Workflow is valid and ready for execution.',
-            });
-        }
-
-        // Log the execution start
-        const { error: logError } = await supabase
-            .from('engine_run_logs')
-            .insert({
-                engine_instance_id: null, // No specific engine instance for template execution
-                execution_id: executionId,
-                status: 'pending',
-                trigger_type: 'manual',
-                trigger_metadata: {
-                    workflowId,
-                    workflowName: workflow.name,
-                    input: body.input || {},
-                    triggeredBy: admin.email,
-                },
-            });
-
-        if (logError) {
-            console.error('Failed to log execution:', logError);
-            // Continue anyway - logging failure shouldn't block execution
-        }
-
-        // TODO: Connect to actual backend execution service
-        // For now, return a mock successful response indicating execution has started
-
-        // In a real implementation, this would:
-        // 1. Parse workflow nodes and edges
-        // 2. Topologically sort nodes
-        // 3. Execute each node in order
-        // 4. Pass outputs between nodes
-        // 5. Handle conditions and loops
-        // 6. Store results
+        // Return backend response directly
+        const result = await backendResponse.json();
 
         return NextResponse.json({
-            success: true,
-            executionId,
-            workflow: {
-                id: workflow.id,
-                name: workflow.name,
-                nodeCount: workflow.nodes?.length || 0,
-                edgeCount: workflow.edges?.length || 0,
-            },
-            status: 'started',
-            message: 'Workflow execution initiated. Check execution logs for progress.',
-            // Mock execution preview
-            executionPlan: {
-                totalNodes: workflow.nodes?.length || 0,
-                estimatedDurationMs: (workflow.nodes?.length || 1) * 2000, // ~2sec per node estimate
-                nodes: (workflow.nodes || []).slice(0, 5).map((n: any) => ({
-                    id: n.id,
-                    type: n.data?.nodeType || n.type,
-                    label: n.data?.label || 'Unknown',
-                })),
-            },
+            success: result.success,
+            executionId: result.executionId,
+            workflow: result.workflow,
+            status: result.success ? 'completed' : 'failed',
+            durationMs: result.durationMs,
+            nodeOutputs: result.nodeOutputs,
+            lastNodeOutput: result.lastNodeOutput,
+            tokenUsage: result.tokenUsage,
+            error: result.error,
         });
 
     } catch (error: any) {
+        // Check if backend is unreachable
+        if (error.cause?.code === 'ECONNREFUSED') {
+            return NextResponse.json(
+                {
+                    error: 'Backend unavailable',
+                    message: 'The execution backend is not running. Start the backend server on port 8080.',
+                    hint: 'Run: npm run dev:backend'
+                },
+                { status: 503 }
+            );
+        }
+
         console.error('Unexpected error in POST /api/superadmin/workflows/[id]/execute:', error);
         return NextResponse.json(
             { error: 'Internal server error', message: error.message },

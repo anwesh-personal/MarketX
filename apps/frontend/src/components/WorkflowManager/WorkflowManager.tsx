@@ -44,6 +44,7 @@ import { AddNodeModal } from './AddNodeModal';
 import { V2NodeDefinition, V2_ALL_NODES, V2_CATEGORY_META } from './v2-node-definitions';
 import { V2WorkflowNode } from './V2WorkflowNode';
 import { superadminFetch } from '@/lib/superadmin-auth';
+import toast from 'react-hot-toast';
 
 // ============================================================================
 // TYPES
@@ -459,7 +460,7 @@ function WorkflowManagerInner() {
 
         } catch (error: any) {
             console.error('Save error:', error);
-            alert('Failed to save workflow: ' + error.message);
+            toast.error('Failed to save workflow: ' + error.message);
         } finally {
             setIsSaving(false);
         }
@@ -469,31 +470,50 @@ function WorkflowManagerInner() {
     const handleExecuteFlow = useCallback(async () => {
         if (!currentFlowId || isExecuting) return;
 
+        // Require saved workflow before execution
+        if (hasUnsavedChanges) {
+            toast.error('Please save your workflow before executing.');
+            return;
+        }
+
         setIsExecuting(true);
+        const loadingToast = toast.loading('Executing workflow...');
 
         try {
-            // TODO: Connect to actual execution API when ready
-            // For now, show that execution is initiated
             const response = await superadminFetch(`/api/superadmin/workflows/${currentFlowId}/execute`, {
                 method: 'POST',
                 body: JSON.stringify({ input: {} }),
             });
 
-            if (response.ok) {
-                alert('Workflow execution started!');
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                toast.success(
+                    `Workflow executed successfully!\n` +
+                    `Duration: ${(result.durationMs / 1000).toFixed(2)}s` +
+                    (result.tokenUsage?.totalTokens ? ` | Tokens: ${result.tokenUsage.totalTokens}` : ''),
+                    { id: loadingToast, duration: 5000 }
+                );
+            } else if (response.status === 503) {
+                // Backend not running
+                toast.error(
+                    'Backend server not running. Start it with: npm run dev:backend',
+                    { id: loadingToast, duration: 8000 }
+                );
             } else if (response.status === 404) {
-                alert('Execution API not yet implemented. Workflow saved successfully.');
+                toast.error('Workflow not found.', { id: loadingToast });
+            } else if (response.status === 400) {
+                toast.error(result.message || 'Invalid workflow configuration.', { id: loadingToast });
             } else {
-                throw new Error('Execution failed');
+                toast.error(result.error || 'Execution failed.', { id: loadingToast });
             }
         } catch (error: any) {
             console.error('Execution error:', error);
-            // Show info message since execution API may not exist yet
-            alert('Execution API endpoint not available. Your workflow is saved and ready.');
+            toast.error('Failed to execute workflow: ' + error.message, { id: loadingToast });
         } finally {
             setIsExecuting(false);
         }
-    }, [currentFlowId, isExecuting]);
+    }, [currentFlowId, isExecuting, hasUnsavedChanges]);
 
     // Delete workflow
     const handleDeleteWorkflow = useCallback(async (workflowId: string) => {

@@ -376,4 +376,132 @@ router.get('/active', async (req: Request, res: Response) => {
     }
 });
 
+// ============================================================================
+// WORKFLOW TEMPLATE EXECUTION
+// ============================================================================
+
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
+
+/**
+ * POST /api/engines/workflows/:id/execute
+ * Execute a workflow template directly
+ */
+router.post('/workflows/:id/execute', optionalApiKeyMiddleware, async (req: Request, res: Response) => {
+    const workflowId = req.params.id;
+    const executionId = `exec-${uuidv4()}`;
+    const startTime = Date.now();
+
+    try {
+        // Fetch workflow template from Supabase
+        const { data: workflow, error: fetchError } = await supabase
+            .from('workflow_templates')
+            .select('*')
+            .eq('id', workflowId)
+            .single();
+
+        if (fetchError || !workflow) {
+            return res.status(404).json({ error: 'Workflow not found' });
+        }
+
+        if (workflow.status !== 'active' && workflow.status !== 'draft') {
+            return res.status(400).json({ error: 'Workflow is disabled' });
+        }
+
+        const nodes = workflow.nodes || [];
+        const edges = workflow.edges || [];
+
+        if (nodes.length === 0) {
+            return res.status(400).json({ error: 'Workflow has no nodes' });
+        }
+
+        // Parse input from request
+        const input = req.body.input || {};
+
+        // Create execution context
+        const executionContext = {
+            executionId,
+            userId: (req as any).apiKeyUserId || 'system',
+            tier: 'enterprise' as const,
+            orgId: (req as any).apiKeyOrgId || undefined,
+        };
+
+        // Log execution start
+        await supabase.from('engine_run_logs').insert({
+            execution_id: executionId,
+            status: 'running',
+            trigger_type: 'api',
+            trigger_metadata: {
+                workflowId,
+                workflowName: workflow.name,
+                input,
+                triggeredAt: new Date().toISOString(),
+            },
+        });
+
+        // Execute workflow using the service
+        const result = await workflowExecutionService.executeWorkflow(
+            nodes,
+            edges,
+            input,
+            executionId,
+            null, // No progress callback for HTTP requests
+            executionContext,
+            {}
+        );
+
+        const durationMs = Date.now() - startTime;
+
+        // Update log with result
+        await supabase
+            .from('engine_run_logs')
+            .update({
+                status: result.success ? 'completed' : 'failed',
+                node_outputs: result.nodeOutputs,
+                token_usage: result.tokenUsage,
+                error: result.error || null,
+                completed_at: new Date().toISOString(),
+            })
+            .eq('execution_id', executionId);
+
+        res.json({
+            success: result.success,
+            executionId,
+            workflow: {
+                id: workflow.id,
+                name: workflow.name,
+            },
+            durationMs,
+            nodeOutputs: result.nodeOutputs,
+            lastNodeOutput: result.lastNodeOutput,
+            tokenUsage: result.tokenUsage,
+            error: result.error,
+        });
+
+    } catch (error: any) {
+        console.error('Error executing workflow:', error);
+
+        // Log failure
+        await supabase
+            .from('engine_run_logs')
+            .update({
+                status: 'failed',
+                error: error.message,
+                completed_at: new Date().toISOString(),
+            })
+            .eq('execution_id', executionId);
+
+        res.status(500).json({
+            success: false,
+            executionId,
+            error: error.message
+        });
+    }
+});
+
 export default router;

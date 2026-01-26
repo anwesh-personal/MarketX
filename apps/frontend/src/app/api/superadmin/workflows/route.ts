@@ -10,12 +10,50 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { z } from 'zod';
 
 // Initialize Supabase client with service role for admin operations
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// ============================================================================
+// INPUT VALIDATION SCHEMAS
+// ============================================================================
+
+const NodeSchema = z.object({
+    id: z.string().min(1),
+    type: z.string().optional(),
+    position: z.object({
+        x: z.number(),
+        y: z.number(),
+    }),
+    data: z.record(z.any()).optional(),
+}).passthrough();
+
+const EdgeSchema = z.object({
+    id: z.string().min(1),
+    source: z.string().min(1),
+    target: z.string().min(1),
+}).passthrough();
+
+const WorkflowCreateSchema = z.object({
+    name: z.string().min(1, 'Name is required').max(200, 'Name too long'),
+    description: z.string().max(2000).optional().nullable(),
+    status: z.enum(['draft', 'active', 'disabled']).optional().default('draft'),
+    nodes: z.array(NodeSchema).optional().default([]),
+    edges: z.array(EdgeSchema).optional().default([]),
+});
+
+const WorkflowUpdateSchema = z.object({
+    id: z.string().uuid('Invalid workflow ID'),
+    name: z.string().min(1).max(200).optional(),
+    description: z.string().max(2000).optional().nullable(),
+    status: z.enum(['draft', 'active', 'disabled']).optional(),
+    nodes: z.array(NodeSchema).optional(),
+    edges: z.array(EdgeSchema).optional(),
+});
 
 // ============================================================================
 // GET - List all workflow templates
@@ -93,21 +131,28 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
 
-        // Validate required field - only name is required
-        if (!body.name) {
+        // Validate input with Zod schema
+        const validationResult = WorkflowCreateSchema.safeParse(body);
+        if (!validationResult.success) {
             return NextResponse.json(
-                { error: 'Validation error', message: 'Name is required' },
+                {
+                    error: 'Validation error',
+                    message: validationResult.error.errors[0]?.message || 'Invalid input',
+                    details: validationResult.error.errors
+                },
                 { status: 400 }
             );
         }
 
-        // Prepare template data - only use columns that exist in DB
+        const validated = validationResult.data;
+
+        // Prepare template data
         const templateData = {
-            name: body.name,
-            description: body.description || null,
-            status: body.status || 'draft',
-            nodes: body.nodes || [],
-            edges: body.edges || [],
+            name: validated.name,
+            description: validated.description || null,
+            status: validated.status,
+            nodes: validated.nodes,
+            edges: validated.edges,
             created_by: admin.id,
         };
 
@@ -156,23 +201,28 @@ export async function PATCH(request: NextRequest) {
 
         const body = await request.json();
 
-        // Validate template ID
-        if (!body.id) {
+        // Validate input with Zod schema
+        const validationResult = WorkflowUpdateSchema.safeParse(body);
+        if (!validationResult.success) {
             return NextResponse.json(
-                { error: 'Validation error', message: 'Template ID is required' },
+                {
+                    error: 'Validation error',
+                    message: validationResult.error.errors[0]?.message || 'Invalid input',
+                    details: validationResult.error.errors
+                },
                 { status: 400 }
             );
         }
 
-        // Prepare update data - only include valid columns
-        const updateData: Record<string, any> = {};
-        const allowedFields = ['name', 'description', 'status', 'nodes', 'edges'];
+        const validated = validationResult.data;
 
-        for (const field of allowedFields) {
-            if (body[field] !== undefined) {
-                updateData[field] = body[field];
-            }
-        }
+        // Build update data from validated fields
+        const updateData: Record<string, any> = {};
+        if (validated.name !== undefined) updateData.name = validated.name;
+        if (validated.description !== undefined) updateData.description = validated.description;
+        if (validated.status !== undefined) updateData.status = validated.status;
+        if (validated.nodes !== undefined) updateData.nodes = validated.nodes;
+        if (validated.edges !== undefined) updateData.edges = validated.edges;
 
         if (Object.keys(updateData).length === 0) {
             return NextResponse.json(
@@ -184,7 +234,7 @@ export async function PATCH(request: NextRequest) {
         const { data, error } = await supabase
             .from('workflow_templates')
             .update(updateData)
-            .eq('id', body.id)
+            .eq('id', validated.id)
             .select()
             .single();
 
