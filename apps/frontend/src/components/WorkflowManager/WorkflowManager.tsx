@@ -164,6 +164,14 @@ const RESOLVER_NODES = [
     'resolve-cta'
 ];
 
+// Node types that are triggers
+const TRIGGER_NODES = [
+    'trigger-webhook',
+    'trigger-schedule',
+    'trigger-manual',
+    'trigger-email-inbound'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
@@ -177,7 +185,12 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         return rest;
     });
 
-    // Other config (for non-AI, non-resolver fields) - shown as JSON
+    // Trigger Config state
+    const [triggerConfig, setTriggerConfig] = useState(() => {
+        return node.data.config || {};
+    });
+
+    // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
         const { aiConfig: _, systemPrompt: __, selectionMode: ___, fallbackBehavior: ____, cacheResults: _____, ...rest } = node.data.config || {};
@@ -189,6 +202,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const Icon = node.data.icon || Workflow;
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
+    const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
 
     const handleSave = () => {
         try {
@@ -208,6 +222,13 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                 finalConfig = {
                     ...parsedAdvanced,
                     ...resolverConfig
+                };
+            } else if (isTrigger) {
+                // Trigger node - use trigger config with advanced JSON
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...triggerConfig
                 };
             } else {
                 // Other nodes - just parse the JSON
@@ -299,8 +320,19 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
-                    {/* Advanced JSON Toggle for resolvers */}
-                    {isResolver && (
+                    {/* Trigger Config Section - Only for trigger nodes */}
+                    {isTrigger && (
+                        <div className="wm-config-trigger-section">
+                            <TriggerConfig
+                                nodeType={node.data.nodeType}
+                                config={triggerConfig as any}
+                                onChange={(newConfig) => setTriggerConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Advanced JSON Toggle for resolvers and triggers */}
+                    {(isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -313,17 +345,17 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
-                    {/* Other Config JSON - Show for AI nodes (reduced), non-AI nodes, or resolver advanced mode */}
-                    {(!isResolver || showAdvancedJson || requiresAI) && (
+                    {/* Other Config JSON - Show for AI nodes (reduced), regular nodes, or advanced mode */}
+                    {(!isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{isResolver ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isResolver ? 4 : 8}
+                                rows={requiresAI || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -346,9 +378,10 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     );
 }
 
-// Import AIConfig and ResolverConfig components
+// Import AIConfig, ResolverConfig, and TriggerConfig components
 import { AIConfig } from './AIConfig';
 import { ResolverConfig } from './ResolverConfig';
+import { TriggerConfig } from './TriggerConfig';
 
 // ============================================================================
 // MAIN COMPONENT

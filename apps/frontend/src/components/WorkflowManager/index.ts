@@ -8,4 +8,5 @@ export { MyFlowsSidebar } from './MyFlowsSidebar';
 export { V2WorkflowNode } from './V2WorkflowNode';
 export { AIConfig } from './AIConfig';
 export { ResolverConfig } from './ResolverConfig';
+export { TriggerConfig } from './TriggerConfig';
 export * from './v2-node-definitions';
