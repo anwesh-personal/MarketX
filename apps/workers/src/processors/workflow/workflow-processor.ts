@@ -15,6 +15,7 @@
 import { Job } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { aiService, AICallResult } from '../../utils/ai-service';
 
 // ============================================================================
 // TYPES
@@ -200,22 +201,79 @@ async function executeNode(
 
             case 'ai_generation':
             case 'llm':
-            case 'ai':
-                // TODO: Integrate with AI service
-                // For now, placeholder that acknowledges the node
+            case 'ai': {
+                // Build prompt from node config
+                const config = node.data?.config || {};
+                const promptTemplate = config.prompt || config.promptTemplate || '';
+                const systemPrompt = config.systemPrompt || '';
+                const provider = config.provider || 'openai';
+                const model = config.model;
+                const temperature = config.temperature;
+                const maxTokens = config.maxTokens;
+
+                // Resolve variables in prompt template
+                let resolvedPrompt = promptTemplate;
+
+                // Replace {{input}} with user input
+                if (pipelineData.userInput) {
+                    for (const [key, value] of Object.entries(pipelineData.userInput)) {
+                        const placeholder = new RegExp(`\\{\\{\\s*input\\.${key}\\s*\\}\\}`, 'g');
+                        resolvedPrompt = resolvedPrompt.replace(placeholder, String(value));
+                    }
+                    resolvedPrompt = resolvedPrompt.replace(/\{\{\s*input\s*\}\}/g, JSON.stringify(pipelineData.userInput));
+                }
+
+                // Replace {{previousOutput}} or {{nodeOutputs}}
+                if (Object.keys(pipelineData.nodeOutputs).length > 0) {
+                    const lastOutput = Object.values(pipelineData.nodeOutputs).pop();
+                    resolvedPrompt = resolvedPrompt.replace(
+                        /\{\{\s*previousOutput\s*\}\}/g,
+                        JSON.stringify(lastOutput?.content)
+                    );
+                }
+
+                // Replace {{kb}} with knowledge base data
+                if (pipelineData.kb) {
+                    resolvedPrompt = resolvedPrompt.replace(
+                        /\{\{\s*kb\s*\}\}/g,
+                        JSON.stringify(pipelineData.kb)
+                    );
+                }
+
+                if (!resolvedPrompt.trim()) {
+                    throw new Error(`AI node "${nodeName}" has no prompt configured`);
+                }
+
+                console.log(`    📝 Prompt: ${resolvedPrompt.substring(0, 100)}...`);
+
+                // Call AI service
+                const aiResult: AICallResult = await aiService.call(resolvedPrompt, {
+                    provider,
+                    model,
+                    temperature,
+                    maxTokens,
+                    systemPrompt: systemPrompt || undefined,
+                    tier: job.data.tier,
+                });
+
                 content = {
-                    placeholder: true,
-                    message: 'AI generation node - integrate with aiService',
-                    config: node.data?.config,
+                    text: aiResult.content,
+                    generated: true,
+                    provider: aiResult.provider,
+                    model: aiResult.model,
                 };
+
                 aiMetadata = {
-                    tokens: 0,
-                    cost: 0,
-                    provider: 'pending',
-                    model: 'pending',
-                    durationMs: Date.now() - startTime,
+                    tokens: aiResult.tokens.total,
+                    cost: aiResult.cost,
+                    provider: aiResult.provider,
+                    model: aiResult.model,
+                    durationMs: aiResult.durationMs,
                 };
+
+                console.log(`    ✓ AI generated ${aiResult.tokens.total} tokens`);
                 break;
+            }
 
             case 'output':
             case 'end':
