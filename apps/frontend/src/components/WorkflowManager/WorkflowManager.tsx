@@ -47,30 +47,17 @@ import { superadminFetch } from '@/lib/superadmin-auth';
 import toast from 'react-hot-toast';
 
 // ============================================================================
-// TYPES
+// TYPES - Import from shared types file
 // ============================================================================
 
-interface V2NodeData {
-    label: string;
-    nodeType: string;
-    category: string;
-    icon: React.ComponentType<any>;
-    color: string;
-    config: Record<string, any>;
-    features: string[];
-}
-
-interface WorkflowTemplate {
-    id: string;
-    name: string;
-    description?: string;
-    status: 'draft' | 'active' | 'disabled';
-    nodes: any[];
-    edges: any[];
-    node_count?: number;
-    created_at: string;
-    updated_at: string;
-}
+import type {
+    V2NodeData,
+    WorkflowTemplate,
+    SerializedNode,
+    SerializedEdge,
+    NodeConfigModalProps,
+    AIConfigEntry
+} from './types';
 
 // ============================================================================
 // NODE TYPES REGISTRY
@@ -85,8 +72,8 @@ const nodeTypes: NodeTypes = {
 // Maps stored nodeType strings to V2NodeDefinition with icons
 // ============================================================================
 
-function mapNodeFromDB(dbNode: any): Node<V2NodeData> {
-    const nodeType = dbNode.data?.nodeType || dbNode.nodeType || 'unknown';
+function mapNodeFromDB(dbNode: SerializedNode, onConfigure?: (nodeId: string, nodeData: V2NodeData) => void): Node<V2NodeData> {
+    const nodeType = dbNode.data?.nodeType || 'unknown';
 
     // Find matching V2 node definition
     const v2Def = V2_ALL_NODES.find(n => n.nodeType === nodeType);
@@ -105,14 +92,15 @@ function mapNodeFromDB(dbNode: any): Node<V2NodeData> {
             nodeType: nodeType,
             category: dbNode.data?.category || v2Def?.category || 'process',
             icon: v2Def?.icon || Workflow, // Map to actual icon component
-            color: dbNode.data?.color || v2Def?.color || categoryMeta?.color || '#8B5CF6',
+            color: v2Def?.color || categoryMeta?.color || '#8B5CF6',
             config: dbNode.data?.config || v2Def?.defaultConfig || {},
             features: dbNode.data?.features || v2Def?.features || [],
+            onConfigure, // Pass callback for configuration
         },
     };
 }
 
-function serializeNodeForDB(node: Node<V2NodeData>): any {
+function serializeNodeForDB(node: Node<V2NodeData>): SerializedNode {
     return {
         id: node.id,
         type: 'v2Node',
@@ -121,10 +109,9 @@ function serializeNodeForDB(node: Node<V2NodeData>): any {
             label: node.data.label,
             nodeType: node.data.nodeType,
             category: node.data.category,
-            color: node.data.color,
             config: node.data.config,
             features: node.data.features,
-            // Note: icon is NOT serialized - it's a React component
+            // Note: icon and onConfigure are NOT serialized
         },
     };
 }
@@ -132,12 +119,6 @@ function serializeNodeForDB(node: Node<V2NodeData>): any {
 // ============================================================================
 // NODE CONFIGURATION MODAL (Inline V2 Version)
 // ============================================================================
-
-interface NodeConfigModalProps {
-    node: { id: string; data: V2NodeData };
-    onClose: () => void;
-    onSave: (nodeId: string, newLabel: string, newConfig: Record<string, any>) => void;
-}
 
 // Generator nodes - use GeneratorConfig (which includes AIConfig)
 const GENERATOR_NODES = [
@@ -218,55 +199,65 @@ const UTILITY_NODES = [
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
-    // AI Config state
-    const [aiConfig, setAiConfig] = useState<any[]>(node.data.config?.aiConfig || []);
-    const [systemPrompt, setSystemPrompt] = useState(node.data.config?.systemPrompt || '');
+    // AI Config state - use AIConfigEntry[] type from types.ts
+    const [aiConfig, setAiConfig] = useState<AIConfigEntry[]>(
+        (node.data.config?.aiConfig as AIConfigEntry[]) || []
+    );
+    const [systemPrompt, setSystemPrompt] = useState<string>(
+        (node.data.config?.systemPrompt as string) || ''
+    );
+
+    // Type-safe config state for each category
+    // Using Record<string, unknown> for flexibility while maintaining type safety
+    type ConfigState = Record<string, unknown>;
 
     // Resolver Config state
-    const [resolverConfig, setResolverConfig] = useState(() => {
-        const { aiConfig: _, systemPrompt: __, ...rest } = node.data.config || {};
+    const [resolverConfig, setResolverConfig] = useState<ConfigState>(() => {
+        const config = node.data.config || {};
+        const { aiConfig: _, systemPrompt: __, ...rest } = config as Record<string, unknown>;
         return rest;
     });
 
     // Trigger Config state
-    const [triggerConfig, setTriggerConfig] = useState(() => {
-        return node.data.config || {};
+    const [triggerConfig, setTriggerConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Generator Config state
-    const [generatorConfig, setGeneratorConfig] = useState(() => {
-        return node.data.config || {};
+    const [generatorConfig, setGeneratorConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Validator Config state
-    const [validatorConfig, setValidatorConfig] = useState(() => {
-        return node.data.config || {};
+    const [validatorConfig, setValidatorConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Output Config state
-    const [outputConfig, setOutputConfig] = useState(() => {
-        return node.data.config || {};
+    const [outputConfig, setOutputConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Enricher Config state
-    const [enricherConfig, setEnricherConfig] = useState(() => {
-        return node.data.config || {};
+    const [enricherConfig, setEnricherConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Transform Config state
-    const [transformConfig, setTransformConfig] = useState(() => {
-        return node.data.config || {};
+    const [transformConfig, setTransformConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Utility Config state
-    const [utilityConfig, setUtilityConfig] = useState(() => {
-        return node.data.config || {};
+    const [utilityConfig, setUtilityConfig] = useState<ConfigState>(() => {
+        return (node.data.config || {}) as ConfigState;
     });
 
     // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
-        const { aiConfig: _, systemPrompt: __, selectionMode: ___, fallbackBehavior: ____, cacheResults: _____, ...rest } = node.data.config || {};
+        const config = node.data.config || {};
+        const { aiConfig: _, systemPrompt: __, selectionMode: ___, fallbackBehavior: ____, cacheResults: _____, ...rest } = config as Record<string, unknown>;
         return JSON.stringify(rest, null, 2);
     });
     const [jsonError, setJsonError] = useState<string | null>(null);
@@ -626,9 +617,9 @@ function WorkflowManagerInner() {
             }
             const result = await response.json();
             setWorkflows(result.data || []);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error fetching workflows:', error);
-            setWorkflowError(error.message);
+            setWorkflowError(error instanceof Error ? error.message : 'Unknown error');
         } finally {
             setIsLoadingWorkflows(false);
         }
@@ -639,7 +630,15 @@ function WorkflowManagerInner() {
         fetchWorkflows();
     }, [fetchWorkflows]);
 
-    // Listen for node configure events from V2WorkflowNode
+    // Callback for node configuration (passed to nodes via data)
+    const handleNodeConfigureRequest = useCallback((nodeId: string, nodeData: V2NodeData) => {
+        setConfiguringNode({
+            id: nodeId,
+            data: nodeData,
+        });
+    }, []);
+
+    // Legacy: Listen for node configure events from V2WorkflowNode (backwards compatibility)
     useEffect(() => {
         const handleConfigureEvent = (e: CustomEvent<{ nodeId: string; nodeData: V2NodeData }>) => {
             setConfiguringNode({
@@ -685,12 +684,13 @@ function WorkflowManagerInner() {
                 color: nodeDef.color,
                 config: nodeDef.defaultConfig,
                 features: nodeDef.features,
+                onConfigure: handleNodeConfigureRequest, // Pass callback
             },
         };
 
         setNodes((nds) => [...nds, newNode]);
         setHasUnsavedChanges(true);
-    }, [setNodes]);
+    }, [setNodes, handleNodeConfigureRequest]);
 
     // Delete node
     const handleDeleteNode = useCallback((nodeId: string) => {
@@ -700,7 +700,7 @@ function WorkflowManagerInner() {
     }, [setNodes, setEdges]);
 
     // Save node configuration
-    const handleSaveNodeConfig = useCallback((nodeId: string, newLabel: string, newConfig: Record<string, any>) => {
+    const handleSaveNodeConfig = useCallback((nodeId: string, newLabel: string, newConfig: Record<string, unknown>) => {
         setNodes((nds) => nds.map(n => {
             if (n.id === nodeId) {
                 return {
@@ -724,8 +724,8 @@ function WorkflowManagerInner() {
 
     // Load workflow
     const handleLoadWorkflow = useCallback((workflow: WorkflowTemplate) => {
-        const loadedNodes = (workflow.nodes || []).map(mapNodeFromDB);
-        const loadedEdges = (workflow.edges || []).map((edge: any) => ({
+        const loadedNodes = (workflow.nodes || []).map(node => mapNodeFromDB(node, handleNodeConfigureRequest));
+        const loadedEdges = (workflow.edges || []).map((edge: SerializedEdge) => ({
             ...edge,
             type: edge.type || 'smoothstep',
             animated: edge.animated !== false,
@@ -738,7 +738,7 @@ function WorkflowManagerInner() {
         setCurrentFlowName(workflow.name);
         setHasUnsavedChanges(false);
         setIsFlowsPanelOpen(false);
-    }, [setNodes, setEdges]);
+    }, [setNodes, setEdges, handleNodeConfigureRequest]);
 
     // New workflow
     const handleNewFlow = useCallback(() => {
@@ -797,9 +797,9 @@ function WorkflowManagerInner() {
             // Clear success indicator after 2s
             setTimeout(() => setSaveSuccess(false), 2000);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Save error:', error);
-            toast.error('Failed to save workflow: ' + error.message);
+            toast.error('Failed to save workflow: ' + (error instanceof Error ? error.message : 'Unknown error'));
         } finally {
             setIsSaving(false);
         }
@@ -846,9 +846,9 @@ function WorkflowManagerInner() {
             } else {
                 toast.error(result.error || 'Execution failed.', { id: loadingToast });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Execution error:', error);
-            toast.error('Failed to execute workflow: ' + error.message, { id: loadingToast });
+            toast.error('Failed to execute workflow: ' + (error instanceof Error ? error.message : 'Unknown error'), { id: loadingToast });
         } finally {
             setIsExecuting(false);
         }

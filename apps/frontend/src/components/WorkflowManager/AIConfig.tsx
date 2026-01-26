@@ -81,8 +81,8 @@ export function AIConfig({
                 } else {
                     setError('Failed to load AI providers');
                 }
-            } catch (e: any) {
-                setError(e.message);
+            } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : 'Unknown error');
             } finally {
                 setLoadingProviders(false);
             }

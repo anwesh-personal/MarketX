@@ -7,7 +7,7 @@
  * Features:
  * - Premium design with category colors and icons
  * - Working Configure and Delete buttons
- * - Emits events for parent component handling
+ * - Uses callback pattern instead of global events
  * - Proper handle positioning
  * 
  * @author Axiom AI
@@ -16,20 +16,7 @@
 import React, { memo, useCallback } from 'react';
 import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Settings, Trash2, GripVertical } from 'lucide-react';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface V2NodeData {
-    label: string;
-    nodeType: string;
-    category: string;
-    icon: React.ComponentType<any>;
-    color: string;
-    config: Record<string, any>;
-    features: string[];
-}
+import type { V2NodeData } from './types';
 
 // ============================================================================
 // COMPONENT
@@ -50,14 +37,21 @@ function V2WorkflowNodeComponent({
         deleteElements({ nodes: [{ id }] });
     }, [id, deleteElements]);
 
-    // Handle configure (emit custom event for parent)
+    // Handle configure - use callback from data props (preferred)
+    // Falls back to custom event for backwards compatibility
     const handleConfigure = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        // Dispatch custom event for parent component
-        window.dispatchEvent(new CustomEvent('nodeConfigureRequest', {
-            detail: { nodeId: id, nodeData: data }
-        }));
+
+        if (data.onConfigure) {
+            // Preferred: callback through props
+            data.onConfigure(id, data);
+        } else {
+            // Fallback: custom event (backwards compatibility)
+            window.dispatchEvent(new CustomEvent('nodeConfigureRequest', {
+                detail: { nodeId: id, nodeData: data }
+            }));
+        }
     }, [id, data]);
 
     return (
