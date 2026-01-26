@@ -5150,3 +5150,498 @@
         display: none;
     }
 }
+
+/* ============================================================================
+   UTILITY CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.utility-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.utility-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.utility-config-icon {
+    color: #6366f1;
+    /* Indigo for utilities */
+}
+
+.utility-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.utility-config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.utility-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.utility-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.utility-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.utility-config-field input[type="text"],
+.utility-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.utility-config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.utility-config-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.utility-config-field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.utility-config-code {
+    font-family: 'SF Mono', Monaco, 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.utility-config-select-wrapper {
+    position: relative;
+}
+
+.utility-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.utility-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.utility-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+/* Row Layout */
+.utility-config-row {
+    display: flex;
+    gap: 12px;
+}
+
+.utility-config-field-half {
+    flex: 1;
+}
+
+.utility-config-field-third {
+    flex: 1;
+}
+
+/* Inline Fields */
+.utility-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.utility-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.utility-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
+/* Condition Type Toggle */
+.utility-config-condition-type {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.utility-config-type-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.utility-config-type-btn:hover {
+    border-color: #6366f1;
+}
+
+.utility-config-type-btn.active {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+}
+
+/* Mode Grid */
+.utility-config-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.utility-config-mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.utility-config-mode-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.utility-config-mode-btn.active {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.utility-config-mode-btn .mode-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+}
+
+.utility-config-mode-btn .mode-desc {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+/* Case Row */
+.utility-config-case-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.utility-config-case-row .case-number {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #6366f1;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.utility-config-case-row .case-label {
+    flex: 0 0 120px;
+    padding: 8px 10px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+}
+
+.utility-config-case-row .case-match {
+    flex: 0 0 130px;
+}
+
+.utility-config-case-row .case-match select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+.utility-config-case-row .case-pattern {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.85rem;
+}
+
+/* Branch Row */
+.utility-config-branch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.utility-config-branch-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.utility-config-branch-row .branch-number {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #6366f1;
+    color: white;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.utility-config-branch-row input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+/* Tag Input */
+.utility-config-tag-input {
+    display: flex;
+    gap: 8px;
+}
+
+.utility-config-tag-input input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+.utility-config-tag-input input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.utility-config-tag-input button {
+    padding: 10px 14px;
+    background: #6366f1;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.utility-config-tag-input button:hover {
+    background: #4f46e5;
+}
+
+/* Tags */
+.utility-config-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.utility-config-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.utility-config-tag.approver {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.utility-config-tag button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.utility-config-tag button:hover {
+    opacity: 1;
+}
+
+/* List */
+.utility-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Add Button */
+.utility-config-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #6366f1;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.utility-config-add-btn:hover {
+    background: #4f46e5;
+}
+
+/* Remove Button */
+.utility-config-remove-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.utility-config-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+/* Hint */
+.utility-config-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+/* Utility Section in Modal */
+.wm-config-utility-section {
+    margin: 8px 0 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .utility-config-row {
+        flex-direction: column;
+    }
+
+    .utility-config-mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .utility-config-case-row {
+        flex-wrap: wrap;
+    }
+
+    .utility-config-case-row .case-label,
+    .utility-config-case-row .case-match,
+    .utility-config-case-row .case-pattern {
+        flex: 1;
+        width: 100%;
+    }
+
+    .utility-config-case-row .case-number {
+        display: none;
+    }
+}

@@ -203,6 +203,18 @@ const TRANSFORM_NODES = [
     'transform-personalize'
 ];
 
+// Utility nodes - use UtilityConfig
+const UTILITY_NODES = [
+    'condition-if-else',
+    'condition-switch',
+    'loop-foreach',
+    'merge-combine',
+    'delay-wait',
+    'human-review',
+    'error-handler',
+    'split-parallel'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
@@ -246,6 +258,11 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         return node.data.config || {};
     });
 
+    // Utility Config state
+    const [utilityConfig, setUtilityConfig] = useState(() => {
+        return node.data.config || {};
+    });
+
     // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
@@ -261,6 +278,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const isOutput = OUTPUT_NODES.includes(node.data.nodeType);
     const isEnricher = ENRICHER_NODES.includes(node.data.nodeType);
     const isTransform = TRANSFORM_NODES.includes(node.data.nodeType);
+    const isUtility = UTILITY_NODES.includes(node.data.nodeType);
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
     const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
@@ -326,6 +344,13 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     ...parsedAdvanced,
                     ...transformConfig
                 };
+            } else if (isUtility) {
+                // Utility node - use utility config
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...utilityConfig
+                };
             } else {
                 // Other nodes - just parse the JSON
                 finalConfig = JSON.parse(otherConfigJson);
@@ -339,7 +364,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || isEnricher || isTransform || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -482,8 +507,19 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
+                    {/* Utility Config Section - Only for utility nodes */}
+                    {isUtility && (
+                        <div className="wm-config-utility-section">
+                            <UtilityConfig
+                                nodeType={node.data.nodeType}
+                                config={utilityConfig as any}
+                                onChange={(newConfig) => setUtilityConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
                     {/* Advanced JSON Toggle for specialized nodes */}
-                    {(isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger) && (
+                    {(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -497,16 +533,16 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Other Config JSON - Show for AI nodes, regular nodes, or advanced mode */}
-                    {(!isGenerator && !isValidator && !isOutput && !isEnricher && !isTransform && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
+                    {(!isGenerator && !isValidator && !isOutput && !isEnricher && !isTransform && !isUtility && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{(isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger ? 4 : 8}
+                                rows={requiresAI || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -538,6 +574,7 @@ import { ValidatorConfig } from './ValidatorConfig';
 import { OutputConfig } from './OutputConfig';
 import { EnricherConfig } from './EnricherConfig';
 import { TransformConfig } from './TransformConfig';
+import { UtilityConfig } from './UtilityConfig';
 
 // ============================================================================
 // MAIN COMPONENT

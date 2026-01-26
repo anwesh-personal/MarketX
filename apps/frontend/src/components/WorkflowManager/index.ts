@@ -14,4 +14,5 @@ export { ValidatorConfig } from './ValidatorConfig';
 export { OutputConfig } from './OutputConfig';
 export { EnricherConfig } from './EnricherConfig';
 export { TransformConfig } from './TransformConfig';
+export { UtilityConfig } from './UtilityConfig';
 export * from './v2-node-definitions';
