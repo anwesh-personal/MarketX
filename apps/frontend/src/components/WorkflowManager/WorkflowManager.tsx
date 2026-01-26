@@ -196,6 +196,13 @@ const ENRICHER_NODES = [
     'enrich-email-validation'
 ];
 
+// Transform nodes - use TransformConfig
+const TRANSFORM_NODES = [
+    'transform-locker',
+    'transform-format',
+    'transform-personalize'
+];
+
 function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const [label, setLabel] = useState(node.data.label);
 
@@ -234,6 +241,11 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
         return node.data.config || {};
     });
 
+    // Transform Config state
+    const [transformConfig, setTransformConfig] = useState(() => {
+        return node.data.config || {};
+    });
+
     // Other config (for non-AI, non-resolver, non-trigger fields) - shown as JSON
     const [showAdvancedJson, setShowAdvancedJson] = useState(false);
     const [otherConfigJson, setOtherConfigJson] = useState(() => {
@@ -248,6 +260,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const isValidator = VALIDATOR_NODES.includes(node.data.nodeType);
     const isOutput = OUTPUT_NODES.includes(node.data.nodeType);
     const isEnricher = ENRICHER_NODES.includes(node.data.nodeType);
+    const isTransform = TRANSFORM_NODES.includes(node.data.nodeType);
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
     const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
@@ -306,6 +319,13 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     ...parsedAdvanced,
                     ...enricherConfig
                 };
+            } else if (isTransform) {
+                // Transform node - use transform config
+                const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
+                finalConfig = {
+                    ...parsedAdvanced,
+                    ...transformConfig
+                };
             } else {
                 // Other nodes - just parse the JSON
                 finalConfig = JSON.parse(otherConfigJson);
@@ -319,7 +339,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || isEnricher || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || isEnricher || isTransform || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -451,8 +471,19 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                         </div>
                     )}
 
+                    {/* Transform Config Section - Only for transform nodes */}
+                    {isTransform && (
+                        <div className="wm-config-transform-section">
+                            <TransformConfig
+                                nodeType={node.data.nodeType}
+                                config={transformConfig as any}
+                                onChange={(newConfig) => setTransformConfig(newConfig)}
+                            />
+                        </div>
+                    )}
+
                     {/* Advanced JSON Toggle for specialized nodes */}
-                    {(isGenerator || isValidator || isOutput || isEnricher || isResolver || isTrigger) && (
+                    {(isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -466,16 +497,16 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Other Config JSON - Show for AI nodes, regular nodes, or advanced mode */}
-                    {(!isGenerator && !isValidator && !isOutput && !isEnricher && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
+                    {(!isGenerator && !isValidator && !isOutput && !isEnricher && !isTransform && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{(isGenerator || isValidator || isOutput || isEnricher || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isGenerator || isValidator || isOutput || isEnricher || isResolver || isTrigger ? 4 : 8}
+                                rows={requiresAI || isGenerator || isValidator || isOutput || isEnricher || isTransform || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -506,6 +537,7 @@ import { GeneratorConfig } from './GeneratorConfig';
 import { ValidatorConfig } from './ValidatorConfig';
 import { OutputConfig } from './OutputConfig';
 import { EnricherConfig } from './EnricherConfig';
+import { TransformConfig } from './TransformConfig';
 
 // ============================================================================
 // MAIN COMPONENT

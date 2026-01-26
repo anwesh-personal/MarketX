@@ -13,4 +13,5 @@ export { GeneratorConfig } from './GeneratorConfig';
 export { ValidatorConfig } from './ValidatorConfig';
 export { OutputConfig } from './OutputConfig';
 export { EnricherConfig } from './EnricherConfig';
+export { TransformConfig } from './TransformConfig';
 export * from './v2-node-definitions';

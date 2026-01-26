@@ -4368,3 +4368,785 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================================================
+   TRANSFORM CONFIG COMPONENT
+   Theme-aware - uses CSS variables only
+   ============================================================================ */
+
+.transform-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.transform-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.transform-config-icon {
+    color: #14b8a6;
+    /* Teal for transforms */
+}
+
+.transform-config-ai-section {
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+}
+
+.transform-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.transform-config-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.transform-config-section-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-secondary);
+    margin-bottom: 4px;
+}
+
+.transform-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.transform-config-field>label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.transform-config-field input[type="text"],
+.transform-config-field input[type="number"] {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transform-config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.transform-config-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.85rem;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transform-config-field textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.transform-config-code {
+    font-family: 'SF Mono', Monaco, 'Fira Code', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+
+.transform-config-select-wrapper {
+    position: relative;
+}
+
+.transform-config-select-wrapper select {
+    width: 100%;
+    padding: 10px 36px 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    appearance: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.transform-config-select-wrapper select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.transform-config-select-wrapper .select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    pointer-events: none;
+}
+
+/* Row Layout */
+.transform-config-row {
+    display: flex;
+    gap: 12px;
+}
+
+.transform-config-field-half {
+    flex: 1;
+}
+
+.transform-config-field-third {
+    flex: 1;
+}
+
+/* Inline Fields */
+.transform-config-field-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.transform-config-field-inline>label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.transform-config-field-inline input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #14b8a6;
+    cursor: pointer;
+}
+
+/* Unlock Method Grid */
+.transform-config-unlock-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.transform-config-unlock-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 12px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.transform-config-unlock-btn:hover {
+    border-color: #14b8a6;
+    background: var(--color-background);
+}
+
+.transform-config-unlock-btn.active {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-unlock-btn .unlock-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+}
+
+.transform-config-unlock-btn .unlock-desc {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+/* Style Grid */
+.transform-config-style-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.transform-config-style-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.transform-config-style-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.transform-config-style-btn.active {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-style-btn .style-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+}
+
+.transform-config-style-btn .style-desc {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+/* Slider */
+.transform-config-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.transform-config-slider-wrapper input[type="range"] {
+    flex: 1;
+    height: 6px;
+    accent-color: #14b8a6;
+    cursor: pointer;
+}
+
+.transform-config-slider-wrapper .slider-value {
+    min-width: 50px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #14b8a6;
+}
+
+/* Provider Grid */
+.transform-config-provider-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.transform-config-provider-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.transform-config-provider-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.transform-config-provider-btn.active {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-provider-btn .provider-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.transform-config-provider-btn .provider-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* Checkbox Grid */
+.transform-config-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.transform-config-checkbox-grid.wide {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.transform-config-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    padding: 8px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.transform-config-checkbox-item:hover {
+    background: var(--color-background);
+    border-color: #14b8a6;
+}
+
+.transform-config-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #14b8a6;
+}
+
+/* Format Visual */
+.transform-config-format-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+}
+
+.transform-config-format-visual .format-from,
+.transform-config-format-visual .format-to {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    background: var(--color-background);
+    border-radius: 8px;
+}
+
+.transform-config-format-visual .format-from {
+    border: 2px dashed var(--color-border);
+}
+
+.transform-config-format-visual .format-to {
+    border: 2px solid #14b8a6;
+}
+
+.transform-config-format-visual .format-from span,
+.transform-config-format-visual .format-to span {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--color-text-primary);
+}
+
+.transform-config-format-visual .format-arrow {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #14b8a6;
+}
+
+/* Mode Grid */
+.transform-config-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.transform-config-mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.transform-config-mode-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.transform-config-mode-btn.active {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-mode-btn .mode-label {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-primary);
+}
+
+.transform-config-mode-btn .mode-desc {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+}
+
+/* Fallback Grid */
+.transform-config-fallback-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.transform-config-fallback-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 8px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.transform-config-fallback-btn:hover {
+    border-color: var(--color-primary);
+    background: var(--color-background);
+}
+
+.transform-config-fallback-btn.active {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-fallback-btn .fallback-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+}
+
+.transform-config-fallback-btn .fallback-desc {
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+}
+
+/* Quick Variables */
+.transform-config-quick-vars {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.transform-config-quick-vars .quick-vars-label {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
+.transform-config-quick-vars .quick-var-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.transform-config-quick-vars .quick-var-btn:hover:not(.added) {
+    border-color: #14b8a6;
+    background: rgba(20, 184, 166, 0.08);
+}
+
+.transform-config-quick-vars .quick-var-btn.added {
+    background: rgba(20, 184, 166, 0.1);
+    border-color: #14b8a6;
+    color: #14b8a6;
+    cursor: default;
+    opacity: 0.7;
+}
+
+/* Mapping Row */
+.transform-config-mapping-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.transform-config-mapping-row .mapping-var {
+    flex: 0 0 120px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.transform-config-mapping-row .mapping-equals {
+    color: var(--color-text-muted);
+    font-weight: bold;
+}
+
+.transform-config-mapping-row .mapping-source {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.transform-config-mapping-row .mapping-fallback {
+    flex: 0 0 100px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-primary);
+}
+
+.transform-config-mapping-row .mapping-transform {
+    flex: 0 0 110px;
+}
+
+.transform-config-mapping-row .mapping-transform select {
+    padding: 8px 28px 8px 10px;
+    font-size: 0.8rem;
+}
+
+/* Tag Input */
+.transform-config-tag-input {
+    display: flex;
+    gap: 8px;
+}
+
+.transform-config-tag-input input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+.transform-config-tag-input input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.transform-config-tag-input button {
+    padding: 10px 14px;
+    background: #14b8a6;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.transform-config-tag-input button:hover {
+    background: #0d9488;
+}
+
+/* Tags */
+.transform-config-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.transform-config-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.transform-config-tag.code {
+    background: rgba(20, 184, 166, 0.1);
+    color: #14b8a6;
+    border: 1px solid rgba(20, 184, 166, 0.2);
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.transform-config-tag button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.transform-config-tag button:hover {
+    opacity: 1;
+}
+
+/* List */
+.transform-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Add Button */
+.transform-config-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #14b8a6;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.transform-config-add-btn:hover {
+    background: #0d9488;
+}
+
+/* Remove Button */
+.transform-config-remove-btn {
+    padding: 6px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.transform-config-remove-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+/* Empty State */
+.transform-config-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+}
+
+/* Hint */
+.transform-config-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 4px;
+}
+
+/* Transform Section in Modal */
+.wm-config-transform-section {
+    margin: 8px 0 16px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .transform-config-row {
+        flex-direction: column;
+    }
+
+    .transform-config-unlock-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .transform-config-style-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .transform-config-provider-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .transform-config-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .transform-config-mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .transform-config-fallback-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .transform-config-mapping-row {
+        flex-wrap: wrap;
+    }
+
+    .transform-config-mapping-row .mapping-var,
+    .transform-config-mapping-row .mapping-source,
+    .transform-config-mapping-row .mapping-fallback,
+    .transform-config-mapping-row .mapping-transform {
+        flex: 1;
+        width: 100%;
+    }
+
+    .transform-config-mapping-row .mapping-equals {
+        display: none;
+    }
+}
