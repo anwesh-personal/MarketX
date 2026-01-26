@@ -21,6 +21,7 @@ import {
     ChevronRight,
     GitBranch,
     Cpu,
+    Workflow,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import {
@@ -112,6 +113,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
     const navigation = [
         { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
+        { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow },
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2 },
         { name: 'Users', href: '/superadmin/users', icon: Users },
         { name: 'Workflow Templates', href: '/superadmin/workflows', icon: GitBranch },
@@ -417,9 +419,15 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto bg-background">
-                    <div className="max-w-7xl mx-auto p-lg">
-                        {children}
-                    </div>
+                    {pathname === '/superadmin/workflow-manager' ? (
+                        <div className="h-full">
+                            {children}
+                        </div>
+                    ) : (
+                        <div className="max-w-7xl mx-auto p-lg">
+                            {children}
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * WORKFLOW MANAGER PAGE
+ * WORKFLOW MANAGER PAGE - SUPERADMIN
  * V2 Workflow Builder - Premium experience
  */
 

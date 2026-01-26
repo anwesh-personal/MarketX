@@ -16,7 +16,6 @@ import {
     ChevronRight,
     Zap,
     Sparkles,
-    Workflow,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { createClient } from '@/lib/supabase/client';
@@ -37,7 +36,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
     // Navigation items
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Workflow Manager', href: '/workflow-manager', icon: Workflow },
         { name: 'Writer Studio', href: '/writer', icon: Zap },
         { name: 'Brain Control', href: '/brain-control', icon: Brain },
         { name: 'Brain Chat', href: '/brain-chat', icon: Sparkles },
@@ -256,17 +254,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto bg-background">
-                    {pathname === '/workflow-manager' ? (
-                        // Full-width canvas for Workflow Manager
-                        <div className="h-full">
-                            {children}
-                        </div>
-                    ) : (
-                        // Standard container for other pages
-                        <div className="max-w-7xl mx-auto p-lg">
-                            {children}
-                        </div>
-                    )}
+                    <div className="max-w-7xl mx-auto p-lg">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>
