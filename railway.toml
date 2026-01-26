@@ -5,8 +5,7 @@ dockerfilePath = "apps/workers/Dockerfile"
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-healthcheckPath = "/"
-healthcheckTimeout = 100
+# No healthcheckPath - workers are background processes, not web servers
 
 [service]
 name = "axiom-workers"
