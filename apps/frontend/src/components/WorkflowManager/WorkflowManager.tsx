@@ -38,6 +38,7 @@ import {
 import { AddNodeModal } from './AddNodeModal';
 import { V2NodeDefinition, V2_CATEGORY_META, V2_ALL_NODES } from './v2-node-definitions';
 import { V2WorkflowNode } from './V2WorkflowNode';
+import { superadminFetch } from '@/lib/superadmin-auth';
 
 // ============================================================================
 // TYPES
@@ -105,12 +106,13 @@ export function WorkflowManager() {
         setWorkflowError(null);
 
         try {
-            const response = await fetch('/api/superadmin/workflows');
+            const response = await superadminFetch('/api/superadmin/workflows');
             if (!response.ok) {
                 throw new Error('Failed to fetch workflows');
             }
-            const data = await response.json();
-            setWorkflows(data.templates || data || []);
+            const result = await response.json();
+            // API returns { success: true, data: [...], count: N }
+            setWorkflows(result.data || result.templates || []);
         } catch (error: any) {
             console.error('Error fetching workflows:', error);
             setWorkflowError(error.message);
@@ -228,9 +230,8 @@ export function WorkflowManager() {
                 edges,
             };
 
-            const response = await fetch('/api/superadmin/workflows', {
-                method: currentFlowId ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await superadminFetch('/api/superadmin/workflows', {
+                method: currentFlowId ? 'PATCH' : 'POST',
                 body: JSON.stringify(payload),
             });
 
