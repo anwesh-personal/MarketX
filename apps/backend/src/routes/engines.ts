@@ -380,13 +380,22 @@ router.get('/active', async (req: Request, res: Response) => {
 // WORKFLOW TEMPLATE EXECUTION
 // ============================================================================
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '',
-    process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Lazy-load Supabase client to avoid crash at module import
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+    if (!_supabase) {
+        const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (!url || !key) {
+            throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+        }
+        _supabase = createClient(url, key);
+    }
+    return _supabase;
+}
 
 /**
  * POST /api/engines/workflows/:id/execute
@@ -399,7 +408,7 @@ router.post('/workflows/:id/execute', optionalApiKeyMiddleware, async (req: Requ
 
     try {
         // Fetch workflow template from Supabase
-        const { data: workflow, error: fetchError } = await supabase
+        const { data: workflow, error: fetchError } = await getSupabase()
             .from('workflow_templates')
             .select('*')
             .eq('id', workflowId)
@@ -432,7 +441,7 @@ router.post('/workflows/:id/execute', optionalApiKeyMiddleware, async (req: Requ
         };
 
         // Log execution start
-        await supabase.from('engine_run_logs').insert({
+        await getSupabase().from('engine_run_logs').insert({
             execution_id: executionId,
             status: 'running',
             trigger_type: 'api',
@@ -458,7 +467,7 @@ router.post('/workflows/:id/execute', optionalApiKeyMiddleware, async (req: Requ
         const durationMs = Date.now() - startTime;
 
         // Update log with result
-        await supabase
+        await getSupabase()
             .from('engine_run_logs')
             .update({
                 status: result.success ? 'completed' : 'failed',
@@ -487,7 +496,7 @@ router.post('/workflows/:id/execute', optionalApiKeyMiddleware, async (req: Requ
         console.error('Error executing workflow:', error);
 
         // Log failure
-        await supabase
+        await getSupabase()
             .from('engine_run_logs')
             .update({
                 status: 'failed',

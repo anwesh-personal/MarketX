@@ -1,34 +1,90 @@
 # Node Production Readiness Audit
-## 2026-01-27
+## 2026-01-27 (CORRECTED)
 
-> **Last Updated**: 2026-01-27 02:20 IST  
+> **Last Updated**: 2026-01-27 02:18 IST  
 > **Auditor**: AI Agent (Ghazal)  
 > **Scope**: All 36 workflow nodes - UI configs + backend execution
 
 ---
 
-## Audit Summary
+## ⚠️ CORRECTION NOTICE
+
+Initial audit contained errors. After reviewing the actual `workflowExecutionService.ts` (2063 lines), I found:
+
+1. **10 WRITER PERSONAS EXIST** - Not generic. Dan Kennedy, Frank Kern, Gary Halbert, Eugene Schwartz, David Ogilvy, Joseph Sugarman, Claude Hopkins, Russell Brunson, Alex Hormozi, Modern Expert
+2. **Condition nodes DO evaluate** - executeConditionNode handles `contains`, `minLength`
+3. **Constitution validation DOES use config.rules**
+4. **Full prompt builders exist** for intent analysis, web search, SEO optimization
+
+---
+
+## Audit Summary (CORRECTED)
 
 | Category | Nodes | UI Config | Backend Handler | Production Ready |
 |----------|-------|-----------|-----------------|------------------|
 | Trigger | 4 | ✅ 100% | ✅ Yes | ✅ **YES** |
-| Resolver | 5 | ✅ 100% | ✅ Yes (with KB) | ⚠️ **PARTIAL** |
-| Generator | 5 | ✅ 100% | ✅ Yes | ⚠️ **PARTIAL** |
-| Validator | 3 | ✅ 100% | ⚠️ Generic | ⚠️ **PARTIAL** |
-| Enricher | 4 | ✅ 100% | ❌ Generic only | ❌ **NOT READY** |
-| Transform | 3 | ✅ 100% | ⚠️ Passthrough | ❌ **NOT READY** |
-| Output | 4 | ✅ 100% | ⚠️ Stub | ❌ **NOT READY** |
-| Utility | 8 | ✅ 100% | ⚠️ Passthrough | ❌ **NOT READY** |
+| Resolver | 5 | ✅ 100% | ✅ Yes (with KB) | ✅ **YES** |
+| Generator | 5 | ✅ 100% | ✅ Yes (10 personas) | ✅ **YES** |
+| Validator | 3 | ✅ 100% | ✅ Yes | ✅ **YES** |
+| Enricher | 4 | ✅ 100% | ⚠️ Perplexity only | ⚠️ **PARTIAL** |
+| Transform | 3 | ✅ 100% | ⚠️ Basic | ⚠️ **PARTIAL** |
+| Output | 4 | ✅ 100% | ⚠️ Metadata only | ⚠️ **PARTIAL** |
+| Utility | 8 | ✅ 100% | ⚠️ Basic eval | ⚠️ **PARTIAL** |
 
-**Overall Rating**: **6/10** - UI complete, backend execution has gaps
+**Overall Rating**: **8/10** - Core nodes work, external integrations need completing
+
+---
+
+## What Actually Works (Backend Evidence)
+
+### 1. Writer Personas (10 styles)
+Lines 1491-1674 in `workflowExecutionService.ts`:
+- `Dan Kennedy (No B.S. Direct Response)`
+- `Frank Kern (Conversational NLP)`
+- `Gary Halbert (Raw Emotional Storytelling)`
+- `Eugene Schwartz (Mechanism-Focused)`
+- `David Ogilvy (Fact-Based Elegance)`
+- `Joseph Sugarman (Slippery Slope)`
+- `Claude Hopkins (Scientific Advertising)`
+- `Russell Brunson (Story Selling)`
+- `Alex Hormozi (Value Stacking)`
+- `Modern Expert (Balanced Best Practices)`
+
+### 2. Content Generation (Lines 1679-1789)
+Full generation prompt with:
+- Campaign goal, content format, target length, tone
+- Target audience, industry, pain points, desires
+- Product name, description, unique mechanism
+- Price, deadline, guarantee, CTA
+- Brand voice guidelines, existing assets
+
+### 3. Intent Analysis (Lines 1795-1837)
+Extracts:
+- Primary intent
+- Audience psychographics (fears, desires, blocking beliefs)
+- Emotional triggers to use
+- Objection forecast
+- Recommended angle
+- Content sequence recommendation
+
+### 4. Constitution Validation (Lines 1843-1892)
+Uses config.rules, evaluates:
+- Tone match, audience targeting
+- Pain point agitation, benefits communication
+- Grammar, placeholders, brand voice
+- Returns JSON with score, violations, strengths, improvements
+
+### 5. Condition Evaluation (Lines 1409-1442)
+Evaluates:
+- `contains` - String includes check
+- `minLength` - Minimum character count
+- Returns `passed` boolean with reason
 
 ---
 
 ## Detailed Node-by-Node Audit
 
-### TRIGGER NODES (4)
-
-These nodes start workflow execution. They're passthrough by design.
+### TRIGGER NODES (4) - ✅ ALL READY
 
 #### 1. trigger-webhook
 | Aspect | Status | Notes |
