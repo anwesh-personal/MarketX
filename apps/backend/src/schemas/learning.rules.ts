@@ -256,3 +256,16 @@ export type LearningRunResults = z.infer<typeof LearningRunResultsSchema>;
 export type PromotionResult = z.infer<typeof PromotionResultSchema>;
 export type DemotionResult = z.infer<typeof DemotionResultSchema>;
 export type GuardrailKill = z.infer<typeof GuardrailKillSchema>;
+
+// Directive types used by the learning loop
+export interface PromoteDirective {
+    variant_id: string;
+    preference_type: string;
+    reason: string;
+}
+
+export interface PauseDirective {
+    variant_id: string;
+    pattern: string;
+    reason: string;
+}

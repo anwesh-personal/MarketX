@@ -26,13 +26,18 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST - Create new AI provider
+/**
+ * POST - Create new AI provider
+ * 
+ * Validates API key and discovers models before saving
+ * Integrates with AIProviderService for proper validation
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { provider, name, api_key, description, org_id, user_id } = body;
+        const { provider, name, api_key, description } = body;
 
-        // Validate required fields (org_id optional for platform-level keys)
+        // Validate required fields
         if (!provider || !name || !api_key) {
             return NextResponse.json(
                 { error: 'Missing required fields: provider, name, api_key' },
@@ -40,6 +45,31 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Validate provider type
+        const validProviders = ['openai', 'anthropic', 'google', 'mistral', 'perplexity', 'xai'];
+        if (!validProviders.includes(provider)) {
+            return NextResponse.json(
+                { error: `Invalid provider. Must be one of: ${validProviders.join(', ')}` },
+                { status: 400 }
+            );
+        }
+
+        // Step 1: Validate API key and discover models (service layer)
+        const { aiProviderService } = await import('@/services/ai');
+        const validation = await aiProviderService.validateAndDiscover(provider, api_key);
+
+        if (!validation.valid) {
+            return NextResponse.json(
+                {
+                    error: 'API key validation failed',
+                    details: validation.error,
+                    provider: validation.provider
+                },
+                { status: 400 }
+            );
+        }
+
+        // Step 2: Save to database with discovered models
         const { data, error } = await supabase
             .from('ai_providers')
             .insert({
@@ -47,20 +77,28 @@ export async function POST(request: NextRequest) {
                 name,
                 api_key,
                 description: description || null,
-                org_id: org_id || null,
-                user_id: user_id || null,
                 is_active: true,
+                models_discovered: validation.models || [],
+                priority: 0,
+                usage_count: 0,
+                failures: 0
             })
             .select()
             .single();
 
         if (error) throw error;
 
-        return NextResponse.json({ provider: data });
+        return NextResponse.json({
+            provider: data,
+            validation: {
+                models_discovered: validation.models?.length || 0,
+                message: validation.message
+            }
+        });
     } catch (error: any) {
         console.error('Error creating AI provider:', error);
         return NextResponse.json(
-            { error: error.message },
+            { error: error.message || 'Failed to create AI provider' },
             { status: 500 }
         );
     }

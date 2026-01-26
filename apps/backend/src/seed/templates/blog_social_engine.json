@@ -1,0 +1,244 @@
+{
+    "id": "template-blog-social-engine",
+    "name": "Blog + Social Engine v2",
+    "description": "Generate SEO blog post with matching social posts for LinkedIn, X, and YouTube. One topic, multi-channel distribution.",
+    "category": "CONTENT",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 250
+            },
+            "data": {
+                "label": "Start Creation",
+                "nodeType": "manual-trigger",
+                "description": "Create blog + social content",
+                "config": {
+                    "requiredInputs": [
+                        "topic",
+                        "pillar",
+                        "target_platforms"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 280,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Audience",
+                "nodeType": "resolve-icp",
+                "description": "Content audience",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 460,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Content angle",
+                "config": {}
+            }
+        },
+        {
+            "id": "enrich-web",
+            "type": "enrich-web-search",
+            "position": {
+                "x": 640,
+                "y": 250
+            },
+            "data": {
+                "label": "Research Topic",
+                "nodeType": "enrich-web-search",
+                "description": "Research topic for SEO context",
+                "config": {
+                    "searchDepth": "medium",
+                    "resultCount": 5
+                }
+            }
+        },
+        {
+            "id": "generate-blog",
+            "type": "generate-website-page",
+            "position": {
+                "x": 840,
+                "y": 250
+            },
+            "data": {
+                "label": "Generate Blog Post",
+                "nodeType": "generate-website-page",
+                "description": "Full SEO blog article",
+                "config": {
+                    "pageType": "BLOG_POST",
+                    "includeMetaTags": true,
+                    "targetWordCount": 1500
+                }
+            }
+        },
+        {
+            "id": "generate-linkedin",
+            "type": "generate-social-post",
+            "position": {
+                "x": 1060,
+                "y": 100
+            },
+            "data": {
+                "label": "LinkedIn Post",
+                "nodeType": "generate-social-post",
+                "description": "LinkedIn version",
+                "config": {
+                    "platform": "LinkedIn",
+                    "linkToBlog": true
+                }
+            }
+        },
+        {
+            "id": "generate-x",
+            "type": "generate-social-post",
+            "position": {
+                "x": 1060,
+                "y": 250
+            },
+            "data": {
+                "label": "X Thread",
+                "nodeType": "generate-social-post",
+                "description": "X/Twitter thread",
+                "config": {
+                    "platform": "X",
+                    "format": "thread"
+                }
+            }
+        },
+        {
+            "id": "generate-youtube",
+            "type": "generate-social-post",
+            "position": {
+                "x": 1060,
+                "y": 400
+            },
+            "data": {
+                "label": "YouTube Description",
+                "nodeType": "generate-social-post",
+                "description": "Video description",
+                "config": {
+                    "platform": "YouTube"
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1280,
+                "y": 250
+            },
+            "data": {
+                "label": "Validate All",
+                "nodeType": "validate-quality",
+                "description": "Quality check all content",
+                "config": {
+                    "minScore": 70
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1460,
+                "y": 250
+            },
+            "data": {
+                "label": "Store Content",
+                "nodeType": "output-store",
+                "description": "Save blog and social posts",
+                "config": {
+                    "storeBlog": true,
+                    "storeSocial": true
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-angle-1",
+            "target": "enrich-web",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "enrich-web",
+            "target": "generate-blog",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "generate-blog",
+            "target": "generate-linkedin",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "generate-blog",
+            "target": "generate-x",
+            "animated": false
+        },
+        {
+            "id": "e7",
+            "source": "generate-blog",
+            "target": "generate-youtube",
+            "animated": false
+        },
+        {
+            "id": "e8",
+            "source": "generate-linkedin",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e9",
+            "source": "generate-x",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e10",
+            "source": "generate-youtube",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e11",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

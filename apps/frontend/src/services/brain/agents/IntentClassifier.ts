@@ -18,7 +18,7 @@ export interface IntentClassificationResult {
 // ============================================================
 
 export class IntentClassifier {
-    private supabase = createClient()
+    private getSupabase() { return createClient() }
 
     /**
      * Classify user intent to route to appropriate agent
@@ -62,7 +62,7 @@ export class IntentClassifier {
         confidence: number
         pattern: string
     } | null> {
-        const { data: patterns, error } = await this.supabase
+        const { data: patterns, error } = await this.getSupabase()
             .from('intent_patterns')
             .select('*')
             .eq('is_active', true)
@@ -147,7 +147,7 @@ export class IntentClassifier {
     ): Promise<{ intent: Intent, confidence: number }> {
         try {
             // Get provider config
-            const { data: provider } = await this.supabase
+            const { data: provider } = await this.getSupabase()
                 .from('ai_providers')
                 .select('*')
                 .eq('id', providerId)
@@ -256,7 +256,7 @@ Respond with ONLY a JSON object in this format:
         regexPattern?: string,
         priority: number = 10
     ): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('intent_patterns')
             .insert({
                 agent_type: agentType,
@@ -280,7 +280,7 @@ Respond with ONLY a JSON object in this format:
         patternId: string,
         newPriority: number
     ): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('intent_patterns')
             .update({ priority: newPriority })
             .eq('id', patternId)

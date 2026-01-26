@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM — The Brain Behind InMarket Traffic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Aqua Theme Variables */
+        :root {
+            --aqua-primary: #00D4AA;
+            --aqua-secondary: #0099CC;
+            --aqua-accent: #00FFDD;
+            --aqua-dark: #001F3F;
+            --aqua-light: #F0FFFE;
+            --gradient-aqua: linear-gradient(135deg, #00D4AA 0%, #0099CC 100%);
+            --gradient-dark: linear-gradient(135deg, #001F3F 0%, #003366 100%);
+        }
+
+        /* Light Theme */
+        .light-theme {
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F8FFFE;
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --text-primary: #001F3F;
+            --text-secondary: #003366;
+            --text-muted: #667788;
+            --border-color: rgba(0, 212, 170, 0.2);
+            --shadow: 0 10px 40px rgba(0, 153, 204, 0.1);
+        }
+
+        /* Dark Theme */
+        .dark-theme {
+            --bg-primary: #001F3F;
+            --bg-secondary: #003366;
+            --bg-glass: rgba(0, 31, 63, 0.7);
+            --text-primary: #FFFFFF;
+            --text-secondary: #00FFDD;
+            --text-muted: #99CCDD;
+            --border-color: rgba(0, 212, 170, 0.3);
+            --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: var(--bg-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        /* Gradient Text */
+        .gradient-text {
+            background: var(--gradient-aqua);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Tab System */
+        .tab {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--gradient-aqua);
+            transition: width 0.3s ease;
+        }
+
+        .tab.active::after {
+            width: 100%;
+        }
+
+        .tab:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Cards */
+        .card {
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 212, 170, 0.2);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: var(--gradient-aqua);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 212, 170, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 212, 170, 0.4);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gradient-aqua);
+            border-radius: 10px;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeInUp 0.3s ease-out;
+        }
+    </style>
+</head>
+
+<body class="light-theme">
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="fixed top-6 right-6 z-50 p-3 rounded-full glass">
+        <svg id="sunIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd"
+                d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                clip-rule="evenodd"></path>
+        </svg>
+        <svg id="moonIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+        </svg>
+    </button>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center justify-center px-6 py-20" style="background: var(--gradient-dark);">
+        <div class="max-w-6xl w-full text-center">
+            <div class="animate-float mb-8">
+                <svg class="w-24 h-24 mx-auto" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" stroke="url(#grad1)" stroke-width="3" />
+                    <circle cx="50" cy="50" r="35" fill="url(#grad1)" fill-opacity="0.2" />
+                    <path d="M50 20 L60 40 L50 35 L40 40 Z" fill="url(#grad1)" />
+                    <path d="M50 80 L60 60 L50 65 L40 60 Z" fill="url(#grad1)" />
+                    <defs>
+                        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00D4AA;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0099CC;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <h1 class="text-6xl md:text-8xl font-black mb-6 animate-fadeInUp" style="color: white;">
+                <span class="gradient-text">AXIOM</span>
+            </h1>
+
+            <p class="text-2xl md:text-3xl font-light mb-12 animate-fadeInUp"
+                style="color: #00FFDD; animation-delay: 0.2s;">
+                The Brain Behind InMarket Traffic
+            </p>
+
+            <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12 animate-fadeInUp" style="animation-delay: 0.4s;">
+                A self-healing AI engine that generates trust-building content,<br class="hidden md:block">
+                learns from every interaction, and gets smarter every day.
+            </p>
+
+            <button class="btn-primary animate-fadeInUp" style="animation-delay: 0.6s;" onclick="scrollToTabs()">
+                Explore the Vision →
+            </button>
+        </div>
+    </section>
+
+    <!-- Tab Navigation -->
+    <div id="tabSection" class="sticky top-0 z-40 glass border-b border-opacity-20"
+        style="border-color: var(--border-color);">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex items-center justify-between overflow-x-auto">
+                <div class="flex space-x-8 py-4">
+                    <div class="tab active" data-tab="overview">
+                        <span class="text-sm font-semibold">Overview</span>
+                    </div>
+                    <div class="tab" data-tab="imt">
+                        <span class="text-sm font-semibold">InMarket Traffic</span>
+                    </div>
+                    <div class="tab" data-tab="architecture">
+                        <span class="text-sm font-semibold">Architecture</span>
+                    </div>
+                    <div class="tab" data-tab="constitution">
+                        <span class="text-sm font-semibold">Constitution</span>
+                    </div>
+                    <div class="tab" data-tab="workflows">
+                        <span class="text-sm font-semibold">Workflows</span>
+                    </div>
+                    <div class="tab" data-tab="learning">
+                        <span class="text-sm font-semibold">Learning Loop</span>
+                    </div>
+                    <div class="tab" data-tab="roadmap">
+                        <span class="text-sm font-semibold">Roadmap</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content Container -->
+    <div id="tabContent" class="max-w-7xl mx-auto px-6 py-20">
+        <!-- Content will be loaded here -->
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal-backdrop">
+        <div class="modal-content glass rounded-3xl p-8 m-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modalTitle" class="text-3xl font-bold gradient-text"></h2>
+                <button onclick="closeModal()" class="text-2xl hover:opacity-70">&times;</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sunIcon');
+        const moonIcon = document.getElementById('moonIcon');
+        let isDark = false;
+
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            sunIcon.classList.toggle('hidden');
+            moonIcon.classList.toggle('hidden');
+        });
+
+        // Tab System
+        const tabs = document.querySelectorAll('.tab');
+        const tabContent = document.getElementById('tabContent');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                loadTabContent(tab.dataset.tab);
+            });
+        });
+
+        // Load Initial Tab
+        loadTabContent('overview');
+
+        function scrollToTabs() {
+            document.getElementById('tabSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').innerHTML = content;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') closeModal();
+        });
+
+        // Tab Content Loader
+        function loadTabContent(tabName) {
+            const content = getTabContent(tabName);
+            tabContent.innerHTML = content;
+            tabContent.classList.add('animate-fadeInUp');
+            setTimeout(() => tabContent.classList.remove('animate-fadeInUp'), 600);
+        }
+
+    </script>
+    <script src="AXIOM_VISION_CONTENT.js"></script>
+</body>
+
+</html>

@@ -139,8 +139,8 @@ Content Types You Excel At:
             // Parse outline into sections
             const sections = outlineText
                 .split('\n')
-                .filter(line => line.trim())
-                .map(line => line.trim())
+                .filter((line: string) => line.trim())
+                .map((line: string) => line.trim())
 
             return {
                 outline: sections,

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Writer - Node.js SaaS Architecture (Complete)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
+        .sidebar { border-right: 1px solid #1e293b; height: 100vh; overflow-y: auto; background-color: #020617; }
+        .content { height: 100vh; overflow-y: auto; background-color: #0f172a; }
+        .tree-item { cursor: pointer; padding: 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; transition: all 0.15s; }
+        .tree-item:hover { background-color: #1e293b; color: #38bdf8; }
+        .tree-item.active { background-color: #1e293b; color: #38bdf8; font-weight: 600; border-right: 3px solid #38bdf8; }
+        .tree-children { margin-left: 14px; border-left: 1px solid #334155; display: none; }
+        .tree-children.open { display: block; }
+        .icon-folder { color: #f59e0b; }
+        .icon-ts { color: #3178c6; } 
+        .icon-js { color: #f7df1e; }
+        .icon-tsx { color: #3b82f6; }
+        .icon-json { color: #eab308; }
+        .icon-yml { color: #a855f7; }
+        .icon-sql { color: #10b981; }
+        
+        /* Code Editor Simulation */
+        .editor-container { background-color: #1e293b; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-top: 1rem; }
+        .editor-header { background-color: #0f172a; padding: 8px 16px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .editor-content { padding: 16px; font-family: 'Fira Code', monospace; font-size: 0.8rem; line-height: 1.6; color: #e2e8f0; overflow-x: auto; white-space: pre; }
+        
+        .kwd { color: #c678dd; } 
+        .str { color: #98c379; } 
+        .type { color: #e5c07b; } 
+        .fn { color: #61afef; } 
+        .comment { color: #5c6370; font-style: italic; }
+        .num { color: #d19a66; }
+    </style>
+</head>
+<body class="flex h-screen">
+
+    <!-- Sidebar -->
+    <div class="w-80 sidebar flex-shrink-0 flex flex-col">
+        <div class="h-14 flex items-center px-4 border-b border-slate-800 bg-slate-900">
+            <i class="fa-brands fa-node text-green-500 mr-2 text-xl"></i>
+            <span class="font-bold text-slate-200">market-writer-node</span>
+        </div>
+        <div id="file-tree" class="p-2 flex-1"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 content flex flex-col">
+        <div class="h-14 border-b border-slate-800 flex items-center px-6 bg-slate-900 justify-between">
+            <div class="flex items-center gap-2">
+                <span id="breadcrumb" class="text-sm text-slate-400 font-mono">Select a file...</span>
+            </div>
+            <div class="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">Read-Only View</div>
+        </div>
+
+        <div class="p-8 flex-1 overflow-y-auto">
+            <div id="welcome-screen" class="flex flex-col items-center justify-center h-full text-slate-600">
+                <i class="fa-brands fa-js text-6xl mb-4 opacity-50"></i>
+                <h2 class="text-2xl font-semibold text-slate-400">Node.js Architecture Explorer</h2>
+                <p class="mt-2 text-sm max-w-md text-center">Click on the files on the left to inspect the Typescript implementation of the schemas.</p>
+            </div>
+
+            <div id="code-view" class="hidden">
+                <div class="mb-4">
+                    <h1 id="file-name" class="text-2xl font-bold text-white"></h1>
+                    <p id="file-desc" class="text-slate-400 text-sm mt-1"></p>
+                </div>
+                <div class="editor-container">
+                    <div class="editor-header">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                        </div>
+                        <span class="text-xs text-slate-500 font-mono">TypeScript / JSON</span>
+                    </div>
+                    <div id="code-content" class="editor-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- FILE SYSTEM DATA ---
+        const fs = [
+            {
+                name: "docker-compose.yml",
+                type: "file",
+                icon: "yml",
+                id: "docker"
+            },
+            {
+                name: "apps",
+                type: "folder",
+                open: true,
+                children: [
+                    {
+                        name: "backend",
+                        type: "folder",
+                        open: true,
+                        children: [
+                            { name: "package.json", type: "file", icon: "json", id: "backend_pkg" },
+                            { name: "Dockerfile", type: "file", icon: "docker", id: "backend_docker" },
+                            {
+                                name: "src",
+                                type: "folder",
+                                open: true,
+                                children: [
+                                    { name: "index.ts", type: "file", icon: "ts", id: "backend_main" },
+                                    {
+                                        name: "schemas",
+                                        type: "folder",
+                                        open: true,
+                                        children: [
+                                            { name: "kb.schema.ts", type: "file", icon: "ts", id: "schema_kb" },
+                                            { name: "writer.input.schema.ts", type: "file", icon: "ts", id: "schema_input" },
+                                            { name: "writer.output.schema.ts", type: "file", icon: "ts", id: "schema_output" },
+                                            { name: "learning.rules.schema.ts", type: "file", icon: "ts", id: "schema_learning" }
+                                        ]
+                                    },
+                                    {
+                                        name: "core",
+                                        type: "folder",
+                                        open: true,
+                                        children: [
+                                            { name: "writer.engine.ts", type: "file", icon: "ts", id: "core_engine" },
+                                            { name: "learning.loop.ts", type: "file", icon: "ts", id: "core_loop" },
+                                            { name: "ops.scheduler.ts", type: "file", icon: "ts", id: "core_ops" }
+                                        ]
+                                    },
+                                    {
+                                        name: "routes",
+                                        type: "folder",
+                                        open: true,
+                                        children: [
+                                            { name: "api.ts", type: "file", icon: "ts", id: "api_routes" }
+                                        ]
+                                    },
+                                    {
+                                        name: "db",
+                                        type: "folder",
+                                        open: false,
+                                        children: [
+                                            { name: "index.ts", type: "file", icon: "ts", id: "db_conn" }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        name: "frontend",
+                        type: "folder",
+                        open: true,
+                        children: [
+                            { name: "package.json", type: "file", icon: "json", id: "fe_pkg" },
+                            {
+                                name: "src",
+                                type: "folder",
+                                open: true,
+                                children: [
+                                    {
+                                        name: "app",
+                                        type: "folder",
+                                        open: true,
+                                        children: [
+                                            { name: "page.tsx", type: "file", icon: "tsx", id: "fe_page_home" },
+                                            { name: "dashboard", type: "folder", children: [{name: "page.tsx", type:"file", icon:"tsx", id:"fe_page_dash"}] },
+                                            { name: "kb-manager", type: "folder", children: [{name: "page.tsx", type:"file", icon:"tsx", id:"fe_page_kb"}] }
+                                        ]
+                                    },
+                                    {
+                                        name: "lib",
+                                        type: "folder",
+                                        children: [
+                                            { name: "api.ts", type: "file", icon: "ts", id: "fe_lib_api" }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                name: "database",
+                type: "folder",
+                children: [
+                    { name: "init.sql", type: "file", icon: "sql", id: "db_schema" }
+                ]
+            }
+        ];
+
+        // --- FILE CONTENT MAP ---
+        const contentMap = {
+            "docker": {
+                title: "docker-compose.yml",
+                desc: "Orchestrates Node.js Backend, Next.js Frontend, and Postgres.",
+                code: `version: '3.8'
+
+services:
+  <span class="comment"># The Brain: Node.js (Express)</span>
+  api:
+    build: ./apps/backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://user:pass@db:5432/market_writer
+      - NODE_ENV=production
+    depends_on:
+      - db
+
+  <span class="comment"># The Face: Next.js</span>
+  web:
+    build: ./apps/frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+
+  <span class="comment"># The Memory: Postgres</span>
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=market_writer
+    volumes:
+      - pgdata:/var/lib/postgresql/data`
+            },
+            "backend_pkg": {
+                title: "apps/backend/package.json",
+                desc: "Dependencies. 'zod' for strictness, 'node-cron' for ops.",
+                code: `{
+  "name": "market-writer-api",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.18.2",
+    "pg": "^8.11.0",           <span class="comment">// Postgres Driver</span>
+    "zod": "^3.21.4",          <span class="comment">// Schema Validation (The Rules)</span>
+    "node-cron": "^3.0.2",     <span class="comment">// 6AM Scheduler</span>
+    "uuid": "^9.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/express": "^4.17.0"
+  }
+}`
+            },
+            "schema_kb": {
+                title: "apps/backend/src/schemas/kb.schema.ts",
+                desc: "Zod Schema matching 01-KB.docx EXACTLY.",
+                code: `<span class="kwd">import</span> { z } <span class="kwd">from</span> <span class="str">"zod"</span>;
+
+<span class="comment">// 01-KB: Brand Rules</span>
+<span class="kwd">export const</span> BrandRulesSchema = z.object({
+  brand_name_exact: z.literal(<span class="str">"InMarket"</span>), <span class="comment">// Strict Constraint</span>
+  voice_rules: z.array(z.string()).min(1),
+  compliance: z.object({
+    forbidden_claims: z.array(z.string()),
+    required_disclosures: z.array(z.string())
+  })
+});
+
+<span class="comment">// 01-KB: Learning Preferences</span>
+<span class="kwd">export const</span> KBLearningPreferenceSchema = z.object({
+  pref_id: z.string(),
+  preference_type: z.enum([
+    <span class="str">"PREFER_ANGLE"</span>,
+    <span class="str">"PREFER_CTA"</span>,
+    <span class="str">"PREFER_PAGE_TYPE"</span>, 
+    <span class="str">"PREFER_LAYOUT"</span>,
+    <span class="str">"PREFER_FLOW_BLUEPRINT"</span>,
+    <span class="str">"PREFER_REPLY_STRATEGY"</span>,
+    <span class="str">"PREFER_SUBJECT_FIRSTLINE"</span>,
+    <span class="str">"PREFER_SOCIAL_BLUEPRINT"</span>
+  ]),
+  preferred_ids: z.array(z.string()).min(1),
+  reason: z.string()
+});
+
+<span class="kwd">export const</span> KnowledgeBaseSchema = z.object({
+  brand: BrandRulesSchema,
+  learning: z.object({
+    preferences: z.array(KBLearningPreferenceSchema)
+  }),
+  <span class="comment">// Additional fields needed for Blueprints</span>
+  libraries: z.object({
+    website: z.object({
+      page_blueprints: z.array(z.any()) <span class="comment">// Full definition in real file</span>
+    })
+  })
+});
+
+<span class="kwd">export type</span> KnowledgeBase = z.infer<typeof KnowledgeBaseSchema>;`
+            },
+            "schema_output": {
+                title: "apps/backend/src/schemas/writer.output.schema.ts",
+                desc: "Maps to 03-Writer-Output. Ensures we only generate valid bundles.",
+                code: `<span class="kwd">import</span> { z } <span class="kwd">from</span> <span class="str">"zod"</span>;
+
+<span class="comment">// 03-Writer-Output: The Page Object</span>
+<span class="kwd">export const</span> PageOutputSchema = z.object({
+  page_id: z.string(),
+  variant_id: z.string(),
+  slug: z.string(),
+  page_type: z.enum([<span class="str">"LANDING"</span>, <span class="str">"HOW_IT_WORKS"</span>, <span class="str">"PRICING_PHILOSOPHY"</span>]), <span class="comment">// etc</span>
+  buyer_stage: z.enum([<span class="str">"AWARENESS"</span>, <span class="str">"CONSIDERATION"</span>, <span class="str">"READY"</span>]),
+  content_markdown: z.string(), <span class="comment">// The actual copy</span>
+  primary_cta: z.object({
+    cta_type: z.enum([<span class="str">"BOOK_CALL"</span>, <span class="str">"REPLY"</span>]),
+    label: z.string(),
+    destination_slug: z.string()
+  })
+});
+
+<span class="comment">// The Full Bundle</span>
+<span class="kwd">export const</span> WebsiteBundleSchema = z.object({
+  type: z.literal(<span class="str">"website_bundle"</span>),
+  bundle_id: z.string(),
+  generated_at: z.string(),
+  pages: z.array(PageOutputSchema)
+});
+
+<span class="kwd">export type</span> WebsiteBundle = z.infer<typeof WebsiteBundleSchema>;`
+            },
+            "backend_main": {
+                title: "apps/backend/src/index.ts",
+                desc: "Entry Point. Express Server + Cron Scheduler.",
+                code: `<span class="kwd">import</span> express <span class="kwd">from</span> <span class="str">"express"</span>;
+<span class="kwd">import</span> cors <span class="kwd">from</span> <span class="str">"cors"</span>;
+<span class="kwd">import</span> { startDailyCron } <span class="kwd">from</span> <span class="str">"./core/ops.scheduler"</span>;
+<span class="kwd">import</span> { router } <span class="kwd">from</span> <span class="str">"./routes/api"</span>;
+
+<span class="kwd">const</span> app = express();
+app.use(express.json());
+app.use(cors()); <span class="comment">// Allow frontend access</span>
+
+<span class="comment">// API Routes</span>
+app.use(<span class="str">"/api"</span>, router);
+
+<span class="comment">// 07-Ops: Schedule the 6:00 AM Daily Run</span>
+startDailyCron();
+
+app.listen(8080, () => {
+  console.log(<span class="str">"🚀 Market Writer SaaS API running on port 8080"</span>);
+});`
+            },
+            "api_routes": {
+                title: "apps/backend/src/routes/api.ts",
+                desc: "Defines the Endpoints for Frontend Interaction.",
+                code: `<span class="kwd">import</span> { Router } <span class="kwd">from</span> <span class="str">"express"</span>;
+<span class="kwd">import</span> { executeRun } <span class="kwd">from</span> <span class="str">"../core/writer.engine"</span>;
+<span class="kwd">import</span> { db } <span class="kwd">from</span> <span class="str">"../db"</span>;
+
+<span class="kwd">export const</span> router = Router();
+
+<span class="comment">// GET /api/stats - Dashboard Charts</span>
+router.get(<span class="str">"/stats"</span>, <span class="kwd">async</span> (req, res) => {
+  <span class="kwd">const</span> stats = <span class="kwd">await</span> db.query(<span class="str">"SELECT * FROM analytics_events..."</span>);
+  res.json(stats.rows);
+});
+
+<span class="comment">// POST /api/run/manual - Force Trigger (Document 07-Ops Override)</span>
+router.post(<span class="str">"/run/manual"</span>, <span class="kwd">async</span> (req, res) => {
+  <span class="kwd">try</span> {
+    <span class="comment">// Fetch active KB and default input</span>
+    <span class="kwd">const</span> kb = <span class="kwd">await</span> db.query(<span class="str">"SELECT data FROM knowledge_bases LIMIT 1"</span>);
+    <span class="kwd">const</span> result = <span class="kwd">await</span> executeRun(defaultInput, kb.rows[0].data);
+    res.json(result);
+  } <span class="kwd">catch</span> (e) {
+    res.status(500).json({ error: e.message });
+  }
+});`
+            },
+            "core_engine": {
+                title: "apps/backend/src/core/writer.engine.ts",
+                desc: "The Logic: How we turn Blueprints into Pages (Deterministic).",
+                code: `<span class="kwd">import</span> { WriterInput } <span class="kwd">from</span> <span class="str">"../schemas/writer.input.schema"</span>;
+<span class="kwd">import</span> { KnowledgeBase } <span class="kwd">from</span> <span class="str">"../schemas/kb.schema"</span>;
+<span class="kwd">import</span> { WebsiteBundle } <span class="kwd">from</span> <span class="str">"../schemas/writer.output.schema"</span>;
+
+<span class="kwd">export async function</span> <span class="fn">executeRun</span>(input: WriterInput, kb: KnowledgeBase): Promise<WebsiteBundle> {
+  <span class="comment">// 1. Resolve Context (Pre-Embeddings: Exact Match)</span>
+  <span class="kwd">const</span> icp = kb.icp_library.segments.find(s => s.icp_id === input.icp.icp_id);
+  <span class="kwd">const</span> offer = kb.offer_library.offers.find(o => o.offer_id === input.offer.offer_id);
+  
+  <span class="kwd">if</span> (!icp || !offer) <span class="kwd">throw new</span> Error(<span class="str">"Context ID not found in KB"</span>);
+
+  <span class="comment">// 2. Select Blueprint (Deterministic)</span>
+  <span class="comment">// If input asks for "LANDING", find the Landing Page Blueprint</span>
+  <span class="kwd">const</span> blueprint = kb.libraries.website.page_blueprints.find(
+    bp => bp.page_type === <span class="str">"LANDING"</span>
+  );
+
+  <span class="comment">// 3. Assembly Logic (The "Generation")</span>
+  <span class="comment">// This replaces the AI Hallucination with Rules.</span>
+  <span class="kwd">const</span> generatedPage = {
+    page_id: crypto.randomUUID(),
+    variant_id: <span class="str">"v1_baseline"</span>,
+    slug: <span class="str">"/"</span> + offer.offer_name.toLowerCase().replace(/ /g, <span class="str">"-"</span>),
+    page_type: <span class="str">"LANDING"</span>,
+    buyer_stage: <span class="str">"AWARENESS"</span>,
+    <span class="comment">// Combine Offer Value Prop + ICP Pain Points</span>
+    content_markdown: \`# \${offer.value_proposition}\n\nFor: \${icp.industry_group_norm}\n...\`,
+    primary_cta: {
+      cta_type: <span class="str">"BOOK_CALL"</span>,
+      label: <span class="str">"Schedule Strategy Session"</span>,
+      destination_slug: <span class="str">"/book"</span>
+    }
+  };
+
+  <span class="kwd">return</span> {
+    type: <span class="str">"website_bundle"</span>,
+    bundle_id: crypto.randomUUID(),
+    generated_at: <span class="kwd">new</span> Date().toISOString(),
+    pages: [generatedPage]
+  };
+}`
+            },
+            "core_loop": {
+                title: "apps/backend/src/core/learning.loop.ts",
+                desc: "The Brain (05-Learning-Loop). Node.js implementation of the rules.",
+                code: `<span class="kwd">import</span> { db } <span class="kwd">from</span> <span class="str">"../db"</span>;
+
+<span class="kwd">export async function</span> <span class="fn">runDailyOptimization</span>() {
+  <span class="comment">// 1. Fetch Yesterday's Analytics (02-Input: PREVIOUS_CALENDAR_DAY)</span>
+  <span class="kwd">const</span> yesterdayStats = <span class="kwd">await</span> db.query(<span class="str">"SELECT * FROM analytics_events WHERE..."</span>);
+
+  <span class="kwd">for</span> (<span class="kwd">const</span> variant <span class="kwd">of</span> yesterdayStats.rows) {
+    <span class="comment">// WINNER POLICY (05-Learning): Primary Outcome = BOOKED_CALL</span>
+    <span class="comment">// We explicitly IGNORE open_rate as per the doc.</span>
+    <span class="kwd">if</span> (variant.booked_calls > 0) {
+      <span class="kwd">await</span> <span class="fn">promoteVariant</span>(variant.id, <span class="str">"PREFER_ANGLE"</span>);
+    }
+    
+    <span class="comment">// DEMOTION POLICY: High Bounce Rate</span>
+    <span class="kwd">if</span> (variant.bounce_rate > 0.15) {
+      <span class="kwd">await</span> <span class="fn">killVariant</span>(variant.id);
+    }
+  }
+}
+
+<span class="kwd">async function</span> <span class="fn">promoteVariant</span>(id: string, type: string) {
+  <span class="comment">// Updates the JSONB blob in the 'knowledge_bases' table</span>
+  <span class="kwd">await</span> db.query(<span class="str">
+    \`UPDATE knowledge_bases 
+     SET data = jsonb_set(data, '{learning,preferences}', ...)\`</span>
+  );
+}`
+            },
+            "core_ops": {
+                title: "apps/backend/src/core/ops.scheduler.ts",
+                desc: "07-Ops: Schedule implementation using node-cron.",
+                code: `<span class="kwd">import</span> cron <span class="kwd">from</span> <span class="str">"node-cron"</span>;
+<span class="kwd">import</span> { runDailyOptimization } <span class="kwd">from</span> <span class="str">"./learning.loop"</span>;
+
+<span class="kwd">export function</span> <span class="fn">startDailyCron</span>() {
+  <span class="comment">// Document 07-Ops: "daily_run_time: 06:00"</span>
+  <span class="comment">// Cron expression for 6 AM daily</span>
+  cron.schedule(<span class="str">"0 6 * * *"</span>, <span class="kwd">async</span> () => {
+    console.log(<span class="str">"🕕 Starting Scheduled Daily Ops Run..."</span>);
+    <span class="kwd">await</span> <span class="fn">runDailyOptimization</span>();
+  });
+}`
+            },
+            "db_schema": {
+                title: "database/init.sql",
+                desc: "Postgres Schema. Using JSONB for maximum flexibility.",
+                code: `<span class="comment">-- 01-KB Storage</span>
+<span class="kwd">CREATE TABLE</span> knowledge_bases (
+    id UUID PRIMARY KEY,
+    version VARCHAR(50) NOT NULL,
+    data JSONB NOT NULL, <span class="comment">// Stores the validated JSON</span>
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+<span class="comment">-- 04-Analytics Events</span>
+<span class="kwd">CREATE TABLE</span> analytics_events (
+    id UUID PRIMARY KEY,
+    run_id UUID,
+    event_type VARCHAR(50), <span class="comment">// BOOKED_CALL, REPLY</span>
+    payload JSONB,
+    occurred_at TIMESTAMP
+);
+
+<span class="comment">-- Writer Runs</span>
+<span class="kwd">CREATE TABLE</span> runs (
+    id UUID PRIMARY KEY,
+    input_snapshot JSONB,
+    output_snapshot JSONB,
+    status VARCHAR(20),
+    executed_at TIMESTAMP
+);`
+            },
+            "fe_lib_api": {
+                title: "apps/frontend/src/lib/api.ts",
+                desc: "Simple fetch wrapper to talk to the backend.",
+                code: `<span class="kwd">const</span> API_URL = process.env.NEXT_PUBLIC_API_URL || <span class="str">"http://localhost:8080/api"</span>;
+
+<span class="kwd">export async function</span> <span class="fn">fetchStats</span>() {
+  <span class="kwd">const</span> res = <span class="kwd">await</span> fetch(\`\${API_URL}/stats\`);
+  <span class="kwd">return</span> res.json();
+}
+
+<span class="kwd">export async function</span> <span class="fn">triggerManualRun</span>() {
+  <span class="kwd">const</span> res = <span class="kwd">await</span> fetch(\`\${API_URL}/run/manual\`, { method: <span class="str">"POST"</span> });
+  <span class="kwd">return</span> res.json();
+}`
+            }
+        };
+
+        // --- RENDER LOGIC ---
+        const treeContainer = document.getElementById('file-tree');
+        const codeView = document.getElementById('code-view');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const fileNameEl = document.getElementById('file-name');
+        const fileDescEl = document.getElementById('file-desc');
+        const codeContentEl = document.getElementById('code-content');
+        const breadcrumb = document.getElementById('breadcrumb');
+
+        function renderTree(items, container) {
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                const label = document.createElement('div');
+                label.className = 'tree-item';
+                
+                let iconClass = 'fa-regular fa-file';
+                if (item.type === 'folder') iconClass = item.open ? 'fa-regular fa-folder-open icon-folder' : 'fa-regular fa-folder icon-folder';
+                else if (item.icon) iconClass = `fa-brands fa-${item.icon} icon-${item.icon}`;
+                
+                if (item.icon === 'ts') iconClass = 'fa-solid fa-code icon-ts';
+                if (item.icon === 'json') iconClass = 'fa-solid fa-file-code icon-json';
+                if (item.icon === 'yml') iconClass = 'fa-solid fa-file-code icon-yml';
+                if (item.icon === 'sql') iconClass = 'fa-solid fa-database icon-sql';
+                if (item.icon === 'tsx') iconClass = 'fa-brands fa-react icon-tsx';
+                if (item.icon === 'js') iconClass = 'fa-brands fa-js icon-js';
+
+                label.innerHTML = `<i class="${iconClass}"></i><span>${item.name}</span>`;
+                
+                label.onclick = (e) => {
+                    e.stopPropagation();
+                    if (item.type === 'folder') {
+                        item.open = !item.open;
+                        const i = label.querySelector('i');
+                        i.className = item.open ? 'fa-regular fa-folder-open icon-folder' : 'fa-regular fa-folder icon-folder';
+                        const childrenDiv = itemDiv.querySelector('.tree-children');
+                        if (childrenDiv) childrenDiv.classList.toggle('open');
+                    } else {
+                        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+                        label.classList.add('active');
+                        loadFile(item);
+                    }
+                };
+
+                itemDiv.appendChild(label);
+
+                if (item.type === 'folder' && item.children) {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = `tree-children ${item.open ? 'open' : ''}`;
+                    renderTree(item.children, childrenDiv);
+                    itemDiv.appendChild(childrenDiv);
+                }
+
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function loadFile(item) {
+            const data = contentMap[item.id];
+            welcomeScreen.classList.add('hidden');
+            codeView.classList.remove('hidden');
+            breadcrumb.innerText = item.name;
+
+            if (data) {
+                fileNameEl.innerText = data.title;
+                fileDescEl.innerText = data.desc;
+                codeContentEl.innerHTML = data.code;
+            } else {
+                fileNameEl.innerText = item.name;
+                fileDescEl.innerText = "Binary or config file.";
+                codeContentEl.innerHTML = "// No preview";
+            }
+        }
+
+        renderTree(fs, treeContainer);
+    </script>
+</body>
+</html>

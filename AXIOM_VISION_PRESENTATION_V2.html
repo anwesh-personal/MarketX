@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM — The Brain Behind InMarket Traffic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Modern Reset */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Typography */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        /* Theme Variables */
+        :root {
+            /* Aqua Palette */
+            --aqua-bright: #00FFDD;
+            --aqua-primary: #00D4AA;
+            --aqua-deep: #0099CC;
+            --aqua-dark: #006688;
+
+            /* Gradients */
+            --grad-marketing: linear-gradient(135deg, #00FFDD 0%, #0099CC 100%);
+            --grad-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+            --grad-glow: radial-gradient(circle at 50% 50%, rgba(0, 212, 170, 0.15) 0%, transparent 70%);
+
+            /* Light Theme Defaults */
+            --bg-primary: #F0F4F8;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --border-color: rgba(148, 163, 184, 0.2);
+            --card-shadow: 0 10px 40px -10px rgba(0, 77, 64, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --nav-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme Overrides */
+            --bg-primary: #030712;
+            --bg-secondary: #0F172A;
+            --text-primary: #F8FAFC;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --border-color: rgba(0, 212, 170, 0.15);
+            --card-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(3, 7, 18, 0.6);
+            --glass-border: rgba(0, 212, 170, 0.1);
+            --nav-bg: rgba(3, 7, 18, 0.85);
+        }
+
+        /* Utilities */
+        .gradient-text {
+            background: var(--grad-marketing);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        .gradient-bg {
+            background: var(--grad-marketing);
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--card-shadow);
+        }
+
+        .neon-border {
+            position: relative;
+        }
+
+        .neon-border::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--aqua-primary), transparent);
+            opacity: 0.5;
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--aqua-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--aqua-primary);
+        }
+
+        /* Tab Navigation */
+        .tab-btn {
+            position: relative;
+            isolation: isolate;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--grad-marketing);
+            opacity: 0;
+            border-radius: 999px;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .tab-btn.active {
+            color: #fff !important;
+        }
+
+        .tab-btn.active::before {
+            opacity: 1;
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--aqua-primary);
+        }
+
+        /* Micro-interactions */
+        .service-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--aqua-primary);
+            box-shadow: 0 20px 40px -5px rgba(0, 212, 170, 0.15);
+        }
+
+        .icon-glow {
+            filter: drop-shadow(0 0 8px rgba(0, 212, 170, 0.4));
+        }
+
+        /* Code/Pre blocks */
+        pre {
+            background: #0f172a !important;
+            /* Always dark for code */
+            color: #f8fafc;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Toggle Switch */
+        .theme-toggle {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 999px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--aqua-primary);
+            box-shadow: 0 0 15px rgba(0, 212, 170, 0.2);
+        }
+
+        /* --- Compatibility Layer for Content JS --- */
+        /* These classes map the legacy content structure to the new design system */
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 1.5rem;
+            /* Rounded 3xl match */
+        }
+
+        .card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--aqua-primary);
+            box-shadow: 0 15px 30px -10px rgba(0, 212, 170, 0.2);
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: var(--grad-marketing);
+            color: #fff;
+            padding: 0.75rem 2rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 170, 0.4);
+        }
+
+        /* Text utility overrides for theming */
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+
+    <!-- Background Ambient Glow -->
+    <div class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+        <div
+            class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#00D4AA] opacity-10 blur-[120px] rounded-full animate-float">
+        </div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#0099CC] opacity-10 blur-[120px] rounded-full animate-float"
+            style="animation-delay: -3s;"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300 border-b border-[var(--border-color)]"
+        style="background: var(--nav-bg); backdrop-filter: blur(12px);">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <!-- Brand -->
+            <div class="flex items-center gap-3 group cursor-pointer"
+                onclick="window.scrollTo({top:0, behavior:'smooth'})">
+                <div
+                    class="relative w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-[#00D4AA] to-[#0099CC] text-white shadow-lg group-hover:scale-105 transition-transform duration-300">
+                    <i data-lucide="zap" class="w-6 h-6 fill-white"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-xl font-bold tracking-tight leading-none">AXIOM</span>
+                    <span
+                        class="text-[0.65rem] uppercase tracking-widest text-[var(--aqua-primary)] font-bold">Intelligence
+                        Layer</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-4">
+                <button class="theme-toggle" id="themeBtn" aria-label="Toggle Theme">
+                    <div class="relative w-6 h-6">
+                        <i data-lucide="sun"
+                            class="absolute inset-0 w-full h-full text-yellow-500 transition-all duration-300 scale-100 rotate-0 dark:scale-0 dark:rotate-90"></i>
+                        <i data-lucide="moon"
+                            class="absolute inset-0 w-full h-full text-blue-400 transition-all duration-300 scale-0 -rotate-90 dark:scale-100 dark:rotate-0"></i>
+                    </div>
+                </button>
+                <div class="h-6 w-px bg-[var(--border-color)] mx-2"></div>
+                <button
+                    class="hidden md:flex items-center gap-2 px-4 py-2 rounded-full font-semibold text-sm bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-[var(--aqua-primary)] transition-all shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    System Online
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-24 pb-12 overflow-hidden">
+        <div class="max-w-6xl mx-auto px-6 text-center z-10">
+
+            <div
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--aqua-primary)] bg-[rgba(0,212,170,0.1)] text-[var(--aqua-primary)] font-semibold text-sm uppercase tracking-wide mb-8 animate-[fadeIn_1s_ease-out]">
+                <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+                The Brain Behind InMarket Traffic
+            </div>
+
+            <h1 class="text-6xl md:text-8xl font-black mb-8 leading-tight tracking-tight">
+                Self-Healing <br />
+                <span class="gradient-text">Trust Engine</span>
+            </h1>
+
+            <p
+                class="text-xl md:text-2xl font-light text-[var(--text-secondary)] max-w-3xl mx-auto mb-12 leading-relaxed">
+                Axiom isn't just an email writer. It's a <span
+                    class="text-[var(--text-primary)] font-medium">constitutional AI</span> that generates
+                trust-building content, learns from every interaction, and gets <span
+                    class="text-[var(--aqua-primary)] font-medium border-b border-dashed border-[var(--aqua-primary)]">smarter
+                    every day</span>.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button onclick="scrollToTabs()"
+                    class="group relative px-8 py-4 rounded-xl font-bold text-white overflow-hidden shadow-[0_10px_30px_-10px_rgba(0,212,170,0.6)] hover:shadow-[0_20px_40px_-5px_rgba(0,212,170,0.4)] transition-all">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-[#00D4AA] to-[#0099CC] transition-all group-hover:scale-110">
+                    </div>
+                    <span class="relative flex items-center gap-2">
+                        Explore The Vision <i data-lucide="arrow-right"
+                            class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </span>
+                </button>
+                <button
+                    onclick="openModal('System Status', '<div class=\'text-center p-12\'><h3 class=\'text-2xl font-bold mb-4\'>System Operational</h3><p class=\'text-[var(--text-secondary)]\'>All worker nodes running.<br>Intelligence Layer active.</p></div>')"
+                    class="px-8 py-4 rounded-xl font-bold text-[var(--text-primary)] bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-[var(--aqua-primary)] hover:bg-[var(--glass-bg)] transition-all">
+                    View Live Demo
+                </button>
+            </div>
+
+            <!-- Stats/Floaters -->
+            <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto opacity-80">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1">24/7</div>
+                    <div class="text-xs uppercase tracking-widest text-[var(--text-muted)]">Learning</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1">100%</div>
+                    <div class="text-xs uppercase tracking-widest text-[var(--text-muted)]">Constitutional</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1">∞</div>
+                    <div class="text-xs uppercase tracking-widest text-[var(--text-muted)]">Scalability</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-[var(--text-primary)] mb-1">0ms</div>
+                    <div class="text-xs uppercase tracking-widest text-[var(--text-muted)]">Latency</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-50">
+            <i data-lucide="chevrons-down" class="w-8 h-8 text-[var(--text-primary)]"></i>
+        </div>
+    </section>
+
+    <!-- Tab Section -->
+    <div id="tabViewport" class="relative z-20 bg-[var(--bg-primary)] pt-12">
+        <!-- Sticky Nav -->
+        <div
+            class="sticky top-20 z-40 w-full border-y border-[var(--border-color)] bg-[var(--nav-bg)] backdrop-blur-xl shadow-sm">
+            <div class="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar">
+                <div class="flex items-center space-x-2 py-4 min-w-max">
+                    <button
+                        class="tab-btn active px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="overview">Overview</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="imt">InMarket Traffic</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="architecture">System Arch</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="constitution">The Constitution</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="workflows">Workflows</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="learning">Learning Loop</button>
+                    <button
+                        class="tab-btn px-6 py-2.5 rounded-full text-sm font-bold text-[var(--text-muted)] transition-all"
+                        data-tab="roadmap">Roadmap</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="max-w-7xl mx-auto px-6 py-20 min-h-[60vh]">
+            <div id="tabContent" class="opacity-0 translate-y-4 transition-all duration-500 ease-out">
+                <!-- Javascript will inject content here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-[var(--border-color)] bg-[var(--bg-secondary)] py-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div
+                class="flex items-center gap-2 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all">
+                <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
+                <span class="font-bold">AXIOM SYSTEM</span>
+            </div>
+            <div class="text-sm text-[var(--text-muted)]">
+                &copy; 2026 InMarket Traffic. All Systems Nominal.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Universal Modal -->
+    <div id="modalOverlay"
+        class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div
+            class="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto glass-panel rounded-3xl p-8 md:p-12 animate-[fadeIn_0.3s_ease-out]">
+            <button onclick="closeModal()"
+                class="absolute top-6 right-6 p-2 rounded-full hover:bg-[rgba(255,255,255,0.1)] transition-colors">
+                <i data-lucide="x" class="w-6 h-6 text-[var(--text-primary)]"></i>
+            </button>
+            <h2 id="modalTitle" class="text-3xl font-bold gradient-text mb-8"></h2>
+            <div id="modalBody" class="text-[var(--text-secondary)]"></div>
+        </div>
+    </div>
+
+    <!-- Include Content JS -->
+    <script src="AXIOM_VISION_CONTENT.js"></script> <!-- Reusing existing content source as requested -->
+
+    <script>
+        // Init Lucide Icons
+        lucide.createIcons();
+
+        // Theme Manager
+        const themeBtn = document.getElementById('themeBtn');
+        const body = document.body;
+
+        // Check system preference or saved
+        const savedTheme = localStorage.getItem('axiom-theme') || 'dark';
+        body.setAttribute('data-theme', savedTheme);
+
+        themeBtn.addEventListener('click', () => {
+            const current = body.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('axiom-theme', newTheme);
+
+            // Animate icon rotation
+            const moons = themeBtn.querySelectorAll('i');
+            // Re-trigger lucide if needed, but CSS handles rotation/scale
+        });
+
+        // Tab Logic
+        const tabs = document.querySelectorAll('.tab-btn');
+        const contentArea = document.getElementById('tabContent');
+
+        function loadTab(tabId) {
+            // Fade out
+            contentArea.style.opacity = '0';
+            contentArea.style.transform = 'translateY(10px)';
+
+            setTimeout(() => {
+                // Get content from the external AXIOM_VISION_CONTENT.js function
+                // We wrap this in try-catch in case the JS file isn't loaded yet
+                try {
+                    const content = getTabContent(tabId);
+                    contentArea.innerHTML = content;
+                    lucide.createIcons(); // Re-init icons for new content
+                } catch (e) {
+                    contentArea.innerHTML = `<div class="text-center p-12 text-red-500">Content Module Error. Ensure AXIOM_VISION_CONTENT.js is linked.</div>`;
+                }
+
+                // Fade in
+                contentArea.style.opacity = '1';
+                contentArea.style.transform = 'translateY(0)';
+            }, 300);
+
+            // Update Buttons
+            tabs.forEach(t => {
+                if (t.dataset.tab === tabId) t.classList.add('active');
+                else t.classList.remove('active');
+            });
+        }
+
+        tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                loadTab(btn.dataset.tab);
+            });
+        });
+
+        // Initialize First Tab
+        loadTab('overview');
+
+        // Scroll Helper
+        function scrollToTabs() {
+            document.getElementById('tabViewport').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Modal Logic
+        const modal = document.getElementById('modalOverlay');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+
+        window.openModal = (title, content) => {
+            modalTitle.textContent = title;
+            modalBody.innerHTML = content;
+            modal.classList.replace('hidden', 'flex');
+            document.body.style.overflow = 'hidden'; // Lock scroll
+            lucide.createIcons();
+        };
+
+        window.closeModal = () => {
+            modal.classList.replace('flex', 'hidden');
+            document.body.style.overflow = '';
+        };
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+    </script>
+</body>
+
+</html>

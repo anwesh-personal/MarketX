@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM: Vision Alignment - Interactive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #f8fafc;
+            padding: 2rem;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .vision-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .vision-column {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid;
+            border-radius: 20px;
+            padding: 2rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .vision-column::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--glow-color), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .vision-column:hover::before {
+            opacity: 0.1;
+        }
+
+        .vision-column:hover {
+            transform: translateY(-12px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Column-specific colors */
+        .tommy {
+            border-color: #f97316;
+            --glow-color: #f97316;
+        }
+
+        .integration {
+            border-color: #10b981;
+            --glow-color: #10b981;
+        }
+
+        .anwesh {
+            border-color: #8b5cf6;
+            --glow-color: #8b5cf6;
+        }
+
+        .column-header {
+            text-align: center;
+            padding: 1rem;
+            background: var(--glow-color);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .column-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .column-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .column-subtitle {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 0.5rem;
+        }
+
+        .section-block {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .section-block:hover {
+            background: rgba(15, 23, 42, 0.9);
+            border-color: var(--glow-color);
+            transform: scale(1.02);
+        }
+
+        .section-icon {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            filter: grayscale(30%);
+            transition: filter 0.3s ease;
+        }
+
+        .section-block:hover .section-icon {
+            filter: grayscale(0%);
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--glow-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .feature-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .bullet {
+            color: var(--glow-color);
+            font-weight: bold;
+            min-width: 16px;
+        }
+
+        /* Integration Path (Middle Column) */
+        .integration-item {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .integration-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            background: #10b981;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .integration-item:hover::before {
+            transform: scaleY(1);
+        }
+
+        .integration-item:hover {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border-color: rgba(16, 185, 129, 0.4);
+            transform: translateX(8px);
+        }
+
+        .integration-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #10b981;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .integration-icon {
+            font-size: 1.5rem;
+        }
+
+        /* Timeline Section */
+        .timeline-section {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 3rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .timeline-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .timeline-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .timeline-row {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .timeline-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+        }
+
+        .timeline-bar {
+            position: relative;
+            height: 60px;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .timeline-segment {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            border-right: 2px solid rgba(0, 0, 0, 0.3);
+        }
+
+        .timeline-segment:hover {
+            filter: brightness(1.2);
+            transform: scaleY(1.1);
+            z-index: 10;
+        }
+
+        /* Tommy's expectation colors */
+        .market-writer-only {
+            background: linear-gradient(135deg, #f97316, #fb923c);
+        }
+
+        .build-launch {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+
+        .operation-6m {
+            background: linear-gradient(135deg, #64748b, #94a3b8);
+        }
+
+        /* Axiom reality colors */
+        .phase-0 {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .phase-1 {
+            background: linear-gradient(135deg, #06b6d4, #22d3ee);
+        }
+
+        .phase-2 {
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+        }
+
+        .phase-3 {
+            background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+        }
+
+        .phase-ready {
+            background: linear-gradient(135deg, #ec4899, #f472b6);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .vision-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .section-icon {
+                font-size: 2rem;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Arrow connectors */
+        .connector-arrow {
+            position: absolute;
+            right: -2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2rem;
+            color: var(--glow-color);
+            opacity: 0.5;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎯 AXIOM: Vision Alignment</h1>
+
+        <!-- Main Vision Grid -->
+        <div class="vision-grid">
+            <!-- PARTNER'S VISION (TOMMY) -->
+            <div class="vision-column tommy">
+                <div class="column-header">
+                    <div class="column-title">Partner's Vision (Tommy)</div>
+                    <div class="column-subtitle">Market Writer System</div>
+                </div>
+
+                <!-- Content Generation -->
+                <div class="section-block">
+                    <div class="section-icon">📄</div>
+                    <div class="section-title">Content Generation</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Auto-generates websites (multi-page + landing)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Email flow sequences with timing</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Email reply automation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Social media posts (LinkedIn, X, YouTube)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>All content includes A/B test variants</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Analytics Engine -->
+                <div class="section-block">
+                    <div class="section-icon">📊</div>
+                    <div class="section-title">Analytics Engine</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Tracks booked calls (primary KPI)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Reply rate, click tracking</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Bounce/unsubscribe monitoring</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Performance by ICP + Offer + Usage Stage</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Aggregated pipeline visibility</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Knowledge Base -->
+                <div class="section-block">
+                    <div class="section-icon">🧠</div>
+                    <div class="section-title">Knowledge Base (The Brain)</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Brand voice rules & compliance</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>ICP library with pain points</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Offer inventory (solutions)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Content libraries (angles, CTAs, blueprints)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Routing rules for queries</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Testing configurations</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Learning Loop -->
+                <div class="section-block">
+                    <div class="section-icon">🔄</div>
+                    <div class="section-title">Learning Loop (Self-Healing)</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Runs daily at 6 AM Eastern</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Analyzes previous day's data</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Prioritizes winning patterns automatically</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Pauses dangerous patterns</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Flags issues (needs review)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Zero human intervention</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Technical Requirements -->
+                <div class="section-block">
+                    <div class="section-icon">⚙️</div>
+                    <div class="section-title">Technical Requirements</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Deterministic execution (rule-based)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Complete repeatability (version logged)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>8-10 week build timeline</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>6-month operation window for iteration</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- INTEGRATION PATH (MIDDLE) -->
+            <div class="vision-column integration">
+                <div class="column-header">
+                    <div class="column-title">Integration Path</div>
+                    <div class="column-subtitle">The Uber-Platform Strategy</div>
+                </div>
+
+                <!-- Shared Brain Core -->
+                <div class="integration-item">
+                    <div class="integration-title">
+                        <span class="integration-icon">🧩</span>
+                        Shared Brain Core
+                    </div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Market Writer uses Axiom's RAG for KB search</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Both leverage same vector store</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Unified learning loop architecture</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Single AI provider management system</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Market Writer as Agent -->
+                <div class="integration-item">
+                    <div class="integration-title">
+                        <span class="integration-icon">🎯</span>
+                        Market Writer as Agent
+                    </div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Implement as specialized "MarketWriterAgent"</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Deterministic mode (follows KB rules strictly)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Generative mode for ideation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Best of both worlds</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Lekhika Infrastructure -->
+                <div class="integration-item">
+                    <div class="integration-title">
+                        <span class="integration-icon">🏗️</span>
+                        Lekhika Infrastructure
+                    </div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Worker orchestration patterns</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>PM2 deployment automation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Queue management UI</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>AI provider failover system</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Design system patterns</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Combined Value Proposition -->
+                <div class="integration-item">
+                    <div class="integration-title">
+                        <span class="integration-icon">💡</span>
+                        Combined Value Proposition
+                    </div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Enterprise brain + marketing automation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Extensible beyond marketing</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Self-healing at multiple layers</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Complete traceability maintained</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Platform as event solution</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Partnership Benefits -->
+                <div class="integration-item">
+                    <div class="integration-title">
+                        <span class="integration-icon">📈</span>
+                        Partnership Benefits
+                    </div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Tommy gets enterprise-grade system</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Anwesh builds portfolio piece</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Proven Lekhika patterns integrated</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Future-proof architecture</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Equity alignment on real IP</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- AXIOM BUILD (ANWESH) -->
+            <div class="vision-column anwesh">
+                <div class="column-header">
+                    <div class="column-title">Axiom Build (Anwesh)</div>
+                    <div class="column-subtitle">Enterprise Cognitive AI Platform</div>
+                </div>
+
+                <!-- Multi-Agent System -->
+                <div class="section-block">
+                    <div class="section-icon">🤖</div>
+                    <div class="section-title">Multi-Agent System</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Writer Agent for content generation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Learning Agent for improvements</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Coach Agent for productivity</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Generalist Agent for conversations</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Intent classification & routing</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Tool execution framework</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Advanced RAG Pipeline -->
+                <div class="section-block">
+                    <div class="section-icon">🔍</div>
+                    <div class="section-title">Advanced RAG Pipeline</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Hybrid search (vector + full-text)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>pgvector with HyPar indexing</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Query expansion with LLM</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Context window stitching</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Citation generation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Token budget management</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>≈50ms search on 1M+ vectors</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Enterprise Infrastructure -->
+                <div class="section-block">
+                    <div class="section-icon">📁</div>
+                    <div class="section-title">Enterprise Infrastructure</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Multi-tenant with org isolation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>PostgreSQL + pgvector</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Real-time (Supabase Realtime)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>BullMQ background workers</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Real-time streaming responses</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Supabase RLS policies</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Learning Systems -->
+                <div class="section-block">
+                    <div class="section-icon">🎓</div>
+                    <div class="section-title">Learning Systems</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>RLHF (Reinforcement Learning from Human Feedback)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Continuous improvement loop</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>A/B testing framework</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Feedback collection (explicit + implicit)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Model versioning & rollback</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Fine-tuning pipeline (ready)</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Advanced Capabilities -->
+                <div class="section-block">
+                    <div class="section-icon">🚀</div>
+                    <div class="section-title">Advanced Capabilities</div>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Multi-modal ready (text, images, audio, docs)</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Graph memory networks</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Temporal pattern detection</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Causal reasoning engine</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>16-week phased implementation</span>
+                        </li>
+                        <li class="feature-item">
+                            <span class="bullet">•</span>
+                            <span>Production-grade from day one</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline Comparison -->
+        <div class="timeline-section">
+            <div class="timeline-title">⏱️ Timeline Comparison</div>
+
+            <div class="timeline-rows">
+                <!-- Tommy's Expectation -->
+                <div class="timeline-row">
+                    <div class="timeline-label">Tommy's Expectation</div>
+                    <div class="timeline-bar">
+                        <div class="timeline-segment market-writer-only" style="left: 0%; width: 50%;">
+                            Market Writer only<br>8-10 weeks
+                        </div>
+                        <div class="timeline-segment build-launch" style="left: 50%; width: 25%;">
+                            Build & Launch
+                        </div>
+                        <div class="timeline-segment operation-6m" style="left: 75%; width: 25%;">
+                            6-month operation
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Axiom Reality -->
+                <div class="timeline-row">
+                    <div class="timeline-label">Axiom Reality (16 weeks phased)</div>
+                    <div class="timeline-bar">
+                        <div class="timeline-segment phase-0" style="left: 0%; width: 10%;">
+                            Phase 0<br>Core Setup<br>7-10 days
+                        </div>
+                        <div class="timeline-segment phase-1" style="left: 10%; width: 20%;">
+                            Phase 1<br>MVP
+                        </div>
+                        <div class="timeline-segment phase-2" style="left: 30%; width: 30%;">
+                            Phase 2<br>Agents & RAG
+                        </div>
+                        <div class="timeline-segment phase-3" style="left: 60%; width: 25%;">
+                            Phase 3<br>Advanced AI
+                        </div>
+                        <div class="timeline-segment phase-ready" style="left: 85%; width: 15%;">
+                            Production<br>Ready
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add entrance animations
+        document.addEventListener('DOMContentLoaded', function () {
+            const columns = document.querySelectorAll('.vision-column');
+            columns.forEach((col, index) => {
+                setTimeout(() => {
+                    col.style.animation = 'fadeIn 0.6s ease forwards';
+                }, index * 200);
+            });
+
+            // Add hover effects to section blocks
+            const blocks = document.querySelectorAll('.section-block');
+            blocks.forEach(block => {
+                block.addEventListener('click', function () {
+                    this.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 200);
+                });
+            });
+
+            // Timeline segment tooltips
+            const segments = document.querySelectorAll('.timeline-segment');
+            segments.forEach(segment => {
+                segment.addEventListener('mouseenter', function () {
+                    this.style.zIndex = '20';
+                    this.style.transform = 'scaleY(1.2)';
+                });
+
+                segment.addEventListener('mouseleave', function () {
+                    this.style.zIndex = '1';
+                    this.style.transform = 'scaleY(1)';
+                });
+            });
+
+            // Integration items pulse animation on hover
+            const integrationItems = document.querySelectorAll('.integration-item');
+            integrationItems.forEach(item => {
+                item.addEventListener('mouseenter', function () {
+                    const icon = this.querySelector('.integration-icon');
+                    icon.style.transform = 'scale(1.3) rotate(360deg)';
+                    icon.style.transition = 'transform 0.5s ease';
+                });
+
+                item.addEventListener('mouseleave', function () {
+                    const icon = this.querySelector('.integration-icon');
+                    icon.style.transform = 'scale(1) rotate(0deg)';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

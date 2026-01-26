@@ -19,8 +19,16 @@ import {
     Brain,
     Database,
     ChevronRight,
+    GitBranch,
+    Cpu,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
+import {
+    getSession,
+    clearSession,
+    validateSession,
+    isAuthenticated
+} from '@/lib/superadmin-auth';
 
 interface SuperAdminLayoutProps {
     children: React.ReactNode;
@@ -35,33 +43,55 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     const [isReady, setIsReady] = useState(false);
     const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-    // If login page, render without layout
-    if (pathname === '/superadmin/login') {
-        return <>{children}</>;
-    }
+    // Determine if this is the login page
+    const isLoginPage = pathname === '/superadmin/login';
 
-    // Check authentication - OPTIMIZED
+    // Check authentication with server-side validation
+    // This hook MUST be called unconditionally (React Rules of Hooks)
     useEffect(() => {
-        const checkAuth = () => {
-            const session = localStorage.getItem('superadmin_session');
+        // Skip auth for login page
+        if (isLoginPage) {
+            setIsAuthChecking(false);
+            setIsReady(true);
+            return;
+        }
+
+        const checkAuth = async () => {
+            // Quick client-side check first
+            if (!isAuthenticated()) {
+                router.push('/superadmin/login');
+                return;
+            }
+
+            // Get session data
+            const session = getSession();
             if (!session) {
                 router.push('/superadmin/login');
                 return;
             }
 
-            try {
-                const sessionData = JSON.parse(session);
-                setAdminEmail(sessionData.email);
-                setIsReady(true);
-            } catch {
+            // Validate token with server
+            const isValid = await validateSession();
+
+            if (!isValid) {
+                clearSession();
                 router.push('/superadmin/login');
-            } finally {
-                setIsAuthChecking(false);
+                return;
             }
+
+            // Session is valid
+            setAdminEmail(session.email);
+            setIsReady(true);
+            setIsAuthChecking(false);
         };
 
         checkAuth();
-    }, []); // Run once on mount
+    }, [pathname, router, isLoginPage]);
+
+    // If login page, render without layout (AFTER hooks are called)
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
 
     // Show nothing while checking auth (prevents flicker)
     if (isAuthChecking || !isReady) {
@@ -76,7 +106,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     }
 
     const handleLogout = () => {
-        localStorage.removeItem('superadmin_session');
+        clearSession();
         router.push('/superadmin/login');
     };
 
@@ -84,6 +114,8 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2 },
         { name: 'Users', href: '/superadmin/users', icon: Users },
+        { name: 'Workflow Templates', href: '/superadmin/workflows', icon: GitBranch },
+        { name: 'Engine Instances', href: '/superadmin/engines', icon: Cpu },
         { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot },
         { name: 'AI Management', href: '/superadmin/ai-management', icon: Settings },
         { name: 'Brain Management', href: '/superadmin/brains', icon: Brain },

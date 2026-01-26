@@ -13,6 +13,7 @@ import {
     ArrowDown,
     RefreshCw,
 } from 'lucide-react';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 interface PlatformStats {
     active_orgs: number;
@@ -25,6 +26,7 @@ interface PlatformStats {
 }
 
 export default function SuperadminDashboard() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [stats, setStats] = useState<PlatformStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -34,16 +36,7 @@ export default function SuperadminDashboard() {
 
     const loadStats = async () => {
         try {
-            const session = localStorage.getItem('superadmin_session');
-            if (!session) return;
-
-            const { token } = JSON.parse(session);
-
-            const response = await fetch('/api/superadmin/stats', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await fetchWithAuth('/api/superadmin/stats');
 
             if (!response.ok) throw new Error('Failed to load stats');
 
@@ -99,110 +92,188 @@ export default function SuperadminDashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
                 {/* Active Organizations Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-primary),0_8px_32px_-4px_var(--color-primary),0_0_64px_-16px_var(--color-primary)]
+                    hover:border-primary/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
-                                <Building2 className="w-6 h-6 text-primary" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-primary/10 group-hover:bg-primary/20
+                                transition-all duration-300
+                                group-hover:shadow-[0_0_20px_var(--color-primary)]
+                            ">
+                                <Building2 className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Active Organizations</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-primary transition-colors duration-300">Active Organizations</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-primary transition-colors duration-300">
                             {stats?.active_orgs || 0}
                         </p>
                     </div>
                 </div>
 
                 {/* Total Users Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-info/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-info),0_8px_32px_-4px_var(--color-info),0_0_64px_-16px_var(--color-info)]
+                    hover:border-info/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-info/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-info/10">
-                                <Users className="w-6 h-6 text-info" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-info/10 group-hover:bg-info/20
+                                transition-all duration-300
+                                group-hover:shadow-[0_0_20px_var(--color-info)]
+                            ">
+                                <Users className="w-6 h-6 text-info group-hover:scale-110 transition-transform duration-300" />
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Total Users</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-info transition-colors duration-300">Total Users</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-info transition-colors duration-300">
                             {stats?.total_users || 0}
                         </p>
                     </div>
                 </div>
 
                 {/* Knowledge Bases Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-success),0_8px_32px_-4px_var(--color-success),0_0_64px_-16px_var(--color-success)]
+                    hover:border-success/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-success/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
+                    <div className="absolute inset-0 bg-success/5 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
-                                <Database className="w-6 h-6 text-success" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-success/10 group-hover:bg-success/20
+                                transition-colors duration-[var(--duration-normal)]
+                            ">
+                                <Database className="w-6 h-6 text-success group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Knowledge Bases</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-success transition-colors duration-[var(--duration-normal)]">Knowledge Bases</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-success transition-colors duration-[var(--duration-normal)]">
                             {stats?.total_kbs || 0}
                         </p>
                     </div>
                 </div>
 
                 {/* Total Runs Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-accent),0_8px_32px_-4px_var(--color-accent),0_0_64px_-16px_var(--color-accent)]
+                    hover:border-accent/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
+                    <div className="absolute inset-0 bg-accent/5 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-accent/10">
-                                <Activity className="w-6 h-6 text-accent" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-accent/10 group-hover:bg-accent/20
+                                transition-colors duration-[var(--duration-normal)]
+                            ">
+                                <Activity className="w-6 h-6 text-accent group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Total Runs</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-accent transition-colors duration-[var(--duration-normal)]">Total Runs</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-accent transition-colors duration-[var(--duration-normal)]">
                             {stats?.total_runs || 0}
                         </p>
                     </div>
                 </div>
 
                 {/* Runs (30 Days) Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-warning),0_8px_32px_-4px_var(--color-warning),0_0_64px_-16px_var(--color-warning)]
+                    hover:border-warning/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-warning/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
+                    <div className="absolute inset-0 bg-warning/5 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-warning/10">
-                                <TrendingUp className="w-6 h-6 text-warning" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-warning/10 group-hover:bg-warning/20
+                                transition-colors duration-[var(--duration-normal)]
+                            ">
+                                <TrendingUp className="w-6 h-6 text-warning group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
                             </div>
                             <div className="flex items-center gap-xs text-sm font-medium text-success">
                                 <ArrowUp className="w-4 h-4" />
                                 <span>+12%</span>
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Runs (30 Days)</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-warning transition-colors duration-[var(--duration-normal)]">Runs (30 Days)</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-warning transition-colors duration-[var(--duration-normal)]">
                             {stats?.runs_last_30_days || 0}
                         </p>
                     </div>
                 </div>
 
                 {/* Monthly Revenue Card */}
-                <div className="card group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-slow)]" />
+                <div className="
+                    card group relative overflow-hidden cursor-pointer
+                    transition-all duration-300 ease-out
+                    hover:scale-105 hover:-translate-y-1
+                    border border-border
+                    shadow-sm
+                    hover:shadow-[0_0_0_1px_var(--color-success),0_8px_32px_-4px_var(--color-success),0_0_64px_-16px_var(--color-success)]
+                    hover:border-success/60
+                ">
+                    <div className="absolute inset-0 bg-gradient-to-br from-success/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
+                    <div className="absolute inset-0 bg-success/5 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-[var(--duration-normal)]" />
 
                     <div className="relative">
                         <div className="flex items-start justify-between mb-md">
-                            <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
-                                <DollarSign className="w-6 h-6 text-success" />
+                            <div className="
+                                p-sm rounded-[var(--radius-md)] 
+                                bg-success/10 group-hover:bg-success/20
+                                transition-colors duration-[var(--duration-normal)]
+                            ">
+                                <DollarSign className="w-6 h-6 text-success group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
                             </div>
                             <div className="flex items-center gap-xs text-sm font-medium text-success">
                                 <ArrowUp className="w-4 h-4" />
                                 <span>+8%</span>
                             </div>
                         </div>
-                        <p className="text-sm text-textSecondary mb-xs">Monthly Recurring Revenue</p>
-                        <p className="text-3xl font-bold text-textPrimary">
+                        <p className="text-sm text-textSecondary mb-xs group-hover:text-success transition-colors duration-[var(--duration-normal)]">Monthly Recurring Revenue</p>
+                        <p className="text-3xl font-bold text-textPrimary group-hover:text-success transition-colors duration-[var(--duration-normal)]">
                             ${(stats?.mrr_usd || 0).toLocaleString()}
                         </p>
                     </div>

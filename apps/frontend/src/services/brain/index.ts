@@ -8,9 +8,11 @@
 // ============================================================
 
 export { brainConfigService } from './BrainConfigService'
+export { brainAIConfigService } from './BrainAIConfigService'
 export { vectorStore } from './VectorStore'
 export { TextChunker } from './TextChunker'
 export { ragOrchestrator } from './RAGOrchestrator'
+export { brainOrchestrator } from './BrainOrchestrator'
 
 // ============================================================
 // AGENTS
@@ -19,11 +21,9 @@ export { ragOrchestrator } from './RAGOrchestrator'
 export { Agent } from './agents/Agent'
 export { writerAgent } from './agents/WriterAgent'
 export { generalistAgent } from './agents/GeneralistAgent'
+export { analystAgent } from './agents/AnalystAgent'
+export { coachAgent } from './agents/CoachAgent'
 export { intentClassifier } from './agents/IntentClassifier'
-
-// Add more agents as they're created:
-// export { analystAgent } from './agents/AnalystAgent'
-// export { coachAgent } from './agents/CoachAgent'
 
 // ============================================================
 // TYPE EXPORTS
@@ -67,6 +67,19 @@ export type {
     QueryExpansion
 } from './RAGOrchestrator'
 
+// Brain Orchestrator
+export type {
+    BrainContext,
+    ProcessInput,
+    ProcessResult,
+    StreamChunk,
+    Source,
+    TokenUsage,
+    ProcessMetadata,
+    UserMemoryItem,
+    ConstitutionRule,
+} from './BrainOrchestrator'
+
 // Agents
 export type {
     AgentConfig,
@@ -90,8 +103,11 @@ import { brainConfigService } from './BrainConfigService'
 import { vectorStore } from './VectorStore'
 import { TextChunker } from './TextChunker'
 import { ragOrchestrator } from './RAGOrchestrator'
+import { brainOrchestrator } from './BrainOrchestrator'
 import { writerAgent } from './agents/WriterAgent'
 import { generalistAgent } from './agents/GeneralistAgent'
+import { analystAgent } from './agents/AnalystAgent'
+import { coachAgent } from './agents/CoachAgent'
 import { intentClassifier } from './agents/IntentClassifier'
 
 /**
@@ -99,6 +115,9 @@ import { intentClassifier } from './agents/IntentClassifier'
  * Provides clean, organized access to all brain services
  */
 export const brain = {
+    // MAIN ORCHESTRATOR (use this for chat)
+    orchestrator: brainOrchestrator,
+
     // Configuration management
     config: brainConfigService,
 
@@ -118,8 +137,8 @@ export const brain = {
     agents: {
         writer: writerAgent,
         generalist: generalistAgent,
-        // analyst: analystAgent,
-        // coach: coachAgent,
+        analyst: analystAgent,
+        coach: coachAgent,
     },
 
     // System metadata

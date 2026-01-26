@@ -52,7 +52,7 @@ export interface ChatMessage {
 // ============================================================
 
 export abstract class Agent {
-    protected supabase = createClient()
+    protected getSupabase() { return createClient() }
 
     abstract name: string
     abstract agentType: string
@@ -328,7 +328,7 @@ export abstract class Agent {
             throw new Error('No AI provider configured for this agent')
         }
 
-        const { data: provider, error } = await this.supabase
+        const { data: provider, error } = await this.getSupabase()
             .from('ai_providers')
             .select('*')
             .eq('id', providerId)
@@ -437,7 +437,7 @@ export abstract class Agent {
      * Create agent session
      */
     protected async createSession(context: AgentContext): Promise<string> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.getSupabase()
             .from('agent_sessions')
             .insert({
                 conversation_id: context.conversationId,
@@ -464,7 +464,7 @@ export abstract class Agent {
         tokensUsed: number,
         success: boolean
     ): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('agent_sessions')
             .update({
                 tools_used: toolsUsed.map(t => t.tool),
@@ -490,7 +490,7 @@ export abstract class Agent {
         success: boolean,
         errorMessage?: string
     ): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('tool_executions')
             .insert({
                 tool_name: toolName,
@@ -517,7 +517,7 @@ export abstract class Agent {
         success: boolean
     ): Promise<void> {
         // Get agent ID from database
-        const { data: agent } = await this.supabase
+        const { data: agent } = await this.getSupabase()
             .from('agents')
             .select('id')
             .eq('agent_type', this.agentType)
@@ -527,7 +527,7 @@ export abstract class Agent {
 
         const today = new Date().toISOString().split('T')[0]
 
-        const { error } = await this.supabase.rpc('update_agent_metrics', {
+        const { error } = await this.getSupabase().rpc('update_agent_metrics', {
             agent_uuid: agent.id,
             metric_date: today,
             response_time_ms: responseTime,

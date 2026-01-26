@@ -51,7 +51,7 @@ export interface QueryExpansion {
 // ============================================================
 
 export class RAGOrchestrator {
-    private supabase = createClient()
+    private getSupabase() { return createClient() }
 
     /**
      * Main RAG retrieval pipeline
@@ -200,7 +200,7 @@ export class RAGOrchestrator {
             }
 
             // Get provider config
-            const { data: provider } = await this.supabase
+            const { data: provider } = await this.getSupabase()
                 .from('ai_providers')
                 .select('*')
                 .eq('id', providerId)
@@ -332,7 +332,7 @@ export class RAGOrchestrator {
             }
 
             // Get provider config
-            const { data: provider } = await this.supabase
+            const { data: provider } = await this.getSupabase()
                 .from('ai_providers')
                 .select('*')
                 .eq('id', providerId)
@@ -485,7 +485,7 @@ export class RAGOrchestrator {
         queryHash: string,
         orgId: string
     ): Promise<RAGResult | null> {
-        const { data, error } = await this.supabase.rpc('get_rag_cache', {
+        const { data, error } = await this.getSupabase().rpc('get_rag_cache', {
             query_sha256: queryHash,
             org_uuid: orgId
         })
@@ -505,7 +505,7 @@ export class RAGOrchestrator {
         result: RAGResult,
         retrievalTime: number
     ): Promise<void> {
-        const { error } = await this.supabase.rpc('cache_rag_result', {
+        const { error } = await this.getSupabase().rpc('cache_rag_result', {
             query_sha256: queryHash,
             org_uuid: orgId,
             query: query,
@@ -525,7 +525,7 @@ export class RAGOrchestrator {
         expansion: QueryExpansion,
         orgId: string
     ): Promise<void> {
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('query_expansions')
             .insert({
                 org_id: orgId,
@@ -548,7 +548,7 @@ export class RAGOrchestrator {
         context: RAGContext,
         metadata: RAGResult['metadata']
     ): Promise<void> {
-        const { error } = await this.supabase.rpc('log_rag_metrics', {
+        const { error } = await this.getSupabase().rpc('log_rag_metrics', {
             org_uuid: context.orgId,
             brain_uuid: context.brainTemplateId || null,
             query: query,

@@ -1,0 +1,200 @@
+{
+    "id": "template-social-multiplatform",
+    "name": "Social Multi-Platform v2",
+    "description": "Create platform-specific social content for LinkedIn, X, and YouTube from a single brief.",
+    "category": "SOCIAL",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 250
+            },
+            "data": {
+                "label": "Start Creation",
+                "nodeType": "manual-trigger",
+                "description": "Create social content from brief",
+                "config": {
+                    "requiredInputs": [
+                        "brief",
+                        "pillar",
+                        "platforms"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 280,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Audience",
+                "nodeType": "resolve-icp",
+                "description": "Content audience segment",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 460,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Messaging angle for posts",
+                "config": {}
+            }
+        },
+        {
+            "id": "generate-linkedin",
+            "type": "generate-social-post",
+            "position": {
+                "x": 700,
+                "y": 100
+            },
+            "data": {
+                "label": "Generate LinkedIn",
+                "nodeType": "generate-social-post",
+                "description": "Professional LinkedIn post (3000 char limit)",
+                "config": {
+                    "platform": "LinkedIn",
+                    "maxLength": 3000,
+                    "tone": "professional"
+                }
+            }
+        },
+        {
+            "id": "generate-x",
+            "type": "generate-social-post",
+            "position": {
+                "x": 700,
+                "y": 250
+            },
+            "data": {
+                "label": "Generate X Post",
+                "nodeType": "generate-social-post",
+                "description": "Punchy X/Twitter post (280 char)",
+                "config": {
+                    "platform": "X",
+                    "maxLength": 280,
+                    "tone": "punchy"
+                }
+            }
+        },
+        {
+            "id": "generate-youtube",
+            "type": "generate-social-post",
+            "position": {
+                "x": 700,
+                "y": 400
+            },
+            "data": {
+                "label": "Generate YouTube Desc",
+                "nodeType": "generate-social-post",
+                "description": "YouTube video description",
+                "config": {
+                    "platform": "YouTube",
+                    "maxLength": 5000,
+                    "includeTimestamps": true
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 940,
+                "y": 250
+            },
+            "data": {
+                "label": "Validate All",
+                "nodeType": "validate-quality",
+                "description": "Quality check all posts",
+                "config": {
+                    "minScore": 70
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1120,
+                "y": 250
+            },
+            "data": {
+                "label": "Store Posts",
+                "nodeType": "output-store",
+                "description": "Save all social posts",
+                "config": {
+                    "table": "generated_social_posts"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-angle-1",
+            "target": "generate-linkedin",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "resolve-angle-1",
+            "target": "generate-x",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "resolve-angle-1",
+            "target": "generate-youtube",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "generate-linkedin",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e7",
+            "source": "generate-x",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e8",
+            "source": "generate-youtube",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e9",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

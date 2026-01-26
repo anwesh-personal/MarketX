@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { brainConfigService } from '@/services/brain/BrainConfigService'
-import { createClient } from '@/lib/supabase/server'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
 
 // ============================================================
 // VALIDATION SCHEMAS
@@ -70,34 +70,6 @@ const createBrainSchema = z.object({
 })
 
 // ============================================================
-// AUTHENTICATION HELPER
-// ============================================================
-
-async function requireSuperadmin(req: NextRequest) {
-    const supabase = createClient()
-
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-        return null
-    }
-
-    // Check if user is superadmin
-    const { data: admin, error: adminError } = await supabase
-        .from('platform_admins')
-        .select('id, email')
-        .eq('email', user.email)
-        .single()
-
-    if (adminError || !admin) {
-        return null
-    }
-
-    return admin
-}
-
-// ============================================================
 // GET /api/superadmin/brains
 // List all brain templates
 // ============================================================
@@ -105,7 +77,7 @@ async function requireSuperadmin(req: NextRequest) {
 export async function GET(req: NextRequest) {
     try {
         // Authenticate
-        const admin = await requireSuperadmin(req)
+        const admin = await getSuperadmin(req)
         if (!admin) {
             return NextResponse.json(
                 { error: 'Unauthorized - Superadmin access required' },
@@ -150,7 +122,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     try {
         // Authenticate
-        const admin = await requireSuperadmin(req)
+        const admin = await getSuperadmin(req)
         if (!admin) {
             return NextResponse.json(
                 { error: 'Unauthorized - Superadmin access required' },

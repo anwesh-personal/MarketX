@@ -1,0 +1,231 @@
+{
+    "id": "template-gated-content-pack",
+    "name": "Gated Content Pack v2",
+    "description": "Generate ebook + checklist + cheat sheet bundle with progressive content unlocking.",
+    "category": "CONTENT",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 250
+            },
+            "data": {
+                "label": "Start Pack",
+                "nodeType": "manual-trigger",
+                "description": "Generate content pack",
+                "config": {
+                    "requiredInputs": [
+                        "topic",
+                        "icp_id"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 280,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Audience",
+                "nodeType": "resolve-icp",
+                "description": "Content audience",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 460,
+                "y": 250
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Content angle",
+                "config": {}
+            }
+        },
+        {
+            "id": "generate-ebook",
+            "type": "generate-website-page",
+            "position": {
+                "x": 680,
+                "y": 100
+            },
+            "data": {
+                "label": "Generate Mini Ebook",
+                "nodeType": "generate-website-page",
+                "description": "Main ebook content",
+                "config": {
+                    "pageType": "MINI_EBOOK",
+                    "targetWordCount": 3000
+                }
+            }
+        },
+        {
+            "id": "generate-checklist",
+            "type": "generate-website-page",
+            "position": {
+                "x": 680,
+                "y": 250
+            },
+            "data": {
+                "label": "Generate Checklist",
+                "nodeType": "generate-website-page",
+                "description": "Actionable checklist",
+                "config": {
+                    "pageType": "CHECKLIST",
+                    "itemCount": 10
+                }
+            }
+        },
+        {
+            "id": "generate-cheatsheet",
+            "type": "generate-website-page",
+            "position": {
+                "x": 680,
+                "y": 400
+            },
+            "data": {
+                "label": "Generate Cheat Sheet",
+                "nodeType": "generate-website-page",
+                "description": "Quick reference guide",
+                "config": {
+                    "pageType": "CHEAT_SHEET",
+                    "format": "one_page"
+                }
+            }
+        },
+        {
+            "id": "transform-locker",
+            "type": "transform-locker",
+            "position": {
+                "x": 900,
+                "y": 250
+            },
+            "data": {
+                "label": "Configure Unlock Flow",
+                "nodeType": "transform-locker",
+                "description": "Progressive unlock: Checklist free, Ebook on email, Cheat Sheet on share",
+                "config": {
+                    "unlockFlow": [
+                        {
+                            "asset": "checklist",
+                            "gate": "none"
+                        },
+                        {
+                            "asset": "ebook",
+                            "gate": "email_capture"
+                        },
+                        {
+                            "asset": "cheatsheet",
+                            "gate": "social_share"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1100,
+                "y": 250
+            },
+            "data": {
+                "label": "Validate Pack",
+                "nodeType": "validate-quality",
+                "description": "Quality check all assets",
+                "config": {
+                    "minScore": 70
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1300,
+                "y": 250
+            },
+            "data": {
+                "label": "Store Pack",
+                "nodeType": "output-store",
+                "description": "Save content pack bundle",
+                "config": {
+                    "table": "generated_content_packs"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-angle-1",
+            "target": "generate-ebook",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "resolve-angle-1",
+            "target": "generate-checklist",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "resolve-angle-1",
+            "target": "generate-cheatsheet",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "generate-ebook",
+            "target": "transform-locker",
+            "animated": false
+        },
+        {
+            "id": "e7",
+            "source": "generate-checklist",
+            "target": "transform-locker",
+            "animated": false
+        },
+        {
+            "id": "e8",
+            "source": "generate-cheatsheet",
+            "target": "transform-locker",
+            "animated": false
+        },
+        {
+            "id": "e9",
+            "source": "transform-locker",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e10",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

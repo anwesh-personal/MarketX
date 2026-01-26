@@ -119,16 +119,18 @@ export default function DashboardPage() {
             weekAgo.setDate(weekAgo.getDate() - 7);
             const runsThisWeek = runs?.filter(r => new Date(r.created_at) > weekAgo).length || 0;
 
+            const org = Array.isArray(userData?.organization) ? userData.organization[0] : userData?.organization;
+
             setStats({
                 total_runs: totalRuns,
                 successful_runs: successfulRuns,
                 failed_runs: failedRuns,
                 total_kbs: kbCount || 0,
                 runs_this_week: runsThisWeek,
-                org_name: userData?.organization?.name || 'Organization',
-                org_plan: userData?.organization?.plan || 'free',
-                quota_runs: userData?.organization?.max_runs_per_month || 10,
-                quota_kbs: userData?.organization?.max_kbs || 1,
+                org_name: org?.name || 'Organization',
+                org_plan: org?.plan || 'free',
+                quota_runs: org?.max_runs_per_month || 10,
+                quota_kbs: org?.max_kbs || 1,
             });
 
             setRecentRuns(recentRunsData?.map(r => ({

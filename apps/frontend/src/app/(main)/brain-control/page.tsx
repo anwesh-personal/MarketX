@@ -164,7 +164,7 @@ export default function BrainControlPage() {
                     {/* Brain Status */}
                     <div className="mt-8 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/40">
                         <div className="flex items-center gap-2 mb-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                             <span className="text-xs font-medium text-muted-foreground">System Status</span>
                         </div>
                         <div className="space-y-2 text-xs">
@@ -178,7 +178,7 @@ export default function BrainControlPage() {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Cache Hit Rate</span>
-                                <span className="font-medium text-green-500">
+                                <span className="font-medium text-success">
                                     {stats ? `${(stats.cacheHitRate * 100).toFixed(0)}%` : '---'}
                                 </span>
                             </div>
@@ -214,7 +214,7 @@ function QuickStat({ label, value, icon: Icon, trend, color }: any) {
             <div className="flex items-baseline gap-2">
                 <span className="text-xl font-bold">{value}</span>
                 <span className={`text-xs font-medium ${trend.startsWith('+') || trend.startsWith('-') ?
-                    trend.startsWith('+') ? 'text-green-500' : 'text-red-500'
+                    trend.startsWith('+') ? 'text-success' : 'text-error'
                     : 'text-muted-foreground'
                     }`}>
                     {trend}
@@ -297,7 +297,7 @@ function MetricCard({ label, value, change, icon: Icon, color }: any) {
                     <div className={`p-3 rounded-xl bg-gradient-to-br ${color} bg-opacity-10`}>
                         <Icon className="w-6 h-6 text-primary" />
                     </div>
-                    <span className={`text-sm font-medium ${change.startsWith('+') ? 'text-green-500' : 'text-red-500'
+                    <span className={`text-sm font-medium ${change.startsWith('+') ? 'text-success' : 'text-error'
                         }`}>
                         {change}
                     </span>
@@ -313,10 +313,10 @@ function MetricCard({ label, value, change, icon: Icon, color }: any) {
 
 function ActivityFeed() {
     const activities = [
-        { type: 'agent', message: 'Writer Agent completed task', time: '2m ago', color: 'text-blue-500' },
-        { type: 'rag', message: 'RAG cache hit rate improved', time: '5m ago', color: 'text-green-500' },
-        { type: 'training', message: 'New intent pattern learned', time: '12m ago', color: 'text-purple-500' },
-        { type: 'system', message: 'Embeddings index updated', time: '23m ago', color: 'text-orange-500' }
+        { type: 'agent', message: 'Writer Agent completed task', time: '2m ago', color: 'text-primary-500' },
+        { type: 'rag', message: 'RAG cache hit rate improved', time: '5m ago', color: 'text-success' },
+        { type: 'training', message: 'New intent pattern learned', time: '12m ago', color: 'text-secondary-500' },
+        { type: 'system', message: 'Embeddings index updated', time: '23m ago', color: 'text-warning' }
     ]
 
     return (
@@ -383,7 +383,7 @@ function AgentStatusGrid() {
                         <div className="relative">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                                    <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-neutral-400'
                                         }`} />
                                     <span className="text-xs text-muted-foreground">{agent.status}</span>
                                 </div>
@@ -396,7 +396,7 @@ function AgentStatusGrid() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Success</span>
-                                    <span className="font-medium text-green-500">{agent.success}%</span>
+                                    <span className="font-medium text-success">{agent.success}%</span>
                                 </div>
                             </div>
                         </div>
@@ -570,9 +570,9 @@ function MemoryPalaceSection() {
                             className="p-4 rounded-xl border border-border/40 bg-background hover:border-primary/40 hover:shadow-lg transition-all cursor-pointer"
                         >
                             <div className="flex items-start justify-between mb-2">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-blue-500/10 text-blue-500' :
-                                    embedding.source_type === 'conversation' ? 'bg-green-500/10 text-green-500' :
-                                        'bg-orange-500/10 text-orange-500'
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-primary-500/10 text-primary-500' :
+                                    embedding.source_type === 'conversation' ? 'bg-success/10 text-success' :
+                                        'bg-warning/10 text-warning'
                                     }`}>
                                     {embedding.source_type}
                                 </span>
@@ -783,7 +783,7 @@ function AgentControlSection() {
                                 <div className="space-y-2 text-sm">
                                     <div>
                                         <span className="text-muted-foreground">Status: </span>
-                                        <span className={`font-medium ${agent.is_active ? 'text-green-500' : 'text-red-500'}`}>
+                                        <span className={`font-medium ${agent.is_active ? 'text-success' : 'text-error'}`}>
                                             {agent.is_active ? 'Active' : 'Inactive'}
                                         </span>
                                     </div>
@@ -1123,9 +1123,9 @@ function TrainingCenterSection() {
                                     {feedbackData.map((feedback, i) => (
                                         <div key={i} className="p-4 rounded-xl border border-border/40 bg-background">
                                             <div className="flex items-start justify-between mb-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${feedback.rating > 0 ? 'bg-green-500/10 text-green-500' :
-                                                    feedback.rating < 0 ? 'bg-red-500/10 text-red-500' :
-                                                        'bg-gray-500/10 text-gray-500'
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${feedback.rating > 0 ? 'bg-success/10 text-success' :
+                                                    feedback.rating < 0 ? 'bg-error/10 text-error' :
+                                                        'bg-neutral-500/10 text-neutral-500'
                                                     }`}>
                                                     {feedback.rating > 0 ? '👍 Positive' : feedback.rating < 0 ? '👎 Negative' : 'Neutral'}
                                                 </span>
@@ -1462,10 +1462,10 @@ function AnalyticsSection() {
                                 {analyticsData?.agentUsage?.map((agent: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${agent.type === 'writer' ? 'bg-blue-500' :
-                                                agent.type === 'analyst' ? 'bg-purple-500' :
-                                                    agent.type === 'coach' ? 'bg-orange-500' :
-                                                        'bg-green-500'
+                                            <div className={`w-2 h-2 rounded-full ${agent.type === 'writer' ? 'bg-primary-500' :
+                                                agent.type === 'analyst' ? 'bg-secondary-500' :
+                                                    agent.type === 'coach' ? 'bg-warning' :
+                                                        'bg-success'
                                                 }`} />
                                             <span className="font-medium capitalize">{agent.type}</span>
                                         </div>
@@ -1509,7 +1509,7 @@ function AnalyticsSection() {
                                     <span className="text-sm text-muted-foreground">&lt; 200ms</span>
                                     <div className="flex items-center gap-2 flex-1 mx-4">
                                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full bg-green-500" style={{ width: '65%' }} />
+                                            <div className="h-full bg-success" style={{ width: '65%' }} />
                                         </div>
                                         <span className="text-sm font-medium w-12 text-right">65%</span>
                                     </div>
@@ -1518,7 +1518,7 @@ function AnalyticsSection() {
                                     <span className="text-sm text-muted-foreground">200-500ms</span>
                                     <div className="flex items-center gap-2 flex-1 mx-4">
                                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full bg-blue-500" style={{ width: '25%' }} />
+                                            <div className="h-full bg-primary-500" style={{ width: '25%' }} />
                                         </div>
                                         <span className="text-sm font-medium w-12 text-right">25%</span>
                                     </div>
@@ -1527,7 +1527,7 @@ function AnalyticsSection() {
                                     <span className="text-sm text-muted-foreground">500ms-1s</span>
                                     <div className="flex items-center gap-2 flex-1 mx-4">
                                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full bg-orange-500" style={{ width: '8%' }} />
+                                            <div className="h-full bg-warning" style={{ width: '8%' }} />
                                         </div>
                                         <span className="text-sm font-medium w-12 text-right">8%</span>
                                     </div>
@@ -1536,7 +1536,7 @@ function AnalyticsSection() {
                                     <span className="text-sm text-muted-foreground">&gt; 1s</span>
                                     <div className="flex items-center gap-2 flex-1 mx-4">
                                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full bg-red-500" style={{ width: '2%' }} />
+                                            <div className="h-full bg-error" style={{ width: '2%' }} />
                                         </div>
                                         <span className="text-sm font-medium w-12 text-right">2%</span>
                                     </div>
@@ -1675,8 +1675,8 @@ function ConfigurationSection() {
                                     key={template.id}
                                     onClick={() => switchBrainTemplate(template.id)}
                                     className={`p-4 rounded-xl border-2 text-left transition-all ${activeBrain?.id === template.id
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-border/40 hover:border-primary/40'
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border/40 hover:border-primary/40'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-2">
@@ -1823,7 +1823,7 @@ function ConfigurationSection() {
                                         className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-primary/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${provider.is_active ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${provider.is_active ? 'bg-success animate-pulse' : 'bg-neutral-400'}`} />
                                             <div>
                                                 <p className="font-medium">{provider.name}</p>
                                                 <p className="text-xs text-muted-foreground">{provider.provider_type}</p>
@@ -1833,7 +1833,7 @@ function ConfigurationSection() {
                                             <span className="text-xs text-muted-foreground">
                                                 {provider.capabilities?.join(', ')}
                                             </span>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-success/10 text-success' : 'bg-neutral-500/10 text-neutral-500'
                                                 }`}>
                                                 {provider.is_active ? 'Active' : 'Inactive'}
                                             </span>

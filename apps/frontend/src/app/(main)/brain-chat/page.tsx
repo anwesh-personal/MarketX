@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings } from 'lucide-react'
+import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings, ChevronDown, Upload, History, Save } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -24,6 +24,14 @@ interface Message {
     isStreaming?: boolean
 }
 
+interface BrainTemplate {
+    id: string
+    name: string
+    description: string
+    pricing_tier: string
+    is_default: boolean
+}
+
 // ============================================================
 // BRAIN CHAT PAGE
 // ============================================================
@@ -35,6 +43,35 @@ export default function BrainChatPage() {
     const [conversationId, setConversationId] = useState<string | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
+
+    // Brain selection
+    const [brains, setBrains] = useState<BrainTemplate[]>([])
+    const [selectedBrain, setSelectedBrain] = useState<BrainTemplate | null>(null)
+    const [showBrainDropdown, setShowBrainDropdown] = useState(false)
+    const [loadingBrains, setLoadingBrains] = useState(true)
+
+    // Push to brain
+    const [showPushModal, setShowPushModal] = useState(false)
+    const [pushing, setPushing] = useState(false)
+    const [pushSuccess, setPushSuccess] = useState(false)
+
+    // Load available brains
+    useEffect(() => {
+        const fetchBrains = async () => {
+            try {
+                const res = await fetch('/api/brain/templates')
+                const data = await res.json()
+                setBrains(data.brains || [])
+                const defaultBrain = data.brains?.find((b: BrainTemplate) => b.is_default)
+                setSelectedBrain(defaultBrain || data.brains?.[0])
+            } catch (err) {
+                console.error('Failed to fetch brains:', err)
+            } finally {
+                setLoadingBrains(false)
+            }
+        }
+        fetchBrains()
+    }, [])
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -75,11 +112,18 @@ export default function BrainChatPage() {
                 body: JSON.stringify({
                     message: input,
                     conversationId: conversationId || undefined,
+                    brainTemplateId: selectedBrain?.id,
                     stream: true
                 })
             })
 
             if (!response.ok) throw new Error('Failed to get response')
+
+            // Get conversation ID from response headers or first chunk
+            const newConvId = response.headers.get('X-Conversation-Id')
+            if (newConvId && !conversationId) {
+                setConversationId(newConvId)
+            }
 
             // Handle streaming
             const reader = response.body?.getReader()
@@ -107,6 +151,11 @@ export default function BrainChatPage() {
                         try {
                             const data = JSON.parse(line.slice(6))
 
+                            // Save conversation ID from stream
+                            if (data.conversationId && !conversationId) {
+                                setConversationId(data.conversationId)
+                            }
+
                             if (data.chunk) {
                                 assistantMessage.content += data.chunk
                                 setMessages(prev =>
@@ -122,7 +171,7 @@ export default function BrainChatPage() {
                                 setMessages(prev =>
                                     prev.map(msg =>
                                         msg.id === assistantMessage.id
-                                            ? { ...msg, isStreaming: false }
+                                            ? { ...msg, isStreaming: false, metadata: data.metadata }
                                             : msg
                                     )
                                 )
@@ -146,6 +195,32 @@ export default function BrainChatPage() {
         }
     }
 
+    // Push conversation to selected brain
+    const pushToBrain = async (targetBrainId: string) => {
+        if (!conversationId) return
+
+        setPushing(true)
+        try {
+            const res = await fetch(`/api/conversations/${conversationId}/push-to-brain`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ brainTemplateId: targetBrainId })
+            })
+
+            if (res.ok) {
+                setPushSuccess(true)
+                setTimeout(() => {
+                    setShowPushModal(false)
+                    setPushSuccess(false)
+                }, 2000)
+            }
+        } catch (err) {
+            console.error('Push failed:', err)
+        } finally {
+            setPushing(false)
+        }
+    }
+
     // Handle Enter key
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -164,26 +239,133 @@ export default function BrainChatPage() {
                             <Brain className="w-8 h-8 text-primary" />
                             <Sparkles className="w-4 h-4 text-primary absolute -top-1 -right-1 animate-pulse" />
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                                Axiom Brain
-                            </h1>
-                            <p className="text-xs text-muted-foreground">
-                                Powered by intelligent multi-agent AI
-                            </p>
+
+                        {/* Brain Selector Dropdown */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowBrainDropdown(!showBrainDropdown)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-all duration-200"
+                                disabled={loadingBrains}
+                            >
+                                <div>
+                                    <h1 className="text-lg font-bold text-foreground">
+                                        {selectedBrain?.name || 'Select Brain'}
+                                    </h1>
+                                    <p className="text-xs text-muted-foreground text-left">
+                                        {selectedBrain?.pricing_tier || 'Loading...'}
+                                    </p>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showBrainDropdown ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {showBrainDropdown && (
+                                <div className="absolute top-full left-0 mt-2 w-72 bg-background border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+                                    <div className="p-2 border-b border-border/50">
+                                        <p className="text-xs text-muted-foreground px-2">Select a Brain</p>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {brains.map((brain) => (
+                                            <button
+                                                key={brain.id}
+                                                onClick={() => {
+                                                    setSelectedBrain(brain)
+                                                    setShowBrainDropdown(false)
+                                                }}
+                                                className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center justify-between ${selectedBrain?.id === brain.id ? 'bg-primary/10' : ''}`}
+                                            >
+                                                <div>
+                                                    <p className="font-medium text-sm">{brain.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{brain.description?.slice(0, 50)}...</p>
+                                                </div>
+                                                {brain.is_default && (
+                                                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Default</span>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    <button className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95">
-                        <Settings className="w-5 h-5 text-muted-foreground" />
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                        {/* Push to Brain Button */}
+                        {conversationId && messages.length > 0 && (
+                            <button
+                                onClick={() => setShowPushModal(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-200 hover:scale-105 active:scale-95"
+                            >
+                                <Upload className="w-4 h-4" />
+                                <span className="text-sm font-medium">Push to Brain</span>
+                            </button>
+                        )}
+
+                        <button className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95">
+                            <History className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95">
+                            <Settings className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                    </div>
                 </div>
             </header>
+
+            {/* Push to Brain Modal */}
+            {showPushModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4">Push Conversation to Brain</h2>
+
+                        {pushSuccess ? (
+                            <div className="text-center py-8">
+                                <Check className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                <p className="text-lg font-medium">Successfully Pushed!</p>
+                                <p className="text-sm text-muted-foreground">The brain will learn from this conversation.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                    Select which brain should learn from this conversation ({messages.length} messages).
+                                </p>
+
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    {brains.map((brain) => (
+                                        <button
+                                            key={brain.id}
+                                            onClick={() => pushToBrain(brain.id)}
+                                            disabled={pushing}
+                                            className="w-full p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-left flex items-center justify-between"
+                                        >
+                                            <div>
+                                                <p className="font-medium">{brain.name}</p>
+                                                <p className="text-xs text-muted-foreground">{brain.pricing_tier}</p>
+                                            </div>
+                                            {pushing ? (
+                                                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                            ) : (
+                                                <Upload className="w-5 h-5 text-muted-foreground" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setShowPushModal(false)}
+                                    className="w-full mt-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-8">
                 <div className="max-w-4xl mx-auto space-y-6">
                     {messages.length === 0 ? (
-                        <EmptyState />
+                        <EmptyState onSuggestionClick={(text) => setInput(text)} />
                     ) : (
                         messages.map((message) => (
                             <MessageBubble key={message.id} message={message} />
@@ -202,7 +384,7 @@ export default function BrainChatPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Ask anything... (Shift + Enter for new line)"
+                            placeholder={`Ask ${selectedBrain?.name || 'the brain'}... (Shift + Enter for new line)`}
                             rows={1}
                             className="w-full resize-none rounded-2xl border border-border/60 bg-background/50 px-6 py-4 pr-14 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all duration-200 max-h-32 overflow-y-auto hover:bg-background/80"
                             disabled={isLoading}
@@ -220,7 +402,7 @@ export default function BrainChatPage() {
                         </button>
                     </div>
                     <p className="text-xs text-muted-foreground text-center mt-3">
-                        Axiom Brain can make mistakes. Verify important information.
+                        {selectedBrain?.name} • {conversationId ? 'Conversation saved' : 'New conversation'}
                     </p>
                 </div>
             </div>
@@ -246,8 +428,8 @@ function MessageBubble({ message }: { message: Message }) {
         <div className={`flex gap-4 group ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
             {/* Avatar */}
             <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${isUser
-                    ? 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'
-                    : 'bg-gradient-to-br from-muted to-muted/50 border border-border/40'
+                ? 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'
+                : 'bg-gradient-to-br from-muted to-muted/50 border border-border/40'
                 }`}>
                 {isUser ? (
                     <span className="text-sm font-semibold text-primary">You</span>
@@ -260,8 +442,8 @@ function MessageBubble({ message }: { message: Message }) {
             <div className={`flex-1 max-w-3xl space-y-2 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
                 {/* Message */}
                 <div className={`rounded-2xl px-5 py-3.5 ${isUser
-                        ? 'bg-primary text-primary-foreground ml-auto'
-                        : 'bg-muted/50 border border-border/40 backdrop-blur-sm'
+                    ? 'bg-primary text-primary-foreground ml-auto'
+                    : 'bg-muted/50 border border-border/40 backdrop-blur-sm'
                     } transition-all duration-200 hover:shadow-md`}>
                     {message.isStreaming ? (
                         <div className="flex items-center gap-2">
@@ -274,20 +456,20 @@ function MessageBubble({ message }: { message: Message }) {
                         <div className="prose prose-sm dark:prose-invert max-w-none">
                             <ReactMarkdown
                                 components={{
-                                    code({ node, inline, className, children, ...props }) {
+                                    code(props) {
+                                        const { className, children, ...rest } = props
                                         const match = /language-(\w+)/.exec(className || '')
-                                        return !inline && match ? (
+                                        return match ? (
                                             <SyntaxHighlighter
                                                 style={oneDark}
                                                 language={match[1]}
                                                 PreTag="div"
                                                 className="rounded-lg !bg-background/50 !mt-2 !mb-2"
-                                                {...props}
                                             >
                                                 {String(children).replace(/\n$/, '')}
                                             </SyntaxHighlighter>
                                         ) : (
-                                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs" {...props}>
+                                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs" {...rest}>
                                                 {children}
                                             </code>
                                         )
@@ -347,7 +529,7 @@ function MessageBubble({ message }: { message: Message }) {
 // EMPTY STATE
 // ============================================================
 
-function EmptyState() {
+function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) => void }) {
     const suggestions = [
         { icon: '✍️', text: 'Write a blog post about AI trends', color: 'from-blue-500/20 to-purple-500/20' },
         { icon: '📊', text: 'Analyze my recent data', color: 'from-green-500/20 to-emerald-500/20' },
@@ -375,6 +557,7 @@ function EmptyState() {
                 {suggestions.map((suggestion, i) => (
                     <button
                         key={i}
+                        onClick={() => onSuggestionClick?.(suggestion.text)}
                         className={`group p-4 rounded-xl border border-border/40 bg-gradient-to-br ${suggestion.color} hover:border-primary/40 transition-all duration-300 hover:scale-105 hover:shadow-lg text-left`}
                     >
                         <div className="flex items-start gap-3">

@@ -1,0 +1,203 @@
+{
+    "id": "template-landing-page-builder",
+    "name": "Landing Page Builder v2",
+    "description": "Generate complete landing pages with hero, features, proof, and CTA sections. Perfect for product launches and campaigns.",
+    "category": "WEBSITE",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "label": "Start Build",
+                "nodeType": "manual-trigger",
+                "description": "Manually trigger page generation",
+                "config": {
+                    "requiredInputs": [
+                        "icp_id",
+                        "offer_id",
+                        "page_type"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 280,
+                "y": 200
+            },
+            "data": {
+                "label": "Select ICP",
+                "nodeType": "resolve-icp",
+                "description": "Target audience for landing page",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-offer-1",
+            "type": "resolve-offer",
+            "position": {
+                "x": 460,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Offer",
+                "nodeType": "resolve-offer",
+                "description": "Offer to feature on page",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 640,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Persuasion angle for messaging",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-bp-1",
+            "type": "resolve-blueprint",
+            "position": {
+                "x": 820,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Blueprint",
+                "nodeType": "resolve-blueprint",
+                "description": "Get page structure from KB",
+                "config": {
+                    "contentType": "website_page",
+                    "pageType": "LANDING"
+                }
+            }
+        },
+        {
+            "id": "resolve-cta-1",
+            "type": "resolve-cta",
+            "position": {
+                "x": 1000,
+                "y": 200
+            },
+            "data": {
+                "label": "Select CTA",
+                "nodeType": "resolve-cta",
+                "description": "Primary call-to-action for page",
+                "config": {}
+            }
+        },
+        {
+            "id": "generate-1",
+            "type": "generate-website-page",
+            "position": {
+                "x": 1180,
+                "y": 200
+            },
+            "data": {
+                "label": "Generate Page",
+                "nodeType": "generate-website-page",
+                "description": "Generate all page sections",
+                "config": {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                    "temperature": 0.8
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1360,
+                "y": 200
+            },
+            "data": {
+                "label": "Validate Page",
+                "nodeType": "validate-quality",
+                "description": "Quality and compliance check",
+                "config": {
+                    "minScore": 75
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1540,
+                "y": 200
+            },
+            "data": {
+                "label": "Store Page",
+                "nodeType": "output-store",
+                "description": "Save generated page",
+                "config": {
+                    "table": "generated_pages"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-offer-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-offer-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "resolve-angle-1",
+            "target": "resolve-bp-1",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "resolve-bp-1",
+            "target": "resolve-cta-1",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "resolve-cta-1",
+            "target": "generate-1",
+            "animated": false
+        },
+        {
+            "id": "e7",
+            "source": "generate-1",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e8",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

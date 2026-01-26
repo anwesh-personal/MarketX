@@ -139,14 +139,21 @@ export interface BrainPerformanceMetrics {
 // ============================================================
 
 export class BrainConfigService {
-    private supabase = createClient()
+    /**
+     * Get Supabase client - created lazily to avoid request scope issues
+     */
+    private getSupabase() {
+        return createClient()
+    }
 
     /**
      * Get all active brain templates
      * Optionally filter by pricing tier
      */
     async listTemplates(tier?: 'echii' | 'pulz' | 'quanta'): Promise<BrainTemplate[]> {
-        let query = this.supabase
+        const supabase = this.getSupabase()
+
+        let query = supabase
             .from('brain_templates')
             .select('*')
             .eq('is_active', true)
@@ -170,7 +177,9 @@ export class BrainConfigService {
      * Get brain template by ID
      */
     async getTemplate(id: string): Promise<BrainTemplate | null> {
-        const { data, error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { data, error } = await supabase
             .from('brain_templates')
             .select('*')
             .eq('id', id)
@@ -194,7 +203,9 @@ export class BrainConfigService {
         template: Omit<BrainTemplate, 'id' | 'createdAt' | 'updatedAt'>,
         adminId: string
     ): Promise<BrainTemplate> {
-        const { data, error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { data, error } = await supabase
             .from('brain_templates')
             .insert({
                 name: template.name,
@@ -227,6 +238,7 @@ export class BrainConfigService {
         updates: Partial<BrainTemplate>,
         adminId: string
     ): Promise<BrainTemplate> {
+        const supabase = this.getSupabase()
         const updateData: any = {}
 
         if (updates.name !== undefined) updateData.name = updates.name
@@ -241,7 +253,7 @@ export class BrainConfigService {
         // Track who made the change
         updateData.created_by = adminId
 
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('brain_templates')
             .update(updateData)
             .eq('id', id)
@@ -260,7 +272,9 @@ export class BrainConfigService {
      * Deactivate brain template (soft delete)
      */
     async deactivateTemplate(id: string, adminId: string): Promise<void> {
-        const { error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { error } = await supabase
             .from('brain_templates')
             .update({
                 is_active: false,
@@ -280,8 +294,10 @@ export class BrainConfigService {
      * Falls back to default brain if no assignment
      */
     async getOrgBrain(orgId: string): Promise<BrainTemplate & { customConfig?: any }> {
+        const supabase = this.getSupabase()
+
         // First try to get assigned brain
-        const { data, error } = await this.supabase
+        const { data, error } = await supabase
             .from('org_brain_assignments')
             .select(`
         custom_config,
@@ -293,7 +309,7 @@ export class BrainConfigService {
 
         if (error || !data) {
             // No assignment - return default brain
-            const { data: defaultBrain, error: defaultError } = await this.supabase
+            const { data: defaultBrain, error: defaultError } = await supabase
                 .from('brain_templates')
                 .select('*')
                 .eq('is_default', true)
@@ -329,7 +345,9 @@ export class BrainConfigService {
         customConfig?: any,
         adminId?: string
     ): Promise<void> {
-        const { error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { error } = await supabase
             .from('org_brain_assignments')
             .upsert({
                 org_id: orgId,
@@ -351,7 +369,9 @@ export class BrainConfigService {
      * Remove brain assignment from org (revert to default)
      */
     async unassignBrainFromOrg(orgId: string, brainTemplateId: string): Promise<void> {
-        const { error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { error } = await supabase
             .from('org_brain_assignments')
             .update({ is_active: false })
             .eq('org_id', orgId)
@@ -367,7 +387,9 @@ export class BrainConfigService {
      * Get version history for a brain template
      */
     async getVersionHistory(brainTemplateId: string, limit: number = 20): Promise<BrainVersionHistory[]> {
-        const { data, error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { data, error } = await supabase
             .from('brain_version_history')
             .select('*')
             .eq('brain_template_id', brainTemplateId)
@@ -379,7 +401,7 @@ export class BrainConfigService {
             throw new Error(`Failed to get version history: ${error.message}`)
         }
 
-        return (data || []).map(row => ({
+        return (data || []).map((row: any) => ({
             id: row.id,
             brainTemplateId: row.brain_template_id,
             version: row.version,
@@ -398,8 +420,10 @@ export class BrainConfigService {
         versionId: string,
         adminId: string
     ): Promise<BrainTemplate> {
+        const supabase = this.getSupabase()
+
         // Get version config
-        const { data: version, error: versionError } = await this.supabase
+        const { data: version, error: versionError } = await supabase
             .from('brain_version_history')
             .select('config, version')
             .eq('id', versionId)
@@ -428,7 +452,9 @@ export class BrainConfigService {
      * Log brain request for analytics and learning loop
      */
     async logRequest(log: BrainRequestLog): Promise<void> {
-        const { error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { error } = await supabase
             .from('brain_request_logs')
             .insert({
                 org_id: log.orgId,
@@ -455,7 +481,9 @@ export class BrainConfigService {
         brainTemplateId: string,
         days: number = 30
     ): Promise<BrainPerformanceMetrics[]> {
-        const { data, error } = await this.supabase
+        const supabase = this.getSupabase()
+
+        const { data, error } = await supabase
             .from('brain_performance_stats')
             .select('*')
             .eq('brain_template_id', brainTemplateId)
@@ -467,7 +495,7 @@ export class BrainConfigService {
             throw new Error(`Failed to get performance metrics: ${error.message}`)
         }
 
-        return (data || []).map(row => ({
+        return (data || []).map((row: any) => ({
             brainTemplateId: row.brain_template_id,
             date: row.date,
             totalRequests: row.total_requests,
@@ -490,7 +518,9 @@ export class BrainConfigService {
      * Refresh performance statistics materialized view
      */
     async refreshPerformanceStats(): Promise<void> {
-        const { error } = await this.supabase.rpc('refresh_brain_stats')
+        const supabase = this.getSupabase()
+
+        const { error } = await supabase.rpc('refresh_brain_stats')
 
         if (error) {
             console.error('Failed to refresh performance stats:', error)

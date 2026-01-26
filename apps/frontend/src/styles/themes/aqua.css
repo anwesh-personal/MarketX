@@ -86,26 +86,44 @@
 
 /* ========== DARK MODE ========== */
 :root[data-theme="aqua-dark"] {
-    /* Colors */
-    --color-primary: #22d3ee;
-    --color-secondary: #67e8f9;
-    --color-accent: #a78bfa;
-    --color-background: #0c1420;
-    --color-surface: #1a2332;
-    --color-surface-hover: #243447;
-    --color-text-primary: #ecfeff;
-    --color-text-secondary: #a5f3fc;
-    --color-text-tertiary: #67e8f9;
-    --color-border: #1e3a4c;
-    --color-border-hover: #2e4a5c;
-    --color-border-focus: #22d3ee;
-    --color-success: #34d399;
-    --color-warning: #fbbf24;
-    --color-error: #fb7185;
-    --color-info: #38bdf8;
-    --color-overlay: rgba(12, 20, 32, 0.85);
-    --color-shadow: rgba(0, 0, 0, 0.3);
-    --color-glow: rgba(34, 211, 238, 0.2);
+    /* Colors - Ocean gradient: Green to Blue */
+    --color-primary: #10b981;
+    /* Emerald-500 - Green */
+    --color-secondary: #3b82f6;
+    /* Blue-500 */
+    --color-accent: #8b5cf6;
+    /* Purple-500 for contrast */
+    --color-background: #0f172a;
+    /* Slate-900 - Deep ocean */
+    --color-surface: #1e293b;
+    /* Slate-800 - Sidebar */
+    --color-surface-hover: #334155;
+    /* Slate-700 */
+    --color-text-primary: #f0fdfa;
+    /* Teal-50 - Bright readable */
+    --color-text-secondary: #5eead4;
+    /* Teal-300 - Vibrant */
+    --color-text-tertiary: #2dd4bf;
+    /* Teal-400 */
+    --color-border: #334155;
+    /* Slate-700 */
+    --color-border-hover: #10b981;
+    /* Emerald-500 - Green glow */
+    --color-border-focus: #3b82f6;
+    /* Blue-500 */
+    --color-success: #10b981;
+    /* Emerald-500 */
+    --color-warning: #f59e0b;
+    /* Amber-500 */
+    --color-error: #ef4444;
+    /* Red-500 */
+    --color-info: #3b82f6;
+    /* Blue-500 */
+    --color-overlay: rgba(15, 23, 42, 0.9);
+    --color-shadow: rgba(16, 185, 129, 0.2);
+    /* Green shadow */
+    --color-glow: rgba(16, 185, 129, 0.3);
+    /* Green glow */
 
     /* Typography (same as light) */
     --font-sans: 'Manrope', 'Lexend', -apple-system, sans-serif;

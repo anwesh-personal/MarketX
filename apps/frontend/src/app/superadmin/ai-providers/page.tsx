@@ -365,8 +365,8 @@ function ProviderCard({
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setAddingTo(isAdding ? null : provider.id)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all shadow-sm ${isAdding
-                                    ? 'bg-destructive/10 text-destructive border border-destructive/40'
-                                    : 'bg-background/90 hover:bg-background border border-border/60'
+                                ? 'bg-destructive/10 text-destructive border border-destructive/40'
+                                : 'bg-background/90 hover:bg-background border border-border/60'
                                 }`}
                         >
                             {isAdding ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -428,8 +428,8 @@ function ProviderCard({
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -10 }}
                                         className={`p-4 rounded-xl border ${validationResult.valid
-                                                ? 'bg-green-500/10 border-green-500/40 text-green-600'
-                                                : 'bg-destructive/10 border-destructive/40 text-destructive'
+                                            ? 'bg-success/10 border-success/40 text-success'
+                                            : 'bg-destructive/10 border-destructive/40 text-destructive'
                                             }`}
                                     >
                                         <div className="flex items-center gap-2 mb-2">
@@ -449,7 +449,7 @@ function ProviderCard({
                                             <motion.div
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
-                                                className="mt-3 pt-3 border-t border-green-500/20"
+                                                className="mt-3 pt-3 border-t border-success/20"
                                             >
                                                 <div className="flex items-center justify-between mb-2">
                                                     <span className="text-sm font-semibold flex items-center gap-2">
@@ -470,7 +470,7 @@ function ProviderCard({
                                                             initial={{ opacity: 0, x: -10 }}
                                                             animate={{ opacity: 1, x: 0 }}
                                                             transition={{ delay: i * 0.05 }}
-                                                            className="text-xs font-mono px-2 py-1 rounded bg-green-500/5"
+                                                            className="text-xs font-mono px-2 py-1 rounded bg-success/5"
                                                         >
                                                             {model.id}
                                                         </motion.div>
@@ -537,8 +537,8 @@ function ProviderCard({
                                     transition={{ delay: index * 0.05 }}
                                     whileHover={{ scale: 1.01 }}
                                     className={`p-4 rounded-xl border transition-all ${key.is_active
-                                            ? 'border-green-500/40 bg-green-500/5 shadow-sm'
-                                            : 'border-border/40 bg-muted/10'
+                                        ? 'border-success/40 bg-success/5 shadow-sm'
+                                        : 'border-border/40 bg-muted/10'
                                         }`}
                                 >
                                     <div className="flex items-start justify-between mb-3">
@@ -551,9 +551,9 @@ function ProviderCard({
                                                     transition={{ type: "spring", stiffness: 500 }}
                                                 >
                                                     {key.is_active ? (
-                                                        <CheckCircle className="w-4 h-4 text-green-500" />
+                                                        <CheckCircle className="w-4 h-4 text-success" />
                                                     ) : (
-                                                        <AlertTriangle className="w-4 h-4 text-orange-500" />
+                                                        <AlertTriangle className="w-4 h-4 text-warning" />
                                                     )}
                                                 </motion.div>
                                             </div>
@@ -570,7 +570,7 @@ function ProviderCard({
                                                 className="p-2 rounded-lg hover:bg-muted transition-colors"
                                             >
                                                 {key.is_active ? (
-                                                    <ToggleRight className="w-5 h-5 text-green-500" />
+                                                    <ToggleRight className="w-5 h-5 text-success" />
                                                 ) : (
                                                     <ToggleLeft className="w-5 h-5 text-muted-foreground" />
                                                 )}

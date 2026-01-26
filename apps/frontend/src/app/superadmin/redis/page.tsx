@@ -136,13 +136,13 @@ export default function RedisManagementPage() {
                             <div className="flex items-center gap-2">
                                 {status.connected ? (
                                     <>
-                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-sm text-green-500 font-medium">Connected</span>
+                                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                                        <span className="text-sm text-success font-medium">Connected</span>
                                     </>
                                 ) : (
                                     <>
-                                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                                        <span className="text-sm text-red-500 font-medium">Disconnected</span>
+                                        <div className="w-2 h-2 rounded-full bg-error" />
+                                        <span className="text-sm text-error font-medium">Disconnected</span>
                                     </>
                                 )}
                             </div>
@@ -214,9 +214,9 @@ export default function RedisManagementPage() {
                                         <div key={job.id} className="p-4 rounded-lg border border-border/40 mb-3">
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="font-mono text-sm">{job.id}</span>
-                                                <span className={`px-2 py-0.5 rounded-full text-xs ${job.state === 'completed' ? 'bg-green-500/10 text-green-500' :
-                                                        job.state === 'failed' ? 'bg-red-500/10 text-red-500' :
-                                                            'bg-blue-500/10 text-blue-500'
+                                                <span className={`px-2 py-0.5 rounded-full text-xs ${job.state === 'completed' ? 'bg-success/10 text-success' :
+                                                    job.state === 'failed' ? 'bg-error/10 text-error' :
+                                                        'bg-primary-500/10 text-primary-500'
                                                     }`}>
                                                     {job.state}
                                                 </span>
@@ -244,13 +244,13 @@ export default function RedisManagementPage() {
     )
 }
 
-function StatCard({ icon: Icon, label, value, color }: any) {
-    const colors = {
-        blue: 'from-blue-500/10 to-cyan-500/10 text-blue-500',
-        green: 'from-green-500/10 to-emerald-500/10 text-green-500',
-        purple: 'from-purple-500/10 to-pink-500/10 text-purple-500',
-        orange: 'from-orange-500/10 to-red-500/10 text-orange-500',
-        cyan: 'from-cyan-500/10 to-blue-500/10 text-cyan-500',
+function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color: 'blue' | 'green' | 'purple' | 'orange' | 'cyan' }) {
+    const colors: Record<'blue' | 'green' | 'purple' | 'orange' | 'cyan', string> = {
+        blue: 'from-primary-500/10 to-primary-400/10 text-primary-500',
+        green: 'from-success/10 to-accent-600/10 text-success',
+        purple: 'from-secondary-500/10 to-secondary-400/10 text-secondary-500',
+        orange: 'from-warning/10 to-warning/5 text-warning',
+        cyan: 'from-info/10 to-primary-400/10 text-info',
     }
 
     return (
@@ -279,21 +279,21 @@ function QueueCard({ queue, onAction, onSelect, onRetryJob }: any) {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-4 gap-2 mb-4">
-                <div className="text-center p-2 rounded-lg bg-blue-500/10">
+                <div className="text-center p-2 rounded-lg bg-primary-500/10">
                     <div className="text-sm text-muted-foreground">Waiting</div>
-                    <div className="text-xl font-bold text-blue-500">{queue.waiting}</div>
+                    <div className="text-xl font-bold text-primary-500">{queue.waiting}</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-green-500/10">
+                <div className="text-center p-2 rounded-lg bg-success/10">
                     <div className="text-sm text-muted-foreground">Active</div>
-                    <div className="text-xl font-bold text-green-500">{queue.active}</div>
+                    <div className="text-xl font-bold text-success">{queue.active}</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-gray-500/10">
+                <div className="text-center p-2 rounded-lg bg-neutral-500/10">
                     <div className="text-sm text-muted-foreground">Done</div>
                     <div className="text-xl font-bold">{queue.completed}</div>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-red-500/10">
+                <div className="text-center p-2 rounded-lg bg-error/10">
                     <div className="text-sm text-muted-foreground">Failed</div>
-                    <div className="text-xl font-bold text-red-500">{queue.failed}</div>
+                    <div className="text-xl font-bold text-error">{queue.failed}</div>
                 </div>
             </div>
 
@@ -302,15 +302,15 @@ function QueueCard({ queue, onAction, onSelect, onRetryJob }: any) {
                 <div className="mb-4">
                     <div className="h-2 rounded-full bg-muted overflow-hidden flex">
                         <div
-                            className="bg-blue-500"
+                            className="bg-primary-500"
                             style={{ width: `${(queue.waiting / totalJobs) * 100}%` }}
                         />
                         <div
-                            className="bg-green-500"
+                            className="bg-success"
                             style={{ width: `${(queue.active / totalJobs) * 100}%` }}
                         />
                         <div
-                            className="bg-red-500"
+                            className="bg-error"
                             style={{ width: `${(queue.failed / totalJobs) * 100}%` }}
                         />
                     </div>
@@ -342,11 +342,11 @@ function QueueCard({ queue, onAction, onSelect, onRetryJob }: any) {
     )
 }
 
-function ActionButton({ icon: Icon, label, onClick, variant }: any) {
-    const variants = {
+function ActionButton({ icon: Icon, label, onClick, variant }: { icon: any; label: string; onClick: () => void; variant: 'secondary' | 'destructive' | 'warning' }) {
+    const variants: Record<'secondary' | 'destructive' | 'warning', string> = {
         secondary: 'border-border hover:bg-muted',
         destructive: 'border-destructive/40 hover:bg-destructive/10 text-destructive',
-        warning: 'border-orange-500/40 hover:bg-orange-500/10 text-orange-500',
+        warning: 'border-warning/40 hover:bg-warning/10 text-warning',
     }
 
     return (

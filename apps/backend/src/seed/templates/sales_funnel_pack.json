@@ -1,0 +1,167 @@
+{
+    "id": "template-sales-funnel-pack",
+    "name": "Sales Funnel Page Pack v2",
+    "description": "Generate complete sales funnel with Opt-in, Thank You, Sales, and Order Confirmation pages.",
+    "category": "WEBSITE",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "label": "Start Funnel Build",
+                "nodeType": "manual-trigger",
+                "description": "Generate multi-page funnel",
+                "config": {
+                    "requiredInputs": [
+                        "icp_id",
+                        "offer_id"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 300,
+                "y": 200
+            },
+            "data": {
+                "label": "Select ICP",
+                "nodeType": "resolve-icp",
+                "description": "Target audience for funnel",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-offer-1",
+            "type": "resolve-offer",
+            "position": {
+                "x": 500,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Offer",
+                "nodeType": "resolve-offer",
+                "description": "Product/service for funnel",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 700,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Consistent angle across funnel",
+                "config": {}
+            }
+        },
+        {
+            "id": "generate-1",
+            "type": "generate-website-bundle",
+            "position": {
+                "x": 900,
+                "y": 200
+            },
+            "data": {
+                "label": "Generate Page Bundle",
+                "nodeType": "generate-website-bundle",
+                "description": "Generate all 4 funnel pages with routing",
+                "config": {
+                    "pageTypes": [
+                        "OPT_IN",
+                        "THANK_YOU",
+                        "SALES",
+                        "ORDER_CONFIRM"
+                    ],
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                    "ensureConsistentRouting": true
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1100,
+                "y": 200
+            },
+            "data": {
+                "label": "Validate All Pages",
+                "nodeType": "validate-quality",
+                "description": "Quality check entire funnel",
+                "config": {
+                    "minScore": 70,
+                    "checkCrossPageConsistency": true
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1300,
+                "y": 200
+            },
+            "data": {
+                "label": "Store Bundle",
+                "nodeType": "output-store",
+                "description": "Save all pages as bundle",
+                "config": {
+                    "table": "generated_bundles",
+                    "bundleType": "sales_funnel"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-offer-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-offer-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "resolve-angle-1",
+            "target": "generate-1",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "generate-1",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

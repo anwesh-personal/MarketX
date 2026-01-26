@@ -1,0 +1,207 @@
+{
+    "id": "template-email-reply-engine",
+    "name": "Email Reply Engine v2",
+    "description": "Respond to incoming emails using AI with scenario matching and strategy selection. Perfect for sales replies, support responses, and lead nurturing.",
+    "category": "EMAIL",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "webhook-trigger",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "label": "Email Received",
+                "nodeType": "webhook-trigger",
+                "description": "Triggered when email arrives via n8n webhook",
+                "config": {
+                    "webhookPath": "/email-inbound",
+                    "method": "POST",
+                    "expectedPayload": {
+                        "subject": "string",
+                        "body": "string",
+                        "sender_email": "string",
+                        "sender_name": "string",
+                        "thread_id": "string (optional)"
+                    }
+                }
+            }
+        },
+        {
+            "id": "analyze-1",
+            "type": "analyze-intent",
+            "position": {
+                "x": 300,
+                "y": 200
+            },
+            "data": {
+                "label": "Detect Email Scenario",
+                "nodeType": "analyze-intent",
+                "description": "Analyze incoming email to detect scenario (pricing question, timeline, objection, etc.)",
+                "config": {
+                    "analysisType": "email_scenario",
+                    "outputFields": [
+                        "scenario_id",
+                        "confidence",
+                        "detected_intent",
+                        "urgency_level"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 500,
+                "y": 200
+            },
+            "data": {
+                "label": "Identify Sender Profile",
+                "nodeType": "resolve-icp",
+                "description": "Match sender to ICP segment based on email domain and context",
+                "config": {
+                    "useEmailDomain": true,
+                    "fallbackToDefault": true
+                }
+            }
+        },
+        {
+            "id": "resolve-offer-1",
+            "type": "resolve-offer",
+            "position": {
+                "x": 700,
+                "y": 200
+            },
+            "data": {
+                "label": "Match Relevant Offer",
+                "nodeType": "resolve-offer",
+                "description": "Select appropriate offer based on email thread context",
+                "config": {
+                    "useThreadContext": true,
+                    "fallbackToDefault": true
+                }
+            }
+        },
+        {
+            "id": "generate-1",
+            "type": "generate-email-reply",
+            "position": {
+                "x": 900,
+                "y": 200
+            },
+            "data": {
+                "label": "Generate Reply",
+                "nodeType": "generate-email-reply",
+                "description": "Generate contextual email reply using detected scenario and strategy",
+                "config": {
+                    "provider": "openai",
+                    "model": "gpt-4o",
+                    "temperature": 0.7,
+                    "includeSignature": true
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1100,
+                "y": 200
+            },
+            "data": {
+                "label": "Quality Check",
+                "nodeType": "validate-quality",
+                "description": "Validate reply for quality, tone, and compliance",
+                "config": {
+                    "minScore": 70,
+                    "checkTone": true,
+                    "checkCompliance": true
+                }
+            }
+        },
+        {
+            "id": "output-1",
+            "type": "output-webhook",
+            "position": {
+                "x": 1300,
+                "y": 150
+            },
+            "data": {
+                "label": "Send to n8n",
+                "nodeType": "output-webhook",
+                "description": "Return generated reply to n8n for sending",
+                "config": {
+                    "webhookUrl": "{{N8N_WEBHOOK_URL}}",
+                    "method": "POST",
+                    "includeMetadata": true
+                }
+            }
+        },
+        {
+            "id": "output-log-1",
+            "type": "output-analytics",
+            "position": {
+                "x": 1300,
+                "y": 280
+            },
+            "data": {
+                "label": "Log for Learning",
+                "nodeType": "output-analytics",
+                "description": "Store execution data for analytics and model improvement",
+                "config": {
+                    "trackScenario": true,
+                    "trackStrategy": true,
+                    "trackOutcome": true
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "analyze-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "analyze-1",
+            "target": "resolve-icp-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-icp-1",
+            "target": "resolve-offer-1",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "resolve-offer-1",
+            "target": "generate-1",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "generate-1",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "validate-1",
+            "target": "output-1",
+            "animated": true
+        },
+        {
+            "id": "e7",
+            "source": "validate-1",
+            "target": "output-log-1",
+            "animated": false
+        }
+    ]
+}

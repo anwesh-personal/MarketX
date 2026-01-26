@@ -55,7 +55,7 @@ export interface EmbeddingStats {
 // ============================================================
 
 export class VectorStore {
-    private supabase = createClient()
+    private getSupabase() { return createClient() }
     private embeddingModel = 'text-embedding-3-large'
     private dimensions = 1536
     private maxBatchSize = 100
@@ -209,7 +209,7 @@ export class VectorStore {
         }))
 
         // Batch insert using SQL function
-        const { data, error } = await this.supabase.rpc('batch_insert_embeddings', {
+        const { data, error } = await this.getSupabase().rpc('batch_insert_embeddings', {
             embeddings_data: embeddingsData
         })
 
@@ -243,7 +243,7 @@ export class VectorStore {
         )
 
         // Perform hybrid search using SQL function
-        const { data, error } = await this.supabase.rpc('hybrid_search', {
+        const { data, error } = await this.getSupabase().rpc('hybrid_search', {
             query_embedding: JSON.stringify(queryEmbedding),
             query_text: query,
             org_uuid: options.orgId,
@@ -295,7 +295,7 @@ export class VectorStore {
         )
 
         // Perform vector search using SQL function
-        const { data, error } = await this.supabase.rpc('vector_search', {
+        const { data, error } = await this.getSupabase().rpc('vector_search', {
             query_embedding: JSON.stringify(queryEmbedding),
             org_uuid: options.orgId,
             source_types: options.sourceTypes || null,
@@ -330,7 +330,7 @@ export class VectorStore {
      * Used when KB or conversation is deleted
      */
     async deleteBySource(sourceId: string, orgId: string): Promise<number> {
-        const { data, error } = await this.supabase.rpc('delete_embeddings_by_source', {
+        const { data, error } = await this.getSupabase().rpc('delete_embeddings_by_source', {
             source_uuid: sourceId,
             org_uuid: orgId
         })
@@ -347,7 +347,7 @@ export class VectorStore {
      * Get embedding count for organization
      */
     async getOrgEmbeddingCount(orgId: string): Promise<number> {
-        const { data, error } = await this.supabase.rpc('get_org_embedding_count', {
+        const { data, error } = await this.getSupabase().rpc('get_org_embedding_count', {
             org_uuid: orgId
         })
 
@@ -366,7 +366,7 @@ export class VectorStore {
         orgId: string,
         sourceType: 'kb' | 'conversation' | 'user_memory' | 'system'
     ): Promise<number> {
-        const { data, error } = await this.supabase.rpc('get_embedding_count_by_source', {
+        const { data, error } = await this.getSupabase().rpc('get_embedding_count_by_source', {
             org_uuid: orgId,
             source: sourceType
         })
@@ -383,7 +383,7 @@ export class VectorStore {
      * Get embedding statistics for organization
      */
     async getStats(orgId: string, days: number = 30): Promise<any[]> {
-        const { data, error } = await this.supabase
+        const { data, error } = await this.getSupabase()
             .from('embedding_stats')
             .select('*')
             .eq('org_id', orgId)
@@ -404,14 +404,13 @@ export class VectorStore {
 
     /**
      * Call embedding API via AI provider
-     * NOTE: This needs to be integrated with your AI provider system
+     * Retrieves provider configuration from database and calls appropriate API
      */
     private async callEmbeddingAPI(text: string, providerId: string): Promise<number[]> {
-        // TODO: Integrate with ai_providers table to get actual provider config
-        // For now, using direct OpenAI call as placeholder
+        // Get provider configuration from database
 
         // Get provider config
-        const { data: provider } = await this.supabase
+        const { data: provider } = await this.getSupabase()
             .from('ai_providers')
             .select('*')
             .eq('id', providerId)
@@ -449,7 +448,7 @@ export class VectorStore {
      */
     private async callEmbeddingAPIBatch(texts: string[], providerId: string): Promise<number[][]> {
         // Get provider config
-        const { data: provider } = await this.supabase
+        const { data: provider } = await this.getSupabase()
             .from('ai_providers')
             .select('*')
             .eq('id', providerId)
@@ -490,7 +489,7 @@ export class VectorStore {
     ): Promise<{ id: string, embedding: number[] } | null> {
         const hash = this.hashContent(text)
 
-        const { data, error } = await this.supabase
+        const { data, error } = await this.getSupabase()
             .from('embedding_cache')
             .select('id, embedding')
             .eq('content_hash', hash)
@@ -516,7 +515,7 @@ export class VectorStore {
     ): Promise<void> {
         const hash = this.hashContent(text)
 
-        const { error } = await this.supabase
+        const { error } = await this.getSupabase()
             .from('embedding_cache')
             .upsert({
                 content_hash: hash,
@@ -537,7 +536,7 @@ export class VectorStore {
      * Update cache access statistics
      */
     private async updateCacheAccess(cacheId: string): Promise<void> {
-        const { error } = await this.supabase.rpc('update_cache_access', {
+        const { error } = await this.getSupabase().rpc('update_cache_access', {
             cache_uuid: cacheId
         })
 
@@ -564,7 +563,7 @@ export class VectorStore {
     ): Promise<void> {
         const today = new Date().toISOString().split('T')[0]
 
-        const { error } = await this.supabase.rpc('update_embedding_stats', {
+        const { error } = await this.getSupabase().rpc('update_embedding_stats', {
             org_uuid: orgId,
             stat_date: today,
             search_time_ms: null,
@@ -586,7 +585,7 @@ export class VectorStore {
     ): Promise<void> {
         const today = new Date().toISOString().split('T')[0]
 
-        const { error } = await this.supabase.rpc('update_embedding_stats', {
+        const { error } = await this.getSupabase().rpc('update_embedding_stats', {
             org_uuid: orgId,
             stat_date: today,
             search_time_ms: searchTimeMs,

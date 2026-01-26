@@ -1,0 +1,186 @@
+{
+    "id": "template-mini-ebook-generator",
+    "name": "Mini Ebook Generator v2",
+    "description": "Generate lead magnet ebook with outline and chapters. Perfect for content upgrades and email list building.",
+    "category": "CONTENT",
+    "status": "active",
+    "version": "2.0.0",
+    "nodes": [
+        {
+            "id": "trigger-1",
+            "type": "manual-trigger",
+            "position": {
+                "x": 100,
+                "y": 200
+            },
+            "data": {
+                "label": "Start Ebook",
+                "nodeType": "manual-trigger",
+                "description": "Generate ebook content",
+                "config": {
+                    "requiredInputs": [
+                        "topic",
+                        "icp_id",
+                        "chapter_count"
+                    ]
+                }
+            }
+        },
+        {
+            "id": "resolve-icp-1",
+            "type": "resolve-icp",
+            "position": {
+                "x": 280,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Audience",
+                "nodeType": "resolve-icp",
+                "description": "Ebook reader profile",
+                "config": {}
+            }
+        },
+        {
+            "id": "resolve-angle-1",
+            "type": "resolve-angle",
+            "position": {
+                "x": 460,
+                "y": 200
+            },
+            "data": {
+                "label": "Select Angle",
+                "nodeType": "resolve-angle",
+                "description": "Content angle",
+                "config": {}
+            }
+        },
+        {
+            "id": "generate-outline",
+            "type": "generate-website-page",
+            "position": {
+                "x": 640,
+                "y": 200
+            },
+            "data": {
+                "label": "Generate Outline",
+                "nodeType": "generate-website-page",
+                "description": "Create chapter outline",
+                "config": {
+                    "pageType": "EBOOK_OUTLINE",
+                    "includeChapterSummaries": true
+                }
+            }
+        },
+        {
+            "id": "generate-chapters",
+            "type": "generate-website-bundle",
+            "position": {
+                "x": 840,
+                "y": 200
+            },
+            "data": {
+                "label": "Generate Chapters",
+                "nodeType": "generate-website-bundle",
+                "description": "Generate all chapter content",
+                "config": {
+                    "bundleType": "ebook_chapters",
+                    "provider": "openai",
+                    "model": "gpt-4o"
+                }
+            }
+        },
+        {
+            "id": "transform-locker",
+            "type": "transform-locker",
+            "position": {
+                "x": 1020,
+                "y": 200
+            },
+            "data": {
+                "label": "Add Content Locks",
+                "nodeType": "transform-locker",
+                "description": "Gate chapters 3+ for email capture",
+                "config": {
+                    "lockAfterChapter": 2,
+                    "unlockMethod": "email_capture"
+                }
+            }
+        },
+        {
+            "id": "validate-1",
+            "type": "validate-quality",
+            "position": {
+                "x": 1200,
+                "y": 200
+            },
+            "data": {
+                "label": "Validate Ebook",
+                "nodeType": "validate-quality",
+                "description": "Quality check",
+                "config": {
+                    "minScore": 70
+                }
+            }
+        },
+        {
+            "id": "output-store-1",
+            "type": "output-store",
+            "position": {
+                "x": 1380,
+                "y": 200
+            },
+            "data": {
+                "label": "Store Ebook",
+                "nodeType": "output-store",
+                "description": "Save ebook bundle",
+                "config": {
+                    "table": "generated_ebooks"
+                }
+            }
+        }
+    ],
+    "edges": [
+        {
+            "id": "e1",
+            "source": "trigger-1",
+            "target": "resolve-icp-1",
+            "animated": true
+        },
+        {
+            "id": "e2",
+            "source": "resolve-icp-1",
+            "target": "resolve-angle-1",
+            "animated": false
+        },
+        {
+            "id": "e3",
+            "source": "resolve-angle-1",
+            "target": "generate-outline",
+            "animated": false
+        },
+        {
+            "id": "e4",
+            "source": "generate-outline",
+            "target": "generate-chapters",
+            "animated": false
+        },
+        {
+            "id": "e5",
+            "source": "generate-chapters",
+            "target": "transform-locker",
+            "animated": false
+        },
+        {
+            "id": "e6",
+            "source": "transform-locker",
+            "target": "validate-1",
+            "animated": false
+        },
+        {
+            "id": "e7",
+            "source": "validate-1",
+            "target": "output-store-1",
+            "animated": true
+        }
+    ]
+}

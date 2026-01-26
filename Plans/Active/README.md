@@ -10,16 +10,53 @@
 
 ## 📋 Phase Overview
 
+⚠️ **CRITICAL:** Phase 0 MUST complete before continuing any other phases.
+
 | Phase | Duration | Focus | Status |
 |-------|----------|-------|--------|
-| [Phase 1](#phase-1) | Week 1-2 | Brain Configuration System | ✅ READY |
-| [Phase 2](#phase-2) | Week 3-4 | Vector Store & Embeddings | ✅ READY |
-| [Phase 3](#phase-3) | Week 5-6 | RAG Orchestration | 🚧 NEXT |
+| **[Phase 0](#phase-0)** | **Week 0 (7-10 days)** | **🔴 Lekhika AI System Port** | **🚨 PRIORITY** |
+| [Phase 1](#phase-1) | Week 1-2 | Brain Configuration System | ✅ COMPLETE |
+| [Phase 2](#phase-2) | Week 3-4 | Vector Store & Embeddings | ✅ COMPLETE |
+| [Phase 3](#phase-3) | Week 5-6 | RAG Orchestration | ⏸️ ON HOLD |
 | [Phase 4](#phase-4) | Week 7-8 | Multi-Agent System | 📋 PLANNED |
 | [Phase 5](#phase-5) | Week 9-10 | Worker Processing | 📋 PLANNED |
 | [Phase 6](#phase-6) | Week 11-12 | Learning Loop & RLHF | 📋 PLANNED |
 | [Phase 7](#phase-7) | Week 13-14 | Superadmin & User UI | 📋 PLANNED |
 | [Phase 8](#phase-8) | Week 15-16 | Advanced Features & Polish | 📋 PLANNED |
+
+---
+
+## Phase 0: Lekhika AI System Port (FOUNDATION)
+**Week 0 (7-10 days)** | [Full Implementation →](./PHASE_0_LEKHIKA_AI_PORT.md)
+
+### 🚨 CRITICAL PRIORITY
+
+This phase is **MANDATORY** before continuing any other work. No compromises.
+
+### Deliverables
+- ✅ Complete theme system (theme-governed colors, spacing, typography)
+- ✅ AI Provider Management (multi-key, failover, validation, NO hardcoded keys)
+- ✅ Worker Infrastructure (PM2, deployment scripts, monitoring)
+- ✅ Component Library (Button, Input, Modal, Card - all theme-governed)
+- ✅ Refactor existing code (remove ALL hardcoded colors and API keys)
+- ✅ Design system documentation
+
+### Key Rules
+```
+1. NO hardcoded colors - ONLY theme variables
+2. NO hardcoded API keys - ONLY AI Provider system
+3. NO TODOs in production code
+4. NO band-aids or fallbacks
+5. THEME-GOVERNED everything
+```
+
+### Success Metrics
+- ✅ Zero hardcoded colors in entire codebase
+- ✅ Zero hardcoded API keys
+- ✅ All components use theme system
+- ✅ AI Provider failover tested and working
+- ✅ PM2 deployment script tested on VPS
+- ✅ Design system documented
 
 ---
 

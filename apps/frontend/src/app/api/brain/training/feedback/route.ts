@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
         const supabase = createClient()
 
         // Mock feedback data - in production, fetch from user_feedback table
-        const feedback = []
+        const feedback: any[] = []
 
         return NextResponse.json({ feedback })
     } catch (error: any) {

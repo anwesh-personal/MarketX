@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queues } from '@/lib/worker-queues'
-import { redisConnection } from '@/lib/redis'
+import { getRedisConnection } from '@/lib/redis'
+
+// Prevent static generation - this route requires runtime Redis connection
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
         // Get Redis info
-        const redisInfo = await redisConnection.info()
-        const redisPing = await redisConnection.ping()
+        const redis = getRedisConnection()
+        const redisInfo = await redis.info()
+        const redisPing = await redis.ping()
 
         // Get queue stats for all queues
         const queueStats = await Promise.all(
@@ -46,11 +50,11 @@ export async function GET(request: NextRequest) {
         // Parse Redis info
         const infoLines = redisInfo.split('\r\n')
         const redisStats = {
-            version: infoLines.find(l => l.startsWith('redis_version:'))?.split(':')[1] || 'unknown',
-            uptime: infoLines.find(l => l.startsWith('uptime_in_seconds:'))?.split(':')[1] || '0',
-            connectedClients: infoLines.find(l => l.startsWith('connected_clients:'))?.split(':')[1] || '0',
-            usedMemory: infoLines.find(l => l.startsWith('used_memory_human:'))?.split(':')[1] || '0',
-            totalCommands: infoLines.find(l => l.startsWith('total_commands_processed:'))?.split(':')[1] || '0',
+            version: infoLines.find((l: string) => l.startsWith('redis_version:'))?.split(':')[1] || 'unknown',
+            uptime: infoLines.find((l: string) => l.startsWith('uptime_in_seconds:'))?.split(':')[1] || '0',
+            connectedClients: infoLines.find((l: string) => l.startsWith('connected_clients:'))?.split(':')[1] || '0',
+            usedMemory: infoLines.find((l: string) => l.startsWith('used_memory_human:'))?.split(':')[1] || '0',
+            totalCommands: infoLines.find((l: string) => l.startsWith('total_commands_processed:'))?.split(':')[1] || '0',
         }
 
         return NextResponse.json({

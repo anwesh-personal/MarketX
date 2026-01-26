@@ -16,6 +16,7 @@ import {
     ChevronRight,
     Zap,
     Sparkles,
+    Workflow,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { createClient } from '@/lib/supabase/client';
@@ -36,6 +37,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     // Navigation items
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Workflow Manager', href: '/workflow-manager', icon: Workflow },
         { name: 'Writer Studio', href: '/writer', icon: Zap },
         { name: 'Brain Control', href: '/brain-control', icon: Brain },
         { name: 'Brain Chat', href: '/brain-chat', icon: Sparkles },
@@ -124,10 +126,25 @@ export default function MainLayout({ children }: MainLayoutProps) {
             </header>
 
             <div className="flex h-[calc(100vh-4rem)]">
-                {/* Sidebar - Desktop */}
-                <aside className={`hidden lg:flex flex-col bg-surface border-r border-border transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-0'} overflow-hidden`}>
-                    <nav className="flex-1 p-lg space-y-2 overflow-y-auto">
-                        {navigation.map((item) => {
+                {/* Sidebar - Desktop - GLASSMORPHISM */}
+                <aside className={`
+                    hidden lg:flex flex-col
+                    relative
+                    backdrop-blur-xl bg-gradient-to-b from-surface/40 via-surface/30 to-surface/40
+                    border-r border-border/30
+                    shadow-[0_8px_32px_0_rgba(0,0,0,0.12)]
+                    transition-all duration-300
+                    ${sidebarOpen ? 'w-72' : 'w-0'}
+                    overflow-hidden
+                    before:absolute before:inset-0 
+                    before:bg-gradient-to-br before:from-primary/5 before:via-transparent before:to-accent/5
+                    before:pointer-events-none
+                `}>
+                    {/* Glass reflection overlay */}
+                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+
+                    <nav className="flex-1 p-lg space-y-2 overflow-y-auto relative z-10">
+                        {navigation.map((item, index) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
 
@@ -135,45 +152,79 @@ export default function MainLayout({ children }: MainLayoutProps) {
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    style={{ animationDelay: `${index * 50}ms` }}
                                     className={`
                                         nav-item group relative
                                         flex items-center gap-md px-md py-sm
                                         rounded-[var(--radius-lg)] font-medium text-sm
-                                        transition-all duration-[var(--duration-fast)]
+                                        transition-all duration-200
+                                        backdrop-blur-sm
                                         ${isActive
-                                            ? 'bg-primary/10 text-primary shadow-[var(--shadow-sm)]'
-                                            : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
+                                            ? 'bg-gradient-to-r from-primary/20 via-primary/15 to-transparent text-primary shadow-[0_4px_16px_rgba(var(--color-primary-rgb),0.15)] border border-primary/20'
+                                            : 'text-textSecondary hover:text-textPrimary hover:bg-white/5 hover:backdrop-blur-md hover:shadow-[0_2px_12px_rgba(0,0,0,0.08)] border border-transparent hover:border-border/30'
                                         }
                                         active:scale-[0.98]
+                                        animate-fade-in-up
                                     `}
                                 >
+                                    {/* Active indicator - gradient bar */}
                                     {isActive && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-full shadow-[0_0_8px_var(--color-primary)]" />
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-primary via-primary to-accent rounded-r-full shadow-[0_0_12px_var(--color-primary)] animate-pulse-glow" />
                                     )}
 
-                                    <div className={`flex items-center justify-center w-9 h-9 rounded-[var(--radius-md)] transition-all ${isActive ? 'bg-primary/20 text-primary' : 'bg-transparent group-hover:bg-surfaceHover group-hover:scale-110'}`}>
+                                    {/* Icon container with glass effect */}
+                                    <div className={`
+                                        flex items-center justify-center w-9 h-9 
+                                        rounded-[var(--radius-md)] 
+                                        transition-all duration-200
+                                        ${isActive
+                                            ? 'bg-gradient-to-br from-primary/20 to-accent/10 text-primary shadow-inner'
+                                            : 'bg-white/5 backdrop-blur-sm group-hover:bg-white/10 group-hover:scale-110 group-hover:shadow-md'
+                                        }
+                                    `}>
                                         <Icon className="w-5 h-5" />
                                     </div>
 
                                     <span className="flex-1">{item.name}</span>
 
-                                    <ChevronRight className={`w-4 h-4 transition-all ${isActive ? 'opacity-100' : 'opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0'}`} />
+                                    {/* Arrow with smooth reveal */}
+                                    <ChevronRight className={`
+                                        w-4 h-4 transition-all duration-200
+                                        ${isActive
+                                            ? 'opacity-100 text-primary'
+                                            : 'opacity-0 -translate-x-2 group-hover:opacity-60 group-hover:translate-x-0'
+                                        }
+                                    `} />
+
+                                    {/* Subtle hover glow */}
+                                    <div className="absolute inset-0 rounded-[var(--radius-lg)] bg-gradient-to-r from-primary/0 via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                                 </Link>
                             );
                         })}
                     </nav>
 
-                    {/* Footer Signature */}
-                    <div className="p-lg border-t border-border space-y-sm">
-                        <div className="flex items-center gap-sm text-xs text-textTertiary">
-                            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                            <span>System Online</span>
+                    {/* Footer with glassmorphism */}
+                    <div className="p-lg border-t border-border/20 space-y-sm relative z-10 backdrop-blur-md bg-surface/20">
+                        {/* Status indicator with enhanced glass */}
+                        <div className="flex items-center gap-sm px-sm py-xs rounded-lg bg-white/5 backdrop-blur-sm border border-border/20">
+                            <div className="relative">
+                                <div className="w-2 h-2 rounded-full bg-success" />
+                                <div className="absolute inset-0 w-2 h-2 rounded-full bg-success animate-ping opacity-75" />
+                            </div>
+                            <span className="text-xs text-textSecondary font-medium">System Online</span>
                         </div>
-                        <div className="text-xs text-textTertiary leading-relaxed">
-                            <p className="font-mono">Built by <span className="text-primary font-semibold">Anwesh Rath</span></p>
-                            <p className="italic opacity-75">Chaos ☕ Coffee ⌨️ Coding</p>
+
+                        {/* Signature with subtle glass card */}
+                        <div className="px-sm py-sm rounded-lg bg-gradient-to-br from-white/5 to-transparent backdrop-blur-sm border border-border/10">
+                            <p className="text-xs text-textTertiary leading-relaxed font-mono">
+                                Built by <span className="text-primary font-semibold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">Anwesh Rath</span>
+                            </p>
+                            <p className="text-xs text-textTertiary/60 italic mt-1">Chaos ☕ Coffee ⌨️ Coding</p>
                         </div>
                     </div>
+
+                    {/* Bottom gradient fade */}
+                    <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-surface/60 to-transparent pointer-events-none" />
                 </aside>
 
                 {/* Mobile Menu */}
@@ -205,9 +256,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
                 {/* Main Content */}
                 <main className="flex-1 overflow-y-auto bg-background">
-                    <div className="max-w-7xl mx-auto p-lg">
-                        {children}
-                    </div>
+                    {pathname === '/workflow-manager' ? (
+                        // Full-width canvas for Workflow Manager
+                        <div className="h-full">
+                            {children}
+                        </div>
+                    ) : (
+                        // Standard container for other pages
+                        <div className="max-w-7xl mx-auto p-lg">
+                            {children}
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

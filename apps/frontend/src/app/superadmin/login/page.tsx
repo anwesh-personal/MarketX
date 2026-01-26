@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Loader2 } from 'lucide-react';
+import { saveSession, isAuthenticated } from '@/lib/superadmin-auth';
 
 export default function SuperadminLogin() {
     const router = useRouter();
@@ -10,32 +11,37 @@ export default function SuperadminLogin() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated()) {
+            router.push('/superadmin/dashboard');
+        }
+    }, [router]);
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
         try {
-            // TODO: Replace with actual superadmin authentication
-            // For now, using simple check
             const response = await fetch('/api/superadmin/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials),
             });
 
-            if (!response.ok) {
-                throw new Error('Invalid credentials');
-            }
-
             const data = await response.json();
 
-            // Store superadmin session
-            localStorage.setItem('superadmin_session', JSON.stringify({
+            if (!response.ok) {
+                throw new Error(data.error || 'Invalid credentials');
+            }
+
+            // Store session using proper auth utility
+            saveSession({
                 adminId: data.admin_id,
                 email: data.email,
                 token: data.token,
-            }));
+            });
 
             // Redirect to dashboard
             router.push('/superadmin/dashboard');

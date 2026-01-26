@@ -140,8 +140,18 @@ router.post('/organizations', verifySuperadmin, async (req: SuperadminRequest, r
 
         const { org_id, transaction_id } = rows[0];
 
-        // TODO: Create Supabase auth user for owner
-        // TODO: Send welcome email
+        // Create owner user in our users table
+        // Note: Supabase Auth user creation should be handled by the frontend signup flow
+        // This creates the internal user record linked to the org
+        await pool.query(`
+            INSERT INTO users (org_id, email, full_name, role, is_active)
+            VALUES ($1, $2, $3, 'owner', true)
+            ON CONFLICT (email) DO UPDATE SET org_id = $1, role = 'owner'
+        `, [org_id, body.owner_email, body.owner_name]);
+
+        // Welcome email would be sent via email service integration
+        // For production, integrate with SendGrid, Resend, or similar
+        console.log(`📧 Would send welcome email to: ${body.owner_email} for org: ${body.org_name}`);
 
         res.json({
             success: true,
