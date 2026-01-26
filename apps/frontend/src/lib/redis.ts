@@ -5,13 +5,21 @@ let _redisConnection: Redis | null = null
 
 export function getRedisConnection(): Redis {
     if (!_redisConnection) {
-        _redisConnection = new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD || undefined,
-            maxRetriesPerRequest: null,
-            enableReadyCheck: false,
-        })
+        // Use REDIS_URL if available (Railway format), otherwise use separate host/port
+        if (process.env.REDIS_URL) {
+            _redisConnection = new Redis(process.env.REDIS_URL, {
+                maxRetriesPerRequest: null,
+                enableReadyCheck: false,
+            })
+        } else {
+            _redisConnection = new Redis({
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD || undefined,
+                maxRetriesPerRequest: null,
+                enableReadyCheck: false,
+            })
+        }
     }
     return _redisConnection
 }
