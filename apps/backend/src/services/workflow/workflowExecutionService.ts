@@ -1077,6 +1077,15 @@ class WorkflowExecutionService {
 
     /**
      * Execute validator node (V2) - Quality Gate
+     * 
+     * IMPORTANT: Validators have access to:
+     * - pipelineData.constitution (rules loaded from engine's constitution_id)
+     * - pipelineData.kb.guardrails (paused_patterns, blocked content)
+     * - pipelineData.kb.brand (voice_rules for brand alignment)
+     * 
+     * Two types:
+     * - validate-quality: General quality check (clarity, engagement, etc.)
+     * - validate-constitution: Strict rule enforcement using Constitution + KB guardrails
      */
     private async executeValidatorNode(
         node: WorkflowNode,
@@ -1086,18 +1095,44 @@ class WorkflowExecutionService {
         const nodeType = node.data.nodeType;
         const config = node.data.config || {};
         const contentToValidate = pipelineData.lastNodeOutput?.content;
+        const contentString = typeof contentToValidate === 'string'
+            ? contentToValidate
+            : JSON.stringify(contentToValidate, null, 2);
 
-        // Build validation prompt
+        // Different validation strategies based on node type
+        if (nodeType === 'validate-constitution') {
+            return this.executeConstitutionValidation(node, pipelineData, contentString, config);
+        } else {
+            return this.executeQualityValidation(node, pipelineData, contentString, config);
+        }
+    }
+
+    /**
+     * Execute quality validation (general quality metrics)
+     */
+    private async executeQualityValidation(
+        node: WorkflowNode,
+        pipelineData: PipelineData,
+        contentString: string,
+        config: Record<string, any>
+    ): Promise<NodeOutput> {
+        // Build quality check prompt with KB brand context if available
+        const brand = (pipelineData.kb as any)?.brand || {};
+        const voiceRules = brand.voice_rules || [];
+
         const prompt = `Evaluate the following content for quality:
 
 CONTENT:
-${typeof contentToValidate === 'string' ? contentToValidate : JSON.stringify(contentToValidate, null, 2)}
+${contentString}
+
+BRAND VOICE GUIDELINES:
+${voiceRules.length > 0 ? voiceRules.join('\n') : 'No specific brand voice rules defined.'}
 
 CRITERIA:
 - Clarity (1-100): Is the message clear and understandable?
 - Engagement (1-100): Is it compelling and interesting?
 - Accuracy (1-100): Is it factually correct and consistent?
-- Brand Alignment (1-100): Does it match brand voice guidelines?
+- Brand Alignment (1-100): Does it match the brand voice guidelines above?
 
 Return a JSON object with:
 {
@@ -1138,11 +1173,201 @@ Return a JSON object with:
         return {
             nodeId: node.id,
             nodeName: node.data.label,
-            nodeType: nodeType,
+            nodeType: node.data.nodeType,
             type: 'validator',
             content: {
                 validated: true,
+                validationType: 'quality',
                 ...validationResult,
+                initialInput: pipelineData.userInput,
+            },
+            aiMetadata: {
+                tokens: aiResult.tokens.total,
+                cost: aiResult.cost,
+                provider: aiResult.provider,
+                model: aiResult.model,
+                durationMs: aiResult.durationMs,
+            },
+        };
+    }
+
+    /**
+     * Execute constitution validation (strict rule enforcement)
+     * Uses:
+     * - pipelineData.constitution.rules (from engine's constitution_id)
+     * - pipelineData.kb.guardrails.paused_patterns (blocked content patterns)
+     * - pipelineData.kb.brand.compliance (compliance rules)
+     */
+    private async executeConstitutionValidation(
+        node: WorkflowNode,
+        pipelineData: PipelineData,
+        contentString: string,
+        config: Record<string, any>
+    ): Promise<NodeOutput> {
+        const constitution = pipelineData.constitution;
+        const kb = pipelineData.kb as any;
+        const userInput = pipelineData.userInput;
+
+        // Build comprehensive rules list from all sources
+        const allRules: string[] = [];
+
+        // 1. Constitution rules (from engine's linked constitution)
+        if (constitution?.rules && Array.isArray(constitution.rules)) {
+            allRules.push(...constitution.rules.map((r: any) =>
+                typeof r === 'string' ? r : r.rule || r.description || JSON.stringify(r)
+            ));
+        }
+
+        // 2. KB Guardrails - paused patterns (content that should be blocked)
+        if (kb?.guardrails?.paused_patterns && Array.isArray(kb.guardrails.paused_patterns)) {
+            const pausedPatterns = kb.guardrails.paused_patterns;
+            pausedPatterns.forEach((pattern: any) => {
+                const patternStr = typeof pattern === 'string' ? pattern : pattern.pattern;
+                const reason = typeof pattern === 'object' ? pattern.reason : undefined;
+                allRules.push(`BLOCKED PATTERN: Do not include "${patternStr}" - ${reason || 'blocked by guardrails'}`);
+            });
+        }
+
+        // 3. KB Brand compliance rules
+        if (kb?.brand?.compliance && Array.isArray(kb.brand.compliance)) {
+            allRules.push(...kb.brand.compliance.map((c: string) => `COMPLIANCE: ${c}`));
+        }
+
+        // 4. Config-based rules (fallback if no constitution/KB)
+        if (config.rules && Array.isArray(config.rules)) {
+            allRules.push(...config.rules);
+        }
+
+        // 5. Default rules if nothing else is available
+        if (allRules.length === 0) {
+            allRules.push(
+                'Content must be truthful and not misleading',
+                'No hate speech, discrimination, or offensive content',
+                'Claims must be substantiated or clearly marked as opinions',
+                'Proper grammar and spelling required',
+                'Content must be appropriate for target audience'
+            );
+        }
+
+        // Build validation prompt
+        const prompt = `
+==============================================================================
+CONSTITUTION VALIDATION (STRICT RULE ENFORCEMENT)
+==============================================================================
+
+CONTENT TO VALIDATE:
+------------------------------------------------------------------------------
+${contentString}
+------------------------------------------------------------------------------
+
+CONSTITUTION RULES (MUST ALL PASS):
+${allRules.map((rule: string, idx: number) => `${idx + 1}. ${rule}`).join('\n')}
+
+CONTEXT:
+- Target Audience: ${userInput.target_audience || 'General'}
+- Brand Name: ${kb?.brand?.brand_name_exact || userInput.brand_name || 'Unknown'}
+- Content Tone: ${userInput.content_tone || 'Professional'}
+
+------------------------------------------------------------------------------
+VALIDATION INSTRUCTIONS
+------------------------------------------------------------------------------
+Check the content against EVERY rule above. This is a strict pass/fail check.
+
+For each rule:
+1. Determine if the content violates it
+2. If violated, explain specifically how
+3. Provide a suggested fix
+
+Return a JSON object:
+{
+  "passed": boolean,
+  "overallScore": number (0-100),
+  "rulesChecked": number,
+  "rulesPassed": number,
+  "rulesFailed": number,
+  "violations": [
+    {
+      "ruleIndex": number,
+      "rule": "the rule text",
+      "violation": "how content violates this rule",
+      "severity": "critical"|"major"|"minor",
+      "suggestedFix": "how to fix it"
+    }
+  ],
+  "warnings": [
+    {
+      "ruleIndex": number,
+      "rule": "the rule text",
+      "concern": "potential issue to review"
+    }
+  ],
+  "recommendedAction": "approve"|"review"|"reject"|"block"
+}
+
+IMPORTANT:
+- "block" = Critical violations (hate speech, legal issues, blocked patterns)
+- "reject" = Major violations requiring rewrite
+- "review" = Minor issues, human should check
+- "approve" = All rules passed
+`;
+
+        const provider = config.provider || 'openai';
+        const model = config.model || 'gpt-4o';
+
+        console.log(`📜 Constitution validation with ${allRules.length} rules`);
+
+        const aiResult = await aiService.call(prompt, {
+            provider,
+            model,
+            systemPrompt: `You are a strict content compliance officer. Your job is to enforce content rules without exception. 
+A single critical violation means the content must be blocked.
+Return only valid JSON. Be thorough but fair.`,
+            temperature: 0.2, // Low temperature for consistency
+            maxTokens: 2048,
+            userId: pipelineData.executionUser.userId,
+            tier: pipelineData.executionUser.tier,
+        });
+
+        // Parse result
+        let validationResult;
+        try {
+            validationResult = JSON.parse(aiResult.content);
+        } catch {
+            validationResult = {
+                passed: false,
+                overallScore: 0,
+                rulesChecked: allRules.length,
+                rulesPassed: 0,
+                rulesFailed: 0,
+                violations: [],
+                warnings: [],
+                recommendedAction: 'review',
+                parseError: 'Failed to parse AI response'
+            };
+        }
+
+        // Determine if content should be blocked based on violations
+        const hasCriticalViolation = validationResult.violations?.some(
+            (v: any) => v.severity === 'critical'
+        );
+
+        return {
+            nodeId: node.id,
+            nodeName: node.data.label,
+            nodeType: node.data.nodeType,
+            type: 'validator',
+            content: {
+                validated: true,
+                validationType: 'constitution',
+                constitutionName: constitution?.name || 'Default',
+                ...validationResult,
+                blocked: hasCriticalViolation || validationResult.recommendedAction === 'block',
+                rulesSource: {
+                    fromConstitution: constitution?.rules?.length || 0,
+                    fromGuardrails: kb?.guardrails?.paused_patterns?.length || 0,
+                    fromCompliance: kb?.brand?.compliance?.length || 0,
+                    fromConfig: config.rules?.length || 0,
+                },
                 initialInput: pipelineData.userInput,
             },
             aiMetadata: {
@@ -1838,25 +2063,47 @@ Return your analysis in a structured format that can inform subsequent generatio
     }
 
     /**
-     * Build constitution/validation prompt
+     * Build constitution/validation prompt (LEGACY - for process nodes)
+     * Now uses Constitution + KB guardrails when available
      */
     private buildConstitutionValidationPrompt(pipelineData: PipelineData, config: any): string {
         const content = pipelineData.lastNodeOutput?.content;
         const input = pipelineData.userInput;
-        const rules = config.rules || [];
+        const constitution = pipelineData.constitution;
+        const kb = pipelineData.kb as any;
 
-        return `
-==============================================================================
-CONTENT VALIDATION & QUALITY CHECK
-==============================================================================
+        // Build comprehensive rules from all sources
+        const allRules: string[] = [];
 
-CONTENT TO VALIDATE:
-------------------------------------------------------------------------------
-${typeof content === 'string' ? content : JSON.stringify(content)}
-------------------------------------------------------------------------------
+        // 1. Constitution rules
+        if (constitution?.rules && Array.isArray(constitution.rules)) {
+            allRules.push(...constitution.rules.map((r: any) =>
+                typeof r === 'string' ? r : r.rule || r.description || JSON.stringify(r)
+            ));
+        }
 
-VALIDATION CRITERIA:
-${rules.length > 0 ? rules.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n') : `
+        // 2. KB Guardrails
+        if (kb?.guardrails?.paused_patterns && Array.isArray(kb.guardrails.paused_patterns)) {
+            kb.guardrails.paused_patterns.forEach((pattern: any) => {
+                const patternStr = typeof pattern === 'string' ? pattern : pattern.pattern;
+                allRules.push(`BLOCKED: Do not include "${patternStr}"`);
+            });
+        }
+
+        // 3. KB Brand compliance
+        if (kb?.brand?.compliance && Array.isArray(kb.brand.compliance)) {
+            allRules.push(...kb.brand.compliance);
+        }
+
+        // 4. Config rules (fallback)
+        if (config.rules && Array.isArray(config.rules)) {
+            allRules.push(...config.rules);
+        }
+
+        // Format rules or use defaults
+        const rulesSection = allRules.length > 0
+            ? allRules.map((r: string, i: number) => `${i + 1}. ${r}`).join('\n')
+            : `
 1. Content matches the specified tone: ${input.content_tone || 'Professional'}
 2. Content addresses the target audience: ${input.target_audience || 'General'}
 3. Pain points are properly agitated
@@ -1867,7 +2114,23 @@ ${rules.length > 0 ? rules.map((r: string, i: number) => `${i + 1}. ${r}`).join(
 8. Brand voice guidelines followed: ${input.brand_voice_guidelines || 'Standard'}
 9. Content length is appropriate for format: ${input.content_format || 'General'}
 10. Urgency/scarcity elements included if deadline provided: ${input.offer_deadline || 'None'}
-`}
+`;
+
+        return `
+==============================================================================
+CONTENT VALIDATION & QUALITY CHECK
+==============================================================================
+
+CONSTITUTION: ${constitution?.name || 'Default'}
+RULES SOURCE: ${allRules.length} rules from Constitution + KB Guardrails
+
+CONTENT TO VALIDATE:
+------------------------------------------------------------------------------
+${typeof content === 'string' ? content : JSON.stringify(content)}
+------------------------------------------------------------------------------
+
+VALIDATION CRITERIA:
+${rulesSection}
 
 COMPETITORS/TOPICS TO AVOID:
 ${input.competitors_to_avoid || 'None specified'}
