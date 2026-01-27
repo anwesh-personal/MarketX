@@ -12,6 +12,7 @@
 import { Worker, Job } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
 import { workflowExecutionService } from '../processors/workflow-execution-processor';
+import { publishProgress, publishExecutionComplete } from '../utils/progress-publisher';
 
 // ============================================================================
 // TYPES
@@ -106,8 +107,8 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
             input,
             executionId,
             (update) => {
-                // Progress callback - log for now (will add Redis publishing)
-                console.log(`[Progress ${executionId}] ${update.nodeName}: ${update.status}`);
+                // Publish progress to Redis for SSE streaming
+                publishProgress(executionId, update);
             },
             {
                 executionId,
@@ -125,6 +126,15 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
         if (result.success) {
             await updateExecutionStatus(executionId, 'completed', {
                 result: result.lastNodeOutput?.content,
+                tokensUsed: result.tokenUsage?.totalTokens,
+                cost: result.tokenUsage?.totalCost,
+                durationMs,
+            });
+
+            // Publish completion to Redis
+            await publishExecutionComplete(executionId, {
+                success: true,
+                output: result.lastNodeOutput?.content,
                 tokensUsed: result.tokenUsage?.totalTokens,
                 cost: result.tokenUsage?.totalCost,
                 durationMs,
@@ -149,6 +159,13 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
         console.error(`❌ Engine execution failed: ${executionId} - ${error.message}`);
 
         await updateExecutionStatus(executionId, 'failed', {
+            error: error.message,
+            durationMs,
+        });
+
+        // Publish failure to Redis
+        await publishExecutionComplete(executionId, {
+            success: false,
             error: error.message,
             durationMs,
         });
