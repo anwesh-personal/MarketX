@@ -1006,38 +1006,74 @@ export default function EnginesPage() {
         }));
 
         try {
-            // Call the new backend execute API
-            const response = await fetch(`http://localhost:8080/api/engines/${selectedEngine.id}/execute`, {
+            // Queue execution via new API route (NO BACKEND!)
+            const response = await fetch(`/api/engines/${selectedEngine.id}/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: 'superadmin-test',
                     input: parsedInput,
-                    options: { executionMode: 'sync' }
+                    options: { tier: 'hobby' }
                 }),
             });
 
             const data = await response.json();
 
-            if (!response.ok || !data.success) {
-                throw new Error(data.error || 'Execution failed');
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to queue execution');
             }
 
-            // Success!
-            setExecutionState({
-                executionId: data.executionId,
-                status: 'completed',
-                progress: 100,
-                currentNode: null,
-                output: typeof data.output === 'string' ? data.output : JSON.stringify(data.output, null, 2),
-                tokensUsed: data.tokenUsage?.totalTokens || 0,
-                cost: data.tokenUsage?.totalCost || 0,
-                durationMs: data.durationMs || (Date.now() - startTime),
-                error: null,
-            });
+            // Start polling for results
+            const executionId = data.executionId;
+            setExecutionState(prev => ({
+                ...prev,
+                executionId,
+                currentNode: 'Queued for execution...',
+            }));
 
-            // Refresh engines to update run count
-            fetchEngines();
+            // Poll for completion
+            const pollInterval = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`/api/engines/executions/${executionId}`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === 'completed') {
+                        clearInterval(pollInterval);
+                        setExecutionState({
+                            executionId,
+                            status: 'completed',
+                            progress: 100,
+                            currentNode: null,
+                            output: typeof statusData.output === 'string'
+                                ? statusData.output
+                                : JSON.stringify(statusData.output, null, 2),
+                            tokensUsed: statusData.tokensUsed || 0,
+                            cost: statusData.cost || 0,
+                            durationMs: statusData.durationMs || (Date.now() - startTime),
+                            error: null,
+                        });
+                        fetchEngines();
+                    } else if (statusData.status === 'failed') {
+                        clearInterval(pollInterval);
+                        setExecutionState(prev => ({
+                            ...prev,
+                            status: 'failed',
+                            progress: 100,
+                            error: statusData.error || 'Execution failed',
+                            durationMs: statusData.durationMs || (Date.now() - startTime),
+                        }));
+                    } else if (statusData.status === 'running') {
+                        setExecutionState(prev => ({
+                            ...prev,
+                            progress: Math.min(prev.progress + 10, 90),
+                            currentNode: 'Processing...',
+                        }));
+                    }
+                } catch (pollError) {
+                    console.error('Polling error:', pollError);
+                }
+            }, 1000);
+
+            pollingRef.current = pollInterval;
 
         } catch (err: any) {
             setExecutionState(prev => ({
@@ -1053,19 +1089,21 @@ export default function EnginesPage() {
     const handleStopExecution = async () => {
         if (!executionState.executionId) return;
 
-        try {
-            await fetch(`http://localhost:8080/api/engines/executions/${executionState.executionId}/stop`, {
-                method: 'POST',
-            });
-
-            setExecutionState(prev => ({
-                ...prev,
-                status: 'failed',
-                error: 'Execution stopped by user',
-            }));
-        } catch (err) {
-            console.error('Failed to stop execution:', err);
+        // Stop polling
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
         }
+
+        // Update state to stopped
+        setExecutionState(prev => ({
+            ...prev,
+            status: 'failed',
+            error: 'Execution stopped by user',
+        }));
+
+        // TODO: Optionally add backend API to cancel running job
+        console.log('Execution stopped:', executionState.executionId);
     };
 
     // ========================================================================
@@ -1092,23 +1130,9 @@ export default function EnginesPage() {
                 throw new Error('Failed to assign engine');
             }
 
-            // Then create an API key
-            const keyResponse = await fetch('http://localhost:8080/api/keys/assign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    engineId,
-                    userId: orgId, // Using org_id as user_id for now
-                    orgId,
-                    keyName: 'Primary Access Key'
-                }),
-            });
-
-            const keyData = await keyResponse.json();
-
-            if (keyResponse.ok) {
-                alert(`✅ Engine assigned successfully!\n\nAPI Key: ${keyData.apiKey}\n\nCopy this key - it won't be shown again!`);
-            }
+            // NOTE: Key generation will be handled by a separate API route
+            // For now, just show success message
+            alert(`✅ Engine assigned successfully to organization ${orgId}!`);
 
             await fetchEngines();
         } catch (err: any) {
