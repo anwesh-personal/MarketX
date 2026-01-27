@@ -139,15 +139,19 @@
 **Time**: 45 minutes once account ready
 **Impact**: Enables all Brain features
 
-### 2. Backend Consolidation
-**Time**: 12-16 hours
-**Impact**: Eliminates 1 service, saves $5-10/month
-**Depends**: Workers deployed
+### 2. Backend Consolidation ✅ COMPLETED (2026-01-27 23:35 IST)
+**Time**: 75 minutes
+**What Was Done**:
+- Ported 3,500+ lines of workflow execution to workers
+- Removed all hardcoded localhost:8080 URLs
+- Created new frontend API routes
+- Workers now execute directly (no backend callback)
+**See**: `.agent/Plans/Completed/BACKEND_CONSOLIDATION_COMPLETE.md`
 
 ### 3. Worker Infrastructure Control
 **Time**: 8-10 hours
 **Impact**: UI to choose Railway vs VPS
-**Depends**: Workers deployed + Backend consolidated
+**Depends**: Workers deployed
 
 ---
 
