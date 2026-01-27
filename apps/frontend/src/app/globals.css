@@ -2,15 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import all refined theme CSS files */
-@import '../styles/themes/minimalist.css';
-@import '../styles/themes/modern.css';
-@import '../styles/themes/aqua.css';
-
-/* Import theme-specific micro-interactions */
-@import '../styles/theme-interactions.css';
-
-/* Default theme (minimalist-light) */
+/* Default theme fallback (minimalist-light) - MUST be before @imports */
+/* postcss-import inlines themes AFTER this, so theme selectors override */
 :root {
   --color-primary: #18181b;
   --color-secondary: #52525b;
@@ -32,6 +25,14 @@
   --color-shadow: rgba(0, 0, 0, 0.08);
   --color-glow: rgba(139, 92, 246, 0.12);
 }
+
+/* Import all refined theme CSS files */
+@import '../styles/themes/minimalist.css';
+@import '../styles/themes/modern.css';
+@import '../styles/themes/aqua.css';
+
+/* Import theme-specific micro-interactions */
+@import '../styles/theme-interactions.css';
 
 @layer base {
 
