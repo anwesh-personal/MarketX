@@ -1,21 +1,28 @@
 /**
  * Worker Management API Server
  * 
- * Exposes REST endpoints for queue management.
+ * Exposes REST endpoints for queue management and trigger handling.
  * Frontend calls this API instead of connecting to Redis directly.
  * 
  * Endpoints:
- * - GET  /api/health       - Health check
- * - GET  /api/stats        - All queue statistics
- * - GET  /api/redis        - Redis server info
- * - POST /api/action       - Queue actions (pause, resume, clean)
+ * - GET  /api/health         - Health check
+ * - GET  /api/stats          - All queue statistics
+ * - GET  /api/redis          - Redis server info
+ * - POST /api/action         - Queue actions (pause, resume, clean)
  * - POST /api/jobs/:id/retry - Retry a failed job
+ * 
+ * Trigger Endpoints:
+ * - GET  /api/triggers       - List registered triggers
+ * - POST /api/triggers       - Register new trigger
+ * - DELETE /api/triggers/:id - Delete trigger
+ * - ALL  /api/webhook/:id    - Webhook trigger endpoint
  */
 
 import express, { Request, Response, NextFunction } from 'express'
 import cors from 'cors'
 import { Queue } from 'bullmq'
 import Redis from 'ioredis'
+import { triggerService } from '../triggers'
 
 // Queue names matching worker-queues.ts
 const QUEUE_NAMES = [
@@ -25,6 +32,7 @@ const QUEUE_NAMES = [
     'learning-loop',
     'dream-state',
     'fine-tuning',
+    'workflow:execute', // Workflow execution queue
 ]
 
 // Get connection options for BullMQ (uses object format, not Redis instance)
@@ -339,6 +347,20 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
     }
 })
 
+// =============================================================================
+// TRIGGER SERVICE INTEGRATION
+// =============================================================================
+
+// Mount trigger service router for webhook and trigger management endpoints
+app.use('/api', triggerService.getRouter())
+
+// Initialize trigger service with workflow queue on startup
+const workflowQueue = getQueues().get('workflow:execute')
+if (workflowQueue) {
+    triggerService.initialize(workflowQueue)
+    console.log('🎯 Trigger service initialized with workflow queue')
+}
+
 // 404 handler
 app.use((req: Request, res: Response) => {
     res.status(404).json({ error: 'Not found' })
@@ -354,8 +376,10 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 export function startApiServer(port: number = 3100): void {
     app.listen(port, '0.0.0.0', () => {
         console.log(`🌐 Worker Management API running on port ${port}`)
-        console.log(`   Health: http://localhost:${port}/api/health`)
-        console.log(`   Stats:  http://localhost:${port}/api/stats`)
+        console.log(`   Health:   http://localhost:${port}/api/health`)
+        console.log(`   Stats:    http://localhost:${port}/api/stats`)
+        console.log(`   Triggers: http://localhost:${port}/api/triggers`)
+        console.log(`   Webhooks: http://localhost:${port}/api/webhook/:triggerId`)
     })
 }
 

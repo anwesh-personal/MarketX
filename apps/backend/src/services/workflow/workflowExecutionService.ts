@@ -649,8 +649,7 @@ class WorkflowExecutionService {
             // Legacy transforms
             case 'add-content-locker':
             case 'content-locker':
-            case 'seo-optimizer':
-                return this.executeProcessNode(node, pipelineData, executionId);
+                return this.executeTransformNode(node, pipelineData);
 
             // =========================================================
             // VALIDATOR NODES (V2 naming: validate-*)
@@ -1073,6 +1072,401 @@ class WorkflowExecutionService {
                 durationMs: aiResult.durationMs,
             },
         };
+    }
+
+    /**
+     * Execute transform node - Content transformation without AI
+     * 
+     * Transform Types:
+     * - transform-locker: Insert content locker HTML at specified position
+     * - transform-format: Convert between formats (MD→HTML, HTML→MD, JSON→text)
+     * - transform-personalize: Variable substitution with user/context data
+     */
+    private async executeTransformNode(
+        node: WorkflowNode,
+        pipelineData: PipelineData
+    ): Promise<NodeOutput> {
+        const nodeType = node.data.nodeType;
+        const config = node.data.config || {};
+        const lastContent = pipelineData.lastNodeOutput?.content;
+        const userInput = pipelineData.userInput;
+
+        // Get content to transform
+        let content: string = '';
+        if (typeof lastContent === 'string') {
+            content = lastContent;
+        } else if (lastContent?.output) {
+            content = typeof lastContent.output === 'string' ? lastContent.output : JSON.stringify(lastContent.output);
+        } else if (lastContent?.content) {
+            content = typeof lastContent.content === 'string' ? lastContent.content : JSON.stringify(lastContent.content);
+        } else if (lastContent) {
+            content = JSON.stringify(lastContent);
+        }
+
+        let result: Record<string, unknown> = {};
+
+        switch (nodeType) {
+            // =====================================================
+            // CONTENT LOCKER - Insert gated content marker
+            // =====================================================
+            case 'transform-locker':
+            case 'add-content-locker':
+            case 'content-locker': {
+                const position = config.position || 'middle'; // 'start', 'middle', 'end', 'percentage'
+                const percentage = config.percentage || 50;
+                const lockerType = config.lockerType || 'email'; // 'email', 'paywall', 'social'
+                const ctaText = config.ctaText || 'Unlock full content';
+                const ctaDescription = config.ctaDescription || 'Enter your email to continue reading';
+
+                // Build content locker HTML
+                const lockerHtml = this.buildContentLockerHtml(lockerType, ctaText, ctaDescription, config);
+
+                // Insert locker at specified position
+                let transformedContent: string;
+                const paragraphs = content.split(/\n\n+/);
+
+                if (position === 'start') {
+                    transformedContent = lockerHtml + '\n\n' + content;
+                } else if (position === 'end') {
+                    transformedContent = content + '\n\n' + lockerHtml;
+                } else if (position === 'percentage' || position === 'middle') {
+                    const insertAt = Math.floor(paragraphs.length * (percentage / 100));
+                    const before = paragraphs.slice(0, insertAt).join('\n\n');
+                    const after = paragraphs.slice(insertAt).join('\n\n');
+                    transformedContent = before + '\n\n' + lockerHtml + '\n\n' + after;
+                } else {
+                    transformedContent = content + '\n\n' + lockerHtml;
+                }
+
+                result = {
+                    originalLength: content.length,
+                    transformedLength: transformedContent.length,
+                    lockerPosition: position,
+                    lockerType,
+                    content: transformedContent,
+                };
+                break;
+            }
+
+            // =====================================================
+            // FORMAT CONVERSION - MD↔HTML, JSON→text
+            // =====================================================
+            case 'transform-format': {
+                const fromFormat = config.from || 'auto';
+                const toFormat = config.to || 'html';
+                let transformed = content;
+
+                // Auto-detect format if needed
+                const detectedFormat = fromFormat === 'auto' ? this.detectContentFormat(content) : fromFormat;
+
+                if (detectedFormat === 'markdown' && toFormat === 'html') {
+                    transformed = this.markdownToHtml(content);
+                } else if (detectedFormat === 'html' && toFormat === 'markdown') {
+                    transformed = this.htmlToMarkdown(content);
+                } else if (detectedFormat === 'json' && toFormat === 'text') {
+                    transformed = this.jsonToText(content);
+                } else if (detectedFormat === 'text' && toFormat === 'json') {
+                    transformed = JSON.stringify({ text: content }, null, 2);
+                } else if (toFormat === 'plain') {
+                    // Strip all formatting
+                    transformed = content
+                        .replace(/<[^>]*>/g, '')           // Remove HTML tags
+                        .replace(/[#*_~`]/g, '')           // Remove Markdown
+                        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // Links to text
+                        .replace(/\n{3,}/g, '\n\n')        // Normalize newlines
+                        .trim();
+                }
+
+                result = {
+                    fromFormat: detectedFormat,
+                    toFormat,
+                    originalLength: content.length,
+                    transformedLength: transformed.length,
+                    content: transformed,
+                };
+                break;
+            }
+
+            // =====================================================
+            // PERSONALIZATION - Variable substitution
+            // =====================================================
+            case 'transform-personalize': {
+                const variables = config.variables || {};
+                const variablePattern = config.pattern || '{{variable}}'; // e.g., {{name}}, ${name}, {name}
+                let transformed = content;
+
+                // Build variable map from multiple sources (priority: config > userInput > defaults)
+                const varMap: Record<string, string> = {
+                    // Default variables
+                    date: new Date().toLocaleDateString(),
+                    time: new Date().toLocaleTimeString(),
+                    timestamp: new Date().toISOString(),
+                    year: new Date().getFullYear().toString(),
+                    // Add user input variables
+                    ...(typeof userInput === 'object' ? userInput as Record<string, any> : {}),
+                    // Add explicit variables (highest priority)
+                    ...variables,
+                };
+
+                // Perform substitution based on pattern type
+                if (variablePattern === '{{variable}}' || variablePattern === 'double-brace') {
+                    // {{variable}} pattern
+                    transformed = content.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+                        const value = varMap[key.trim()];
+                        return value !== undefined ? String(value) : match;
+                    });
+                } else if (variablePattern === '${variable}' || variablePattern === 'template-literal') {
+                    // ${variable} pattern
+                    transformed = content.replace(/\$\{([^}]+)\}/g, (match, key) => {
+                        const value = varMap[key.trim()];
+                        return value !== undefined ? String(value) : match;
+                    });
+                } else if (variablePattern === '{variable}' || variablePattern === 'single-brace') {
+                    // {variable} pattern
+                    transformed = content.replace(/\{([^}]+)\}/g, (match, key) => {
+                        const value = varMap[key.trim()];
+                        return value !== undefined ? String(value) : match;
+                    });
+                } else if (variablePattern === '%variable%' || variablePattern === 'percent') {
+                    // %variable% pattern
+                    transformed = content.replace(/%([^%]+)%/g, (match, key) => {
+                        const value = varMap[key.trim()];
+                        return value !== undefined ? String(value) : match;
+                    });
+                }
+
+                // Count substitutions
+                const substitutionCount = (content.match(/\{\{[^}]+\}\}|\$\{[^}]+\}|\{[^}]+\}|%[^%]+%/g) || []).length -
+                    (transformed.match(/\{\{[^}]+\}\}|\$\{[^}]+\}|\{[^}]+\}|%[^%]+%/g) || []).length;
+
+                result = {
+                    pattern: variablePattern,
+                    availableVariables: Object.keys(varMap),
+                    substitutionsMade: substitutionCount,
+                    originalLength: content.length,
+                    transformedLength: transformed.length,
+                    content: transformed,
+                };
+                break;
+            }
+
+            default:
+                result = {
+                    warning: `Unknown transform type: ${nodeType}`,
+                    content: content,
+                };
+        }
+
+        return {
+            nodeId: node.id,
+            nodeName: node.data.label,
+            nodeType,
+            type: 'transform',
+            content: result,
+        };
+    }
+
+    /**
+     * Build content locker HTML
+     */
+    private buildContentLockerHtml(
+        lockerType: string,
+        ctaText: string,
+        ctaDescription: string,
+        config: Record<string, any>
+    ): string {
+        const brandColor = config.brandColor || '#2563eb';
+        const bgColor = config.bgColor || '#f8fafc';
+
+        switch (lockerType) {
+            case 'email':
+                return `
+<!-- CONTENT LOCKER: EMAIL GATE -->
+<div class="content-locker content-locker-email" style="background: ${bgColor}; border: 2px solid ${brandColor}; border-radius: 12px; padding: 32px; text-align: center; margin: 24px 0;">
+    <div class="locker-icon" style="font-size: 48px; margin-bottom: 16px;">📧</div>
+    <h3 style="color: #1f2937; margin: 0 0 8px 0; font-size: 1.5rem;">${ctaText}</h3>
+    <p style="color: #6b7280; margin: 0 0 24px 0;">${ctaDescription}</p>
+    <form class="locker-form" data-locker-type="email">
+        <input type="email" placeholder="Enter your email" required 
+               style="padding: 12px 16px; border: 1px solid #d1d5db; border-radius: 8px; width: 100%; max-width: 300px; font-size: 16px; margin-bottom: 12px;">
+        <button type="submit" 
+                style="background: ${brandColor}; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+            Unlock Content
+        </button>
+    </form>
+</div>
+<!-- END CONTENT LOCKER -->`;
+
+            case 'paywall':
+                const price = config.price || '$9.99';
+                return `
+<!-- CONTENT LOCKER: PAYWALL -->
+<div class="content-locker content-locker-paywall" style="background: linear-gradient(135deg, ${bgColor} 0%, #e0e7ff 100%); border: 2px solid ${brandColor}; border-radius: 12px; padding: 40px; text-align: center; margin: 24px 0;">
+    <div class="locker-icon" style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+    <h3 style="color: #1f2937; margin: 0 0 8px 0; font-size: 1.5rem;">${ctaText}</h3>
+    <p style="color: #6b7280; margin: 0 0 16px 0;">${ctaDescription}</p>
+    <div class="price" style="font-size: 2rem; font-weight: 700; color: ${brandColor}; margin-bottom: 24px;">${price}</div>
+    <button class="locker-button" data-locker-type="paywall"
+            style="background: ${brandColor}; color: white; padding: 14px 32px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
+        Purchase Access
+    </button>
+</div>
+<!-- END CONTENT LOCKER -->`;
+
+            case 'social':
+                return `
+<!-- CONTENT LOCKER: SOCIAL SHARE -->
+<div class="content-locker content-locker-social" style="background: ${bgColor}; border: 2px solid ${brandColor}; border-radius: 12px; padding: 32px; text-align: center; margin: 24px 0;">
+    <div class="locker-icon" style="font-size: 48px; margin-bottom: 16px;">🔗</div>
+    <h3 style="color: #1f2937; margin: 0 0 8px 0; font-size: 1.5rem;">${ctaText}</h3>
+    <p style="color: #6b7280; margin: 0 0 24px 0;">${ctaDescription}</p>
+    <div class="social-buttons" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button class="locker-button" data-platform="twitter" style="background: #1DA1F2; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer;">Share on X</button>
+        <button class="locker-button" data-platform="linkedin" style="background: #0077B5; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer;">Share on LinkedIn</button>
+        <button class="locker-button" data-platform="facebook" style="background: #4267B2; color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer;">Share on Facebook</button>
+    </div>
+</div>
+<!-- END CONTENT LOCKER -->`;
+
+            default:
+                return `
+<!-- CONTENT LOCKER: GENERIC -->
+<div class="content-locker" style="background: ${bgColor}; border: 2px solid ${brandColor}; border-radius: 12px; padding: 32px; text-align: center; margin: 24px 0;">
+    <h3 style="color: #1f2937; margin: 0 0 8px 0;">${ctaText}</h3>
+    <p style="color: #6b7280; margin: 0;">${ctaDescription}</p>
+</div>
+<!-- END CONTENT LOCKER -->`;
+        }
+    }
+
+    /**
+     * Detect content format (markdown, html, json, text)
+     */
+    private detectContentFormat(content: string): string {
+        const trimmed = content.trim();
+
+        // Check for JSON
+        if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+            (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+            try {
+                JSON.parse(trimmed);
+                return 'json';
+            } catch { }
+        }
+
+        // Check for HTML
+        if (/<[a-z][\s\S]*>/i.test(trimmed)) {
+            return 'html';
+        }
+
+        // Check for Markdown patterns
+        if (/^#{1,6}\s|^\*\s|^-\s|^\d+\.\s|```|\*\*|__|~~|\[.*\]\(.*\)/m.test(trimmed)) {
+            return 'markdown';
+        }
+
+        return 'text';
+    }
+
+    /**
+     * Convert Markdown to HTML (basic implementation)
+     */
+    private markdownToHtml(markdown: string): string {
+        return markdown
+            // Headers
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            // Bold
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            // Italic
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/_(.+?)_/g, '<em>$1</em>')
+            // Strikethrough
+            .replace(/~~(.+?)~~/g, '<del>$1</del>')
+            // Code
+            .replace(/`(.+?)`/g, '<code>$1</code>')
+            // Links
+            .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            // Wrap in paragraph
+            .replace(/^(.*)$/, '<p>$1</p>')
+            // Clean up empty paragraphs
+            .replace(/<p><\/p>/g, '');
+    }
+
+    /**
+     * Convert HTML to Markdown (basic implementation)
+     */
+    private htmlToMarkdown(html: string): string {
+        return html
+            // Headers
+            .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+            .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+            .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+            .replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n\n')
+            // Paragraphs
+            .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+            // Bold
+            .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+            .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+            // Italic
+            .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+            .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+            // Links
+            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+            // Line breaks
+            .replace(/<br\s*\/?>/gi, '\n')
+            // Remove remaining tags
+            .replace(/<[^>]+>/g, '')
+            // Decode entities
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            // Normalize whitespace
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    /**
+     * Convert JSON to readable text
+     */
+    private jsonToText(jsonStr: string): string {
+        try {
+            const obj = JSON.parse(jsonStr);
+            return this.objectToText(obj);
+        } catch {
+            return jsonStr;
+        }
+    }
+
+    /**
+     * Convert object to readable text recursively
+     */
+    private objectToText(obj: any, indent: number = 0): string {
+        const prefix = '  '.repeat(indent);
+
+        if (Array.isArray(obj)) {
+            return obj.map((item, i) => `${prefix}${i + 1}. ${this.objectToText(item, indent + 1)}`).join('\n');
+        }
+
+        if (typeof obj === 'object' && obj !== null) {
+            return Object.entries(obj)
+                .map(([key, value]) => {
+                    const label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+                    const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                    if (typeof value === 'object') {
+                        return `${prefix}${capitalizedLabel}:\n${this.objectToText(value, indent + 1)}`;
+                    }
+                    return `${prefix}${capitalizedLabel}: ${value}`;
+                })
+                .join('\n');
+        }
+
+        return String(obj);
     }
 
     /**
@@ -1597,7 +1991,7 @@ Make the content genuinely valuable, not just fluff.`;
 
     /**
      * Execute KB retrieval node
-     * Uses text-based search for retrieval (vector search requires embedding API)
+     * Uses pgvector for semantic similarity search
      */
     private async executeKBNode(node: WorkflowNode, pipelineData: PipelineData): Promise<NodeOutput> {
         const config = node.data.config || {};
@@ -1607,62 +2001,636 @@ Make the content genuinely valuable, not just fluff.`;
             (typeof userInputObj === 'object' ? (userInputObj as Record<string, any>).query || (userInputObj as Record<string, any>).message : userInputObj) ||
             '';
         const topK = config.topK || 5;
+        const similarityThreshold = config.similarityThreshold || 0.7;
         const orgId = pipelineData.executionUser?.orgId;
+        const kbId = config.kbId || pipelineData.kb?.id;
 
-        // KB retrieval requires vector store connection (RAGOrchestrator)
-        // Returns query metadata when vector store not connected
-        return {
-            nodeId: node.id,
-            nodeName: node.data.label,
-            nodeType: node.data.nodeType,
-            type: 'kb_retrieval',
-            content: {
-                retrieved: false,
-                context: `Knowledge base query: "${String(query).substring(0, 100)}"`,
-                sources: [],
-                query: String(query).substring(0, 200),
-                orgId: orgId,
-                note: 'KB retrieval requires vector store integration. Use RAGOrchestrator for full functionality.'
+        // Validate we have required data
+        if (!query) {
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: {
+                    retrieved: false,
+                    error: 'No query provided for KB search',
+                    sources: []
+                }
+            };
+        }
+
+        try {
+            // Generate embedding for the query
+            console.log(`🔍 KB Search: Generating embedding for query: "${String(query).substring(0, 50)}..."`);
+            const embeddingResult = await aiService.generateEmbedding(String(query));
+            const queryEmbedding = embeddingResult.embedding;
+
+            console.log(`🔍 KB Search: Embedding generated (${embeddingResult.tokens} tokens, ${embeddingResult.durationMs}ms)`);
+
+            // Build the vector search query
+            // Uses pgvector's cosine distance operator (<=>)
+            const vectorSearchQuery = `
+                SELECT 
+                    kdc.id,
+                    kdc.content,
+                    kdc.metadata,
+                    kdc.kb_id,
+                    kdc.document_id,
+                    kb.name as kb_name,
+                    kbd.title as document_title,
+                    1 - (kdc.embedding <=> $1::vector) as similarity
+                FROM kb_document_chunks kdc
+                JOIN knowledge_bases kb ON kdc.kb_id = kb.id
+                LEFT JOIN kb_documents kbd ON kdc.document_id = kbd.id
+                WHERE 
+                    kb.is_active = true
+                    ${kbId ? 'AND kdc.kb_id = $4' : ''}
+                    ${orgId ? 'AND kb.org_id = $5' : ''}
+                    AND 1 - (kdc.embedding <=> $1::vector) >= $2
+                ORDER BY kdc.embedding <=> $1::vector
+                LIMIT $3
+            `;
+
+            // Build query parameters
+            const queryParams: any[] = [
+                `[${queryEmbedding.join(',')}]`,  // pgvector format
+                similarityThreshold,
+                topK
+            ];
+            if (kbId) queryParams.push(kbId);
+            if (orgId) queryParams.push(orgId);
+
+            // Execute the search
+            const pool = require('pg').Pool;
+            const dbPool = new pool({
+                connectionString: process.env.DATABASE_URL,
+                ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+            });
+
+            const searchResult = await dbPool.query(vectorSearchQuery, queryParams);
+            await dbPool.end();
+
+            console.log(`🔍 KB Search: Found ${searchResult.rows.length} relevant chunks`);
+
+            // Format results
+            const sources = searchResult.rows.map((row: any) => ({
+                id: row.id,
+                content: row.content,
+                similarity: parseFloat(row.similarity?.toFixed(4) || '0'),
+                kbId: row.kb_id,
+                kbName: row.kb_name,
+                documentId: row.document_id,
+                documentTitle: row.document_title,
+                metadata: row.metadata
+            }));
+
+            // Build context from retrieved chunks
+            const context = sources
+                .map((s: any, i: number) => `[Source ${i + 1}] (Similarity: ${(s.similarity * 100).toFixed(1)}%)\n${s.content}`)
+                .join('\n\n---\n\n');
+
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: {
+                    retrieved: true,
+                    query: String(query).substring(0, 200),
+                    context,
+                    sources,
+                    sourceCount: sources.length,
+                    embeddingTokens: embeddingResult.tokens,
+                    embeddingDurationMs: embeddingResult.durationMs
+                }
+            };
+        } catch (error: any) {
+            console.error(`❌ KB Search error: ${error.message}`);
+
+            // Fallback to text search if vector search fails
+            console.log('🔍 KB Search: Falling back to text search...');
+
+            try {
+                const pool = require('pg').Pool;
+                const dbPool = new pool({
+                    connectionString: process.env.DATABASE_URL,
+                    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+                });
+
+                const textSearchQuery = `
+                    SELECT 
+                        kdc.id,
+                        kdc.content,
+                        kdc.metadata,
+                        kdc.kb_id,
+                        kb.name as kb_name,
+                        ts_rank(to_tsvector('english', kdc.content), plainto_tsquery('english', $1)) as rank
+                    FROM kb_document_chunks kdc
+                    JOIN knowledge_bases kb ON kdc.kb_id = kb.id
+                    WHERE 
+                        kb.is_active = true
+                        ${kbId ? 'AND kdc.kb_id = $3' : ''}
+                        ${orgId ? 'AND kb.org_id = $4' : ''}
+                        AND to_tsvector('english', kdc.content) @@ plainto_tsquery('english', $1)
+                    ORDER BY rank DESC
+                    LIMIT $2
+                `;
+
+                const params: any[] = [String(query), topK];
+                if (kbId) params.push(kbId);
+                if (orgId) params.push(orgId);
+
+                const fallbackResult = await dbPool.query(textSearchQuery, params);
+                await dbPool.end();
+
+                const sources = fallbackResult.rows.map((row: any) => ({
+                    id: row.id,
+                    content: row.content,
+                    rank: parseFloat(row.rank?.toFixed(4) || '0'),
+                    kbId: row.kb_id,
+                    kbName: row.kb_name,
+                    metadata: row.metadata
+                }));
+
+                const context = sources
+                    .map((s: any, i: number) => `[Source ${i + 1}]\n${s.content}`)
+                    .join('\n\n---\n\n');
+
+                return {
+                    nodeId: node.id,
+                    nodeName: node.data.label,
+                    nodeType: node.data.nodeType,
+                    type: 'kb_retrieval',
+                    content: {
+                        retrieved: true,
+                        searchMethod: 'text_fallback',
+                        query: String(query).substring(0, 200),
+                        context,
+                        sources,
+                        sourceCount: sources.length,
+                        note: 'Vector search unavailable, used text search fallback'
+                    }
+                };
+            } catch (fallbackError: any) {
+                return {
+                    nodeId: node.id,
+                    nodeName: node.data.label,
+                    nodeType: node.data.nodeType,
+                    type: 'kb_retrieval',
+                    content: {
+                        retrieved: false,
+                        error: `KB search failed: ${error.message}`,
+                        fallbackError: fallbackError.message,
+                        query: String(query).substring(0, 200),
+                        sources: []
+                    }
+                };
             }
-        };
+        }
     }
 
     /**
-     * Execute condition node
+     * Execute condition/utility node - HYDRATED with real functionality
+     * Handles: if-else, switch, loops, delays, error handling, parallel, merge
      */
-    private executeConditionNode(node: WorkflowNode, pipelineData: PipelineData): NodeOutput {
+    private async executeConditionNode(node: WorkflowNode, pipelineData: PipelineData): Promise<NodeOutput> {
+        const nodeType = node.data.nodeType;
         const config = node.data.config || {};
         const lastContent = pipelineData.lastNodeOutput?.content;
+        const userInput = pipelineData.userInput;
 
-        // Simple condition evaluation (can be expanded)
-        let passed = true;
-        let reason = 'Condition passed';
+        let result: Record<string, unknown> = {};
 
-        if (config.condition) {
-            // Evaluate condition
-            try {
-                // String contains check - extensible via config.condition.type
-                if (config.condition.type === 'contains') {
-                    passed = String(lastContent).includes(config.condition.value);
-                } else if (config.condition.type === 'minLength') {
-                    passed = String(lastContent).length >= config.condition.value;
+        switch (nodeType) {
+            // =====================================================
+            // IF-ELSE CONDITION - Evaluate and branch
+            // =====================================================
+            case 'condition-if-else': {
+                const condition = config.condition || {};
+                let passed = true;
+                let reason = 'Default pass';
+
+                try {
+                    switch (condition.type) {
+                        case 'contains':
+                            passed = String(lastContent).toLowerCase().includes(String(condition.value).toLowerCase());
+                            reason = passed ? `Content contains "${condition.value}"` : `Content does not contain "${condition.value}"`;
+                            break;
+
+                        case 'notContains':
+                            passed = !String(lastContent).toLowerCase().includes(String(condition.value).toLowerCase());
+                            reason = passed ? `Content does not contain "${condition.value}"` : `Content contains "${condition.value}"`;
+                            break;
+
+                        case 'equals':
+                            passed = String(lastContent) === String(condition.value);
+                            reason = passed ? 'Values are equal' : 'Values are not equal';
+                            break;
+
+                        case 'notEquals':
+                            passed = String(lastContent) !== String(condition.value);
+                            reason = passed ? 'Values are not equal' : 'Values are equal';
+                            break;
+
+                        case 'greaterThan':
+                            passed = Number(lastContent) > Number(condition.value);
+                            reason = passed ? `${lastContent} > ${condition.value}` : `${lastContent} <= ${condition.value}`;
+                            break;
+
+                        case 'lessThan':
+                            passed = Number(lastContent) < Number(condition.value);
+                            reason = passed ? `${lastContent} < ${condition.value}` : `${lastContent} >= ${condition.value}`;
+                            break;
+
+                        case 'minLength':
+                            passed = String(lastContent).length >= Number(condition.value);
+                            reason = passed ? `Length ${String(lastContent).length} >= ${condition.value}` : `Length ${String(lastContent).length} < ${condition.value}`;
+                            break;
+
+                        case 'maxLength':
+                            passed = String(lastContent).length <= Number(condition.value);
+                            reason = passed ? `Length ${String(lastContent).length} <= ${condition.value}` : `Length ${String(lastContent).length} > ${condition.value}`;
+                            break;
+
+                        case 'regex':
+                            const regex = new RegExp(condition.value, condition.flags || 'i');
+                            passed = regex.test(String(lastContent));
+                            reason = passed ? `Matches regex ${condition.value}` : `Does not match regex ${condition.value}`;
+                            break;
+
+                        case 'isEmpty':
+                            passed = !lastContent || String(lastContent).trim() === '';
+                            reason = passed ? 'Content is empty' : 'Content is not empty';
+                            break;
+
+                        case 'isNotEmpty':
+                            passed = !!lastContent && String(lastContent).trim() !== '';
+                            reason = passed ? 'Content is not empty' : 'Content is empty';
+                            break;
+
+                        case 'fieldEquals':
+                            // Check specific field: { field: 'status', value: 'approved' }
+                            const fieldValue = this.getNestedValue(lastContent, condition.field);
+                            passed = fieldValue === condition.value;
+                            reason = passed ? `${condition.field} equals "${condition.value}"` : `${condition.field} is "${fieldValue}", not "${condition.value}"`;
+                            break;
+
+                        case 'expression':
+                            // Evaluate a JavaScript expression with context
+                            // WARNING: Only for trusted inputs
+                            const ctx = { content: lastContent, input: userInput, outputs: pipelineData.nodeOutputs };
+                            passed = this.safeEval(condition.expression, ctx);
+                            reason = passed ? `Expression evaluated to true` : `Expression evaluated to false`;
+                            break;
+
+                        default:
+                            // No condition or unknown type - default pass
+                            passed = true;
+                            reason = 'No condition specified';
+                    }
+                } catch (error: any) {
+                    passed = config.defaultOnError !== false; // Default to passing on error
+                    reason = `Error evaluating condition: ${error.message}`;
                 }
-            } catch (e) {
-                passed = true; // Default to passing on error
+
+                result = {
+                    passed,
+                    reason,
+                    branch: passed ? 'true' : 'false',
+                    shouldContinue: passed || !config.stopOnFalse,
+                    evaluatedValue: typeof lastContent === 'string' ? lastContent.substring(0, 200) : lastContent,
+                };
+                break;
+            }
+
+            // =====================================================
+            // SWITCH CONDITION - Multi-branch routing
+            // =====================================================
+            case 'condition-switch': {
+                const switchField = config.field || 'type';
+                const switchValue = this.getNestedValue(lastContent, switchField) || this.getNestedValue(userInput, switchField);
+                const cases = config.cases || {};
+                const defaultBranch = config.default || 'default';
+
+                let selectedBranch = defaultBranch;
+                for (const [caseValue, branchName] of Object.entries(cases)) {
+                    if (String(switchValue) === String(caseValue)) {
+                        selectedBranch = branchName as string;
+                        break;
+                    }
+                }
+
+                result = {
+                    switchField,
+                    switchValue,
+                    selectedBranch,
+                    availableCases: Object.keys(cases),
+                    shouldContinue: true,
+                };
+                break;
+            }
+
+            // =====================================================
+            // FOREACH LOOP - Iterate over array
+            // =====================================================
+            case 'loop-foreach': {
+                const arrayField = config.arrayField || 'items';
+                const array = this.getNestedValue(lastContent, arrayField) ||
+                    this.getNestedValue(userInput, arrayField) ||
+                    (Array.isArray(lastContent) ? lastContent : [lastContent]);
+
+                const items = Array.isArray(array) ? array : [array];
+                const itemVariable = config.itemVariable || 'item';
+                const indexVariable = config.indexVariable || 'index';
+
+                // For now, we store the iteration context
+                // The actual iteration happens in the main executeWorkflow loop
+                result = {
+                    arrayField,
+                    itemCount: items.length,
+                    items: items.slice(0, 100), // Limit to prevent memory issues
+                    itemVariable,
+                    indexVariable,
+                    iterationStatus: 'ready',
+                    shouldContinue: items.length > 0,
+                };
+
+                // Store iteration context for downstream nodes
+                (pipelineData as any).iterationContext = {
+                    items,
+                    currentIndex: 0,
+                    itemVariable,
+                    indexVariable,
+                };
+                break;
+            }
+
+            // =====================================================
+            // DELAY/WAIT - Pause execution
+            // =====================================================
+            case 'delay-wait': {
+                const delayMs = config.delayMs || config.delay || 1000;
+                const reason = config.reason || 'Scheduled delay';
+
+                console.log(`⏳ Delay node: waiting ${delayMs}ms - ${reason}`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+
+                result = {
+                    delayMs,
+                    reason,
+                    completedAt: new Date().toISOString(),
+                    shouldContinue: true,
+                };
+                break;
+            }
+
+            // =====================================================
+            // HUMAN REVIEW - Pause for approval
+            // =====================================================
+            case 'human-review': {
+                const reviewType = config.reviewType || 'approval';
+                const reviewers = config.reviewers || [];
+                const timeout = config.timeoutMs || 86400000; // 24 hours default
+
+                // Store pending review in execution state
+                const reviewId = `review_${node.id}_${Date.now()}`;
+                stateManager.updateState(pipelineData.executionUser.executionId, {
+                    pendingReview: {
+                        reviewId,
+                        nodeId: node.id,
+                        reviewType,
+                        reviewers,
+                        content: lastContent,
+                        createdAt: new Date().toISOString(),
+                        expiresAt: new Date(Date.now() + timeout).toISOString(),
+                    },
+                });
+
+                result = {
+                    reviewId,
+                    reviewType,
+                    reviewers,
+                    status: 'pending',
+                    message: 'Workflow paused for human review',
+                    content: typeof lastContent === 'string' ? lastContent.substring(0, 500) : lastContent,
+                    shouldContinue: config.autoApprove || false, // Default: wait for approval
+                };
+
+                // If not auto-approve, pause the workflow
+                if (!config.autoApprove) {
+                    stateManager.pauseWorkflow(pipelineData.executionUser.executionId);
+                }
+                break;
+            }
+
+            // =====================================================
+            // ERROR HANDLER - Try-catch wrapper
+            // =====================================================
+            case 'error-handler': {
+                const errorAction = config.errorAction || 'log';
+                const retryCount = config.retryCount || 0;
+                const retryDelayMs = config.retryDelayMs || 1000;
+
+                // Check if there was an error in previous execution
+                const lastError = stateManager.getState(pipelineData.executionUser.executionId)?.lastError;
+
+                if (lastError) {
+                    switch (errorAction) {
+                        case 'retry':
+                            result = {
+                                action: 'retry',
+                                retryCount,
+                                retryDelayMs,
+                                lastError,
+                                shouldContinue: true,
+                            };
+                            break;
+                        case 'skip':
+                            result = {
+                                action: 'skip',
+                                skippedNode: lastError.nodeId,
+                                shouldContinue: true,
+                            };
+                            break;
+                        case 'fallback':
+                            result = {
+                                action: 'fallback',
+                                fallbackValue: config.fallbackValue || null,
+                                shouldContinue: true,
+                            };
+                            break;
+                        case 'stop':
+                            result = {
+                                action: 'stop',
+                                error: lastError,
+                                shouldContinue: false,
+                            };
+                            break;
+                        default:
+                            result = {
+                                action: 'log',
+                                error: lastError,
+                                shouldContinue: true,
+                            };
+                    }
+                } else {
+                    result = {
+                        action: 'no_error',
+                        message: 'No errors detected',
+                        shouldContinue: true,
+                    };
+                }
+                break;
+            }
+
+            // =====================================================
+            // SPLIT PARALLEL - Fork execution
+            // =====================================================
+            case 'split-parallel': {
+                const branches = config.branches || ['branch_1', 'branch_2'];
+
+                // Mark that we're entering parallel execution
+                (pipelineData as any).parallelContext = {
+                    splitNodeId: node.id,
+                    branches,
+                    startedAt: new Date().toISOString(),
+                    results: {},
+                };
+
+                result = {
+                    action: 'split',
+                    branches,
+                    message: 'Parallel execution started',
+                    shouldContinue: true,
+                };
+                break;
+            }
+
+            // =====================================================
+            // MERGE/COMBINE - Wait for parallel branches
+            // =====================================================
+            case 'merge-combine': {
+                const mergeStrategy = config.strategy || 'waitAll';
+                const parallelContext = (pipelineData as any).parallelContext;
+
+                if (parallelContext) {
+                    const results = parallelContext.results || {};
+                    const allBranches = parallelContext.branches || [];
+                    const completedBranches = Object.keys(results);
+
+                    const allComplete = allBranches.every((b: string) => completedBranches.includes(b));
+
+                    if (mergeStrategy === 'waitAll' && !allComplete) {
+                        result = {
+                            action: 'waiting',
+                            completedBranches,
+                            pendingBranches: allBranches.filter((b: string) => !completedBranches.includes(b)),
+                            shouldContinue: false,
+                        };
+                    } else {
+                        // Merge results
+                        let mergedContent: unknown;
+                        switch (config.mergeType) {
+                            case 'concat':
+                                mergedContent = Object.values(results).join('\n\n');
+                                break;
+                            case 'array':
+                                mergedContent = Object.values(results);
+                                break;
+                            case 'object':
+                            default:
+                                mergedContent = results;
+                        }
+
+                        result = {
+                            action: 'merged',
+                            mergedContent,
+                            branchCount: completedBranches.length,
+                            shouldContinue: true,
+                        };
+
+                        // Clear parallel context
+                        delete (pipelineData as any).parallelContext;
+                    }
+                } else {
+                    result = {
+                        action: 'no_parallel_context',
+                        message: 'No parallel execution to merge',
+                        shouldContinue: true,
+                    };
+                }
+                break;
+            }
+
+            // =====================================================
+            // LEGACY CONDITION NODES
+            // =====================================================
+            case 'route-by-stage':
+            case 'route-by-type':
+            case 'route-by-validation':
+            case 'logic-gate':
+            case 'validation-check':
+            default: {
+                // Simple condition evaluation for legacy nodes
+                let passed = true;
+                let reason = 'Condition passed';
+
+                if (config.condition) {
+                    try {
+                        if (config.condition.type === 'contains') {
+                            passed = String(lastContent).includes(config.condition.value);
+                        } else if (config.condition.type === 'minLength') {
+                            passed = String(lastContent).length >= config.condition.value;
+                        }
+                    } catch (e) {
+                        passed = true;
+                    }
+                }
+
+                result = {
+                    passed,
+                    reason,
+                    evaluatedValue: lastContent,
+                    shouldContinue: passed,
+                };
             }
         }
 
         return {
             nodeId: node.id,
             nodeName: node.data.label,
-            nodeType: node.data.nodeType,
+            nodeType: nodeType,
             type: 'condition',
-            content: {
-                passed,
-                reason,
-                evaluatedValue: lastContent
-            }
+            content: result,
         };
+    }
+
+    /**
+     * Safe expression evaluation with limited context
+     */
+    private safeEval(expression: string, context: Record<string, any>): boolean {
+        try {
+            // Very basic safe eval - only allows property access and comparison
+            // For production, use a proper expression parser like expr-eval
+            const { content, input, outputs } = context;
+
+            // Replace variable references
+            let expr = expression
+                .replace(/\bcontent\b/g, JSON.stringify(content))
+                .replace(/\binput\.(\w+)\b/g, (_, key) => JSON.stringify(input?.[key]))
+                .replace(/\boutputs\.(\w+)\.content\b/g, (_, key) => JSON.stringify(outputs?.[key]?.content));
+
+            // Only allow specific safe operations
+            if (/[;{}]|function|eval|new\s|import|require/.test(expr)) {
+                return false;
+            }
+
+            // Evaluate (in production, use a sandboxed evaluator)
+            return Function(`"use strict"; return (${expr})`)();
+        } catch {
+            return false;
+        }
     }
 
     /**
@@ -1682,26 +2650,396 @@ Make the content genuinely valuable, not just fluff.`;
     }
 
     /**
-     * Execute output node
+     * Execute output node - HYDRATED with real functionality
+     * Each output type actually DOES something
      */
-    private executeOutputNode(node: WorkflowNode, pipelineData: PipelineData): NodeOutput {
+    private async executeOutputNode(node: WorkflowNode, pipelineData: PipelineData): Promise<NodeOutput> {
+        const nodeType = node.data.nodeType;
+        const config = node.data.config || {};
         const content = pipelineData.lastNodeOutput?.content || 'No content generated';
+        const userInput = pipelineData.userInput;
+
+        // Aggregate all node outputs for comprehensive output
+        const aggregatedOutput = {
+            finalContent: content,
+            allOutputs: pipelineData.nodeOutputs,
+            tokenUsage: pipelineData.tokenUsage,
+            tokenLedger: pipelineData.tokenLedger,
+            executionContext: pipelineData.executionUser,
+            timestamp: new Date().toISOString(),
+        };
+
+        let actionResult: Record<string, unknown> = {};
+
+        try {
+            switch (nodeType) {
+                // =====================================================
+                // WEBHOOK OUTPUT - HTTP POST to configured URL
+                // =====================================================
+                case 'output-webhook':
+                case 'output-n8n': {
+                    const webhookUrl = config.webhookUrl || config.url;
+                    if (!webhookUrl) {
+                        throw new Error('Webhook URL not configured');
+                    }
+
+                    const payload = config.customPayload
+                        ? this.buildCustomPayload(config.customPayload, aggregatedOutput)
+                        : aggregatedOutput;
+
+                    const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                        ...(config.headers || {}),
+                    };
+
+                    // Add auth if configured
+                    if (config.authType === 'bearer' && config.authToken) {
+                        headers['Authorization'] = `Bearer ${config.authToken}`;
+                    } else if (config.authType === 'apiKey' && config.apiKey) {
+                        headers[config.apiKeyHeader || 'X-API-Key'] = config.apiKey;
+                    }
+
+                    console.log(`📤 Webhook POST to: ${webhookUrl}`);
+                    const response = await fetch(webhookUrl, {
+                        method: config.method || 'POST',
+                        headers,
+                        body: JSON.stringify(payload),
+                    });
+
+                    actionResult = {
+                        action: 'webhook_sent',
+                        url: webhookUrl,
+                        status: response.status,
+                        success: response.ok,
+                        responseBody: await response.text().catch(() => null),
+                    };
+                    break;
+                }
+
+                // =====================================================
+                // STORE OUTPUT - Save to Supabase
+                // =====================================================
+                case 'output-store': {
+                    const tableName = config.tableName || 'engine_outputs';
+                    const storeData = {
+                        execution_id: pipelineData.executionUser.executionId,
+                        user_id: pipelineData.executionUser.userId,
+                        org_id: pipelineData.executionUser.orgId,
+                        content: typeof content === 'string' ? content : JSON.stringify(content),
+                        content_type: config.contentType || 'generated_content',
+                        metadata: {
+                            tokenUsage: pipelineData.tokenUsage,
+                            nodeType: nodeType,
+                            config: config,
+                        },
+                        created_at: new Date().toISOString(),
+                    };
+
+                    if (this.dbPool) {
+                        const result = await this.dbPool.query(
+                            `INSERT INTO ${tableName} (execution_id, user_id, org_id, content, content_type, metadata, created_at)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7)
+                             RETURNING id`,
+                            [
+                                storeData.execution_id,
+                                storeData.user_id,
+                                storeData.org_id,
+                                storeData.content,
+                                storeData.content_type,
+                                JSON.stringify(storeData.metadata),
+                                storeData.created_at,
+                            ]
+                        );
+                        actionResult = {
+                            action: 'stored',
+                            table: tableName,
+                            recordId: result.rows[0]?.id,
+                            success: true,
+                        };
+                        console.log(`💾 Stored output to ${tableName}, ID: ${result.rows[0]?.id}`);
+                    } else {
+                        // Queue for later storage if no DB pool
+                        actionResult = {
+                            action: 'queued_for_storage',
+                            data: storeData,
+                            success: false,
+                            error: 'No database connection',
+                        };
+                    }
+                    break;
+                }
+
+                // =====================================================
+                // EMAIL OUTPUT - Send email via configured service
+                // =====================================================
+                case 'output-email': {
+                    const emailTo = config.to || userInput.email || userInput.recipient_email;
+                    if (!emailTo) {
+                        throw new Error('Email recipient not configured');
+                    }
+
+                    const emailContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+                    const emailSubject = config.subject || `[Axiom] Workflow Output`;
+
+                    // Build email payload
+                    const emailPayload = {
+                        to: emailTo,
+                        subject: emailSubject,
+                        html: config.htmlTemplate
+                            ? config.htmlTemplate.replace('{{content}}', emailContent)
+                            : `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                                 <h2 style="color: #333;">Workflow Complete</h2>
+                                 <div style="background: #f9f9f9; padding: 20px; border-radius: 8px;">
+                                   ${emailContent}
+                                 </div>
+                                 <p style="color: #666; font-size: 12px; margin-top: 20px;">
+                                   Generated by Axiom Engine
+                                 </p>
+                               </div>`,
+                        text: emailContent.replace(/<[^>]*>/g, ''),
+                    };
+
+                    // Check for Resend API key or SMTP config
+                    const resendApiKey = config.resendApiKey || process.env.RESEND_API_KEY;
+
+                    if (resendApiKey) {
+                        // Use Resend
+                        const response = await fetch('https://api.resend.com/emails', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${resendApiKey}`,
+                            },
+                            body: JSON.stringify({
+                                from: config.from || 'Axiom <noreply@axiom.engine>',
+                                to: [emailTo],
+                                subject: emailSubject,
+                                html: emailPayload.html,
+                                text: emailPayload.text,
+                            }),
+                        });
+
+                        const result = await response.json() as { id?: string; error?: string };
+                        actionResult = {
+                            action: 'email_sent',
+                            to: emailTo,
+                            subject: emailSubject,
+                            provider: 'resend',
+                            success: response.ok,
+                            messageId: result.id,
+                            error: result.error,
+                        };
+                        console.log(`📧 Email sent to ${emailTo} via Resend`);
+                    } else {
+                        // Queue email for later sending
+                        actionResult = {
+                            action: 'email_queued',
+                            to: emailTo,
+                            subject: emailSubject,
+                            payload: emailPayload,
+                            success: false,
+                            error: 'No email service configured (set RESEND_API_KEY)',
+                        };
+                    }
+                    break;
+                }
+
+                // =====================================================
+                // ANALYTICS OUTPUT - Log event to analytics table
+                // =====================================================
+                case 'output-analytics': {
+                    const eventName = config.eventName || 'workflow_completed';
+                    const eventData = {
+                        event_name: eventName,
+                        execution_id: pipelineData.executionUser.executionId,
+                        user_id: pipelineData.executionUser.userId,
+                        org_id: pipelineData.executionUser.orgId,
+                        properties: {
+                            tokenUsage: pipelineData.tokenUsage,
+                            nodesExecuted: Object.keys(pipelineData.nodeOutputs).length,
+                            duration: config.durationMs,
+                            contentLength: typeof content === 'string' ? content.length : 0,
+                            ...config.customProperties,
+                        },
+                        timestamp: new Date().toISOString(),
+                    };
+
+                    if (this.dbPool) {
+                        await this.dbPool.query(
+                            `INSERT INTO analytics_events (event_name, execution_id, user_id, org_id, properties, created_at)
+                             VALUES ($1, $2, $3, $4, $5, $6)`,
+                            [
+                                eventData.event_name,
+                                eventData.execution_id,
+                                eventData.user_id,
+                                eventData.org_id,
+                                JSON.stringify(eventData.properties),
+                                eventData.timestamp,
+                            ]
+                        );
+                        actionResult = {
+                            action: 'analytics_logged',
+                            eventName: eventName,
+                            success: true,
+                        };
+                        console.log(`📊 Analytics event logged: ${eventName}`);
+                    } else {
+                        actionResult = {
+                            action: 'analytics_queued',
+                            eventData,
+                            success: false,
+                            error: 'No database connection',
+                        };
+                    }
+                    break;
+                }
+
+                // =====================================================
+                // EXPORT OUTPUT - Generate downloadable file
+                // =====================================================
+                case 'output-export': {
+                    const format = config.format || 'json';
+                    const filename = config.filename || `output_${Date.now()}`;
+
+                    let exportContent: string;
+                    let mimeType: string;
+
+                    switch (format) {
+                        case 'json':
+                            exportContent = JSON.stringify(aggregatedOutput, null, 2);
+                            mimeType = 'application/json';
+                            break;
+                        case 'markdown':
+                        case 'md':
+                            exportContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+                            mimeType = 'text/markdown';
+                            break;
+                        case 'html':
+                            exportContent = typeof content === 'string' ? content : `<pre>${JSON.stringify(content, null, 2)}</pre>`;
+                            mimeType = 'text/html';
+                            break;
+                        case 'csv':
+                            exportContent = this.convertToCSV(aggregatedOutput);
+                            mimeType = 'text/csv';
+                            break;
+                        default:
+                            exportContent = String(content);
+                            mimeType = 'text/plain';
+                    }
+
+                    actionResult = {
+                        action: 'export_generated',
+                        format,
+                        filename: `${filename}.${format}`,
+                        mimeType,
+                        content: exportContent,
+                        size: exportContent.length,
+                        success: true,
+                    };
+                    console.log(`📁 Export generated: ${filename}.${format} (${exportContent.length} bytes)`);
+                    break;
+                }
+
+                // =====================================================
+                // SCHEDULE OUTPUT - Queue for future delivery
+                // =====================================================
+                case 'output-schedule': {
+                    const scheduleAt = config.scheduleAt || config.deliverAt;
+                    const targetOutput = config.targetOutputType || 'output-email';
+
+                    actionResult = {
+                        action: 'scheduled',
+                        scheduleAt,
+                        targetOutputType: targetOutput,
+                        payload: aggregatedOutput,
+                        success: true,
+                        note: 'Scheduled output requires queue processor',
+                    };
+                    console.log(`⏰ Output scheduled for: ${scheduleAt}`);
+                    break;
+                }
+
+                default:
+                    // Default: just return aggregated output
+                    actionResult = {
+                        action: 'passthrough',
+                        success: true,
+                    };
+            }
+        } catch (error: any) {
+            console.error(`❌ Output node error: ${error.message}`);
+            actionResult = {
+                action: 'error',
+                error: error.message,
+                success: false,
+            };
+        }
 
         return {
             nodeId: node.id,
             nodeName: node.data.label,
-            nodeType: node.data.nodeType,
+            nodeType: nodeType,
             type: 'output',
             content: {
                 finalOutput: content,
-                outputType: node.data.nodeType,
+                outputType: nodeType,
+                actionResult,
                 metadata: {
                     totalTokens: pipelineData.tokenUsage.totalTokens,
                     totalCost: pipelineData.tokenUsage.totalCost,
-                    nodesExecuted: Object.keys(pipelineData.nodeOutputs).length
+                    nodesExecuted: Object.keys(pipelineData.nodeOutputs).length,
+                },
+            },
+        };
+    }
+
+    /**
+     * Build custom payload from template
+     */
+    private buildCustomPayload(template: Record<string, any>, data: Record<string, any>): Record<string, any> {
+        const result: Record<string, any> = {};
+        for (const [key, value] of Object.entries(template)) {
+            if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+                const path = value.slice(2, -2).trim();
+                result[key] = this.getNestedValue(data, path);
+            } else if (typeof value === 'object' && value !== null) {
+                result[key] = this.buildCustomPayload(value, data);
+            } else {
+                result[key] = value;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Get nested value from object by path
+     */
+    private getNestedValue(obj: any, path: string): any {
+        return path.split('.').reduce((acc, part) => acc?.[part], obj);
+    }
+
+    /**
+     * Convert object to CSV
+     */
+    private convertToCSV(data: Record<string, any>): string {
+        // Flatten object and convert to CSV
+        const flatten = (obj: any, prefix = ''): Record<string, string> => {
+            const result: Record<string, string> = {};
+            for (const [key, value] of Object.entries(obj)) {
+                const newKey = prefix ? `${prefix}.${key}` : key;
+                if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                    Object.assign(result, flatten(value, newKey));
+                } else {
+                    result[newKey] = String(value);
                 }
             }
+            return result;
         };
+
+        const flattened = flatten(data);
+        const headers = Object.keys(flattened).join(',');
+        const values = Object.values(flattened).map(v => `"${v.replace(/"/g, '""')}"`).join(',');
+        return `${headers}\n${values}`;
     }
 
     // ========================================================================

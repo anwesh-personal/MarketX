@@ -51,6 +51,6 @@ export async function generateEmbedding(text: string, orgId: string): Promise<nu
         throw new Error(`Embedding API failed: ${response.statusText}`)
     }
 
-    const result = await response.json()
+    const result = await response.json() as { data: Array<{ embedding: number[] }> }
     return result.data[0].embedding
 }

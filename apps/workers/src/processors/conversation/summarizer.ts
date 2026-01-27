@@ -6,7 +6,7 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-interface SummaryJob {
+export interface SummaryJob {
     conversationId: string
     orgId: string  // REQUIRED to fetch AI provider
     messageCount?: number
@@ -103,7 +103,7 @@ Provide a structured summary in clear paragraphs.`,
             throw new Error(`Chat API failed: ${response.statusText}`)
         }
 
-        const result = await response.json()
+        const result = await response.json() as { choices: Array<{ message: { content: string } }> }
 
         job.updateProgress(70)
 

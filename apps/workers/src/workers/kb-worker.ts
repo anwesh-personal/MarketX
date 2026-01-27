@@ -4,7 +4,7 @@ import { redisConfig } from '../config/redis'
 import { processKBDocument } from '../processors/kb/kb-processor'
 
 const worker = new Worker(QueueName.KB_PROCESSING, processKBDocument, {
-    ...redisConfig,
+    connection: redisConfig,
     concurrency: 5,
     limiter: {
         max: 10,

@@ -4,7 +4,7 @@ import { redisConfig } from '../config/redis'
 import { aggregateAnalytics } from '../processors/analytics/aggregator'
 
 const worker = new Worker(QueueName.ANALYTICS, aggregateAnalytics, {
-    ...redisConfig,
+    connection: redisConfig,
     concurrency: 2,
     limiter: {
         max: 3,

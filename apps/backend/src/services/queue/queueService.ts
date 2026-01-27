@@ -5,8 +5,11 @@
  * Acts as the Producer for the Worker System.
  */
 
-import { Queue, QueueOptions } from 'bullmq';
+import { Queue, QueueOptions, Job, JobsOptions } from 'bullmq';
 import { EventEmitter } from 'events';
+
+// Re-export types for consumers
+export type { Job, JobsOptions } from 'bullmq';
 
 // Queue Names must match apps/frontend/src/lib/worker-queues.ts
 export enum QueueName {
@@ -16,6 +19,7 @@ export enum QueueName {
     LEARNING_LOOP = 'learning-loop',
     DREAM_STATE = 'dream-state',
     FINE_TUNING = 'fine-tuning',
+    WORKFLOW_EXECUTE = 'workflow-execute',
 }
 
 // Redis Connection Options
@@ -62,6 +66,21 @@ class QueueService {
     get learningLoop() { return this.getQueue(QueueName.LEARNING_LOOP); }
     get dreamState() { return this.getQueue(QueueName.DREAM_STATE); }
     get fineTuning() { return this.getQueue(QueueName.FINE_TUNING); }
+    get workflowExecute() { return this.getQueue(QueueName.WORKFLOW_EXECUTE); }
+
+    /**
+     * Add a job to a queue
+     * Generic method for adding jobs to any queue
+     */
+    async add<T = any>(
+        queueName: string,
+        jobName: string,
+        data: T,
+        opts?: JobsOptions
+    ): Promise<Job<T>> {
+        const queue = this.getQueue(queueName);
+        return queue.add(jobName, data, opts);
+    }
 
     /**
      * Close all connections

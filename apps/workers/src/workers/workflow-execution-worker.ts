@@ -4,7 +4,7 @@ import { redisConfig } from '../config/redis'
 import { processWorkflowExecution } from '../processors/workflow/workflow-processor'
 
 const worker = new Worker(QueueName.WORKFLOW_EXECUTION, processWorkflowExecution, {
-    ...redisConfig,
+    connection: redisConfig,
     concurrency: 10, // Higher concurrency for workflow execution
     limiter: {
         max: 20,

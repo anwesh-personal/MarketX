@@ -46,7 +46,7 @@ export {
 } from './content-generator-service';
 
 // Embeddings
-export { generateEmbeddings, cosineSimilarity } from './embeddings';
+export { generateEmbedding } from './embeddings';
 
 // Chunker
-export { chunkDocument, type DocumentChunk } from './chunker';
+export { simpleChunk } from './chunker';

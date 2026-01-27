@@ -26,8 +26,8 @@ export type {
 } from './workflow/workflowExecutionService';
 
 // Queue Services
-export { queueService } from './queue/queueService';
-export type { QueueJob, QueueOptions } from './queue/queueService';
+export { queueService, QueueName } from './queue/queueService';
+export type { Job } from './queue/queueService';
 
 // API Key Services
 export { apiKeyService } from './apiKey/apiKeyService';

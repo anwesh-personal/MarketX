@@ -17,7 +17,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { workflowExecutionService, ExecutionResult, ProgressUpdate, ExecutionOptions } from '../workflow/workflowExecutionService';
 import { engineDeploymentService, EngineInstance } from '../engine/engineDeploymentService';
 import { aiService } from '../ai/aiService';
-import { queueService } from '../queue/queueService';
+import { queueService, QueueName } from '../queue/queueService';
 
 // ============================================================================
 // TYPES
@@ -60,10 +60,8 @@ class ExecutionService {
         await aiService.initialize(pool);
         workflowExecutionService.initialize(pool);
 
-        // Register queue processor for async execution
-        queueService.process('workflow.execute', async (job) => {
-            return this.processQueuedExecution(job.data);
-        }, { concurrency: 2 });
+        // NOTE: Queue processing is handled by apps/workers/src/workers/engine-execution-worker.ts
+        // Backend only PRODUCES jobs, workers CONSUME them
 
         console.log('✅ Execution Service initialized');
     }
@@ -99,8 +97,8 @@ class ExecutionService {
         const executionId = await this.createExecutionRecord(engine, userId, orgId, input);
 
         if (executionMode === 'async') {
-            // Queue for async processing
-            const job = queueService.add('workflow.execute', 'engine-execution', {
+            // Queue for async processing - workers will pick this up
+            const job = await queueService.add(QueueName.WORKFLOW_EXECUTE, 'engine-execution', {
                 executionId,
                 engineId,
                 engine,

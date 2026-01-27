@@ -577,6 +577,106 @@ class AIService {
     getAvailableProviders(): AIProvider[] {
         return Array.from(this.apiKeys.keys());
     }
+
+    /**
+     * Generate embeddings for text using OpenAI's embedding API
+     * Returns a 1536-dimensional vector for pgvector compatibility
+     */
+    async generateEmbedding(text: string, options: { model?: string } = {}): Promise<{
+        embedding: number[];
+        tokens: number;
+        model: string;
+        durationMs: number;
+    }> {
+        const startTime = Date.now();
+        const model = options.model || 'text-embedding-3-small';
+        const apiKey = this.getApiKey('openai');
+
+        if (!apiKey) {
+            throw new Error('OpenAI API key required for embeddings');
+        }
+
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model,
+                input: text,
+                dimensions: 1536 // Standard dimension for pgvector
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`OpenAI Embeddings API error: ${response.status} - ${error}`);
+        }
+
+        const data = await response.json() as {
+            data: Array<{ embedding: number[] }>;
+            usage: { total_tokens: number };
+        };
+
+        return {
+            embedding: data.data[0].embedding,
+            tokens: data.usage.total_tokens,
+            model,
+            durationMs: Date.now() - startTime
+        };
+    }
+
+    /**
+     * Generate embeddings for multiple texts in batch
+     */
+    async generateEmbeddingsBatch(texts: string[], options: { model?: string } = {}): Promise<{
+        embeddings: number[][];
+        tokens: number;
+        model: string;
+        durationMs: number;
+    }> {
+        const startTime = Date.now();
+        const model = options.model || 'text-embedding-3-small';
+        const apiKey = this.getApiKey('openai');
+
+        if (!apiKey) {
+            throw new Error('OpenAI API key required for embeddings');
+        }
+
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model,
+                input: texts,
+                dimensions: 1536
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`OpenAI Embeddings API error: ${response.status} - ${error}`);
+        }
+
+        const data = await response.json() as {
+            data: Array<{ embedding: number[]; index: number }>;
+            usage: { total_tokens: number };
+        };
+
+        // Sort by index to maintain order
+        const sorted = data.data.sort((a, b) => a.index - b.index);
+
+        return {
+            embeddings: sorted.map(d => d.embedding),
+            tokens: data.usage.total_tokens,
+            model,
+            durationMs: Date.now() - startTime
+        };
+    }
 }
 
 // Export singleton instance

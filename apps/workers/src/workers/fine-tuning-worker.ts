@@ -22,17 +22,26 @@ interface FineTuningJob {
     brainTemplateId?: string
     provider?: 'openai' | 'anthropic' | 'google'
     jobId?: string // For monitor/deploy steps
-    config?: {
-        minExamples?: number
-        modelBase?: string
-        epochs?: number
-    }
+    config?: Record<string, any> // Dynamic config for pipeline steps
 }
 
 interface TrainingExample {
     input: string
     output: string
     rating: number
+}
+
+interface FineTuningResult {
+    type: string
+    examplesCollected?: number
+    examples?: TrainingExample[]
+    provider?: string
+    formattedCount?: number
+    formatted?: object[]
+    jobId?: string
+    status?: string
+    exampleCount?: number
+    collected?: number
 }
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -42,7 +51,7 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : undefined,
 })
 
-async function processFineTuningJob(job: Job<FineTuningJob>) {
+async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuningResult> {
     const { type, orgId, brainTemplateId, provider = 'openai', jobId, config } = job.data
     console.log(`🎯 [Fine-Tune] Processing ${type} for org ${orgId}`)
 
@@ -72,7 +81,7 @@ async function processFineTuningJob(job: Job<FineTuningJob>) {
 
                 return {
                     type,
-                    examplesCollected: examples.rowCount,
+                    examplesCollected: examples.rowCount ?? 0,
                     examples: examples.rows
                 }
             }
@@ -171,33 +180,73 @@ async function processFineTuningJob(job: Job<FineTuningJob>) {
                 // Run the complete pipeline
                 console.log('🎯 Running full fine-tuning pipeline...')
 
-                // Step 1: Collect
-                const collectResult = await processFineTuningJob({
-                    ...job,
-                    data: { ...job.data, type: 'collect' }
-                } as Job<FineTuningJob>)
+                // Step 1: Collect examples
+                const examples = await pool.query(`
+                    SELECT 
+                        m_user.content as input,
+                        m_assistant.content as output,
+                        f.rating
+                    FROM feedback f
+                    JOIN messages m_user ON m_user.conversation_id = f.conversation_id AND m_user.role = 'user'
+                    JOIN messages m_assistant ON m_assistant.conversation_id = f.conversation_id AND m_assistant.role = 'assistant'
+                    JOIN conversations c ON c.id = f.conversation_id
+                    WHERE c.org_id = $1
+                    AND f.rating >= 4
+                    AND f.created_at > NOW() - INTERVAL '30 days'
+                    ORDER BY f.created_at DESC
+                    LIMIT 1000
+                `, [orgId])
 
-                if (!collectResult.examplesCollected || collectResult.examplesCollected < 10) {
-                    throw new Error('Insufficient training examples')
+                if ((examples.rowCount ?? 0) < 10) {
+                    throw new Error(`Insufficient training examples: ${examples.rowCount}`)
                 }
 
-                // Step 2: Format
-                const formatResult = await processFineTuningJob({
-                    ...job,
-                    data: { ...job.data, type: 'format', config: { examples: collectResult.examples } }
-                } as Job<FineTuningJob>)
+                console.log(`🎯 Collected ${examples.rowCount} training examples`)
 
-                // Step 3: Submit
-                const submitResult = await processFineTuningJob({
-                    ...job,
-                    data: { ...job.data, type: 'submit', config: { formatted: formatResult.formatted } }
-                } as Job<FineTuningJob>)
+                // Step 2: Format for provider
+                const formatted: object[] = []
+                for (const ex of examples.rows) {
+                    if (provider === 'openai') {
+                        formatted.push({
+                            messages: [
+                                { role: 'user', content: ex.input },
+                                { role: 'assistant', content: ex.output }
+                            ]
+                        })
+                    } else if (provider === 'anthropic') {
+                        formatted.push({
+                            prompt: `\n\nHuman: ${ex.input}\n\nAssistant:`,
+                            completion: ` ${ex.output}`
+                        })
+                    } else if (provider === 'google') {
+                        formatted.push({
+                            text_input: ex.input,
+                            output: ex.output
+                        })
+                    }
+                }
+
+                console.log(`🎯 Formatted ${formatted.length} examples for ${provider}`)
+
+                // Step 3: Submit job
+                const newJobId = `ft-${Date.now()}-${orgId.slice(0, 8)}`
+                await pool.query(`
+                    INSERT INTO brain_version_history (brain_template_id, version, config, change_summary)
+                    VALUES ($1, $2, $3, $4)
+                `, [
+                    brainTemplateId,
+                    `fine-tune-${newJobId}`,
+                    { provider, exampleCount: formatted.length, jobId: newJobId },
+                    `Fine-tuning job submitted with ${formatted.length} examples`
+                ])
+
+                console.log(`🎯 Submitted fine-tuning job: ${newJobId}`)
 
                 return {
                     type: 'full_pipeline',
-                    collected: collectResult.examplesCollected,
-                    formatted: formatResult.formattedCount,
-                    jobId: submitResult.jobId,
+                    collected: examples.rowCount ?? 0,
+                    formatted: formatted,
+                    jobId: newJobId,
                     status: 'submitted'
                 }
             }
@@ -210,7 +259,7 @@ async function processFineTuningJob(job: Job<FineTuningJob>) {
 }
 
 const worker = new Worker(QueueName.FINE_TUNING, processFineTuningJob, {
-    ...redisConfig,
+    connection: redisConfig,
     concurrency: 1, // Fine-tuning jobs are heavy, run one at a time
     limiter: {
         max: 2,
