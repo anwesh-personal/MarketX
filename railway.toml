@@ -5,7 +5,10 @@ dockerfilePath = "apps/workers/Dockerfile"
 [deploy]
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-# No healthcheckPath - workers are background processes, not web servers
+# Workers expose a management API on port 3100
+# This allows health checks and queue management from the frontend
 
 [service]
 name = "axiom-workers"
+# The workers API listens on port 3100
+internalPort = 3100
