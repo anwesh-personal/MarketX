@@ -43,7 +43,7 @@
 | **Variable Picker** | 🟡 0% | Phase 4 item | Manual `{{node.field}}` typing |
 | **Workers Deployment** | 🟡 Built | Need Railway deploy | Workers + API ready, need cloud deploy |
 | **Learning Loop** | 🟡 10% | Need policies | Skeleton exists, needs full implementation |
-| **Constitution Validation** | 🟡 Skeleton | Need integration | Tables exist, not wired |
+| **Constitution Validation** | 🟡 50% | No CRUD/UI | Validator uses constitution, no create/manage |
 
 ### ❌ NOT STARTED
 
@@ -143,6 +143,9 @@
 
 | Date | Milestone |
 |------|-----------|
+| 2026-01-27 | ✅ KB Manager UI - Create, edit, import/export markdown |
+| 2026-01-27 | ✅ KB Schema - Full 12-section Tommy spec |
+| 2026-01-27 | ✅ Validator wiring - Uses Constitution + KB guardrails |
 | 2026-01-27 | ✅ Worker Management API - Professional pattern (Frontend→Worker API→Redis) |
 | 2026-01-27 | ✅ Redis Management UI - Full queue controls, theme-aware |
 | 2026-01-27 | ✅ Redis running locally via Docker |
@@ -173,5 +176,5 @@
 
 ---
 
-*Last Updated: 2026-01-27 02:05 IST*
+*Last Updated: 2026-01-27 05:40 IST*
 
