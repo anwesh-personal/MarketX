@@ -234,7 +234,7 @@ async function updateExecutionStatus(
 // WORKER SETUP
 // ============================================================================
 
-const QUEUE_NAME = 'workflow-execute';
+const QUEUE_NAME = 'workflow-execution'; // Fixed: was 'workflow-execute'
 
 const worker = new Worker<EngineExecutionJob, EngineExecutionResult>(
     QUEUE_NAME,

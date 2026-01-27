@@ -98,7 +98,7 @@ class ExecutionService {
 
         if (executionMode === 'async') {
             // Queue for async processing - workers will pick this up
-            const job = await queueService.add(QueueName.WORKFLOW_EXECUTE, 'engine-execution', {
+            const job = await queueService.add(QueueName.WORKFLOW_EXECUTION, 'engine-execution', {
                 executionId,
                 engineId,
                 engine,

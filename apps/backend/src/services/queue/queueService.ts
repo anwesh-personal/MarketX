@@ -19,7 +19,7 @@ export enum QueueName {
     LEARNING_LOOP = 'learning-loop',
     DREAM_STATE = 'dream-state',
     FINE_TUNING = 'fine-tuning',
-    WORKFLOW_EXECUTE = 'workflow-execute',
+    WORKFLOW_EXECUTION = 'workflow-execution', // Fixed: was 'workflow-execute'
 }
 
 // Redis Connection Options
@@ -66,7 +66,7 @@ class QueueService {
     get learningLoop() { return this.getQueue(QueueName.LEARNING_LOOP); }
     get dreamState() { return this.getQueue(QueueName.DREAM_STATE); }
     get fineTuning() { return this.getQueue(QueueName.FINE_TUNING); }
-    get workflowExecute() { return this.getQueue(QueueName.WORKFLOW_EXECUTE); }
+    get workflowExecution() { return this.getQueue(QueueName.WORKFLOW_EXECUTION); }
 
     /**
      * Add a job to a queue
