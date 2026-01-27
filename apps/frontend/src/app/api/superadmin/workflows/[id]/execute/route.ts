@@ -2,26 +2,54 @@
  * WORKFLOW EXECUTE API
  * POST /api/superadmin/workflows/[id]/execute
  * 
- * Proxies execution request to the backend engine execution service.
- * The backend handles:
- * - Topological node sorting
- * - Node-by-node execution with AI calls
- * - Token tracking and cost calculation
- * - Progress callbacks and checkpointing
+ * Queues workflow execution to worker instead of calling backend.
+ * Returns execution ID for polling.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { Queue } from 'bullmq';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
 
-// Backend API URL - configurable via environment
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+// ============================================================================
+// REDIS/QUEUE CONFIGURATION
+// ============================================================================
+
+const getRedisConfig = () => {
+    const redisUrl = process.env.REDIS_URL;
+    if (redisUrl) {
+        const url = new URL(redisUrl);
+        return {
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            password: url.password || undefined,
+        };
+    }
+    return {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD || undefined,
+    };
+};
+
+const workflowQueue = new Queue('workflow-execution', {
+    connection: getRedisConfig()
+});
+
+// ============================================================================
+// SUPABASE CLIENT
+// ============================================================================
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 // ============================================================================
-// POST - Execute Workflow via Backend
+// POST - Execute Workflow via Worker (NO BACKEND!)
 // ============================================================================
 
 export async function POST(
@@ -55,73 +83,76 @@ export async function POST(
             // Empty body is acceptable
         }
 
-        // Call backend execution service
-        const backendResponse = await fetch(`${BACKEND_URL}/api/engines/workflows/${workflowId}/execute`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                input: body.input || {},
-                triggeredBy: admin.email,
-                userId: admin.id,
-            }),
-        });
+        // Get workflow/engine from database
+        const { data: engine, error: engineError } = await supabase
+            .from('engine_instances')
+            .select('*')
+            .eq('id', workflowId)
+            .single();
 
-        // Handle backend errors
-        if (!backendResponse.ok) {
-            const errorData = await backendResponse.json().catch(() => ({}));
-
-            // Map backend status codes
-            if (backendResponse.status === 404) {
-                return NextResponse.json(
-                    { error: 'Workflow not found', message: errorData.error },
-                    { status: 404 }
-                );
-            }
-
-            if (backendResponse.status === 400) {
-                return NextResponse.json(
-                    { error: 'Invalid workflow', message: errorData.error },
-                    { status: 400 }
-                );
-            }
-
+        if (engineError || !engine) {
             return NextResponse.json(
-                { error: 'Execution failed', message: errorData.error || 'Backend error' },
-                { status: backendResponse.status }
+                { error: 'Workflow not found' },
+                { status: 404 }
             );
         }
 
-        // Return backend response directly
-        const result = await backendResponse.json();
+        // Generate execution ID
+        const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+        // Create execution record
+        const { error: logError } = await supabase
+            .from('engine_run_logs')
+            .insert({
+                id: executionId,
+                engine_id: workflowId,
+                user_id: admin.id,
+                org_id: null,
+                input_data: body.input || {},
+                status: 'queued',
+                execution_data: { triggeredBy: admin.email },
+                created_at: new Date().toISOString(),
+            });
+
+        if (logError) {
+            console.error('Failed to create execution log:', logError);
+            return NextResponse.json(
+                { error: 'Failed to create execution record' },
+                { status: 500 }
+            );
+        }
+
+        // Queue job to worker (NO BACKEND!)
+        await workflowQueue.add('engine-execution', {
+            executionId,
+            engineId: workflowId,
+            engine: {
+                id: engine.id,
+                name: engine.name,
+                config: engine.config,
+                status: engine.status,
+            },
+            userId: admin.id,
+            orgId: null,
+            input: body.input || {},
+            options: {
+                tier: 'hobby',
+                timeout: 300000,
+            },
+        });
+
+        console.log(`✅ Queued workflow execution: ${executionId}`);
+
+        // Return execution ID for polling
         return NextResponse.json({
-            success: result.success,
-            executionId: result.executionId,
-            workflow: result.workflow,
-            status: result.success ? 'completed' : 'failed',
-            durationMs: result.durationMs,
-            nodeOutputs: result.nodeOutputs,
-            lastNodeOutput: result.lastNodeOutput,
-            tokenUsage: result.tokenUsage,
-            error: result.error,
+            success: true,
+            executionId,
+            status: 'queued',
+            message: 'Execution queued successfully',
         });
 
     } catch (error: any) {
-        // Check if backend is unreachable
-        if (error.cause?.code === 'ECONNREFUSED') {
-            return NextResponse.json(
-                {
-                    error: 'Backend unavailable',
-                    message: 'The execution backend is not running. Start the backend server on port 8080.',
-                    hint: 'Run: npm run dev:backend'
-                },
-                { status: 503 }
-            );
-        }
-
-        console.error('Unexpected error in POST /api/superadmin/workflows/[id]/execute:', error);
+        console.error('Workflow execution error:', error);
         return NextResponse.json(
             { error: 'Internal server error', message: error.message },
             { status: 500 }

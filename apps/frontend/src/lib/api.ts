@@ -1,86 +1,42 @@
 /**
- * API Client for Market Writer Backend
- * Centralized typed layer for all API calls
+ * @deprecated LEGACY API CLIENT - DO NOT USE
+ * This file was used by the old "Market Writer" functionality.
+ * All new code should use Next.js API routes at /api/*
+ * 
+ * Keeping this file for reference but marking as deprecated.
+ * TODO: Delete after confirming all legacy code is removed.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+// REMOVED: Hardcoded backend URL
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
 
-/**
- * Fetch dashboard statistics
- */
+console.warn('⚠️ DEPRECATED: lib/api.ts should not be used. Use Next.js API routes instead.');
+
+// Empty exports to prevent import errors
 export async function fetchStats() {
-    const res = await fetch(`${API_URL}/stats`);
-    if (!res.ok) throw new Error("Failed to fetch stats");
-    return res.json();
+    throw new Error('DEPRECATED: Use /api/* routes instead');
 }
 
-/**
- * Fetch active Knowledge Base
- */
 export async function fetchActiveKB() {
-    const res = await fetch(`${API_URL}/kb/active`);
-    if (!res.ok) throw new Error("Failed to fetch KB");
-    return res.json();
+    throw new Error('DEPRECATED: Use /api/kb/* routes instead');
 }
 
-/**
- * Upload new Knowledge Base
- */
-export async function uploadKB(data: any, version: string) {
-    const res = await fetch(`${API_URL}/kb/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data, version }),
-    });
-    if (!res.ok) throw new Error("Failed to upload KB");
-    return res.json();
+export async function uploadKB(_data: any, _version: string) {
+    throw new Error('DEPRECATED: Use /api/kb/* routes instead');
 }
 
-/**
- * Trigger manual run
- */
-export async function triggerManualRun(input?: any) {
-    const res = await fetch(`${API_URL}/run/manual`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input }),
-    });
-    if (!res.ok) throw new Error("Failed to trigger run");
-    return res.json();
+export async function triggerManualRun(_input?: any) {
+    throw new Error('DEPRECATED: Use /api/engines/* routes instead');
 }
 
-/**
- * Fetch recent runs
- */
 export async function fetchRuns() {
-    const res = await fetch(`${API_URL}/runs`);
-    if (!res.ok) throw new Error("Failed to fetch runs");
-    return res.json();
+    throw new Error('DEPRECATED: Use /api/engines/executions/* routes instead');
 }
 
-/**
- * Fetch variant analytics
- */
 export async function fetchVariantAnalytics() {
-    const res = await fetch(`${API_URL}/analytics/variants`);
-    if (!res.ok) throw new Error("Failed to fetch analytics");
-    return res.json();
+    throw new Error('DEPRECATED: Analytics moved to different system');
 }
 
-/**
- * Track analytics event
- */
-export async function trackEvent(event: {
-    run_id?: string;
-    variant_id: string;
-    event_type: string;
-    payload?: any;
-}) {
-    const res = await fetch(`${API_URL}/analytics/event`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(event),
-    });
-    if (!res.ok) throw new Error("Failed to track event");
-    return res.json();
+export async function trackEvent(_event: any) {
+    throw new Error('DEPRECATED: Analytics moved to different system');
 }
