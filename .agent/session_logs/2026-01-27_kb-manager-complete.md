@@ -104,3 +104,58 @@ Completed the KB Manager implementation with full 12-section schema matching Tom
 7. **A/B Testing UI** - Testing config management
 8. **MailWiz integration** - External trigger system
 9. **Full analytics pipeline** - Aggregation dashboards
+
+---
+
+## Validator Node Implementation (Added 5:31)
+
+### Commit: `236bcf8`
+
+**Problem**: `validate-constitution` node existed but wasn't using actual Constitution or KB guardrails - just generic AI prompts.
+
+**Solution**: Complete rewrite of validator nodes:
+
+### Two Validator Types:
+
+**1. validate-quality**
+- General quality metrics (clarity, engagement, accuracy, brand alignment)
+- Uses `pipelineData.kb.brand.voice_rules` for brand alignment scoring
+- Returns scores 0-100 for each dimension
+
+**2. validate-constitution**
+- Strict rule enforcement with pass/fail
+- Sources rules from multiple places:
+  - `pipelineData.constitution.rules` (from engine's constitution_id)
+  - `pipelineData.kb.guardrails.paused_patterns` (blocked content)
+  - `pipelineData.kb.brand.compliance` (compliance rules)
+  - `config.rules` (node-specific rules)
+- Returns detailed violation list with severity levels
+- Can BLOCK content on critical violations
+
+### Output Structure:
+```json
+{
+  "validated": true,
+  "validationType": "constitution",
+  "constitutionName": "InMarket Default",
+  "passed": false,
+  "overallScore": 65,
+  "rulesChecked": 12,
+  "rulesFailed": 2,
+  "violations": [
+    {
+      "ruleIndex": 4,
+      "rule": "BLOCKED: No competitor mentions",
+      "violation": "Content mentions 'HubSpot' competitor",
+      "severity": "major",
+      "suggestedFix": "Remove competitor reference"
+    }
+  ],
+  "blocked": false,
+  "rulesSource": {
+    "fromConstitution": 5,
+    "fromGuardrails": 3,
+    "fromCompliance": 2,
+    "fromConfig": 2
+  }
+}
