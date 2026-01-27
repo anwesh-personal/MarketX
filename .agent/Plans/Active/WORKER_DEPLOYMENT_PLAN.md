@@ -296,9 +296,9 @@ export async function POST(req: Request) {
 - [ ] Add Hobby plan ($5/month)
 - [ ] Create project "axiom-workers"
 - [ ] Add Redis service
-- [ ] Create `apps/workers/Dockerfile`
-- [ ] Create `railway.json`
-- [ ] Run migration for `dream_jobs` table
+- [x] Create `apps/workers/Dockerfile`
+- [x] Create `railway.json`
+- [x] Run migration for `dream_jobs` table
 - [ ] Deploy to Railway
 - [ ] Set environment variables
 - [ ] Verify worker logs

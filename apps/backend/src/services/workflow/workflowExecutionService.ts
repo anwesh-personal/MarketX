@@ -1193,10 +1193,13 @@ Return a JSON object with:
 
     /**
      * Execute constitution validation (strict rule enforcement)
-     * Uses:
-     * - pipelineData.constitution.rules (from engine's constitution_id)
-     * - pipelineData.kb.guardrails.paused_patterns (blocked content patterns)
-     * - pipelineData.kb.brand.compliance (compliance rules)
+     * 
+     * KB IS THE CONSTITUTION - no separate table needed!
+     * Rules come from:
+     * - KB Section 11: guardrails.paused_patterns (blocked content)
+     * - KB Section 1: brand.compliance (compliance rules)
+     * - KB Section 1: brand.voice_rules (voice constraints)
+     * - Node config.rules (workflow-specific overrides)
      */
     private async executeConstitutionValidation(
         node: WorkflowNode,
@@ -1204,36 +1207,32 @@ Return a JSON object with:
         contentString: string,
         config: Record<string, any>
     ): Promise<NodeOutput> {
-        const constitution = pipelineData.constitution;
         const kb = pipelineData.kb as any;
         const userInput = pipelineData.userInput;
 
-        // Build comprehensive rules list from all sources
+        // Build comprehensive rules list from KB (THE constitution)
         const allRules: string[] = [];
 
-        // 1. Constitution rules (from engine's linked constitution)
-        if (constitution?.rules && Array.isArray(constitution.rules)) {
-            allRules.push(...constitution.rules.map((r: any) =>
-                typeof r === 'string' ? r : r.rule || r.description || JSON.stringify(r)
-            ));
-        }
-
-        // 2. KB Guardrails - paused patterns (content that should be blocked)
+        // 1. KB Guardrails - paused patterns (content that should be blocked)
         if (kb?.guardrails?.paused_patterns && Array.isArray(kb.guardrails.paused_patterns)) {
-            const pausedPatterns = kb.guardrails.paused_patterns;
-            pausedPatterns.forEach((pattern: any) => {
+            kb.guardrails.paused_patterns.forEach((pattern: any) => {
                 const patternStr = typeof pattern === 'string' ? pattern : pattern.pattern;
                 const reason = typeof pattern === 'object' ? pattern.reason : undefined;
                 allRules.push(`BLOCKED PATTERN: Do not include "${patternStr}" - ${reason || 'blocked by guardrails'}`);
             });
         }
 
-        // 3. KB Brand compliance rules
+        // 2. KB Brand compliance rules
         if (kb?.brand?.compliance && Array.isArray(kb.brand.compliance)) {
             allRules.push(...kb.brand.compliance.map((c: string) => `COMPLIANCE: ${c}`));
         }
 
-        // 4. Config-based rules (fallback if no constitution/KB)
+        // 3. KB Brand voice rules (can be used as constraints)
+        if (kb?.brand?.voice_rules && Array.isArray(kb.brand.voice_rules)) {
+            allRules.push(...kb.brand.voice_rules.map((v: string) => `VOICE: ${v}`));
+        }
+
+        // 4. Config-based rules (node-specific overrides)
         if (config.rules && Array.isArray(config.rules)) {
             allRules.push(...config.rules);
         }
@@ -1359,13 +1358,13 @@ Return only valid JSON. Be thorough but fair.`,
             content: {
                 validated: true,
                 validationType: 'constitution',
-                constitutionName: constitution?.name || 'Default',
+                kbName: kb?.brand?.brand_name_exact || 'Default KB',
                 ...validationResult,
                 blocked: hasCriticalViolation || validationResult.recommendedAction === 'block',
                 rulesSource: {
-                    fromConstitution: constitution?.rules?.length || 0,
                     fromGuardrails: kb?.guardrails?.paused_patterns?.length || 0,
                     fromCompliance: kb?.brand?.compliance?.length || 0,
+                    fromVoiceRules: kb?.brand?.voice_rules?.length || 0,
                     fromConfig: config.rules?.length || 0,
                 },
                 initialInput: pipelineData.userInput,
@@ -2064,25 +2063,17 @@ Return your analysis in a structured format that can inform subsequent generatio
 
     /**
      * Build constitution/validation prompt (LEGACY - for process nodes)
-     * Now uses Constitution + KB guardrails when available
+     * Now uses KB guardrails/brand rules as the Constitution
      */
     private buildConstitutionValidationPrompt(pipelineData: PipelineData, config: any): string {
         const content = pipelineData.lastNodeOutput?.content;
         const input = pipelineData.userInput;
-        const constitution = pipelineData.constitution;
         const kb = pipelineData.kb as any;
 
-        // Build comprehensive rules from all sources
+        // Build comprehensive rules from KB (THE constitution)
         const allRules: string[] = [];
 
-        // 1. Constitution rules
-        if (constitution?.rules && Array.isArray(constitution.rules)) {
-            allRules.push(...constitution.rules.map((r: any) =>
-                typeof r === 'string' ? r : r.rule || r.description || JSON.stringify(r)
-            ));
-        }
-
-        // 2. KB Guardrails
+        // 1. KB Guardrails
         if (kb?.guardrails?.paused_patterns && Array.isArray(kb.guardrails.paused_patterns)) {
             kb.guardrails.paused_patterns.forEach((pattern: any) => {
                 const patternStr = typeof pattern === 'string' ? pattern : pattern.pattern;
@@ -2090,9 +2081,14 @@ Return your analysis in a structured format that can inform subsequent generatio
             });
         }
 
-        // 3. KB Brand compliance
+        // 2. KB Brand compliance
         if (kb?.brand?.compliance && Array.isArray(kb.brand.compliance)) {
             allRules.push(...kb.brand.compliance);
+        }
+
+        // 3. KB Brand voice rules
+        if (kb?.brand?.voice_rules && Array.isArray(kb.brand.voice_rules)) {
+            allRules.push(...kb.brand.voice_rules);
         }
 
         // 4. Config rules (fallback)
@@ -2121,8 +2117,8 @@ Return your analysis in a structured format that can inform subsequent generatio
 CONTENT VALIDATION & QUALITY CHECK
 ==============================================================================
 
-CONSTITUTION: ${constitution?.name || 'Default'}
-RULES SOURCE: ${allRules.length} rules from Constitution + KB Guardrails
+CONSTITUTION SOURCE: ${kb?.brand?.brand_name_exact || 'Default'} KB
+RULES ACTIVE: ${allRules.length}
 
 CONTENT TO VALIDATE:
 ------------------------------------------------------------------------------

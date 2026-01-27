@@ -23,7 +23,9 @@ import toast from 'react-hot-toast';
 interface KBListItem {
     id: string;
     name: string;
+    description?: string;
     version: number;
+    stage?: string;
     data?: KnowledgeBase;
     created_at: string;
     updated_at: string;
