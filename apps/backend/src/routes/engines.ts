@@ -253,9 +253,15 @@ router.post('/:id/deactivate', async (req: Request, res: Response) => {
 
 // ============================================================================
 // ENGINE EXECUTION ROUTES
+// ⚠️ DEPRECATED: These routes are now handled by frontend API routes + workers
+// Frontend: /api/engines/[id]/execute → queues to worker
+// Worker: apps/workers/src/processors/workflow-execution-processor.ts
+// These backend routes kept for backwards compatibility only.
+// TODO: Remove after confirming all clients migrated to frontend routes.
 // ============================================================================
 
 /**
+ * @deprecated Use /api/engines/[id]/execute in frontend instead
  * POST /api/engines/:id/execute
  * Execute an engine
  * Supports both API key auth (X-API-Key header) and direct userId
