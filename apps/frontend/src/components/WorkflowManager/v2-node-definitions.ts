@@ -34,6 +34,10 @@ export interface V2NodeDefinition {
     capabilities: string[];
     defaultConfig: Record<string, any>;
     configSchema?: ConfigField[];
+    /** Reference to Zod input schema name in workers/src/schemas/nodes/ */
+    inputSchema?: string;
+    /** Reference to Zod output schema name in workers/src/schemas/nodes/ */
+    outputSchema?: string;
 }
 
 export interface ConfigField {
@@ -133,6 +137,8 @@ const triggerNodes: V2NodeDefinition[] = [
         features: ['REST Endpoint', 'Auth Support', 'Payload Validation'],
         capabilities: ['Receives HTTP POST', 'Validates payload', 'Extracts data'],
         defaultConfig: { authType: 'none' },
+        inputSchema: 'WebhookTriggerInput',
+        outputSchema: 'WebhookTriggerOutput',
         configSchema: [
             {
                 key: 'authType', label: 'Authentication', type: 'select', options: [
@@ -153,7 +159,9 @@ const triggerNodes: V2NodeDefinition[] = [
         color: '#F59E0B',
         features: ['Cron Support', 'Timezone Aware', 'Recurring'],
         capabilities: ['Cron expressions', 'One-time scheduling', 'Timezone handling'],
-        defaultConfig: { cronExpression: '0 9 * * 1-5', timezone: 'UTC' }
+        defaultConfig: { cronExpression: '0 9 * * 1-5', timezone: 'UTC' },
+        inputSchema: 'ScheduleTriggerInput',
+        outputSchema: 'ScheduleTriggerOutput'
     },
     {
         id: 'nd-trigger-manual',
@@ -165,7 +173,9 @@ const triggerNodes: V2NodeDefinition[] = [
         color: '#F59E0B',
         features: ['Form Input', 'Variable Mapping', 'Quick Start'],
         capabilities: ['User-triggered', 'Custom input form', 'Variable injection'],
-        defaultConfig: { inputSchema: {} }
+        defaultConfig: { inputSchema: {} },
+        inputSchema: 'ManualTriggerInput',
+        outputSchema: 'ManualTriggerOutput'
     },
     {
         id: 'nd-trigger-email',
@@ -177,7 +187,9 @@ const triggerNodes: V2NodeDefinition[] = [
         color: '#F59E0B',
         features: ['Email Parsing', 'Attachment Support', 'Sender Filtering'],
         capabilities: ['Monitors inbox', 'Parses content', 'Extracts metadata'],
-        defaultConfig: { parseAttachments: true }
+        defaultConfig: { parseAttachments: true },
+        inputSchema: 'EmailTriggerInput',
+        outputSchema: 'EmailTriggerOutput'
     }
 ];
 
@@ -196,7 +208,9 @@ const resolverNodes: V2NodeDefinition[] = [
         color: '#8B5CF6',
         features: ['Context Matching', 'Segment Selection', 'Pain Point Extraction'],
         capabilities: ['Matches context to ICP', 'Returns segment details', 'Provides pain points'],
-        defaultConfig: { selectionMode: 'auto' }
+        defaultConfig: { selectionMode: 'auto' },
+        inputSchema: 'ResolveICPInput',
+        outputSchema: 'ResolveICPOutput'
     },
     {
         id: 'nd-resolve-offer',
@@ -208,7 +222,9 @@ const resolverNodes: V2NodeDefinition[] = [
         color: '#8B5CF6',
         features: ['Product Matching', 'Pricing Info', 'Feature Extraction'],
         capabilities: ['Matches context to offers', 'Returns value props', 'Includes pricing'],
-        defaultConfig: { selectionMode: 'auto' }
+        defaultConfig: { selectionMode: 'auto' },
+        inputSchema: 'ResolveOfferInput',
+        outputSchema: 'ResolveOfferOutput'
     },
     {
         id: 'nd-resolve-angle',
@@ -220,7 +236,9 @@ const resolverNodes: V2NodeDefinition[] = [
         color: '#8B5CF6',
         features: ['Narrative Selection', 'Hook Generation', 'Tone Matching'],
         capabilities: ['Picks best angle', 'Provides narrative', 'Sets emotional tone'],
-        defaultConfig: { selectionMode: 'auto' }
+        defaultConfig: { selectionMode: 'auto' },
+        inputSchema: 'ResolveAngleInput',
+        outputSchema: 'ResolveAngleOutput'
     },
     {
         id: 'nd-resolve-blueprint',
@@ -232,7 +250,9 @@ const resolverNodes: V2NodeDefinition[] = [
         color: '#8B5CF6',
         features: ['Template Selection', 'Structure Matching', 'Format Rules'],
         capabilities: ['Selects blueprint', 'Provides structure', 'Includes format rules'],
-        defaultConfig: { selectionMode: 'auto' }
+        defaultConfig: { selectionMode: 'auto' },
+        inputSchema: 'ResolveBlueprintInput',
+        outputSchema: 'ResolveBlueprintOutput'
     },
     {
         id: 'nd-resolve-cta',
@@ -244,7 +264,9 @@ const resolverNodes: V2NodeDefinition[] = [
         color: '#8B5CF6',
         features: ['CTA Matching', 'Urgency Level', 'Link Generation'],
         capabilities: ['Selects best CTA', 'Sets urgency', 'Provides action items'],
-        defaultConfig: { selectionMode: 'auto' }
+        defaultConfig: { selectionMode: 'auto' },
+        inputSchema: 'ResolveCTAInput',
+        outputSchema: 'ResolveCTAOutput'
     }
 ];
 
