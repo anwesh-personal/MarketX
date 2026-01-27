@@ -285,7 +285,9 @@ const generatorNodes: V2NodeDefinition[] = [
         color: '#10B981',
         features: ['Context-Aware', 'Personalization', 'Multi-Variant'],
         capabilities: ['Generates subject', 'Creates body', 'Adds personalization'],
-        defaultConfig: { includeSignature: true, tone: 'professional' }
+        defaultConfig: { includeSignature: true, tone: 'professional' },
+        inputSchema: 'GenerateEmailReplyInput',
+        outputSchema: 'GenerateEmailReplyOutput'
     },
     {
         id: 'nd-generate-email-flow',
@@ -297,7 +299,9 @@ const generatorNodes: V2NodeDefinition[] = [
         color: '#10B981',
         features: ['Sequence Builder', 'Timing Control', 'A/B Variants'],
         capabilities: ['Creates multi-email flow', 'Sets timing', 'Generates variants'],
-        defaultConfig: { emailCount: 5, daysBetween: 2 }
+        defaultConfig: { emailCount: 5, daysBetween: 2 },
+        inputSchema: 'GenerateEmailFlowInput',
+        outputSchema: 'GenerateEmailFlowOutput'
     },
     {
         id: 'nd-generate-page',
@@ -309,7 +313,9 @@ const generatorNodes: V2NodeDefinition[] = [
         color: '#10B981',
         features: ['SEO Optimized', 'Responsive', 'Section-Based'],
         capabilities: ['Generates full page', 'Includes SEO meta', 'Responsive structure'],
-        defaultConfig: { pageType: 'landing' }
+        defaultConfig: { pageType: 'landing' },
+        inputSchema: 'GenerateWebsitePageInput',
+        outputSchema: 'GenerateWebsitePageOutput'
     },
     {
         id: 'nd-generate-bundle',
@@ -321,7 +327,9 @@ const generatorNodes: V2NodeDefinition[] = [
         color: '#10B981',
         features: ['Multi-Page', 'Linked Assets', 'Cohesive Branding'],
         capabilities: ['Creates page set', 'Links pages', 'Consistent style'],
-        defaultConfig: { bundleType: 'funnel' }
+        defaultConfig: { bundleType: 'funnel' },
+        inputSchema: 'GenerateWebsiteBundleInput',
+        outputSchema: 'GenerateWebsiteBundleOutput'
     },
     {
         id: 'nd-generate-social',
@@ -333,7 +341,9 @@ const generatorNodes: V2NodeDefinition[] = [
         color: '#10B981',
         features: ['Multi-Platform', 'Hashtags', 'Image Prompts'],
         capabilities: ['Creates posts', 'Adds hashtags', 'Suggests images'],
-        defaultConfig: { platforms: ['linkedin', 'twitter'] }
+        defaultConfig: { platforms: ['linkedin', 'twitter'] },
+        inputSchema: 'GenerateSocialPostInput',
+        outputSchema: 'GenerateSocialPostOutput'
     }
 ];
 
@@ -352,7 +362,9 @@ const validatorNodes: V2NodeDefinition[] = [
         color: '#3B82F6',
         features: ['Grammar Check', 'Readability', 'Brand Voice'],
         capabilities: ['Checks grammar', 'Scores readability', 'Validates voice'],
-        defaultConfig: { minScore: 70 }
+        defaultConfig: { minScore: 70 },
+        inputSchema: 'QualityGateInput',
+        outputSchema: 'QualityGateOutput'
     },
     {
         id: 'nd-validate-constitution',
@@ -364,7 +376,9 @@ const validatorNodes: V2NodeDefinition[] = [
         color: '#3B82F6',
         features: ['Rule Checks', 'Forbidden Terms', 'Required Elements'],
         capabilities: ['Applies rules', 'Flags violations', 'Suggests fixes'],
-        defaultConfig: { strictMode: false }
+        defaultConfig: { strictMode: false },
+        inputSchema: 'ConstitutionCheckInput',
+        outputSchema: 'ConstitutionCheckOutput'
     },
     {
         id: 'nd-analyze-intent',
@@ -376,7 +390,9 @@ const validatorNodes: V2NodeDefinition[] = [
         color: '#3B82F6',
         features: ['Intent Classification', 'Entity Extraction', 'Confidence Score'],
         capabilities: ['Classifies intent', 'Extracts entities', 'Provides confidence'],
-        defaultConfig: { minConfidence: 0.7 }
+        defaultConfig: { minConfidence: 0.7 },
+        inputSchema: 'AnalyzeIntentInput',
+        outputSchema: 'AnalyzeIntentOutput'
     }
 ];
 
@@ -395,7 +411,9 @@ const enricherNodes: V2NodeDefinition[] = [
         color: '#EC4899',
         features: ['Live Search', 'Source Attribution', 'Summarization'],
         capabilities: ['Searches web', 'Summarizes results', 'Adds citations'],
-        defaultConfig: { maxResults: 5, summarize: true }
+        defaultConfig: { maxResults: 5, summarize: true },
+        inputSchema: 'WebSearchInput',
+        outputSchema: 'WebSearchOutput'
     },
     {
         id: 'nd-enrich-linkedin',
@@ -450,7 +468,9 @@ const transformNodes: V2NodeDefinition[] = [
         color: '#14B8A6',
         features: ['Email Gate', 'Social Gate', 'Payment Gate'],
         capabilities: ['Partially locks content', 'Tracks unlocks', 'A/B testing'],
-        defaultConfig: { unlockMethod: 'email_capture' }
+        defaultConfig: { unlockMethod: 'email_capture' },
+        inputSchema: 'ContentLockerInput',
+        outputSchema: 'ContentLockerOutput'
     },
     {
         id: 'nd-transform-format',
@@ -493,7 +513,9 @@ const outputNodes: V2NodeDefinition[] = [
         color: '#EF4444',
         features: ['HTTP POST', 'Custom Headers', 'Retry Logic'],
         capabilities: ['Sends to webhook', 'Custom formatting', 'Error handling'],
-        defaultConfig: { method: 'POST', retries: 3 }
+        defaultConfig: { method: 'POST', retries: 3 },
+        inputSchema: 'OutputWebhookInput',
+        outputSchema: 'OutputWebhookOutput'
     },
     {
         id: 'nd-output-store',
@@ -505,7 +527,9 @@ const outputNodes: V2NodeDefinition[] = [
         color: '#EF4444',
         features: ['Supabase', 'Custom Tables', 'Upsert Support'],
         capabilities: ['Stores in DB', 'Upsert logic', 'Relationship handling'],
-        defaultConfig: { table: 'generated_content' }
+        defaultConfig: { table: 'generated_content' },
+        inputSchema: 'OutputStoreInput',
+        outputSchema: 'OutputStoreOutput'
     },
     {
         id: 'nd-output-email',
@@ -517,7 +541,9 @@ const outputNodes: V2NodeDefinition[] = [
         color: '#EF4444',
         features: ['SMTP/API', 'Templates', 'Tracking'],
         capabilities: ['Sends email', 'Tracks opens', 'Handles bounces'],
-        defaultConfig: { provider: 'resend' }
+        defaultConfig: { provider: 'resend' },
+        inputSchema: 'OutputEmailInput',
+        outputSchema: 'OutputEmailOutput'
     },
     {
         id: 'nd-output-analytics',
@@ -529,7 +555,9 @@ const outputNodes: V2NodeDefinition[] = [
         color: '#EF4444',
         features: ['Custom Events', 'Properties', 'User Tracking'],
         capabilities: ['Logs events', 'Adds properties', 'User attribution'],
-        defaultConfig: { eventName: 'workflow_completed' }
+        defaultConfig: { eventName: 'workflow_completed' },
+        inputSchema: 'OutputAnalyticsInput',
+        outputSchema: 'OutputAnalyticsOutput'
     }
 ];
 
@@ -548,7 +576,9 @@ const utilityNodes: V2NodeDefinition[] = [
         color: '#6366F1',
         features: ['Boolean Logic', 'Expression Eval', 'Multi-Branch'],
         capabilities: ['Evaluates conditions', 'Supports AND/OR/NOT', 'Multiple outputs'],
-        defaultConfig: { condition: { field: '', operator: 'equals', value: '' } }
+        defaultConfig: { condition: { field: '', operator: 'equals', value: '' } },
+        inputSchema: 'IfElseConditionInput',
+        outputSchema: 'IfElseConditionOutput'
     },
     {
         id: 'nd-condition-switch',
@@ -560,7 +590,9 @@ const utilityNodes: V2NodeDefinition[] = [
         color: '#6366F1',
         features: ['Multi-Route', 'Pattern Match', 'Default Path'],
         capabilities: ['Value-based routing', 'Regex support', 'Fallback handling'],
-        defaultConfig: { field: '', cases: [], defaultPath: true }
+        defaultConfig: { field: '', cases: [], defaultPath: true },
+        inputSchema: 'SwitchConditionInput',
+        outputSchema: 'SwitchConditionOutput'
     },
     {
         id: 'nd-loop-foreach',
@@ -572,7 +604,9 @@ const utilityNodes: V2NodeDefinition[] = [
         color: '#6366F1',
         features: ['Array Iteration', 'Parallel Option', 'Index Access'],
         capabilities: ['Iterates arrays', 'Parallel/sequential', 'Break/continue'],
-        defaultConfig: { arrayField: '', itemVariable: 'item', parallelExecution: false }
+        defaultConfig: { arrayField: '', itemVariable: 'item', parallelExecution: false },
+        inputSchema: 'LoopForeachInput',
+        outputSchema: 'LoopForeachOutput'
     },
     {
         id: 'nd-merge-combine',
@@ -596,7 +630,9 @@ const utilityNodes: V2NodeDefinition[] = [
         color: '#6366F1',
         features: ['Fixed Delay', 'Dynamic Delay', 'Schedule Resume'],
         capabilities: ['Pauses execution', 'Dynamic delay', 'Resume at time'],
-        defaultConfig: { delayType: 'fixed', duration: 5000, unit: 'ms' }
+        defaultConfig: { delayType: 'fixed', duration: 5000, unit: 'ms' },
+        inputSchema: 'DelayWaitInput',
+        outputSchema: 'DelayWaitOutput'
     },
     {
         id: 'nd-human-review',
