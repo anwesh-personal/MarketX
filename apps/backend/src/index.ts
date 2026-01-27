@@ -7,7 +7,7 @@ import superadminRouter from "./routes/superadmin";
 import superadminAuthRouter from "./routes/auth-superadmin";
 import enginesRouter from "./routes/engines";
 import apiKeysRouter from "./routes/apiKeys";
-import { executionService, initializeEngineService, apiKeyService } from "./services";
+import { executionService, initializeEngineService, apiKeyService, aiService, workflowExecutionService } from "./services";
 import { initializeDreamState, getDreamState } from "./core/dreamState";
 import { initializeSelfHealing, getSelfHealing } from "./core/selfHealing";
 import { initializeFineTuning, getFineTuning } from "./core/fineTuning";
@@ -37,6 +37,12 @@ async function initializeServices() {
         initializeEngineService(dbPool);
         await executionService.initialize(dbPool);
         apiKeyService.initialize(dbPool);
+
+        // AI and Workflow services (critical for workflow execution)
+        await aiService.initialize(dbPool);
+        workflowExecutionService.initialize(dbPool);
+        console.log("🤖 AI Service initialized");
+        console.log("⚙️ Workflow Execution Service initialized");
 
         // Brain system - Dream State (background optimization)
         const dreamState = initializeDreamState(dbPool);

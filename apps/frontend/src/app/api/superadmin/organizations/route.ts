@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
             orgs.map(async (org) => {
                 const [kbs, runs] = await Promise.all([
                     supabase.from('knowledge_bases').select('*', { count: 'exact', head: true }).eq('org_id', org.id),
-                    supabase.from('runs').select('*', { count: 'exact', head: true }).eq('org_id', org.id),
+                    supabase.from('engine_run_logs').select('*', { count: 'exact', head: true }).eq('org_id', org.id),
                 ]);
 
                 return {
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, slug, plan = 'free', owner_email } = body;
+        const { name, slug, license_tier = 'hobby', owner_email } = body;
 
         // Validate required fields
         if (!name || !slug) {
@@ -65,15 +65,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Slug already exists' }, { status: 400 });
         }
 
-        // Set quotas based on plan
+        // Set quotas based on license tier
         const quotas: Record<string, any> = {
-            free: { max_kbs: 1, max_runs_per_month: 10, max_team_members: 3 },
-            starter: { max_kbs: 5, max_runs_per_month: 100, max_team_members: 5 },
+            hobby: { max_kbs: 1, max_runs_per_month: 10, max_team_members: 3 },
             pro: { max_kbs: 20, max_runs_per_month: 1000, max_team_members: 20 },
             enterprise: { max_kbs: 100, max_runs_per_month: 10000, max_team_members: 100 },
         };
 
-        const orgQuotas = quotas[plan] || quotas.free;
+        const orgQuotas = quotas[license_tier] || quotas.hobby;
 
         // Create organization
         const { data: org, error: orgError } = await supabase
@@ -81,8 +80,8 @@ export async function POST(request: NextRequest) {
             .insert({
                 name,
                 slug,
-                plan,
-                status: 'active',
+                license_tier,
+                is_active: true,
                 ...orgQuotas,
             })
             .select()
@@ -171,7 +170,8 @@ export async function POST(request: NextRequest) {
         await supabase.from('license_transactions').insert({
             org_id: org.id,
             transaction_type: 'created',
-            to_plan: plan,
+            from_tier: null,
+            to_tier: license_tier,
             quota_changes: orgQuotas,
         });
 

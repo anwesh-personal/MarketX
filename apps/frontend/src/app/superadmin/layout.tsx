@@ -111,18 +111,25 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     };
 
     const navigation = [
-        { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard },
-        { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow },
-        { name: 'Organizations', href: '/superadmin/organizations', icon: Building2 },
-        { name: 'Users', href: '/superadmin/users', icon: Users },
-        { name: 'Engine Instances', href: '/superadmin/engines', icon: Cpu },
-        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot },
-        { name: 'AI Management', href: '/superadmin/ai-management', icon: Settings },
-        { name: 'Brain Management', href: '/superadmin/brains', icon: Brain },
-        { name: 'Background Jobs', href: '/superadmin/redis', icon: Database },
-        { name: 'Licenses', href: '/superadmin/licenses', icon: FileText },
-        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3 },
-        { name: 'Settings', href: '/superadmin/settings', icon: Settings },
+        // Platform
+        { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, group: 'Platform' },
+        { name: 'Organizations', href: '/superadmin/organizations', icon: Building2, group: 'Platform' },
+        { name: 'Users', href: '/superadmin/users', icon: Users, group: 'Platform' },
+
+        // Workflows & Engines
+        { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow, group: 'Engines' },
+        { name: 'Engine Instances', href: '/superadmin/engines', icon: Cpu, group: 'Engines' },
+
+        // AI & Models
+        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot, group: 'AI & Models' },
+        { name: 'AI Models', href: '/superadmin/ai-management', icon: Cpu, group: 'AI & Models' },
+        { name: 'Brain Management', href: '/superadmin/brains', icon: Brain, group: 'AI & Models' },
+
+        // System
+        { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'System' },
+        { name: 'Licenses', href: '/superadmin/licenses', icon: FileText, group: 'System' },
+        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'System' },
+        { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'System' },
     ];
 
     return (
@@ -257,69 +264,80 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                     `}
                 >
                     {/* Navigation */}
-                    <nav className="flex-1 p-lg space-y-2 overflow-y-auto">
-                        {navigation.map((item) => {
-                            const Icon = item.icon;
-                            const isActive = pathname === item.href;
+                    <nav className="flex-1 p-md space-y-1 overflow-y-auto">
+                        {(() => {
+                            const groups = ['Platform', 'Engines', 'AI & Models', 'System'];
+                            return groups.map((group) => {
+                                const items = navigation.filter(item => item.group === group);
+                                if (items.length === 0) return null;
 
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`
-                                        nav-item
-                                        group relative
-                                        flex items-center gap-md
-                                        px-md py-sm
-                                        rounded-[var(--radius-lg)]
-                                        font-medium text-sm
-                                        transition-all duration-[var(--duration-fast)]
-                                        ${isActive
-                                            ? 'bg-primary/10 text-primary shadow-[var(--shadow-sm)]'
-                                            : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
-                                        }
-                                        active:scale-[0.98]
-                                    `}
-                                >
-                                    {/* Active Indicator */}
-                                    {isActive && (
-                                        <div className="
-                                            absolute left-0 top-1/2 -translate-y-1/2
-                                            w-1 h-8
-                                            bg-primary rounded-r-full
-                                            shadow-[0_0_8px_var(--color-primary)]
-                                        " />
-                                    )}
+                                return (
+                                    <div key={group} className="mb-md">
+                                        <p className="px-md mb-xs text-xs font-semibold text-textTertiary uppercase tracking-wider">
+                                            {group}
+                                        </p>
+                                        {items.map((item) => {
+                                            const Icon = item.icon;
+                                            const isActive = pathname === item.href;
 
-                                    {/* Icon */}
-                                    <div className={`
-                                        flex items-center justify-center
-                                        w-9 h-9
-                                        rounded-[var(--radius-md)]
-                                        transition-all duration-[var(--duration-fast)]
-                                        ${isActive
-                                            ? 'bg-primary/20 text-primary'
-                                            : 'bg-transparent group-hover:bg-surfaceHover group-hover:scale-110'
-                                        }
-                                    `}>
-                                        <Icon className="w-5 h-5" />
+                                            return (
+                                                <Link
+                                                    key={item.name}
+                                                    href={item.href}
+                                                    className={`
+                                                        nav-item
+                                                        group relative
+                                                        flex items-center gap-sm
+                                                        px-sm py-xs
+                                                        rounded-[var(--radius-md)]
+                                                        font-medium text-sm
+                                                        transition-all duration-[var(--duration-fast)]
+                                                        ${isActive
+                                                            ? 'bg-primary/10 text-primary'
+                                                            : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
+                                                        }
+                                                        active:scale-[0.98]
+                                                    `}
+                                                >
+                                                    {/* Active Indicator */}
+                                                    {isActive && (
+                                                        <div className="
+                                                            absolute left-0 top-1/2 -translate-y-1/2
+                                                            w-0.5 h-5
+                                                            bg-primary rounded-r-full
+                                                        " />
+                                                    )}
+
+                                                    {/* Icon */}
+                                                    <div className={`
+                                                        flex items-center justify-center
+                                                        w-7 h-7
+                                                        rounded-[var(--radius-sm)]
+                                                        transition-all duration-[var(--duration-fast)]
+                                                        ${isActive
+                                                            ? 'bg-primary/20 text-primary'
+                                                            : 'bg-transparent'
+                                                        }
+                                                    `}>
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+
+                                                    {/* Label */}
+                                                    <span className="flex-1 text-sm">{item.name}</span>
+
+                                                    {/* Chevron */}
+                                                    <ChevronRight className={`
+                                                        w-3 h-3
+                                                        transition-opacity
+                                                        ${isActive ? 'opacity-60' : 'opacity-0 group-hover:opacity-30'}
+                                                    `} />
+                                                </Link>
+                                            );
+                                        })}
                                     </div>
-
-                                    {/* Label */}
-                                    <span className="flex-1">{item.name}</span>
-
-                                    {/* Chevron - Shows on hover or active */}
-                                    <ChevronRight className={`
-                                        w-4 h-4
-                                        transition-all duration-[var(--duration-fast)]
-                                        ${isActive
-                                            ? 'opacity-100 translate-x-0'
-                                            : 'opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0'
-                                        }
-                                    `} />
-                                </Link>
-                            );
-                        })}
+                                );
+                            });
+                        })()}
                     </nav>
 
                     {/* Sidebar Footer - Witty Signature */}

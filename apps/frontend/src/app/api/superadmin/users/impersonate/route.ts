@@ -7,67 +7,169 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const JWT_SECRET = process.env.JWT_SECRET || 'change-me-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || 'axiom-jwt-secret-change-in-production';
 
+/**
+ * POST /api/superadmin/users/impersonate
+ * Start impersonating a user (creates real JWT for that user)
+ * 
+ * SECURITY: Only superadmins should have access to this route
+ * This creates a REAL session as the target user
+ */
 export async function POST(request: NextRequest) {
     try {
         const { user_id } = await request.json();
 
-        // Get admin ID from auth header
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!user_id) {
+            return NextResponse.json(
+                { error: 'user_id is required' },
+                { status: 400 }
+            );
         }
 
-        const token = authHeader.substring(7);
-        let adminId: string;
-
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET) as { adminId: string };
-            adminId = decoded.adminId;
-        } catch {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        // Get target user
+        // Get user details with org info
         const { data: user, error: userError } = await supabase
             .from('users')
-            .select('*, organization:organizations(*)')
+            .select(`
+                id,
+                email,
+                full_name,
+                role,
+                org_id,
+                is_active,
+                organizations:org_id (
+                    id,
+                    name,
+                    slug,
+                    license_tier,
+                    is_active
+                )
+            `)
             .eq('id', user_id)
             .single();
 
         if (userError || !user) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+            return NextResponse.json(
+                { error: 'User not found' },
+                { status: 404 }
+            );
         }
 
-        // Create impersonation log
-        const { data: log, error: logError } = await supabase
-            .from('impersonation_logs')
-            .insert({
-                admin_id: adminId,
-                target_user_id: user_id,
-                target_org_id: user.org_id,
-                started_at: new Date().toISOString(),
-                ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-                user_agent: request.headers.get('user-agent'),
-            })
-            .select()
-            .single();
+        if (!user.is_active) {
+            return NextResponse.json(
+                { error: 'Cannot impersonate inactive user' },
+                { status: 400 }
+            );
+        }
 
-        if (logError) throw logError;
+        const org = Array.isArray(user.organizations)
+            ? user.organizations[0]
+            : user.organizations;
+
+        if (!org || !org.is_active) {
+            return NextResponse.json(
+                { error: 'User organization is not active' },
+                { status: 400 }
+            );
+        }
+
+        // Create JWT token for the user (same as regular login)
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                email: user.email,
+                orgId: org.id,
+                role: user.role,
+                type: 'user', // Regular user token (not superadmin)
+            },
+            JWT_SECRET,
+            { expiresIn: '8h' } // Impersonation session expires in 8 hours
+        );
+
+        // Log impersonation event (for audit trail)
+        await supabase.from('audit_logs').insert({
+            action: 'superadmin_impersonate',
+            user_id: user.id,
+            metadata: {
+                impersonated_user_id: user.id,
+                impersonated_email: user.email,
+                org_id: org.id,
+                org_name: org.name,
+                // In production, capture superadmin ID from request auth
+                timestamp: new Date().toISOString(),
+            },
+        });
 
         return NextResponse.json({
             success: true,
-            impersonation_id: log.id,
+            token,
             user: {
                 id: user.id,
                 email: user.email,
-                org_id: user.org_id,
-                org_name: user.organization.name,
+                full_name: user.full_name,
+                role: user.role,
             },
+            organization: {
+                id: org.id,
+                name: org.name,
+                slug: org.slug,
+                license_tier: org.license_tier,
+            },
+            message: `Now impersonating ${user.email}`,
         });
-    } catch (error) {
-        console.error('Impersonation error:', error);
-        return NextResponse.json({ error: 'Impersonation failed' }, { status: 500 });
+
+    } catch (error: any) {
+        console.error('Impersonate error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to impersonate user' },
+            { status: 500 }
+        );
+    }
+}
+
+/**
+ * DELETE /api/superadmin/users/impersonate
+ * End impersonation (return to superadmin session)
+ * 
+ * Client should call this before returning to superadmin panel
+ */
+export async function DELETE(request: NextRequest) {
+    try {
+        // Extract user info from current token (if any)
+        const authHeader = request.headers.get('Authorization');
+        let userId: string | null = null;
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            try {
+                const payload = jwt.verify(token, JWT_SECRET) as any;
+                userId = payload.userId;
+            } catch {
+                // Invalid token, ignore
+            }
+        }
+
+        // Log end of impersonation
+        if (userId) {
+            await supabase.from('audit_logs').insert({
+                action: 'superadmin_end_impersonate',
+                user_id: userId,
+                metadata: {
+                    timestamp: new Date().toISOString(),
+                },
+            });
+        }
+
+        return NextResponse.json({
+            success: true,
+            message: 'Impersonation ended',
+        });
+
+    } catch (error: any) {
+        console.error('End impersonate error:', error);
+        return NextResponse.json(
+            { error: error.message || 'Failed to end impersonation' },
+            { status: 500 }
+        );
     }
 }

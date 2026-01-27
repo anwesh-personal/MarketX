@@ -28,48 +28,109 @@ interface ValidationResult {
     message?: string
 }
 
+// Provider Logo Components - Theme Aware
+const OpenAILogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.8956zm16.0993 3.8558L12.6 8.3829l2.02-1.1638a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.1408 1.6407 4.4708 4.4708 0 0 1 .5765 3.0089zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.5056-2.6067-1.4998z" />
+    </svg>
+)
+
+const AnthropicLogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <path d="M17.304 3.541h-3.672l6.696 16.918h3.672zM6.696 3.541L0 20.459h3.744l1.308-3.432h6.624l1.296 3.432h3.744L9.996 3.541zm.768 10.614l2.04-5.352 2.04 5.352z" />
+    </svg>
+)
+
+const GoogleLogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+)
+
+const MistralLogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <rect x="0" y="0" width="4.5" height="4.5" />
+        <rect x="9.75" y="0" width="4.5" height="4.5" />
+        <rect x="19.5" y="0" width="4.5" height="4.5" />
+        <rect x="0" y="4.875" width="4.5" height="4.5" />
+        <rect x="4.875" y="4.875" width="4.5" height="4.5" fill="#F7D046" />
+        <rect x="9.75" y="4.875" width="4.5" height="4.5" />
+        <rect x="19.5" y="4.875" width="4.5" height="4.5" />
+        <rect x="0" y="9.75" width="4.5" height="4.5" />
+        <rect x="9.75" y="9.75" width="4.5" height="4.5" />
+        <rect x="14.625" y="9.75" width="4.5" height="4.5" fill="#F7D046" />
+        <rect x="9.75" y="14.625" width="4.5" height="4.5" />
+        <rect x="0" y="14.625" width="4.5" height="4.5" />
+        <rect x="4.875" y="14.625" width="4.5" height="4.5" fill="#F2A73B" />
+        <rect x="0" y="19.5" width="4.5" height="4.5" />
+        <rect x="9.75" y="19.5" width="4.5" height="4.5" />
+        <rect x="19.5" y="19.5" width="4.5" height="4.5" />
+    </svg>
+)
+
+const PerplexityLogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <path d="M12 0L2 6v12l10 6 10-6V6L12 0zm0 2.31l7.36 4.42L12 11.15 4.64 6.73 12 2.31zM3.5 7.96l7.5 4.5v8.58l-7.5-4.5V7.96zm8.5 13.08v-8.58l7.5-4.5v8.58l-7.5 4.5z" />
+    </svg>
+)
+
+const XAILogo = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+        <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+    </svg>
+)
+
 const PROVIDERS = [
     {
         id: 'openai',
         name: 'OpenAI',
-        gradient: 'from-emerald-500 via-green-500 to-teal-500',
-        bgGradient: 'from-emerald-500/10 to-green-500/5',
-        icon: '🤖'
+        Logo: OpenAILogo,
+        borderColor: 'border-emerald-500/40',
+        textColor: 'text-emerald-400',
+        bgColor: 'bg-emerald-500/10',
     },
     {
         id: 'anthropic',
         name: 'Anthropic Claude',
-        gradient: 'from-orange-500 via-red-500 to-pink-500',
-        bgGradient: 'from-orange-500/10 to-red-500/5',
-        icon: '🧠'
+        Logo: AnthropicLogo,
+        borderColor: 'border-orange-500/40',
+        textColor: 'text-orange-400',
+        bgColor: 'bg-orange-500/10',
     },
     {
         id: 'google',
         name: 'Google Gemini',
-        gradient: 'from-blue-500 via-cyan-500 to-sky-500',
-        bgGradient: 'from-blue-500/10 to-cyan-500/5',
-        icon: '✨'
+        Logo: GoogleLogo,
+        borderColor: 'border-blue-500/40',
+        textColor: 'text-blue-400',
+        bgColor: 'bg-blue-500/10',
     },
     {
         id: 'mistral',
         name: 'Mistral AI',
-        gradient: 'from-purple-500 via-violet-500 to-indigo-500',
-        bgGradient: 'from-purple-500/10 to-violet-500/5',
-        icon: '⚡'
+        Logo: MistralLogo,
+        borderColor: 'border-purple-500/40',
+        textColor: 'text-purple-400',
+        bgColor: 'bg-purple-500/10',
     },
     {
         id: 'perplexity',
         name: 'Perplexity',
-        gradient: 'from-cyan-500 via-blue-500 to-indigo-500',
-        bgGradient: 'from-cyan-500/10 to-blue-500/5',
-        icon: '🔍'
+        Logo: PerplexityLogo,
+        borderColor: 'border-cyan-500/40',
+        textColor: 'text-cyan-400',
+        bgColor: 'bg-cyan-500/10',
     },
     {
         id: 'xai',
         name: 'X.AI Grok',
-        gradient: 'from-gray-700 via-gray-600 to-slate-500',
-        bgGradient: 'from-gray-500/10 to-slate-500/5',
-        icon: '🚀'
+        Logo: XAILogo,
+        borderColor: 'border-gray-400/40',
+        textColor: 'text-gray-300',
+        bgColor: 'bg-gray-500/10',
     },
 ]
 
@@ -145,21 +206,41 @@ export default function AIProvidersPage() {
 
             if (!res.ok) throw new Error('Failed to save key')
 
-            // Step 3: Show success with discovered models
-            if (testResult.models && testResult.models.length > 0) {
-                toast.success(`✅ Validated! Discovered ${testResult.models.length} models`)
-                setShowModels(true)
-            } else {
-                toast.success('✅ API key validated and saved')
+            const savedProvider = await res.json()
+            toast.success('✅ API key validated and saved')
+
+            // Step 3: AUTO-DISCOVER MODELS
+            // This is the critical step - discover whitelist models, test each, upsert to DB
+            toast.loading('Discovering and testing models...', { id: 'discover' })
+
+            try {
+                const discoverRes = await fetch('/api/superadmin/ai-models/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider_id: savedProvider.provider?.id || savedProvider.id,
+                    }),
+                })
+
+                const discoverResult = await discoverRes.json()
+
+                if (discoverResult.success) {
+                    toast.success(
+                        `✅ Discovered ${discoverResult.models_discovered} models (${discoverResult.models_active} active)`,
+                        { id: 'discover' }
+                    )
+                } else {
+                    toast.error(`Discovery failed: ${discoverResult.error}`, { id: 'discover' })
+                }
+            } catch (discoverError: any) {
+                toast.error(`Discovery error: ${discoverError.message}`, { id: 'discover' })
             }
 
-            // Auto-close after showing models
-            setTimeout(() => {
-                setNewKey({ name: '', api_key: '', description: '' })
-                setAddingTo(null)
-                setValidationResult(null)
-                setShowModels(false)
-            }, 5000)
+            // Clean up form
+            setNewKey({ name: '', api_key: '', description: '' })
+            setAddingTo(null)
+            setValidationResult(null)
+            setShowModels(false)
 
             loadProviders()
         } catch (error: any) {
@@ -311,9 +392,6 @@ function ProviderCard({
     newKey,
     setNewKey,
     isValidating,
-    validationResult,
-    showModels,
-    setShowModels,
     onAddKey,
     onToggleActive,
     onDelete,
@@ -324,308 +402,169 @@ function ProviderCard({
     const activeKeys = provider.keys.filter((k: AIProvider) => k.is_active).length
     const totalKeys = provider.keys.length
     const isAdding = addingTo === provider.id
+    const Logo = provider.Logo
 
     return (
-        <motion.div
-            className="rounded-2xl border border-border/40 bg-background overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-            whileHover={{ y: -2 }}
-            layout
-        >
-            {/* Gradient Header */}
-            <div className={`relative p-6 bg-gradient-to-br ${provider.bgGradient} border-b border-border/40 overflow-hidden`}>
-                <div className="absolute inset-0 opacity-10">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${provider.gradient}`} />
-                </div>
-
-                <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                            <motion.div
-                                className="text-3xl"
-                                whileHover={{ scale: 1.2, rotate: 10 }}
-                                transition={{ type: "spring", stiffness: 300 }}
-                            >
-                                {provider.icon}
-                            </motion.div>
-                            <div>
-                                <h3 className="text-xl font-bold">{provider.name}</h3>
-                                <div className="flex items-center gap-3 text-sm mt-1">
-                                    <span className="flex items-center gap-1">
+        <div className={`rounded-xl border ${provider.borderColor} bg-surface/50 backdrop-blur-sm overflow-hidden shadow-lg transition-all hover:shadow-xl`}>
+            {/* Header with Logo */}
+            <div className={`px-4 py-3 ${provider.bgColor} border-b ${provider.borderColor}`}>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${provider.bgColor} ${provider.textColor}`}>
+                            <Logo />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-semibold text-textPrimary">{provider.name}</h3>
+                            <div className="flex items-center gap-2 text-xs text-textSecondary mt-0.5">
+                                {activeKeys > 0 ? (
+                                    <span className={`flex items-center gap-1 ${provider.textColor}`}>
                                         <CheckCircle className="w-3 h-3" />
-                                        <strong>{activeKeys}</strong> active
+                                        {activeKeys} active
                                     </span>
-                                    <span className="text-muted-foreground">•</span>
-                                    <span><strong>{totalKeys}</strong> total</span>
-                                </div>
+                                ) : (
+                                    <span className="text-textTertiary">No keys configured</span>
+                                )}
+                                {totalKeys > 0 && <span className="text-textTertiary">• {totalKeys} total</span>}
                             </div>
                         </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setAddingTo(isAdding ? null : provider.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all shadow-sm ${isAdding
-                                ? 'bg-destructive/10 text-destructive border border-destructive/40'
-                                : 'bg-background/90 hover:bg-background border border-border/60'
-                                }`}
-                        >
-                            {isAdding ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                            {isAdding ? 'Cancel' : 'Add Key'}
-                        </motion.button>
                     </div>
+
+                    <button
+                        onClick={() => setAddingTo(isAdding ? null : provider.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isAdding
+                            ? 'bg-error/10 text-error border border-error/40 hover:bg-error/20'
+                            : `${provider.bgColor} ${provider.textColor} border ${provider.borderColor} hover:opacity-80`
+                            }`}
+                    >
+                        {isAdding ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        {isAdding ? 'Cancel' : 'Add Key'}
+                    </button>
                 </div>
             </div>
 
-            {/* Add Key Form with Animation */}
+            {/* Add Key Form */}
             <AnimatePresence>
                 {isAdding && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.2 }}
                         className="overflow-hidden border-b border-border/40"
                     >
-                        <div className="p-6 bg-muted/20 space-y-4">
-                            <motion.input
-                                initial={{ x: -20, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.1 }}
+                        <div className="p-4 bg-muted/20 space-y-3">
+                            <input
                                 type="text"
-                                placeholder="Key name (e.g., 'Production Key 1')"
+                                placeholder="Key name (e.g., 'Production')"
                                 value={newKey.name}
                                 onChange={(e) => setNewKey({ ...newKey, name: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:ring-2 focus:ring-primary/50"
                             />
-
-                            <motion.input
-                                initial={{ x: -20, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.2 }}
+                            <input
                                 type="password"
                                 placeholder="API Key"
                                 value={newKey.api_key}
                                 onChange={(e) => setNewKey({ ...newKey, api_key: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-border bg-background font-mono text-sm focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-3 py-2 rounded-lg border border-border bg-background font-mono text-xs focus:ring-2 focus:ring-primary/50"
                             />
-
-                            <motion.input
-                                initial={{ x: -20, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                transition={{ delay: 0.3 }}
-                                type="text"
-                                placeholder="Description (optional)"
-                                value={newKey.description}
-                                onChange={(e) => setNewKey({ ...newKey, description: e.target.value })}
-                                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary/50 transition-all"
-                            />
-
-                            {/* Validation Result */}
-                            <AnimatePresence>
-                                {validationResult && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        className={`p-4 rounded-xl border ${validationResult.valid
-                                            ? 'bg-success/10 border-success/40 text-success'
-                                            : 'bg-destructive/10 border-destructive/40 text-destructive'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            {validationResult.valid ? (
-                                                <CheckCircle className="w-5 h-5" />
-                                            ) : (
-                                                <AlertTriangle className="w-5 h-5" />
-                                            )}
-                                            <span className="font-semibold">
-                                                {validationResult.valid ? 'Success!' : 'Validation Failed'}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm">{validationResult.message || validationResult.error}</p>
-
-                                        {/* Discovered Models */}
-                                        {validationResult.valid && validationResult.models && showModels && (
-                                            <motion.div
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                className="mt-3 pt-3 border-t border-success/20"
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-sm font-semibold flex items-center gap-2">
-                                                        <Zap className="w-4 h-4" />
-                                                        Discovered Models ({validationResult.models.length})
-                                                    </span>
-                                                    <button
-                                                        onClick={() => setShowModels(!showModels)}
-                                                        className="text-xs hover:underline"
-                                                    >
-                                                        {showModels ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                                    </button>
-                                                </div>
-                                                <div className="grid grid-cols-1 gap-1 max-h-32 overflow-y-auto">
-                                                    {validationResult.models.slice(0, 5).map((model: any, i: number) => (
-                                                        <motion.div
-                                                            key={model.id}
-                                                            initial={{ opacity: 0, x: -10 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            transition={{ delay: i * 0.05 }}
-                                                            className="text-xs font-mono px-2 py-1 rounded bg-success/5"
-                                                        >
-                                                            {model.id}
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </motion.div>
+                            <button
+                                onClick={() => onAddKey(provider.id)}
+                                disabled={isValidating}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 text-sm disabled:opacity-50"
+                            >
+                                {isValidating ? (
+                                    <>
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Validating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Save className="w-3 h-3" />
+                                        Save Key
+                                    </>
                                 )}
-                            </AnimatePresence>
-
-                            <div className="flex gap-3">
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => onAddKey(provider.id)}
-                                    disabled={isValidating}
-                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md disabled:opacity-50"
-                                >
-                                    {isValidating ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Validating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="w-4 h-4" />
-                                            Validate & Save
-                                        </>
-                                    )}
-                                </motion.button>
-                            </div>
+                            </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Keys List */}
-            <div className="p-6">
+            {/* Keys List - Compact */}
+            <div className="p-3">
                 {provider.keys.length === 0 ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center py-12 text-muted-foreground"
-                    >
-                        <motion.div
-                            animate={{ y: [0, -10, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                        >
-                            <Key className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                        </motion.div>
-                        <p className="font-medium">No API keys configured</p>
-                        <p className="text-sm mt-1">Click "Add Key" to get started</p>
-                    </motion.div>
+                    <div className="text-center py-6 text-muted-foreground">
+                        <Key className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm">No API keys configured</p>
+                        <p className="text-xs mt-0.5">Click "Add Key" to get started</p>
+                    </div>
                 ) : (
-                    <div className="space-y-3">
-                        <AnimatePresence>
-                            {provider.keys.map((key: AIProvider, index: number) => (
-                                <motion.div
-                                    key={key.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 20 }}
-                                    transition={{ delay: index * 0.05 }}
-                                    whileHover={{ scale: 1.01 }}
-                                    className={`p-4 rounded-xl border transition-all ${key.is_active
-                                        ? 'border-success/40 bg-success/5 shadow-sm'
-                                        : 'border-border/40 bg-muted/10'
-                                        }`}
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-semibold">{key.name}</h4>
-                                                <motion.div
-                                                    initial={{ scale: 0 }}
-                                                    animate={{ scale: 1 }}
-                                                    transition={{ type: "spring", stiffness: 500 }}
-                                                >
-                                                    {key.is_active ? (
-                                                        <CheckCircle className="w-4 h-4 text-success" />
-                                                    ) : (
-                                                        <AlertTriangle className="w-4 h-4 text-warning" />
-                                                    )}
-                                                </motion.div>
-                                            </div>
-                                            {key.description && (
-                                                <p className="text-sm text-muted-foreground">{key.description}</p>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-1">
-                                            <motion.button
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={() => onToggleActive(key.id, key.is_active)}
-                                                className="p-2 rounded-lg hover:bg-muted transition-colors"
-                                            >
-                                                {key.is_active ? (
-                                                    <ToggleRight className="w-5 h-5 text-success" />
-                                                ) : (
-                                                    <ToggleLeft className="w-5 h-5 text-muted-foreground" />
-                                                )}
-                                            </motion.button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.1, rotate: 5 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={() => onDelete(key.id)}
-                                                className="p-2 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </motion.button>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <code className="flex-1 px-3 py-2 rounded-lg bg-background border border-border font-mono text-xs">
-                                            {revealedKeys.has(key.id) ? key.api_key : maskKey(key.api_key)}
-                                        </code>
-                                        <motion.button
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                            onClick={() => toggleKeyVisibility(key.id)}
-                                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                                        >
-                                            {revealedKeys.has(key.id) ? (
-                                                <EyeOff className="w-4 h-4" />
-                                            ) : (
-                                                <Eye className="w-4 h-4" />
-                                            )}
-                                        </motion.button>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                            <Zap className="w-3 h-3" />
-                                            {key.usage_count} uses
-                                        </span>
-                                        {key.failures > 0 && (
-                                            <motion.span
-                                                initial={{ scale: 0 }}
-                                                animate={{ scale: 1 }}
-                                                className="flex items-center gap-1 text-destructive"
-                                            >
-                                                <AlertTriangle className="w-3 h-3" />
-                                                {key.failures} failures
-                                            </motion.span>
+                    <div className="space-y-2">
+                        {provider.keys.map((key: AIProvider) => (
+                            <div
+                                key={key.id}
+                                className={`p-3 rounded-lg border transition-all ${key.is_active
+                                    ? 'border-success/40 bg-success/5'
+                                    : 'border-border/40 bg-muted/10'
+                                    }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                        <h4 className="text-sm font-medium truncate">{key.name}</h4>
+                                        {key.is_active ? (
+                                            <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
+                                        ) : (
+                                            <AlertTriangle className="w-3 h-3 text-warning flex-shrink-0" />
                                         )}
                                     </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => onToggleActive(key.id, key.is_active)}
+                                            className="p-1.5 rounded hover:bg-muted transition-colors"
+                                        >
+                                            {key.is_active ? (
+                                                <ToggleRight className="w-4 h-4 text-success" />
+                                            ) : (
+                                                <ToggleLeft className="w-4 h-4 text-muted-foreground" />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => onDelete(key.id)}
+                                            className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 mt-2">
+                                    <code className="flex-1 px-2 py-1 rounded bg-background border border-border font-mono text-xs truncate">
+                                        {revealedKeys.has(key.id) ? key.api_key : maskKey(key.api_key)}
+                                    </code>
+                                    <button
+                                        onClick={() => toggleKeyVisibility(key.id)}
+                                        className="p-1.5 rounded hover:bg-muted transition-colors"
+                                    >
+                                        {revealedKeys.has(key.id) ? (
+                                            <EyeOff className="w-3 h-3" />
+                                        ) : (
+                                            <Eye className="w-3 h-3" />
+                                        )}
+                                    </button>
+                                </div>
+
+                                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                        <Zap className="w-3 h-3" />
+                                        {key.usage_count} uses
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
-        </motion.div>
+        </div>
     )
 }
+

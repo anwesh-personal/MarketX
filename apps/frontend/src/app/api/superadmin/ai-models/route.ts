@@ -152,11 +152,29 @@ export async function PATCH(request: NextRequest) {
     }
 }
 
-// DELETE - Delete AI model
+// DELETE - Delete AI model or cleanup untested models
 export async function DELETE(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
+        const cleanupUntested = searchParams.get('cleanup_untested');
+
+        // Special mode: cleanup all untested seed models
+        if (cleanupUntested === 'true') {
+            const { data, error } = await supabase
+                .from('ai_model_metadata')
+                .delete()
+                .is('test_passed', null)
+                .select();
+
+            if (error) throw error;
+
+            return NextResponse.json({
+                success: true,
+                deleted: data?.length || 0,
+                message: `Deleted ${data?.length || 0} untested seed models`
+            });
+        }
 
         if (!id) {
             return NextResponse.json(
