@@ -209,30 +209,6 @@ class WorkflowExecutionService {
     }
 
     /**
-     * Helper: Execute raw SQL query (pg-like interface for Supabase)
-     * Uses Supabase RPC to execute raw SQL for complex queries
-     */
-    private async rawQuery(sql: string, params: any[] = []): Promise<{ rows: any[]; rowCount: number }> {
-        if (!this.supabase) {
-            throw new Error('Supabase client not initialized');
-        }
-
-        // Use Supabase RPC for raw SQL execution
-        // Note: This requires a database function to be created
-        const { data, error } = await this.supabase.rpc('exec_sql', {
-            query: sql,
-            params
-        });
-
-        if (error) throw error;
-
-        return {
-            rows: data || [],
-            rowCount: data?.length || 0
-        };
-    }
-
-    /**
      * Load engine configuration, Knowledge Base, and Constitution
      * 
      * @param engineId - UUID of the engine instance
@@ -2601,27 +2577,29 @@ Make the content genuinely valuable, not just fluff.`;
                     };
 
                     if (this.supabase) {
-                        const result = await this.rawQuery(
-                            `INSERT INTO ${tableName} (execution_id, user_id, org_id, content, content_type, metadata, created_at)
-                             VALUES ($1, $2, $3, $4, $5, $6, $7)
-                             RETURNING id`,
-                            [
-                                storeData.execution_id,
-                                storeData.user_id,
-                                storeData.org_id,
-                                storeData.content,
-                                storeData.content_type,
-                                JSON.stringify(storeData.metadata),
-                                storeData.created_at,
-                            ]
-                        );
+                        const { data: inserted, error } = await this.supabase
+                            .from(tableName)
+                            .insert({
+                                execution_id: storeData.execution_id,
+                                user_id: storeData.user_id,
+                                org_id: storeData.org_id,
+                                content: storeData.content,
+                                content_type: storeData.content_type,
+                                metadata: storeData.metadata,
+                                created_at: storeData.created_at,
+                            })
+                            .select('id')
+                            .single();
+
+                        if (error) throw error;
+
                         actionResult = {
                             action: 'stored',
                             table: tableName,
-                            recordId: result.rows[0]?.id,
+                            recordId: inserted?.id,
                             success: true,
                         };
-                        console.log(`💾 Stored output to ${tableName}, ID: ${result.rows[0]?.id}`);
+                        console.log(`💾 Stored output to ${tableName}, ID: ${inserted?.id}`);
                     } else {
                         // Queue for later storage if no DB pool
                         actionResult = {
@@ -2730,18 +2708,19 @@ Make the content genuinely valuable, not just fluff.`;
                     };
 
                     if (this.supabase) {
-                        await this.rawQuery(
-                            `INSERT INTO analytics_events (event_name, execution_id, user_id, org_id, properties, created_at)
-                             VALUES ($1, $2, $3, $4, $5, $6)`,
-                            [
-                                eventData.event_name,
-                                eventData.execution_id,
-                                eventData.user_id,
-                                eventData.org_id,
-                                JSON.stringify(eventData.properties),
-                                eventData.timestamp,
-                            ]
-                        );
+                        const { error } = await this.supabase
+                            .from('analytics_events')
+                            .insert({
+                                event_name: eventData.event_name,
+                                execution_id: eventData.execution_id,
+                                user_id: eventData.user_id,
+                                org_id: eventData.org_id,
+                                properties: eventData.properties,
+                                created_at: eventData.timestamp,
+                            });
+
+                        if (error) throw error;
+
                         actionResult = {
                             action: 'analytics_logged',
                             eventName: eventName,
@@ -3464,23 +3443,22 @@ PROVIDE THE FOLLOWING:
         if (!this.supabase) return;
 
         try {
-            await this.rawQuery(`
-                UPDATE engine_run_logs
-                SET execution_data = $1,
-                    status = 'failed',
-                    error_message = $2
-                WHERE id = $3
-            `, [
-                JSON.stringify({
-                    checkpoint: true,
-                    failedNodeId,
-                    nodeOutputs: pipelineData.nodeOutputs,
-                    tokenUsage: pipelineData.tokenUsage,
-                    userInput: pipelineData.userInput
-                }),
-                errorMessage,
-                executionId
-            ]);
+            const { error } = await this.supabase
+                .from('engine_run_logs')
+                .update({
+                    execution_data: {
+                        checkpoint: true,
+                        failedNodeId,
+                        nodeOutputs: pipelineData.nodeOutputs,
+                        tokenUsage: pipelineData.tokenUsage,
+                        userInput: pipelineData.userInput
+                    },
+                    status: 'failed',
+                    error_message: errorMessage
+                })
+                .eq('id', executionId);
+
+            if (error) throw error;
 
             console.log(`💾 Checkpoint saved for execution ${executionId}`);
         } catch (error) {
