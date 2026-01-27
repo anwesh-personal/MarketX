@@ -11,6 +11,7 @@
 
 import { Worker, Job } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
+import { workflowExecutionService } from '../processors/workflow-execution-processor';
 
 // ============================================================================
 // TYPES
@@ -98,40 +99,27 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
             throw new Error('Engine has no valid workflow configuration');
         }
 
-        // For now, make a request to the backend's workflow execution endpoint
-        // In production, you might want to directly call workflowExecutionService
-        // but that would require importing the entire backend service layer
-
-        const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001';
-        const response = await fetch(`${backendUrl}/api/internal/execute-workflow`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Internal-Key': process.env.INTERNAL_API_KEY || 'internal-secret',
+        // Execute workflow directly using ported processor (NO BACKEND CALLBACK!)
+        const result = await workflowExecutionService.executeWorkflow(
+            flowConfig.nodes,
+            flowConfig.edges,
+            input,
+            executionId,
+            (update) => {
+                // Progress callback - log for now (will add Redis publishing)
+                console.log(`[Progress ${executionId}] ${update.nodeName}: ${update.status}`);
             },
-            body: JSON.stringify({
+            {
                 executionId,
-                nodes: flowConfig.nodes,
-                edges: flowConfig.edges,
-                input,
                 userId,
-                orgId,
                 tier: options?.tier || 'hobby',
+                orgId,
+            },
+            {
                 engineId,
-            }),
-        });
+            }
+        );
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Backend execution failed: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json() as {
-            success: boolean;
-            lastNodeOutput?: { content: any };
-            tokenUsage?: { totalTokens: number; totalCost: number };
-            error?: string;
-        };
         const durationMs = Date.now() - startTime;
 
         if (result.success) {
