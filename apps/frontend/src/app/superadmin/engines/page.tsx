@@ -7,800 +7,45 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Plus,
-    Play,
-    Pause,
-    Copy,
-    Trash2,
-    Settings,
-    ChevronRight,
-    Zap,
-    Building2,
     RefreshCw,
-    MoreVertical,
-    Check,
-    X,
     AlertCircle,
     Server,
     Activity,
     Loader2,
-    Rocket,
-    Clock,
-    DollarSign,
-    Hash,
-    CheckCircle2,
-    XCircle,
-    Send,
-    StopCircle,
-    Key,
-    Users,
-    UserPlus,
-    Eye,
-    EyeOff,
+    Zap,
+    X
 } from 'lucide-react';
 import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
-interface EngineInstance {
-    id: string;
-    name: string;
-    template_id: string;
-    template_name?: string;
-    org_id: string | null;
-    org_name?: string | null;
-    kb_id: string | null;
-    constitution_id: string | null;
-    status: 'active' | 'standby' | 'disabled' | 'error';
-    config: Record<string, any>;
-    runs_today: number;
-    runs_total: number;
-    last_run_at: string | null;
-    error_message: string | null;
-    created_at: string;
-    updated_at: string;
-    // API Key
-    api_key?: string;
-    api_keys?: { id: string; api_key: string; user_id: string; is_active: boolean }[];
-}
-
-interface ExecutionState {
-    executionId: string | null;
-    status: 'idle' | 'running' | 'completed' | 'failed';
-    progress: number;
-    currentNode: string | null;
-    output: string | null;
-    tokensUsed: number;
-    cost: number;
-    durationMs: number;
-    error: string | null;
-}
-
-interface WorkflowTemplate {
-    id: string;
-    name: string;
-    description: string | null;
-    status: string;
-}
-
-interface Organization {
-    id: string;
-    name: string;
-}
-
-// ============================================================================
-// STATUS BADGE COMPONENT
-// ============================================================================
-
-function StatusBadge({ status }: { status: EngineInstance['status'] }) {
-    const config = {
-        active: { bg: 'bg-success/10', text: 'text-success', border: 'border-success/30', dot: 'bg-success animate-pulse' },
-        standby: { bg: 'bg-warning/10', text: 'text-warning', border: 'border-warning/30', dot: 'bg-warning' },
-        disabled: { bg: 'bg-textTertiary/10', text: 'text-textTertiary', border: 'border-textTertiary/30', dot: 'bg-textTertiary' },
-        error: { bg: 'bg-error/10', text: 'text-error', border: 'border-error/30', dot: 'bg-error animate-pulse' },
-    };
-    const c = config[status];
-
-    return (
-        <span className={`
-            inline-flex items-center gap-xs
-            px-sm py-0.5
-            text-xs font-medium
-            rounded-full border
-            ${c.bg} ${c.text} ${c.border}
-        `}>
-            <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-    );
-}
-
-// ============================================================================
-// ENGINE CARD COMPONENT
-// ============================================================================
-
-function EngineCard({
-    engine,
-    onClone,
-    onConfigure,
-    onDelete,
-    onToggleStatus,
-    onExecute,
-    onAssign,
-    onViewApiKey,
-}: {
-    engine: EngineInstance;
-    onClone: (engine: EngineInstance) => void;
-    onConfigure: (engine: EngineInstance) => void;
-    onDelete: (id: string) => void;
-    onToggleStatus: (id: string, newStatus: 'active' | 'disabled') => void;
-    onExecute: (engine: EngineInstance) => void;
-    onAssign: (engine: EngineInstance) => void;
-    onViewApiKey: (engine: EngineInstance) => void;
-}) {
-    const [showMenu, setShowMenu] = useState(false);
-    const [showApiKey, setShowApiKey] = useState(false);
-    const [copied, setCopied] = useState(false);
-
-    const handleCopyApiKey = async () => {
-        if (engine.api_key) {
-            await navigator.clipboard.writeText(engine.api_key);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
-    };
-
-    return (
-        <div className="
-            group relative
-            card overflow-hidden
-            border border-border
-            hover:border-primary/40
-            hover:shadow-[0_0_30px_var(--color-primary)/10]
-            transition-all duration-300
-        ">
-            {/* Status Strip */}
-            <div className={`
-                absolute top-0 left-0 right-0 h-1
-                ${engine.status === 'active' ? 'bg-success' :
-                    engine.status === 'standby' ? 'bg-warning' :
-                        engine.status === 'error' ? 'bg-error' : 'bg-textTertiary'}
-            `} />
-
-            <div className="p-md">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-md">
-                    <div className="flex items-center gap-sm">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
-                            <Server className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-textPrimary">{engine.name}</h3>
-                            <p className="text-xs text-textTertiary">{engine.template_name || 'Unknown Template'}</p>
-                        </div>
-                    </div>
-
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowMenu(!showMenu)}
-                            className="
-                                p-xs rounded-[var(--radius-md)]
-                                text-textTertiary hover:text-textPrimary
-                                hover:bg-surfaceHover
-                                transition-colors
-                            "
-                        >
-                            <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {showMenu && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-                                <div className="
-                                    absolute right-0 top-full mt-xs z-20
-                                    min-w-[160px]
-                                    bg-surface border border-border
-                                    rounded-[var(--radius-lg)]
-                                    shadow-[var(--shadow-lg)]
-                                    py-xs overflow-hidden
-                                ">
-                                    <button
-                                        onClick={() => { onClone(engine); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-textPrimary hover:bg-surfaceHover"
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                        Clone Engine
-                                    </button>
-                                    <button
-                                        onClick={() => { onConfigure(engine); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-textPrimary hover:bg-surfaceHover"
-                                    >
-                                        <Settings className="w-4 h-4" />
-                                        Configure
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            onToggleStatus(engine.id, engine.status === 'active' ? 'disabled' : 'active');
-                                            setShowMenu(false);
-                                        }}
-                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-textPrimary hover:bg-surfaceHover"
-                                    >
-                                        {engine.status === 'active' ? (
-                                            <><Pause className="w-4 h-4" /> Disable</>
-                                        ) : (
-                                            <><Play className="w-4 h-4" /> Activate</>
-                                        )}
-                                    </button>
-                                    <div className="border-t border-border my-xs" />
-                                    <button
-                                        onClick={() => { onDelete(engine.id); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-error hover:bg-error/10"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        Delete
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Organization Assignment */}
-                <div className="mb-md">
-                    {engine.org_name ? (
-                        <div className="flex items-center gap-sm p-sm rounded-[var(--radius-md)] bg-surfaceHover">
-                            <Building2 className="w-4 h-4 text-info" />
-                            <span className="text-sm text-textPrimary">{engine.org_name}</span>
-                            <ChevronRight className="w-3 h-3 text-textTertiary ml-auto" />
-                        </div>
-                    ) : (
-                        <button
-                            onClick={() => onAssign(engine)}
-                            className="
-                                w-full flex items-center gap-sm p-sm
-                                rounded-[var(--radius-md)]
-                                border border-dashed border-info/50
-                                bg-info/5 hover:bg-info/10
-                                transition-colors
-                            "
-                        >
-                            <UserPlus className="w-4 h-4 text-info" />
-                            <span className="text-sm text-info">Assign to Organization</span>
-                        </button>
-                    )}
-                </div>
-
-                {/* API Key Section */}
-                {engine.api_key && (
-                    <div className="mb-md">
-                        <div className="
-                            flex items-center gap-sm p-sm
-                            rounded-[var(--radius-md)]
-                            bg-background border border-border
-                        ">
-                            <Key className="w-4 h-4 text-warning" />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs text-textTertiary mb-0.5">API Key</p>
-                                <p className="text-xs font-mono text-textSecondary truncate">
-                                    {showApiKey
-                                        ? engine.api_key
-                                        : engine.api_key.slice(0, 12) + '••••••••••••'}
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-xs">
-                                <button
-                                    onClick={() => setShowApiKey(!showApiKey)}
-                                    className="p-xs rounded hover:bg-surfaceHover text-textTertiary"
-                                    title={showApiKey ? 'Hide' : 'Show'}
-                                >
-                                    {showApiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                                </button>
-                                <button
-                                    onClick={handleCopyApiKey}
-                                    className={`p-xs rounded hover:bg-surfaceHover ${copied ? 'text-success' : 'text-textTertiary'}`}
-                                    title="Copy"
-                                >
-                                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-sm mb-md">
-                    <div className="text-center p-sm rounded-[var(--radius-md)] bg-background">
-                        <p className="text-lg font-bold text-textPrimary">{engine.runs_today || 0}</p>
-                        <p className="text-xs text-textTertiary">Today</p>
-                    </div>
-                    <div className="text-center p-sm rounded-[var(--radius-md)] bg-background">
-                        <p className="text-lg font-bold text-textPrimary">{(engine.runs_total || 0).toLocaleString()}</p>
-                        <p className="text-xs text-textTertiary">Total</p>
-                    </div>
-                    <div className="text-center p-sm rounded-[var(--radius-md)] bg-background">
-                        <p className="text-lg font-bold text-textPrimary">
-                            {engine.last_run_at ? new Date(engine.last_run_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
-                        </p>
-                        <p className="text-xs text-textTertiary">Last Run</p>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-sm border-t border-border">
-                    <StatusBadge status={engine.status} />
-                    <div className="flex items-center gap-sm">
-                        {engine.status === 'active' && (
-                            <button
-                                onClick={() => onExecute(engine)}
-                                className="
-                                    flex items-center gap-xs
-                                    px-sm py-xs
-                                    bg-success/10 text-success
-                                    rounded-[var(--radius-md)]
-                                    hover:bg-success/20
-                                    transition-colors
-                                    text-xs font-medium
-                                "
-                            >
-                                <Rocket className="w-3 h-3" />
-                                Test Run
-                            </button>
-                        )}
-                        <span className="text-xs text-textTertiary">
-                            {new Date(engine.created_at).toLocaleDateString()}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ============================================================================
-// CLONE MODAL COMPONENT
-// ============================================================================
-
-function CloneModal({
-    isOpen,
-    onClose,
-    templates,
-    organizations,
-    onSubmit,
-    loading,
-}: {
-    isOpen: boolean;
-    onClose: () => void;
-    templates: WorkflowTemplate[];
-    organizations: Organization[];
-    onSubmit: (templateId: string, name: string, orgId: string | null) => void;
-    loading: boolean;
-}) {
-    const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-    const [selectedOrg, setSelectedOrg] = useState<string>('');
-    const [engineName, setEngineName] = useState('');
-
-    if (!isOpen) return null;
-
-    const handleSubmit = () => {
-        if (selectedTemplate && engineName) {
-            onSubmit(selectedTemplate, engineName, selectedOrg || null);
-        }
-    };
-
-    return (
-        <>
-            <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-40" onClick={onClose} />
-            <div className="
-                fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                z-50 w-full max-w-lg
-                bg-surface border border-border
-                rounded-[var(--radius-xl)]
-                shadow-[var(--shadow-xl)]
-                p-lg
-            ">
-                <div className="flex items-center justify-between mb-lg">
-                    <h2 className="text-xl font-bold text-textPrimary">Clone New Engine</h2>
-                    <button
-                        onClick={onClose}
-                        className="p-sm rounded-[var(--radius-md)] hover:bg-surfaceHover text-textSecondary"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="space-y-md">
-                    {/* Template Selection */}
-                    <div>
-                        <label className="block text-sm font-medium text-textSecondary mb-xs">
-                            Select Template
-                        </label>
-                        {templates.length === 0 ? (
-                            <p className="text-sm text-textTertiary">No templates available. Create a workflow template first.</p>
-                        ) : (
-                            <div className="space-y-xs max-h-48 overflow-y-auto">
-                                {templates.map((tmpl) => (
-                                    <button
-                                        key={tmpl.id}
-                                        onClick={() => setSelectedTemplate(tmpl.id)}
-                                        className={`
-                                            w-full p-md text-left
-                                            rounded-[var(--radius-lg)]
-                                            border transition-all duration-[var(--duration-fast)]
-                                            ${selectedTemplate === tmpl.id
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-primary/40'}
-                                        `}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="font-medium text-textPrimary">{tmpl.name}</p>
-                                                <p className="text-sm text-textSecondary">{tmpl.description || 'No description'}</p>
-                                            </div>
-                                            {selectedTemplate === tmpl.id && (
-                                                <Check className="w-5 h-5 text-primary" />
-                                            )}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Engine Name */}
-                    <div>
-                        <label className="block text-sm font-medium text-textSecondary mb-xs">
-                            Engine Name
-                        </label>
-                        <input
-                            type="text"
-                            value={engineName}
-                            onChange={(e) => setEngineName(e.target.value)}
-                            placeholder="e.g., IMT Reply #3"
-                            className="
-                                w-full px-md py-sm
-                                bg-background border border-border
-                                rounded-[var(--radius-md)]
-                                text-textPrimary placeholder:text-textTertiary
-                                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
-                            "
-                        />
-                    </div>
-
-                    {/* Organization Assignment */}
-                    <div>
-                        <label className="block text-sm font-medium text-textSecondary mb-xs">
-                            Assign to Organization (Optional)
-                        </label>
-                        <select
-                            value={selectedOrg}
-                            onChange={(e) => setSelectedOrg(e.target.value)}
-                            className="
-                                w-full px-md py-sm
-                                bg-background border border-border
-                                rounded-[var(--radius-md)]
-                                text-textPrimary
-                                focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
-                            "
-                        >
-                            <option value="">Select an organization...</option>
-                            {organizations.map((org) => (
-                                <option key={org.id} value={org.id}>{org.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-sm pt-md">
-                        <button
-                            onClick={onClose}
-                            className="
-                                px-md py-sm
-                                text-textSecondary
-                                hover:text-textPrimary hover:bg-surfaceHover
-                                rounded-[var(--radius-md)]
-                                transition-colors
-                            "
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!selectedTemplate || !engineName || loading}
-                            className="
-                                flex items-center gap-xs
-                                px-md py-sm
-                                bg-primary text-white
-                                rounded-[var(--radius-md)]
-                                hover:bg-primary/90
-                                disabled:opacity-50 disabled:cursor-not-allowed
-                                transition-all
-                            "
-                        >
-                            {loading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Copy className="w-4 h-4" />
-                            )}
-                            Clone Engine
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
-}
-
-// ============================================================================
-// EXECUTION MODAL COMPONENT
-// ============================================================================
-
-function ExecutionModal({
-    isOpen,
-    engine,
-    onClose,
-    executionState,
-    onExecute,
-    onStop,
-    testInput,
-    setTestInput,
-}: {
-    isOpen: boolean;
-    engine: EngineInstance | null;
-    onClose: () => void;
-    executionState: ExecutionState;
-    onExecute: () => void;
-    onStop: () => void;
-    testInput: string;
-    setTestInput: (input: string) => void;
-}) {
-    if (!isOpen || !engine) return null;
-
-    const { status, progress, currentNode, output, tokensUsed, cost, durationMs, error } = executionState;
-
-    return (
-        <>
-            <div className="fixed inset-0 bg-overlay backdrop-blur-sm z-40" onClick={status === 'idle' ? onClose : undefined} />
-            <div className="
-                fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
-                z-50 w-full max-w-2xl max-h-[90vh] overflow-hidden
-                bg-surface border border-border
-                rounded-[var(--radius-xl)]
-                shadow-[var(--shadow-xl)]
-                flex flex-col
-            ">
-                {/* Header */}
-                <div className="flex items-center justify-between p-lg border-b border-border">
-                    <div className="flex items-center gap-sm">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
-                            <Rocket className="w-5 h-5 text-success" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-textPrimary">Test Run: {engine.name}</h2>
-                            <p className="text-sm text-textTertiary">Execute engine with test input</p>
-                        </div>
-                    </div>
-                    {status === 'idle' && (
-                        <button
-                            onClick={onClose}
-                            className="p-sm rounded-[var(--radius-md)] hover:bg-surfaceHover text-textSecondary"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-lg space-y-md">
-                    {/* Input Section */}
-                    {status === 'idle' && (
-                        <div>
-                            <label className="block text-sm font-medium text-textSecondary mb-xs">
-                                Test Input (JSON or text)
-                            </label>
-                            <textarea
-                                value={testInput}
-                                onChange={(e) => setTestInput(e.target.value)}
-                                placeholder='{"message": "Hello, I need help with my account", "context": "Customer inquiry"}'
-                                rows={6}
-                                className="
-                                    w-full px-md py-sm
-                                    bg-background border border-border
-                                    rounded-[var(--radius-md)]
-                                    text-textPrimary placeholder:text-textTertiary
-                                    font-mono text-sm
-                                    focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
-                                "
-                            />
-                        </div>
-                    )}
-
-                    {/* Progress Section */}
-                    {status !== 'idle' && (
-                        <>
-                            {/* Progress Bar */}
-                            <div className="space-y-xs">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-textSecondary">Progress</span>
-                                    <span className="font-medium text-primary">{progress}%</span>
-                                </div>
-                                <div className="h-2 bg-background rounded-full overflow-hidden">
-                                    <div
-                                        className={`h-full transition-all duration-300 rounded-full ${status === 'failed' ? 'bg-error' :
-                                            status === 'completed' ? 'bg-success' :
-                                                'bg-primary'
-                                            }`}
-                                        style={{ width: `${progress}%` }}
-                                    />
-                                </div>
-                                {currentNode && status === 'running' && (
-                                    <p className="text-xs text-textTertiary flex items-center gap-xs">
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        Processing: {currentNode}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-3 gap-sm">
-                                <div className="p-sm rounded-[var(--radius-md)] bg-background text-center">
-                                    <div className="flex items-center justify-center gap-xs text-info mb-xs">
-                                        <Hash className="w-4 h-4" />
-                                        <span className="text-lg font-bold">{tokensUsed.toLocaleString()}</span>
-                                    </div>
-                                    <p className="text-xs text-textTertiary">Tokens</p>
-                                </div>
-                                <div className="p-sm rounded-[var(--radius-md)] bg-background text-center">
-                                    <div className="flex items-center justify-center gap-xs text-warning mb-xs">
-                                        <DollarSign className="w-4 h-4" />
-                                        <span className="text-lg font-bold">${cost.toFixed(4)}</span>
-                                    </div>
-                                    <p className="text-xs text-textTertiary">Cost</p>
-                                </div>
-                                <div className="p-sm rounded-[var(--radius-md)] bg-background text-center">
-                                    <div className="flex items-center justify-center gap-xs text-primary mb-xs">
-                                        <Clock className="w-4 h-4" />
-                                        <span className="text-lg font-bold">{(durationMs / 1000).toFixed(1)}s</span>
-                                    </div>
-                                    <p className="text-xs text-textTertiary">Duration</p>
-                                </div>
-                            </div>
-
-                            {/* Status Message */}
-                            {status === 'completed' && (
-                                <div className="flex items-center gap-sm p-md bg-success/10 border border-success/30 rounded-[var(--radius-lg)] text-success">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                    <span className="font-medium">Execution completed successfully!</span>
-                                </div>
-                            )}
-
-                            {status === 'failed' && error && (
-                                <div className="flex items-start gap-sm p-md bg-error/10 border border-error/30 rounded-[var(--radius-lg)] text-error">
-                                    <XCircle className="w-5 h-5 mt-0.5" />
-                                    <div>
-                                        <p className="font-medium">Execution failed</p>
-                                        <p className="text-sm opacity-80">{error}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Output */}
-                            {output && (
-                                <div>
-                                    <label className="block text-sm font-medium text-textSecondary mb-xs">
-                                        Output
-                                    </label>
-                                    <div className="
-                                        p-md
-                                        bg-background border border-border
-                                        rounded-[var(--radius-md)]
-                                        max-h-64 overflow-y-auto
-                                    ">
-                                        <pre className="text-sm text-textPrimary whitespace-pre-wrap font-mono">
-                                            {output}
-                                        </pre>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {/* Footer Actions */}
-                <div className="flex items-center justify-end gap-sm p-lg border-t border-border">
-                    {status === 'idle' && (
-                        <>
-                            <button
-                                onClick={onClose}
-                                className="
-                                    px-md py-sm
-                                    text-textSecondary
-                                    hover:text-textPrimary hover:bg-surfaceHover
-                                    rounded-[var(--radius-md)]
-                                    transition-colors
-                                "
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={onExecute}
-                                className="
-                                    flex items-center gap-xs
-                                    px-md py-sm
-                                    bg-success text-white
-                                    rounded-[var(--radius-md)]
-                                    hover:bg-success/90
-                                    shadow-[0_0_20px_var(--color-success)/30]
-                                    transition-all
-                                "
-                            >
-                                <Send className="w-4 h-4" />
-                                Execute
-                            </button>
-                        </>
-                    )}
-
-                    {status === 'running' && (
-                        <button
-                            onClick={onStop}
-                            className="
-                                flex items-center gap-xs
-                                px-md py-sm
-                                bg-error text-white
-                                rounded-[var(--radius-md)]
-                                hover:bg-error/90
-                                transition-all
-                            "
-                        >
-                            <StopCircle className="w-4 h-4" />
-                            Stop
-                        </button>
-                    )}
-
-                    {(status === 'completed' || status === 'failed') && (
-                        <button
-                            onClick={onClose}
-                            className="
-                                flex items-center gap-xs
-                                px-md py-sm
-                                bg-primary text-white
-                                rounded-[var(--radius-md)]
-                                hover:bg-primary/90
-                                transition-all
-                            "
-                        >
-                            Close
-                        </button>
-                    )}
-                </div>
-            </div>
-        </>
-    );
-}
-
-// ============================================================================
-// MAIN PAGE COMPONENT
-// ============================================================================
+import { EngineInstance, ExecutionState, WorkflowTemplate, Organization } from '@/types/engine';
+import { EngineCard } from '@/components/engines/EngineCard';
+import { CloneEngineModal } from '@/components/engines/CloneEngineModal';
+import { ExecutionModal } from '@/components/engines/ExecutionModal';
 
 export default function EnginesPage() {
-    const { fetchWithAuth } = useSuperadminAuth();
+    const { admin, isLoading: authLoading } = useSuperadminAuth();
+    const token = admin?.token;
+    const router = useRouter();
 
-    // State
+    // Data State
     const [engines, setEngines] = useState<EngineInstance[]>([]);
     const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
-    const [cloning, setCloning] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
+
+    // Filters
     const [filter, setFilter] = useState<'all' | 'active' | 'standby' | 'unassigned'>('all');
 
-    // Execution state
+    // UI State
+    const [isCloneModalOpen, setIsCloneModalOpen] = useState(false);
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
     const [selectedEngine, setSelectedEngine] = useState<EngineInstance | null>(null);
-    const [testInput, setTestInput] = useState('{\n  "message": "Hello, I need help with my account"\n}');
+    const [cloning, setCloning] = useState(false);
+
+    // Execution State
     const [executionState, setExecutionState] = useState<ExecutionState>({
         executionId: null,
         status: 'idle',
@@ -812,92 +57,90 @@ export default function EnginesPage() {
         durationMs: 0,
         error: null,
     });
+    const [testInput, setTestInput] = useState('');
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Fetch engines
+    // Fetch Data
     const fetchEngines = useCallback(async () => {
+        if (!token) return;
         setLoading(true);
         setError(null);
-
         try {
-            const response = await fetchWithAuth('/api/superadmin/engines');
-            const data = await response.json();
-
-            if (!response.ok) {
+            const res = await fetch('/api/superadmin/engines', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setEngines(data.data || []);
+            } else {
                 throw new Error(data.message || 'Failed to fetch engines');
             }
-
-            setEngines(data.data || []);
         } catch (err: any) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }, [fetchWithAuth]);
+    }, [token]);
 
-    // Fetch templates for cloning
-    const fetchTemplates = useCallback(async () => {
+    const fetchMetadata = useCallback(async () => {
+        if (!token) return;
         try {
-            const response = await fetchWithAuth('/api/superadmin/workflows?status=active');
-            const data = await response.json();
-            if (response.ok) {
+            const [tmplRes, orgRes] = await Promise.all([
+                fetch('/api/superadmin/workflows', { headers: { Authorization: `Bearer ${token}` } }),
+                fetch('/api/superadmin/organizations', { headers: { Authorization: `Bearer ${token}` } })
+            ]);
+
+            if (tmplRes.ok) {
+                const data = await tmplRes.json();
                 setTemplates(data.data || []);
             }
-        } catch (err) {
-            console.error('Failed to fetch templates:', err);
-        }
-    }, [fetchWithAuth]);
-
-    // Fetch organizations
-    const fetchOrganizations = useCallback(async () => {
-        try {
-            const response = await fetchWithAuth('/api/superadmin/organizations');
-            const data = await response.json();
-            if (response.ok) {
-                setOrganizations(data.organizations || data.data || []);
+            if (orgRes.ok) {
+                const data = await orgRes.json();
+                setOrganizations(data.organizations || []);
             }
         } catch (err) {
-            console.error('Failed to fetch organizations:', err);
+            console.error('Failed to fetch metadata:', err);
         }
-    }, [fetchWithAuth]);
+    }, [token]);
 
     useEffect(() => {
-        fetchEngines();
-        fetchTemplates();
-        fetchOrganizations();
-    }, [fetchEngines, fetchTemplates, fetchOrganizations]);
+        if (token) {
+            fetchEngines();
+            fetchMetadata();
+        }
+    }, [token, fetchEngines, fetchMetadata]);
 
-    // Filter engines
-    const filteredEngines = engines.filter((eng) => {
+    // Computed
+    const filteredEngines = engines.filter(engine => {
         if (filter === 'all') return true;
-        if (filter === 'active') return eng.status === 'active';
-        if (filter === 'standby') return eng.status === 'standby';
-        if (filter === 'unassigned') return !eng.org_id;
-        return true;
+        if (filter === 'unassigned') return !engine.org_id;
+        return engine.status === filter;
     });
 
     // Handlers
     const handleClone = async (templateId: string, name: string, orgId: string | null) => {
+        if (!token) return;
         setCloning(true);
         try {
-            const response = await fetchWithAuth('/api/superadmin/engines', {
+            const res = await fetch('/api/superadmin/engines', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
                 body: JSON.stringify({
-                    action: 'clone',
                     template_id: templateId,
                     name,
-                    org_id: orgId,
-                }),
+                    org_id: orgId
+                })
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to clone engine');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.message || 'Clone failed');
             }
 
-            await fetchEngines();
+            fetchEngines();
             setIsCloneModalOpen(false);
         } catch (err: any) {
             setError(err.message);
@@ -907,58 +150,40 @@ export default function EnginesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this engine instance?')) return;
-
+        if (!token || !confirm('Are you sure you want to delete this engine instance?')) return;
         try {
-            const response = await fetchWithAuth(`/api/superadmin/engines?id=${id}`, {
+            const res = await fetch(`/api/superadmin/engines?id=${id}`, {
                 method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to delete engine');
-            }
-
-            await fetchEngines();
+            if (!res.ok) throw new Error('Delete failed');
+            fetchEngines();
         } catch (err: any) {
             setError(err.message);
         }
     };
 
     const handleToggleStatus = async (id: string, newStatus: 'active' | 'disabled') => {
+        if (!token) return;
         try {
-            const response = await fetchWithAuth('/api/superadmin/engines', {
+            const res = await fetch('/api/superadmin/engines', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status: newStatus }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ id, status: newStatus })
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update engine status');
-            }
-
-            await fetchEngines();
+            if (!res.ok) throw new Error('Update failed');
+            fetchEngines();
         } catch (err: any) {
             setError(err.message);
         }
     };
 
     const handleConfigure = (engine: EngineInstance) => {
-        // TODO: Open configuration modal
-        console.log('Configure engine:', engine.id);
+        router.push(`/superadmin/engines/${engine.id}`);
     };
-
-    const handleCloneExisting = (engine: EngineInstance) => {
-        // Pre-select the template and open modal
-        setIsCloneModalOpen(true);
-    };
-
-    // ========================================================================
-    // EXECUTION HANDLERS
-    // ========================================================================
 
     const handleOpenExecuteModal = (engine: EngineInstance) => {
         setSelectedEngine(engine);
@@ -976,21 +201,10 @@ export default function EnginesPage() {
         setIsExecuteModalOpen(true);
     };
 
-    const handleCloseExecuteModal = () => {
-        if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-        }
-        setIsExecuteModalOpen(false);
-        setSelectedEngine(null);
-    };
-
     const handleExecute = async () => {
         if (!selectedEngine) return;
 
         const startTime = Date.now();
-
-        // Parse input
         let parsedInput: Record<string, any>;
         try {
             parsedInput = JSON.parse(testInput);
@@ -1006,149 +220,65 @@ export default function EnginesPage() {
         }));
 
         try {
-            // Queue execution via new API route (NO BACKEND!)
             const response = await fetch(`/api/engines/${selectedEngine.id}/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     input: parsedInput,
-                    options: { tier: 'hobby' }
+                    options: { tier: 'pro' }
                 }),
             });
 
             const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to queue execution');
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to queue execution');
-            }
-
-            // Start polling for results
             const executionId = data.executionId;
-            setExecutionState(prev => ({
-                ...prev,
-                executionId,
-                currentNode: 'Queued for execution...',
-            }));
+            setExecutionState(prev => ({ ...prev, executionId, currentNode: 'Queued...' }));
 
-            // Poll for completion
-            const pollInterval = setInterval(async () => {
-                try {
-                    const statusRes = await fetch(`/api/engines/executions/${executionId}`);
-                    const statusData = await statusRes.json();
+            pollingRef.current = setInterval(async () => {
+                const statusRes = await fetch(`/api/engines/executions/${executionId}`);
+                const statusData = await statusRes.json();
 
-                    if (statusData.status === 'completed') {
-                        clearInterval(pollInterval);
-                        setExecutionState({
-                            executionId,
-                            status: 'completed',
-                            progress: 100,
-                            currentNode: null,
-                            output: typeof statusData.output === 'string'
-                                ? statusData.output
-                                : JSON.stringify(statusData.output, null, 2),
-                            tokensUsed: statusData.tokensUsed || 0,
-                            cost: statusData.cost || 0,
-                            durationMs: statusData.durationMs || (Date.now() - startTime),
-                            error: null,
-                        });
-                        fetchEngines();
-                    } else if (statusData.status === 'failed') {
-                        clearInterval(pollInterval);
-                        setExecutionState(prev => ({
-                            ...prev,
-                            status: 'failed',
-                            progress: 100,
-                            error: statusData.error || 'Execution failed',
-                            durationMs: statusData.durationMs || (Date.now() - startTime),
-                        }));
-                    } else if (statusData.status === 'running') {
-                        setExecutionState(prev => ({
-                            ...prev,
-                            progress: Math.min(prev.progress + 10, 90),
-                            currentNode: 'Processing...',
-                        }));
+                if (statusData.status === 'completed' || statusData.status === 'failed') {
+                    if (pollingRef.current) {
+                        clearInterval(pollingRef.current);
+                        pollingRef.current = null;
                     }
-                } catch (pollError) {
-                    console.error('Polling error:', pollError);
+                    setExecutionState(prev => ({
+                        ...prev,
+                        status: statusData.status,
+                        progress: 100,
+                        output: typeof statusData.output === 'string' ? statusData.output : JSON.stringify(statusData.output, null, 2),
+                        error: statusData.error,
+                        tokensUsed: statusData.tokensUsed || 0,
+                        cost: statusData.cost || 0,
+                        durationMs: statusData.durationMs || (Date.now() - startTime),
+                    }));
+                    if (statusData.status === 'completed') fetchEngines();
+                } else if (statusData.status === 'running') {
+                    setExecutionState(prev => ({ ...prev, progress: Math.min(prev.progress + 5, 90) }));
                 }
             }, 1000);
-
-            pollingRef.current = pollInterval;
 
         } catch (err: any) {
             setExecutionState(prev => ({
                 ...prev,
                 status: 'failed',
-                progress: prev.progress,
                 error: err.message,
                 durationMs: Date.now() - startTime,
             }));
         }
     };
 
-    const handleStopExecution = async () => {
-        if (!executionState.executionId) return;
-
-        // Stop polling
+    const handleStopExecution = () => {
         if (pollingRef.current) {
             clearInterval(pollingRef.current);
             pollingRef.current = null;
         }
-
-        // Update state to stopped
-        setExecutionState(prev => ({
-            ...prev,
-            status: 'failed',
-            error: 'Execution stopped by user',
-        }));
-
-        // TODO: Optionally add backend API to cancel running job
-        console.log('Execution stopped:', executionState.executionId);
+        setExecutionState(prev => ({ ...prev, status: 'failed', error: 'Stopped by user' }));
     };
 
-    // ========================================================================
-    // ASSIGNMENT HANDLERS
-    // ========================================================================
-
-    const handleOpenAssignModal = (engine: EngineInstance) => {
-        const orgId = prompt('Enter Organization ID to assign this engine:');
-        if (!orgId) return;
-
-        handleAssignToOrg(engine.id, orgId);
-    };
-
-    const handleAssignToOrg = async (engineId: string, orgId: string) => {
-        try {
-            // First assign the engine to the org
-            const assignResponse = await fetchWithAuth('/api/superadmin/engines', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: engineId, org_id: orgId }),
-            });
-
-            if (!assignResponse.ok) {
-                throw new Error('Failed to assign engine');
-            }
-
-            // NOTE: Key generation will be handled by a separate API route
-            // For now, just show success message
-            alert(`✅ Engine assigned successfully to organization ${orgId}!`);
-
-            await fetchEngines();
-        } catch (err: any) {
-            setError(err.message);
-            alert(`❌ Failed to assign: ${err.message}`);
-        }
-    };
-
-    const handleViewApiKey = (engine: EngineInstance) => {
-        if (engine.api_key) {
-            navigator.clipboard.writeText(engine.api_key);
-            alert(`API Key copied to clipboard!\n\n${engine.api_key.slice(0, 30)}...`);
-        } else {
-            alert('No API key found. Assign to an organization first.');
-        }
-    };
+    if (authLoading) return <div className="p-xl text-center">Checking access...</div>;
 
     // Stats
     const stats = {
@@ -1289,13 +419,13 @@ export default function EnginesPage() {
                         <EngineCard
                             key={engine.id}
                             engine={engine}
-                            onClone={handleCloneExisting}
+                            onClone={() => setIsCloneModalOpen(true)} // Can clone existing? Logic was handleCloneExisting
                             onConfigure={handleConfigure}
                             onDelete={handleDelete}
                             onToggleStatus={handleToggleStatus}
                             onExecute={handleOpenExecuteModal}
-                            onAssign={handleOpenAssignModal}
-                            onViewApiKey={handleViewApiKey}
+                            onAssign={() => console.log('Assign TODO')}
+                            onViewApiKey={handleConfigure} // Navigate to keys
                         />
                     ))}
                 </div>
@@ -1313,8 +443,7 @@ export default function EnginesPage() {
                 </div>
             )}
 
-            {/* Clone Modal */}
-            <CloneModal
+            <CloneEngineModal
                 isOpen={isCloneModalOpen}
                 onClose={() => setIsCloneModalOpen(false)}
                 templates={templates}
@@ -1323,11 +452,13 @@ export default function EnginesPage() {
                 loading={cloning}
             />
 
-            {/* Execution Modal */}
             <ExecutionModal
                 isOpen={isExecuteModalOpen}
                 engine={selectedEngine}
-                onClose={handleCloseExecuteModal}
+                onClose={() => {
+                    if (pollingRef.current) clearInterval(pollingRef.current);
+                    setIsExecuteModalOpen(false);
+                }}
                 executionState={executionState}
                 onExecute={handleExecute}
                 onStop={handleStopExecution}

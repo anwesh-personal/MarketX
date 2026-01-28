@@ -22,6 +22,7 @@ import {
     Cpu,
     Workflow,
 } from 'lucide-react';
+import { Toaster } from 'sonner';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import {
     getSession,
@@ -446,6 +447,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                     )}
                 </main>
             </div>
+            <Toaster position="top-right" richColors />
         </div>
     );
 }

@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
                 result = await provider.restart(workerName);
                 break;
             case 'deploy':
+            case 'redeploy':
                 result = await provider.deploy();
                 break;
             default:

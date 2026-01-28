@@ -23,16 +23,19 @@ import cors from 'cors'
 import { Queue } from 'bullmq'
 import Redis from 'ioredis'
 import { triggerService } from '../triggers'
+import { QueueName } from '../config/queues'
 
-// Queue names matching worker-queues.ts
+// Use canonical queue names from config (no colons allowed in BullMQ names)
 const QUEUE_NAMES = [
-    'kb-processing',
-    'conversation-summary',
-    'analytics',
-    'learning-loop',
-    'dream-state',
-    'fine-tuning',
-    'workflow:execute', // Workflow execution queue
+    QueueName.KB_PROCESSING,           // 'kb-processing'
+    QueueName.CONVERSATION_SUMMARY,    // 'conversation-summary'
+    QueueName.ANALYTICS,               // 'analytics'
+    QueueName.LEARNING_LOOP,           // 'learning-loop'
+    QueueName.DREAM_STATE,             // 'dream-state'
+    QueueName.FINE_TUNING,             // 'fine-tuning'
+    QueueName.WORKFLOW_EXECUTION,      // 'workflow-execution'
+    QueueName.ENGINE_EXECUTION,        // 'engine-execution'
+    QueueName.SCHEDULED_TASK,          // 'scheduled-task'
 ]
 
 // Get connection options for BullMQ (uses object format, not Redis instance)
@@ -228,7 +231,7 @@ app.post('/api/action', async (req: Request, res: Response) => {
     try {
         const { queueName, action } = req.body
 
-        if (!queueName || !QUEUE_NAMES.includes(queueName)) {
+        if (!queueName || !QUEUE_NAMES.includes(queueName as QueueName)) {
             return res.status(400).json({ error: 'Invalid queue name' })
         }
 
@@ -280,7 +283,7 @@ app.post('/api/jobs/:jobId/retry', async (req: Request, res: Response) => {
         const jobId = req.params.jobId as string
         const { queueName } = req.body
 
-        if (!queueName || !QUEUE_NAMES.includes(queueName)) {
+        if (!queueName || !QUEUE_NAMES.includes(queueName as QueueName)) {
             return res.status(400).json({ error: 'Invalid queue name' })
         }
 
@@ -311,7 +314,7 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
         const jobId = req.params.jobId as string
         const { queueName } = req.query
 
-        if (!queueName || !QUEUE_NAMES.includes(queueName as string)) {
+        if (!queueName || !QUEUE_NAMES.includes(queueName as QueueName)) {
             return res.status(400).json({ error: 'Invalid queue name' })
         }
 
@@ -355,7 +358,7 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
 app.use('/api', triggerService.getRouter())
 
 // Initialize trigger service with workflow queue on startup
-const workflowQueue = getQueues().get('workflow:execute')
+const workflowQueue = getQueues().get(QueueName.WORKFLOW_EXECUTION)
 if (workflowQueue) {
     triggerService.initialize(workflowQueue)
     console.log('🎯 Trigger service initialized with workflow queue')
