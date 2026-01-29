@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
  * GET /api/superadmin/stats
  * Fetch real platform statistics from database
@@ -13,89 +8,123 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
     try {
-        // Active Organizations (is_active = true)
-        const { count: activeOrgs, error: orgsError } = await supabase
-            .from('organizations')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_active', true);
+        // Validate environment variables
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+        console.log('[STATS API] Environment check:', {
+            hasUrl: !!supabaseUrl,
+            hasKey: !!serviceKey,
+            urlPrefix: supabaseUrl?.substring(0, 20)
+        });
+
+        if (!supabaseUrl || !serviceKey) {
+            throw new Error(`Missing environment variables: ${!supabaseUrl ? 'SUPABASE_URL' : ''} ${!serviceKey ? 'SERVICE_KEY' : ''}`);
+        }
+
+        // Create Supabase client with service role
+        const supabase = createClient(supabaseUrl, serviceKey);
+
+        console.log('[STATS API] Starting stats fetch...');
+
+        // Active Organizations (status = 'active')
+        const { data: activeOrgsData, error: orgsError } = await supabase
+            .from('organizations')
+            .select('id')
+            .eq('status', 'active');
+
+        console.log('[STATS API] Active Orgs Query:', { count: activeOrgsData?.length, error: orgsError });
         if (orgsError) throw orgsError;
+        const activeOrgs = activeOrgsData?.length || 0;
 
         // Total Users (all users across all orgs)
-        const { count: totalUsers, error: usersError } = await supabase
+        const { data: usersData, error: usersError } = await supabase
             .from('users')
-            .select('*', { count: 'exact', head: true });
+            .select('id');
 
+        console.log('[STATS API] Total Users Query:', { count: usersData?.length, error: usersError });
         if (usersError) throw usersError;
+        const totalUsers = usersData?.length || 0;
 
         // Total Knowledge Bases
-        const { count: totalKbs, error: kbsError } = await supabase
+        const { data: kbsData, error: kbsError } = await supabase
             .from('knowledge_bases')
-            .select('*', { count: 'exact', head: true });
+            .select('id');
 
+        console.log('[STATS API] Total KBs Query:', { count: kbsData?.length, error: kbsError });
         if (kbsError) throw kbsError;
+        const totalKbs = kbsData?.length || 0;
 
         // Total Runs (from engine_run_logs table)
-        const { count: totalRuns, error: runsError } = await supabase
+        const { data: runsData, error: runsError } = await supabase
             .from('engine_run_logs')
-            .select('*', { count: 'exact', head: true });
+            .select('id');
 
+        console.log('[STATS API] Total Runs Query:', { count: runsData?.length, error: runsError });
         if (runsError) throw runsError;
+        const totalRuns = runsData?.length || 0;
 
         // Runs in last 30 days
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const { count: runsLast30Days, error: runs30Error } = await supabase
+        const { data: runs30Data, error: runs30Error } = await supabase
             .from('engine_run_logs')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', thirtyDaysAgo.toISOString());
+            .select('id')
+            .gte('started_at', thirtyDaysAgo.toISOString());
 
         if (runs30Error) throw runs30Error;
+        const runsLast30Days = runs30Data?.length || 0;
 
         // Runs this month (current calendar month)
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const { count: runsThisMonth, error: runsMonthError } = await supabase
+        const { data: runsMonthData, error: runsMonthError } = await supabase
             .from('engine_run_logs')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', firstDayOfMonth.toISOString());
+            .select('id')
+            .gte('started_at', firstDayOfMonth.toISOString());
 
         if (runsMonthError) throw runsMonthError;
+        const runsThisMonth = runsMonthData?.length || 0;
 
-        // MRR Calculation (sum of active org licenses)
-        const { data: activeOrgLicenses, error: licenseError } = await supabase
+        // MRR Calculation (sum of active org plans)
+        const { data: activeOrgPlans, error: licenseError } = await supabase
             .from('organizations')
-            .select('id, license_tier')
-            .eq('is_active', true);
+            .select('id, plan')
+            .eq('status', 'active');
 
         if (licenseError) throw licenseError;
 
-        // Calculate MRR based on license tiers
-        const tierPricing: Record<string, number> = {
-            'hobby': 0,        // Free tier
-            'pro': 29,         // $29/month
-            'enterprise': 99,  // $99/month
+        // Calculate MRR based on plans
+        const planPricing: Record<string, number> = {
+            'free': 0,         // Free tier
+            'starter': 19,     // $19/month
+            'pro': 49,         // $49/month
+            'enterprise': 199, // $199/month
         };
 
-        const mrr = (activeOrgLicenses || []).reduce((sum, org) => {
-            const tier = org.license_tier || 'hobby';
-            return sum + (tierPricing[tier] || 0);
+        const mrr = (activeOrgPlans || []).reduce((sum, org) => {
+            const plan = org.plan || 'free';
+            return sum + (planPricing[plan] || 0);
         }, 0);
 
         // Return real data
+        const finalStats = {
+            active_orgs: activeOrgs || 0,
+            total_users: totalUsers || 0,
+            total_kbs: totalKbs || 0,
+            total_runs: totalRuns || 0,
+            runs_last_30_days: runsLast30Days || 0,
+            runs_this_month: runsThisMonth || 0,
+            mrr_usd: mrr,
+        };
+
+        console.log('[STATS API] Final stats to return:', finalStats);
+
         return NextResponse.json({
             success: true,
-            stats: {
-                active_orgs: activeOrgs || 0,
-                total_users: totalUsers || 0,
-                total_kbs: totalKbs || 0,
-                total_runs: totalRuns || 0,
-                runs_last_30_days: runsLast30Days || 0,
-                runs_this_month: runsThisMonth || 0,
-                mrr_usd: mrr,
-            },
+            stats: finalStats,
             timestamp: new Date().toISOString(),
         });
 
