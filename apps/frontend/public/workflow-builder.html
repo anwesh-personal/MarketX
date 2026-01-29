@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM Workflow Builder — System Architecture</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #050508;
+            --card: rgba(15, 15, 25, 0.9);
+            --border: rgba(255, 255, 255, 0.08);
+            --aqua: #00ffd5;
+            --blue: #00a8ff;
+            --purple: #a855f7;
+            --orange: #ff9f43;
+            --green: #00d68f;
+            --red: #ff6b6b;
+            --text: #ffffff;
+            --dim: #8892a4;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 40px;
+            overflow-x: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Animated Background */
+        .bg-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 20%, rgba(0, 168, 255, 0.1), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168, 85, 247, 0.08), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--aqua), var(--blue), var(--purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: var(--dim);
+            font-size: 16px;
+        }
+
+        /* Phase Sections */
+        .phase {
+            margin-bottom: 100px;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .phase-num {
+            width: 64px;
+            height: 64px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 800;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .phase-num::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--aqua), var(--blue));
+            opacity: 0.2;
+        }
+
+        .phase-aqua .phase-num {
+            background: linear-gradient(135deg, var(--aqua), var(--blue));
+            color: #000;
+        }
+
+        .phase-purple .phase-num {
+            background: linear-gradient(135deg, var(--purple), #7c3aed);
+        }
+
+        .phase-orange .phase-num {
+            background: linear-gradient(135deg, var(--orange), var(--red));
+        }
+
+        .phase-green .phase-num {
+            background: linear-gradient(135deg, var(--green), #00a86b);
+        }
+
+        .phase-title {
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .phase-subtitle {
+            color: var(--dim);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        /* Visual Box */
+        .visual-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .visual-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--aqua), var(--blue), var(--purple));
+        }
+
+        /* ===== LIVE DEMO SECTION ===== */
+        .demo-container {
+            background: #0a0a0f;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .demo-toolbar {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .demo-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .demo-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-r {
+            background: #ff5f56;
+        }
+
+        .dot-y {
+            background: #ffbd2e;
+        }
+
+        .dot-g {
+            background: #27ca3f;
+        }
+
+        .demo-title {
+            font-size: 13px;
+            color: var(--dim);
+            font-weight: 500;
+        }
+
+        .demo-btn {
+            background: linear-gradient(135deg, var(--aqua), var(--blue));
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 213, 0.4);
+        }
+
+        .demo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .demo-main {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Workflow Canvas */
+        .demo-canvas {
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 213, 0.03), transparent 60%);
+        }
+
+        /* Animated Connection Lines */
+        .demo-canvas svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Demo Nodes */
+        .demo-node {
+            background: rgba(20, 20, 30, 0.9);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            min-width: 120px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .demo-node.active {
+            border-color: var(--aqua);
+            box-shadow: 0 0 30px rgba(0, 255, 213, 0.4);
+            transform: scale(1.05);
+        }
+
+        .demo-node.completed {
+            border-color: var(--green);
+        }
+
+        .demo-node.completed::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 22px;
+            height: 22px;
+            background: var(--green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #000;
+            font-weight: 700;
+        }
+
+        .demo-node-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .demo-node-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--dim);
+            margin-bottom: 4px;
+        }
+
+        .demo-node-title {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Data Packet Animation */
+        .data-packet {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: var(--aqua);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--aqua);
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .data-packet.moving {
+            animation: movePacket 0.6s ease-out forwards;
+        }
+
+        /* Node Connectors */
+        .demo-connector {
+            width: 50px;
+            height: 2px;
+            background: var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .demo-connector.active {
+            background: linear-gradient(90deg, var(--aqua), var(--blue));
+            animation: flowPulse 0.5s ease infinite;
+        }
+
+        @keyframes flowPulse {
+
+            0%,
+            100% {
+                opacity: 0.5;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Console Panel - Below Canvas */
+        .demo-console {
+            background: #080810;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            max-height: 220px;
+        }
+
+        .console-header {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--aqua);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .console-header::before {
+            content: '>';
+            color: var(--green);
+        }
+
+        .console-body {
+            flex: 1;
+            padding: 12px 20px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 24px;
+            align-content: flex-start;
+        }
+
+        .log-line {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: logAppear 0.3s ease forwards;
+            white-space: nowrap;
+        }
+
+        @keyframes logAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-time {
+            color: var(--dim);
+        }
+
+        .log-info {
+            color: var(--blue);
+        }
+
+        .log-success {
+            color: var(--green);
+        }
+
+        .log-process {
+            color: var(--aqua);
+        }
+
+        .log-ai {
+            color: var(--purple);
+        }
+
+        .log-warn {
+            color: var(--orange);
+        }
+
+        /* Status Bar */
+        .demo-status {
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 11px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--dim);
+        }
+
+        .status-dot.active {
+            background: var(--green);
+            animation: blink 1s ease infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        /* Key Points */
+        .key-points {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .key-point {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .key-point:hover {
+            border-color: var(--aqua);
+            transform: translateY(-4px);
+        }
+
+        .key-point-icon {
+            font-size: 28px;
+            margin-bottom: 14px;
+        }
+
+        .key-point-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .key-point-desc {
+            font-size: 13px;
+            color: var(--dim);
+            line-height: 1.6;
+        }
+
+        /* Clone Diagram */
+        .clone-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .clone-source {
+            background: linear-gradient(135deg, rgba(0, 255, 213, 0.1), rgba(0, 168, 255, 0.1));
+            border: 2px solid var(--aqua);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+        }
+
+        .clone-source::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -40px;
+            width: 40px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--aqua), transparent);
+        }
+
+        .clone-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .clone-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .clone-sub {
+            font-size: 12px;
+            color: var(--dim);
+        }
+
+        .clone-targets {
+            display: grid;
+            gap: 16px;
+        }
+
+        .clone-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .clone-item:hover {
+            border-color: var(--purple);
+            transform: translateX(8px);
+        }
+
+        .clone-item-icon {
+            font-size: 32px;
+        }
+
+        .clone-item-info {
+            flex: 1;
+        }
+
+        .clone-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .clone-item-meta {
+            font-size: 11px;
+            color: var(--dim);
+        }
+
+        .clone-item-key {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 10px;
+            color: var(--purple);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .clone-item-status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        /* Problem-Solution Blocks */
+        .problem-solution {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .problem-block,
+        .solution-block {
+            padding: 24px;
+            border-radius: 14px;
+        }
+
+        .problem-block {
+            background: rgba(255, 107, 107, 0.08);
+            border: 1px solid rgba(255, 107, 107, 0.25);
+        }
+
+        .solution-block {
+            background: rgba(0, 214, 143, 0.08);
+            border: 1px solid rgba(0, 214, 143, 0.25);
+        }
+
+        .block-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .problem-block .block-label {
+            color: var(--red);
+        }
+
+        .solution-block .block-label {
+            color: var(--green);
+        }
+
+        .block-content {
+            font-size: 14px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 1000px) {
+            .demo-main {
+                grid-template-columns: 1fr;
+            }
+
+            .demo-console {
+                min-height: 200px;
+            }
+
+            .clone-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .clone-source::after {
+                display: none;
+            }
+
+            .key-points {
+                grid-template-columns: 1fr;
+            }
+
+            .problem-solution {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-glow"></div>
+
+    <div class="container">
+        <header class="header">
+            <h1>🔧 AXIOM Workflow Builder</h1>
+            <p>Complete System Architecture — Build, Deploy, Assign, Execute</p>
+        </header>
+
+        <!-- PHASE 1: LIVE DEMO -->
+        <section class="phase phase-aqua">
+            <div class="phase-header">
+                <div class="phase-num">▶</div>
+                <div>
+                    <h2 class="phase-title">LIVE DEMO — Watch Execution</h2>
+                    <p class="phase-subtitle">See how a workflow processes an incoming request in real-time</p>
+                </div>
+            </div>
+
+            <div class="problem-solution" style="margin-bottom: 24px;">
+                <div class="problem-block">
+                    <div class="block-label">❌ WITHOUT THIS</div>
+                    <div class="block-content">AI systems are black boxes. No visibility into what's happening. When
+                        something fails, debugging is impossible. No audit trail for compliance.</div>
+                </div>
+                <div class="solution-block">
+                    <div class="block-label">✅ WITH AXIOM</div>
+                    <div class="block-content">Every step is traceable. See exactly which node ran, which API key was
+                        used, what the constitution validated. Full audit log for every execution.</div>
+                </div>
+            </div>
+
+            <div class="demo-container">
+                <div class="demo-toolbar">
+                    <div class="demo-dots">
+                        <div class="demo-dot dot-r"></div>
+                        <div class="demo-dot dot-y"></div>
+                        <div class="demo-dot dot-g"></div>
+                    </div>
+                    <div class="demo-title">Email Reply Workflow — IMT Engine #1</div>
+                    <button class="demo-btn" id="runDemo">▶ Run Simulation</button>
+                </div>
+
+                <div class="demo-main">
+                    <div class="demo-canvas" id="canvas">
+                        <div class="demo-node" id="node1">
+                            <div class="demo-node-icon">📬</div>
+                            <div class="demo-node-label">Trigger</div>
+                            <div class="demo-node-title">Email In</div>
+                        </div>
+                        <div class="demo-connector" id="conn1"></div>
+                        <div class="demo-node" id="node2">
+                            <div class="demo-node-icon">🔍</div>
+                            <div class="demo-node-label">Analyze</div>
+                            <div class="demo-node-title">Intent</div>
+                        </div>
+                        <div class="demo-connector" id="conn2"></div>
+                        <div class="demo-node" id="node3">
+                            <div class="demo-node-icon">📚</div>
+                            <div class="demo-node-label">Retrieve</div>
+                            <div class="demo-node-title">From KB</div>
+                        </div>
+                        <div class="demo-connector" id="conn3"></div>
+                        <div class="demo-node" id="node4">
+                            <div class="demo-node-icon">🧠</div>
+                            <div class="demo-node-label">Generate</div>
+                            <div class="demo-node-title">LLM</div>
+                        </div>
+                        <div class="demo-connector" id="conn4"></div>
+                        <div class="demo-node" id="node5">
+                            <div class="demo-node-icon">⚖️</div>
+                            <div class="demo-node-label">Validate</div>
+                            <div class="demo-node-title">Constitution</div>
+                        </div>
+                        <div class="demo-connector" id="conn5"></div>
+                        <div class="demo-node" id="node6">
+                            <div class="demo-node-icon">📤</div>
+                            <div class="demo-node-label">Output</div>
+                            <div class="demo-node-title">→ n8n</div>
+                        </div>
+                    </div>
+
+                    <div class="demo-console">
+                        <div class="console-header">Execution Log</div>
+                        <div class="console-body" id="console"></div>
+                    </div>
+                </div>
+
+                <div class="demo-status">
+                    <div class="status-item">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Ready</span>
+                    </div>
+                    <div class="status-item">
+                        <span style="color: var(--dim);">Engine:</span>
+                        <span>IMT Reply #1</span>
+                    </div>
+                    <div class="status-item">
+                        <span style="color: var(--dim);">API Key:</span>
+                        <span class="mono" style="color: var(--purple);">sk-imt-001</span>
+                    </div>
+                    <div class="status-item" style="margin-left: auto;">
+                        <span style="color: var(--dim);">Time:</span>
+                        <span id="execTime">0.00s</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 2: BUILD -->
+        <section class="phase phase-aqua">
+            <div class="phase-header">
+                <div class="phase-num">1</div>
+                <div>
+                    <h2 class="phase-title">BUILD — Visual Workflow Editor</h2>
+                    <p class="phase-subtitle">Drag-and-drop ReactFlow node builder</p>
+                </div>
+            </div>
+
+            <div class="visual-box">
+                <div class="problem-solution">
+                    <div class="problem-block">
+                        <div class="block-label">❌ PROBLEM</div>
+                        <div class="block-content">Building AI workflows requires developers to write custom code for
+                            every new use case. Changes take days. Non-technical stakeholders can't visualize or
+                            validate the flow.</div>
+                    </div>
+                    <div class="solution-block">
+                        <div class="block-label">✅ SOLUTION</div>
+                        <div class="block-content">Visual drag-and-drop builder. Anyone can see the flow. Changes take
+                            minutes. Each node is configurable without code. Saved as reusable template.</div>
+                    </div>
+                </div>
+
+                <div class="key-points">
+                    <div class="key-point">
+                        <div class="key-point-icon">🎨</div>
+                        <div class="key-point-title">Drag & Drop Nodes</div>
+                        <div class="key-point-desc">ReactFlow-based visual builder. Triggers, processors, AI nodes,
+                            outputs.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">⚙️</div>
+                        <div class="key-point-title">Node Configuration</div>
+                        <div class="key-point-desc">Each node has settings: API endpoints, prompts, validation rules, KB
+                            refs.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">💾</div>
+                        <div class="key-point-title">Save as Template</div>
+                        <div class="key-point-desc">Workflow saved as JSON graph. Becomes a reusable engine template.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 3: DEPLOY -->
+        <section class="phase phase-purple">
+            <div class="phase-header">
+                <div class="phase-num">2</div>
+                <div>
+                    <h2 class="phase-title">DEPLOY — Clone & Configure</h2>
+                    <p class="phase-subtitle">Template cloned into deployable engines with unique API keys</p>
+                </div>
+            </div>
+
+            <div class="visual-box">
+                <div class="problem-solution">
+                    <div class="problem-block">
+                        <div class="block-label">❌ PROBLEM</div>
+                        <div class="block-content">Sharing one workflow across all orgs means shared API keys. When one
+                            org exhausts the key's rate limit, ALL orgs go down. No isolation. No customization per
+                            client.</div>
+                    </div>
+                    <div class="solution-block">
+                        <div class="block-label">✅ SOLUTION</div>
+                        <div class="block-content">Clone template into separate engines. Each clone gets its OWN API
+                            keys. One org hits rate limit? Only their engine is affected. Clones can also be customized
+                            without touching others.</div>
+                    </div>
+                </div>
+
+                <div class="clone-grid">
+                    <div class="clone-source">
+                        <div class="clone-icon">📋</div>
+                        <div class="clone-title">Email Reply Template</div>
+                        <div class="clone-sub">Master Blueprint v1.0</div>
+                    </div>
+
+                    <div class="clone-targets">
+                        <div class="clone-item">
+                            <div class="clone-item-icon">🧠</div>
+                            <div class="clone-item-info">
+                                <div class="clone-item-name">IMT Reply Engine #1</div>
+                                <div class="clone-item-meta">Primary • High volume</div>
+                            </div>
+                            <div class="clone-item-key">sk-imt-001</div>
+                            <div class="clone-item-status"></div>
+                        </div>
+                        <div class="clone-item">
+                            <div class="clone-item-icon">🧠</div>
+                            <div class="clone-item-info">
+                                <div class="clone-item-name">IMT Reply Engine #2</div>
+                                <div class="clone-item-meta">Backup • Overflow</div>
+                            </div>
+                            <div class="clone-item-key">sk-imt-002</div>
+                            <div class="clone-item-status" style="background: var(--orange);"></div>
+                        </div>
+                        <div class="clone-item">
+                            <div class="clone-item-icon">🧠</div>
+                            <div class="clone-item-info">
+                                <div class="clone-item-name">Client B Engine</div>
+                                <div class="clone-item-meta">Different org • Different rules</div>
+                            </div>
+                            <div class="clone-item-key">sk-clientb-001</div>
+                            <div class="clone-item-status"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="key-points">
+                    <div class="key-point">
+                        <div class="key-point-icon">📑</div>
+                        <div class="key-point-title">Clone, Don't Share</div>
+                        <div class="key-point-desc">Each deployment is a COPY. Complete isolation between instances.
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">🔑</div>
+                        <div class="key-point-title">Unique API Keys</div>
+                        <div class="key-point-desc">Each clone gets its own LLM keys. No shared quotas or rate limits.
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">✏️</div>
+                        <div class="key-point-title">Customizable</div>
+                        <div class="key-point-desc">Clones can be edited. Add nodes, change prompts, adjust logic.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 4: ASSIGN -->
+        <section class="phase phase-orange">
+            <div class="phase-header">
+                <div class="phase-num">3</div>
+                <div>
+                    <h2 class="phase-title">ASSIGN — Link to Organization</h2>
+                    <p class="phase-subtitle">Engine assigned to org with their KB & Constitution</p>
+                </div>
+            </div>
+
+            <div class="visual-box">
+                <div class="problem-solution">
+                    <div class="problem-block">
+                        <div class="block-label">❌ PROBLEM</div>
+                        <div class="block-content">A deployed engine is useless until it knows WHOSE data to use.
+                            Without linking to org's KB, it has no ICPs, no angles, no playbooks. Without constitution,
+                            no guardrails.</div>
+                    </div>
+                    <div class="solution-block">
+                        <div class="block-label">✅ SOLUTION</div>
+                        <div class="block-content">Assign engine to org. Link their Knowledge Base (data) and
+                            Constitution (rules). At runtime, engine knows exactly whose config to load. Full
+                            multi-tenant isolation.</div>
+                    </div>
+                </div>
+
+                <div class="key-points">
+                    <div class="key-point">
+                        <div class="key-point-icon">🏢</div>
+                        <div class="key-point-title">Multi-Tenant</div>
+                        <div class="key-point-desc">Same template structure, completely different config per org.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">📚</div>
+                        <div class="key-point-title">Org's KB Linked</div>
+                        <div class="key-point-desc">Engine reads from org's KB — ICPs, offers, angles, playbooks.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">⚖️</div>
+                        <div class="key-point-title">Org's Constitution</div>
+                        <div class="key-point-desc">Validation uses org's rules. IMT: no urgency. Others: different
+                            rules.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHASE 5: Summary -->
+        <section class="phase phase-green">
+            <div class="phase-header">
+                <div class="phase-num">✓</div>
+                <div>
+                    <h2 class="phase-title">Why Clone-per-Org Works</h2>
+                    <p class="phase-subtitle">The Lekhika pattern — battle-tested architecture</p>
+                </div>
+            </div>
+
+            <div class="visual-box">
+                <div class="key-points">
+                    <div class="key-point">
+                        <div class="key-point-icon">🔑</div>
+                        <div class="key-point-title">Isolated API Quotas</div>
+                        <div class="key-point-desc">Each engine has its own keys. One org's rate limit doesn't affect
+                            others.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">🛡️</div>
+                        <div class="key-point-title">Failure Isolation</div>
+                        <div class="key-point-desc">One engine fails, others keep running. Clean blast radius.</div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon">📊</div>
+                        <div class="key-point-title">Per-Engine Logs</div>
+                        <div class="key-point-desc">Easy debugging. Each engine has its own execution history.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Demo Simulation
+        const btn = document.getElementById('runDemo');
+        const console_ = document.getElementById('console');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const execTime = document.getElementById('execTime');
+
+        const nodes = ['node1', 'node2', 'node3', 'node4', 'node5', 'node6'];
+        const conns = ['conn1', 'conn2', 'conn3', 'conn4', 'conn5'];
+
+        const logs = [
+            { time: '0.00', type: 'info', msg: '→ Request received from n8n webhook' },
+            { time: '0.02', type: 'info', msg: '→ Org identified: InMarket Traffic (imt_001)' },
+            { time: '0.03', type: 'info', msg: '→ Engine loaded: IMT Reply Engine #1' },
+            { time: '0.05', type: 'process', msg: '⚡ Node 1: Email trigger activated' },
+            { time: '0.10', type: 'info', msg: '  └─ From: prospect@company.com' },
+            { time: '0.12', type: 'info', msg: '  └─ Subject: "What does this cost?"' },
+            { time: '0.20', type: 'process', msg: '⚡ Node 2: Analyzing intent...' },
+            { time: '0.45', type: 'success', msg: '  └─ Intent: pricing_question (0.94 confidence)' },
+            { time: '0.50', type: 'process', msg: '⚡ Node 3: Retrieving from KB...' },
+            { time: '0.65', type: 'success', msg: '  └─ Matched: offer_library.identity_linked_cpc' },
+            { time: '0.70', type: 'success', msg: '  └─ Strategy: CLARIFYING_QUESTION_FIRST' },
+            { time: '0.80', type: 'ai', msg: '⚡ Node 4: Calling LLM (Claude)...' },
+            { time: '0.82', type: 'info', msg: '  └─ Using API key: sk-imt-001' },
+            { time: '1.40', type: 'success', msg: '  └─ Reply generated (187 tokens)' },
+            { time: '1.50', type: 'process', msg: '⚡ Node 5: Constitution validation...' },
+            { time: '1.55', type: 'success', msg: '  └─ No urgency: ✓ PASS' },
+            { time: '1.56', type: 'success', msg: '  └─ No guarantees: ✓ PASS' },
+            { time: '1.57', type: 'success', msg: '  └─ Cognitive sequence: ✓ PASS' },
+            { time: '1.60', type: 'process', msg: '⚡ Node 6: Returning output to caller...' },
+            { time: '1.65', type: 'success', msg: '  └─ Response sent to n8n via API' },
+            { time: '1.68', type: 'info', msg: '  └─ n8n will forward to Mailwiz for delivery' },
+            { time: '1.70', type: 'success', msg: '✅ Execution complete. All nodes passed.' },
+        ];
+
+        let running = false;
+
+        btn.addEventListener('click', async () => {
+            if (running) return;
+            running = true;
+            btn.disabled = true;
+            btn.textContent = '⏳ Running...';
+
+            // Reset
+            console_.innerHTML = '';
+            nodes.forEach(n => {
+                document.getElementById(n).classList.remove('active', 'completed');
+            });
+            conns.forEach(c => {
+                document.getElementById(c).classList.remove('active');
+            });
+
+            statusDot.classList.add('active');
+            statusText.textContent = 'Executing...';
+
+            let startTime = Date.now();
+            let timeInterval = setInterval(() => {
+                execTime.textContent = ((Date.now() - startTime) / 1000).toFixed(2) + 's';
+            }, 50);
+
+            // Run simulation
+            for (let i = 0; i < logs.length; i++) {
+                const log = logs[i];
+                const delay = i === 0 ? 200 : (parseFloat(logs[i].time) - parseFloat(logs[i - 1].time)) * 1000;
+
+                await sleep(Math.max(delay, 100));
+
+                // Add log line
+                const line = document.createElement('div');
+                line.className = 'log-line';
+                line.innerHTML = `<span class="log-time">[${log.time}s]</span> <span class="log-${log.type}">${log.msg}</span>`;
+                console_.appendChild(line);
+                console_.scrollTop = console_.scrollHeight;
+
+                // Activate nodes based on log
+                if (log.msg.includes('Node 1')) { activateNode(0); }
+                if (log.msg.includes('Node 2')) { activateNode(1); }
+                if (log.msg.includes('Node 3')) { activateNode(2); }
+                if (log.msg.includes('Node 4')) { activateNode(3); }
+                if (log.msg.includes('Node 5')) { activateNode(4); }
+                if (log.msg.includes('Node 6')) { activateNode(5); }
+            }
+
+            clearInterval(timeInterval);
+            statusDot.classList.remove('active');
+            statusDot.style.background = 'var(--green)';
+            statusText.textContent = 'Completed ✓';
+
+            btn.disabled = false;
+            btn.textContent = '▶ Run Again';
+            running = false;
+        });
+
+        function activateNode(index) {
+            // Complete previous node
+            if (index > 0) {
+                document.getElementById(nodes[index - 1]).classList.remove('active');
+                document.getElementById(nodes[index - 1]).classList.add('completed');
+                if (conns[index - 1]) {
+                    document.getElementById(conns[index - 1]).classList.remove('active');
+                }
+            }
+
+            // Activate current
+            document.getElementById(nodes[index]).classList.add('active');
+            if (conns[index]) {
+                document.getElementById(conns[index]).classList.add('active');
+            }
+
+            // Complete last node
+            if (index === nodes.length - 1) {
+                setTimeout(() => {
+                    document.getElementById(nodes[index]).classList.remove('active');
+                    document.getElementById(nodes[index]).classList.add('completed');
+                }, 300);
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+    </script>
+
+    <!-- Footer -->
+    <footer
+        style="position: fixed; bottom: 0; left: 0; right: 0; padding: 16px 0; text-align: center; background: linear-gradient(to top, rgba(5,5,8,0.95), transparent); z-index: 50; pointer-events: none;">
+        <p style="font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500; margin-bottom: 6px;">
+            🌀 Chaos. ☕ Coffee. 💻 Coding.
+        </p>
+        <p
+            style="font-size: 11px; color: rgba(255,255,255,0.35); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px;">
+            Crafted by <span style="color: #00ffd5;">Ora</span> with ❤️ for <a href="https://anwe.sh" target="_blank"
+                style="color: #00a8ff; text-decoration: none; pointer-events: auto;">anwe.sh</a>
+        </p>
+    </footer>
+</body>
+
+</html>

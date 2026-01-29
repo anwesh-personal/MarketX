@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axiom Product Roadmap - Interactive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            padding: 2rem;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .phases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .phase-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .phase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color) 0%, var(--accent-color-light) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .phase-card:hover::before {
+            opacity: 1;
+        }
+
+        .phase-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent-color);
+        }
+
+        /* Phase-specific colors */
+        .phase-1 {
+            --accent-color: #a855f7;
+            --accent-color-light: #c084fc;
+        }
+
+        .phase-2 {
+            --accent-color: #3b82f6;
+            --accent-color-light: #60a5fa;
+        }
+
+        .phase-3 {
+            --accent-color: #f97316;
+            --accent-color-light: #fb923c;
+        }
+
+        .phase-4 {
+            --accent-color: #10b981;
+            --accent-color-light: #34d399;
+        }
+
+        .phase-5 {
+            --accent-color: #06b6d4;
+            --accent-color-light: #22d3ee;
+        }
+
+        .phase-6 {
+            --accent-color: #ec4899;
+            --accent-color-light: #f472b6;
+        }
+
+        .phase-7 {
+            --accent-color: #8b5cf6;
+            --accent-color-light: #a78bfa;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .phase-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        .phase-card:hover .phase-title {
+            color: var(--accent-color-light);
+        }
+
+        .expand-icon {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .phase-card.expanded .expand-icon {
+            transform: rotate(180deg);
+            background: var(--accent-color);
+        }
+
+        .phase-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .phase-card.expanded .phase-content {
+            max-height: 2000px;
+        }
+
+        .feature-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-group-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.05);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .feature-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        .feature-icon {
+            min-width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .feature-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+        }
+
+        .feature-text strong {
+            color: #f8fafc;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: var(--accent-color);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 12px;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .metric-box {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .metric {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .metric:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color) 0%, var(--accent-color-light) 100%);
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.3),
+                    transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .parallel-flows {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        .parallel-flows h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #cbd5e1;
+        }
+
+        .flow-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .flow-item:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: #3b82f6;
+            transform: translateX(8px);
+        }
+
+        .flow-dot {
+            min-width: 12px;
+            height: 12px;
+            background: #3b82f6;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+        }
+
+        .flow-text {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+        }
+
+        .flow-arrow {
+            margin-left: auto;
+            color: #64748b;
+            font-size: 1.5rem;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .phases-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .metric-box {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚀 Axiom Product Roadmap</h1>
+
+        <div class="phases-grid">
+            <!-- PHASE 1: ONBOARDING & SETUP -->
+            <div class="phase-card phase-1" data-phase="1">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 1: Onboarding & Setup</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">User Entry Points</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✓</div>
+                            <div class="feature-text"><strong>Welcome Wizard</strong> - Interactive 3-step onboarding
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📁</div>
+                            <div class="feature-text">Start from scratch, Use sample KB, or Import from competitor</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Tutorial & Templates</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text"><strong>Interactive Tutorial</strong> (3 steps): Profile,
+                                Preferences, Use cases</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎨</div>
+                            <div class="feature-text"><strong>Choose Brain Template</strong>: Free, Pro, Enterprise
+                                tiers</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚙️</div>
+                            <div class="feature-text"><strong>Set Business Goals</strong>: Accuracy, Speed, Cost sliders
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric">
+                            <div class="metric-label">Completion Rate</div>
+                            <div class="metric-value">87%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Avg Time</div>
+                            <div class="metric-value">8min</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 2: KNOWLEDGE BASE SETUP -->
+            <div class="phase-card phase-2" data-phase="2">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 2: Knowledge Base Setup</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Document Upload</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📤</div>
+                            <div class="feature-text"><strong>Upload Documents</strong>: Drag & drop UI</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text"><strong>NEW</strong>: Real-time validation <span
+                                    class="badge">v2.0</span></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">Content quality score: <strong>75/100</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Processing</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚡</div>
+                            <div class="feature-text"><strong>NEW</strong>: Processing with progress <span
+                                    class="badge">new</span></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Chunks processed: <strong>450/1000</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⏱️</div>
+                            <div class="feature-text">Estimated time remaining: <strong>5 min</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Quality Gates</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💯</div>
+                            <div class="feature-text">KB Health Score: <strong>98/100</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔍</div>
+                            <div class="feature-text">Issues found: <strong>5 outdated docs</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 3: CONTENT GENERATION -->
+            <div class="phase-card phase-3" data-phase="3">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 3: Content Generation</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Run Creation</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎬</div>
+                            <div class="feature-text"><strong>User creates "Run"</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📝</div>
+                            <div class="feature-text">ICP selection, Offer selection, Content types</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Format: Blog, email, social</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🤖</div>
+                            <div class="feature-text">A/B test config</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">NEW Features</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✨</div>
+                            <div class="feature-text"><strong>Pre-flight Check</strong> <span class="badge">new</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔍</div>
+                            <div class="feature-text">ER coverage for selected ICP: <strong>99%</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">👁️</div>
+                            <div class="feature-text"><strong>Generation with Preview</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚙️</div>
+                            <div class="feature-text">Real-time generation progress: <strong>20%</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Quality Control</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text"><strong>Approval Workflow</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">Brand voice score: <strong>95%</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📈</div>
+                            <div class="feature-text"><strong>Success Metrics Dashboard</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 4: BRAIN CHAT INTERACTION -->
+            <div class="phase-card phase-4" data-phase="4">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 4: Brain Chat Interaction</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Smart Query Enhancement</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🧠</div>
+                            <div class="feature-text"><strong>NEW</strong>: Smart Query Enhancement <span
+                                    class="badge">ai</span></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💬</div>
+                            <div class="feature-text">System suggests better phrasing</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Related questions auto-suggested</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Response Quality</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⭐</div>
+                            <div class="feature-text">Agent classification, Vector search + hybrid retrieval</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔍</div>
+                            <div class="feature-text"><strong>NEW</strong>: Source scoring <strong>H-L-M-SB5</strong>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💬</div>
+                            <div class="feature-text"><strong>Streaming Response with Context</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✨</div>
+                            <div class="feature-text">Tokens stream in real-time with typing animation</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Feedback & Learning</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text"><strong>NEW</strong>: Multi-Level Feedback</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚠️</div>
+                            <div class="feature-text"><strong>Kid-proof alert</strong>: Of sentences
+                                <strong>YT&D</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎓</div>
+                            <div class="feature-text"><strong>Teach Mode</strong>: User-guided corrections</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric">
+                            <div class="metric-label">Quality Score</div>
+                            <div class="metric-value">4.8/5</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Confidence</div>
+                            <div class="metric-value">98%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 5: ACTIVE LEARNING -->
+            <div class="phase-card phase-5" data-phase="5">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 5: Active Learning</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Continuous Improvement</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔄</div>
+                            <div class="feature-text"><strong>Daily Learning Loop</strong> (6 AM)</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">Analyzes previous day, Prioritizes warning patterns</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📧</div>
+                            <div class="feature-text"><strong>NEW</strong>: Sends summary email</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💡</div>
+                            <div class="feature-text"><strong>Proactive Recommendations</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Pattern Detection</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Your KB is missing info on pricing</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚠️</div>
+                            <div class="feature-text">Competitors are using better angles</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📅</div>
+                            <div class="feature-text">This content is outdated (6 months old)</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric">
+                            <div class="metric-label">Patterns Found</div>
+                            <div class="metric-value">37</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Auto-Fixed</div>
+                            <div class="metric-value">22</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 6: ANALYTICS & INSIGHTS -->
+            <div class="phase-card phase-6" data-phase="6">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 6: Analytics & Insights</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Unified Dashboard</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text"><strong>NEW</strong>: Unified Dashboard <span
+                                    class="badge">v3.0</span></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⏱️</div>
+                            <div class="feature-text">Time saved: <strong>2 hours this month</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💰</div>
+                            <div class="feature-text">Queries answered: <strong>3,450</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💵</div>
+                            <div class="feature-text">Cost tracking: <strong>$127 API spend</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Business Metrics</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📈</div>
+                            <div class="feature-text"><strong>NEW</strong>: Business ROI</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💎</div>
+                            <div class="feature-text">Conversion rate: <strong>23% →→4.7%</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💰</div>
+                            <div class="feature-text">Revenue attributed: <strong>$44,000</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Team Analytics</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">👥</div>
+                            <div class="feature-text"><strong>NEW</strong>: Team Analytics (if authorized)</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⭐</div>
+                            <div class="feature-text">Most active users, Knowledge contributors</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🏆</div>
+                            <div class="feature-text">Starred KBs performance</div>
+                        </div>
+                    </div>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 92%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 7: CONTINUOUS IMPROVEMENT -->
+            <div class="phase-card phase-7" data-phase="7">
+                <div class="phase-header">
+                    <div class="phase-title">Phase 7: Continuous Improvement</div>
+                    <div class="expand-icon">▼</div>
+                </div>
+                <div class="phase-content">
+                    <div class="feature-group">
+                        <div class="feature-group-title">Automated Learning</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔁</div>
+                            <div class="feature-text"><strong>Daily Learning Loop</strong> (6 AM)</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📊</div>
+                            <div class="feature-text">Analyzes previous day, Prioritizes warning patterns</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📧</div>
+                            <div class="feature-text"><strong>NEW</strong>: Sends summary email</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📋</div>
+                            <div class="feature-text">Yesterday: 3 patterns identified, 1 paused, Your KB is pacing 2%
+                                better</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Proactive Alerts</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💡</div>
+                            <div class="feature-text"><strong>NEW</strong>: Proactive Recommendations</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">⚠️</div>
+                            <div class="feature-text">Your KB is missing info on pricing</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <div class="feature-text">Competitors are using better angles</div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">📅</div>
+                            <div class="feature-text">This content is outdated (6 months old)</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-group">
+                        <div class="feature-group-title">Continuous Optimization</div>
+                        <div class="feature-item">
+                            <div class="feature-icon">✅</div>
+                            <div class="feature-text"><strong>User reviews & approves changes</strong></div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔄</div>
+                            <div class="feature-text">Loop continues to update KB</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-box">
+                        <div class="metric">
+                            <div class="metric-label">Auto-Improvements</div>
+                            <div class="metric-value">145</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Accuracy Gain</div>
+                            <div class="metric-value">+8%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PARALLEL FLOWS -->
+        <div class="parallel-flows">
+            <h2>Bottom: Parallel Flows</h2>
+
+            <div class="flow-item">
+                <div class="flow-dot"></div>
+                <div class="flow-text"><strong>User Journey</strong></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-text">Onboarding → KB Setup → Generation → Chat → Learning</div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-dot"></div>
+                <div class="flow-text"><strong>Business Metrics</strong></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-text">ROI, conversions, revenue tracking</div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-dot"></div>
+                <div class="flow-text"><strong>System Health</strong></div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-text">Uptime, API costs, error rates monitoring</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize all phase cards as collapsed
+        document.addEventListener('DOMContentLoaded', function () {
+            const phaseCards = document.querySelectorAll('.phase-card');
+
+            phaseCards.forEach(card => {
+                const header = card.querySelector('.phase-header');
+
+                header.addEventListener('click', function () {
+                    // Toggle expanded state
+                    card.classList.toggle('expanded');
+                });
+
+                // Add staggered animation on load
+                const phaseNum = card.dataset.phase;
+                setTimeout(() => {
+                    card.style.animation = `fadeInDown 0.6s ease forwards`;
+                }, phaseNum * 100);
+            });
+
+            // Add hover microinteractions to feature items
+            const featureItems = document.querySelectorAll('.feature-item');
+            featureItems.forEach(item => {
+                item.addEventListener('mouseenter', function () {
+                    this.style.transform = 'translateX(4px) scale(1.02)';
+                });
+
+                item.addEventListener('mouseleave', function () {
+                    this.style.transform = 'translateX(0) scale(1)';
+                });
+            });
+
+            // Animate progress bars on scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const fill = entry.target.querySelector('.progress-fill');
+                        if (fill) {
+                            const width = fill.style.width;
+                            fill.style.width = '0%';
+                            setTimeout(() => {
+                                fill.style.width = width;
+                            }, 100);
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                observer.observe(bar);
+            });
+        });
+    </script>
+</body>
+
+</html>
