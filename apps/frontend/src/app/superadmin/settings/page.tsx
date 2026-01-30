@@ -13,6 +13,8 @@ import {
     Lock,
     Key,
     Loader2,
+    UserPlus,
+    Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -41,10 +43,15 @@ export default function SettingsPage() {
 
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [activeTab, setActiveTab] = useState<'general' | 'email' | 'security' | 'limits'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'email' | 'security' | 'limits' | 'admins'>('general');
+
+    const [admins, setAdmins] = useState<any[]>([]);
+    const [creatingAdmin, setCreatingAdmin] = useState(false);
+    const [newAdmin, setNewAdmin] = useState({ email: '', full_name: '', password: '' });
 
     useEffect(() => {
         loadConfigs();
+        loadAdmins();
     }, []);
 
     const loadConfigs = async () => {
@@ -62,6 +69,48 @@ export default function SettingsPage() {
             console.error('Failed to load configs:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const loadAdmins = async () => {
+        try {
+            const res = await fetch('/api/superadmin/admins');
+            const data = await res.json();
+            if (data.admins) {
+                setAdmins(data.admins);
+            }
+        } catch (error) {
+            console.error('Failed to load admins:', error);
+        }
+    };
+
+    const createAdmin = async () => {
+        if (!newAdmin.email || !newAdmin.password) {
+            toast.error('Email and password are required');
+            return;
+        }
+
+        setCreatingAdmin(true);
+        try {
+            const res = await fetch('/api/superadmin/admins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newAdmin),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to create superadmin');
+            }
+
+            toast.success('Superadmin created successfully');
+            setNewAdmin({ email: '', full_name: '', password: '' });
+            loadAdmins(); // Reload list
+        } catch (error: any) {
+            toast.error(error.message);
+        } finally {
+            setCreatingAdmin(false);
         }
     };
 
@@ -144,6 +193,7 @@ export default function SettingsPage() {
                     { id: 'email', label: 'Email (SMTP)', icon: Mail },
                     { id: 'security', label: 'Security', icon: Shield },
                     { id: 'limits', label: 'Rate Limits', icon: Zap },
+                    { id: 'admins', label: 'Superadmins', icon: Users },
                 ].map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -462,6 +512,156 @@ export default function SettingsPage() {
                                         focus:outline-none focus:ring-2 focus:ring-borderFocus
                                     "
                                 />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'admins' && (
+                    <div className="space-y-lg">
+                        <h3 className="text-lg font-bold text-textPrimary flex items-center gap-sm">
+                            <Users className="w-5 h-5 text-primary" />
+                            Superadmin Management
+                        </h3>
+
+                        {/* Create New Admin Form */}
+                        <div className="bg-surface border border-border rounded-[var(--radius-md)] p-lg space-y-md">
+                            <div className="flex items-center gap-sm mb-md">
+                                <UserPlus className="w-5 h-5 text-success" />
+                                <h4 className="text-md font-semibold text-textPrimary">Create New Superadmin</h4>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+                                <div>
+                                    <label className="block text-sm font-medium text-textPrimary mb-xs">
+                                        Email <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={newAdmin.email}
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                                        placeholder="admin@mailwriter.com"
+                                        className="
+                                            w-full
+                                            bg-background text-textPrimary
+                                            border border-border rounded-[var(--radius-md)]
+                                            px-sm py-xs
+                                            focus:outline-none focus:ring-2 focus:ring-borderFocus
+                                        "
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-textPrimary mb-xs">
+                                        Full Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={newAdmin.full_name}
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, full_name: e.target.value })}
+                                        placeholder="John Doe"
+                                        className="
+                                            w-full
+                                            bg-background text-textPrimary
+                                            border border-border rounded-[var(--radius-md)]
+                                            px-sm py-xs
+                                            focus:outline-none focus:ring-2 focus:ring-borderFocus
+                                        "
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-textPrimary mb-xs">
+                                        Password <span className="text-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={newAdmin.password}
+                                        onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                                        placeholder="••••••••"
+                                        className="
+                                            w-full
+                                            bg-background text-textPrimary
+                                            border border-border rounded-[var(--radius-md)]
+                                            px-sm py-xs
+                                            focus:outline-none focus:ring-2 focus:ring-borderFocus
+                                        "
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={createAdmin}
+                                disabled={creatingAdmin || !newAdmin.email || !newAdmin.password}
+                                className="
+                                    flex items-center gap-xs
+                                    bg-success text-white
+                                    px-md py-sm
+                                    rounded-[var(--radius-md)]
+                                    font-medium
+                                    hover:opacity-90
+                                    disabled:opacity-50
+                                    transition-all
+                                "
+                            >
+                                {creatingAdmin ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        <span>Creating...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <UserPlus className="w-4 h-4" />
+                                        <span>Create Superadmin</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        {/* Existing Admins List */}
+                        <div>
+                            <h4 className="text-md font-semibold text-textPrimary mb-md">Existing Superadmins ({admins.length})</h4>
+                            <div className="bg-surface border border-border rounded-[var(--radius-md)] overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-background border-b border-border">
+                                        <tr>
+                                            <th className="text-left px-md py-sm text-xs font-semibold text-textSecondary uppercase">Email</th>
+                                            <th className="text-left px-md py-sm text-xs font-semibold text-textSecondary uppercase">Full Name</th>
+                                            <th className="text-left px-md py-sm text-xs font-semibold text-textSecondary uppercase">Status</th>
+                                            <th className="text-left px-md py-sm text-xs font-semibold text-textSecondary uppercase">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {admins.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="text-center px-md py-lg text-textSecondary">
+                                                    No superadmins found
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            admins.map((admin) => (
+                                                <tr key={admin.id} className="border-b border-border last:border-b-0 hover:bg-background/50">
+                                                    <td className="px-md py-sm text-sm text-textPrimary font-medium">{admin.email}</td>
+                                                    <td className="px-md py-sm text-sm text-textSecondary">{admin.full_name || '-'}</td>
+                                                    <td className="px-md py-sm">
+                                                        <span className={`
+                                                            px-xs py-xxs rounded-full text-xs font-medium
+                                                            ${admin.is_active
+                                                                ? 'bg-success/20 text-success'
+                                                                : 'bg-danger/20 text-danger'
+                                                            }
+                                                        `}>
+                                                            {admin.is_active ? 'Active' : 'Inactive'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-md py-sm text-sm text-textSecondary">
+                                                        {new Date(admin.created_at).toLocaleDateString()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
