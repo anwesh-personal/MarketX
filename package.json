@@ -2,7 +2,7 @@
     "name": "mail-writer-monorepo",
     "version": "1.0.0",
     "private": true,
-    "description": "Mail Writer - AI-Powered Email Intelligence Platform",
+    "description": "Market Writer - AI-Powered Marketing Intelligence Platform",
     "scripts": {
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "dev:backend": "cd apps/backend && npm run dev",
@@ -23,7 +23,7 @@
         "ai",
         "automation"
     ],
-    "author": "Mail Writer Team",
+    "author": "Market Writer Team",
     "devDependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",

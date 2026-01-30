@@ -546,7 +546,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) 
 
             <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
-                    Hello! I'm your Mail Writer Brain
+                    Hello! I'm your Market Writer Brain
                 </h2>
                 <p className="text-muted-foreground max-w-md">
                     I can write content, analyze data, set goals, and answer questions using your knowledge base.

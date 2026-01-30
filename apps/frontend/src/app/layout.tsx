@@ -6,8 +6,8 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'Mail Writer - AI-Powered Email Intelligence Platform',
-    description: 'Intelligent email composition with self-improving knowledge base',
+    title: 'Market Writer - AI-Powered Marketing Intelligence Platform',
+    description: 'Intelligent content creation with self-improving knowledge base',
     icons: {
         icon: '/favicon.png',
         apple: '/favicon.png',

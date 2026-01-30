@@ -1,8 +1,8 @@
-# Mail Writer - AI-Powered Email Intelligence Platform
+# Market Writer - AI-Powered Marketing Intelligence Platform
 
-**Intelligent Email Composition with Self-Improving Knowledge Base**
+**Intelligent Content Creation with Self-Improving Knowledge Base**
 
-A production-grade SaaS platform for AI-powered email writing and optimization.
+A production-grade SaaS platform for AI-powered marketing content and optimization.
 
 ## Philosophy
 

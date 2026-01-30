@@ -58,7 +58,7 @@ export default function LoginPage() {
                             Welcome Back
                         </h1>
                         <p className="text-textSecondary">
-                            Sign in to continue to Mail Writer
+                            Sign in to continue to Market Writer
                         </p>
                     </div>
 
