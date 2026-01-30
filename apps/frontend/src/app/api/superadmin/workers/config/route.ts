@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createServerClient } from '@supabase/supabase-js';
+
+// Use service role to bypass RLS for worker config management
+function createClient() {
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    );
+}
 
 /**
  * GET /api/superadmin/workers/config
@@ -13,10 +27,12 @@ export async function GET() {
             .from('worker_deployment_config')
             .select(`
                 id,
-                active_provider,
+                active_target,
+                railway_workspace_id,
                 railway_project_id,
                 railway_service_id,
                 railway_environment,
+                railway_domain,
                 vps_server_id,
                 auto_scale_enabled,
                 min_workers,
@@ -59,51 +75,74 @@ export async function GET() {
 
 /**
  * PUT /api/superadmin/workers/config
- * Update worker deployment configuration
+ * Update worker deployment configuration (creates if doesn't exist)
  */
 export async function PUT(request: NextRequest) {
     try {
         const supabase = createClient();
         const updates = await request.json();
 
-        // Get current config ID
+        // Get existing config (singleton pattern)
         const { data: existing } = await supabase
             .from('worker_deployment_config')
             .select('id')
             .single();
 
-        if (!existing) {
-            return NextResponse.json(
-                { error: 'Config not found' },
-                { status: 404 }
-            );
+        if (existing) {
+            // Update existing config
+            const { data: config, error } = await supabase
+                .from('worker_deployment_config')
+                .update({
+                    active_target: updates.active_provider, // Map frontend name to DB name
+                    railway_token: updates.railway_token,
+                    railway_workspace_id: updates.railway_workspace_id,
+                    railway_project_id: updates.railway_project_id,
+                    railway_service_id: updates.railway_service_id,
+                    railway_environment: updates.railway_environment || 'production',
+                    railway_domain: updates.railway_domain,
+                    vps_server_id: updates.vps_server_id,
+                    auto_scale_enabled: updates.auto_scale_enabled || false,
+                    min_workers: updates.min_workers || 1,
+                    max_workers: updates.max_workers || 10,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return NextResponse.json({
+                success: true,
+                config,
+            });
+        } else {
+            // Create new config (first time)
+            const { data: config, error } = await supabase
+                .from('worker_deployment_config')
+                .insert({
+                    active_target: updates.active_provider || 'vps',
+                    railway_token: updates.railway_token,
+                    railway_workspace_id: updates.railway_workspace_id,
+                    railway_project_id: updates.railway_project_id,
+                    railway_service_id: updates.railway_service_id,
+                    railway_environment: updates.railway_environment || 'production',
+                    railway_domain: updates.railway_domain,
+                    vps_server_id: updates.vps_server_id,
+                    auto_scale_enabled: updates.auto_scale_enabled || false,
+                    min_workers: updates.min_workers || 1,
+                    max_workers: updates.max_workers || 10,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            return NextResponse.json({
+                success: true,
+                config,
+            });
         }
-
-        // Update config
-        const { data: config, error } = await supabase
-            .from('worker_deployment_config')
-            .update({
-                active_provider: updates.active_provider,
-                railway_token: updates.railway_token,
-                railway_project_id: updates.railway_project_id,
-                railway_service_id: updates.railway_service_id,
-                railway_environment: updates.railway_environment,
-                vps_server_id: updates.vps_server_id,
-                auto_scale_enabled: updates.auto_scale_enabled,
-                min_workers: updates.min_workers,
-                max_workers: updates.max_workers,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', existing.id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        return NextResponse.json({
-            success: true,
-            config,
-        });
 
     } catch (error: any) {
         console.error('Update worker config error:', error);

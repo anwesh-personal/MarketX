@@ -2,25 +2,58 @@
  * Worker API Proxy
  * 
  * Proxies requests to the Worker Management API.
- * This keeps the worker URL secret and provides a consistent API for the frontend.
+ * Dynamically determines worker URL based on deployment config (Railway or VPS).
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient as createServerClient } from '@supabase/supabase-js'
 
-// Worker API URL - set in environment
-const WORKER_API_URL = process.env.WORKER_API_URL || 'http://localhost:3100'
+// Use service role to read config
+function createClient() {
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    );
+}
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = createClient();
+
+        // Get deployment config to determine worker URL
+        const { data: config } = await supabase
+            .from('worker_deployment_config')
+            .select('active_target, railway_domain')
+            .single();
+
+        let workerApiUrl: string;
+
+        if (config?.active_target === 'railway' && config.railway_domain) {
+            // Railway deployment - use the auto-discovered domain
+            const domain = config.railway_domain.startsWith('http')
+                ? config.railway_domain
+                : `https://${config.railway_domain}`;
+            workerApiUrl = domain;
+        } else {
+            // VPS or fallback to localhost
+            workerApiUrl = process.env.WORKER_API_URL || 'http://localhost:3100';
+        }
+
         // Fetch Redis info and queue stats in parallel
         const [redisResponse, statsResponse] = await Promise.all([
-            fetch(`${WORKER_API_URL}/api/redis`, {
+            fetch(`${workerApiUrl}/api/redis`, {
                 headers: { 'Content-Type': 'application/json' },
                 signal: AbortSignal.timeout(5000),
             }),
-            fetch(`${WORKER_API_URL}/api/stats`, {
+            fetch(`${workerApiUrl}/api/stats`, {
                 headers: { 'Content-Type': 'application/json' },
                 signal: AbortSignal.timeout(5000),
             }),

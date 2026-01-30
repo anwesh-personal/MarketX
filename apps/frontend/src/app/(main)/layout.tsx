@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { MailWriterLogo } from '@/components/MailWriterLogo';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -89,15 +90,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
 
-                        <div className="flex items-center gap-sm">
-                            <div className="w-9 h-9 rounded-[var(--radius-lg)] bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow">
-                                <Zap className="w-5 h-5 text-white" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-base font-bold text-textPrimary leading-tight">Axiom</span>
-                                <span className="text-xs text-textTertiary leading-tight">Engine</span>
-                            </div>
-                        </div>
+                        <MailWriterLogo size="md" />
                     </div>
 
                     {/* Right: Theme + User */}

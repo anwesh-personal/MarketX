@@ -6,8 +6,12 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'Axiom Engine - Multi-Tenant SaaS Platform',
-    description: 'Market Writer with Self-Improving Knowledge Base',
+    title: 'Mail Writer - AI-Powered Email Intelligence Platform',
+    description: 'Intelligent email composition with self-improving knowledge base',
+    icons: {
+        icon: '/favicon.png',
+        apple: '/favicon.png',
+    },
 }
 
 export default function RootLayout({

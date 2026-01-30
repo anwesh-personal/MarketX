@@ -61,9 +61,15 @@ export function WorkerGrid({ serverId, autoRefresh, refreshInterval, onRefresh }
     const loadStatus = async () => {
         try {
             const params = new URLSearchParams();
-            if (serverId) params.append('server_id', serverId);
+            let url = '/api/superadmin/vps/status';
 
-            const response = await fetch(`/api/superadmin/vps/status?${params}`);
+            if (serverId === 'railway') {
+                url = '/api/superadmin/workers/status';
+            } else if (serverId) {
+                params.append('server_id', serverId);
+            }
+
+            const response = await fetch(`${url}?${params}`);
             if (response.ok) {
                 const data = await response.json();
                 setWorkers(data.workers || []);
@@ -82,14 +88,25 @@ export function WorkerGrid({ serverId, autoRefresh, refreshInterval, onRefresh }
     const handleAction = async (action: string, workerName: string) => {
         setActionLoading(workerName);
         try {
-            const response = await fetch('/api/superadmin/vps/pm2', {
+            let url = '/api/superadmin/vps/pm2';
+            let body: any = {
+                action,
+                process_name: workerName,
+                server_id: serverId,
+            };
+
+            if (serverId === 'railway') {
+                url = '/api/superadmin/workers/action';
+                body = {
+                    action,
+                    workerName,
+                };
+            }
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action,
-                    process_name: workerName,
-                    server_id: serverId,
-                }),
+                body: JSON.stringify(body),
             });
 
             if (response.ok) {

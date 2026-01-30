@@ -1,8 +1,8 @@
-# Project Axiom - The Axiom Engine
+# Mail Writer - AI-Powered Email Intelligence Platform
 
-**Deterministic Content Execution System**
+**Intelligent Email Composition with Self-Improving Knowledge Base**
 
-A production-grade SaaS infrastructure for market-driven content generation and optimization.
+A production-grade SaaS platform for AI-powered email writing and optimization.
 
 ## Philosophy
 

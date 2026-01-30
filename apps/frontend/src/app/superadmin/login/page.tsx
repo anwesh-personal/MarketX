@@ -178,7 +178,7 @@ export default function SuperadminLogin() {
 
                 {/* Footer */}
                 <p className="text-center text-textTertiary text-sm mt-md">
-                    Axiom Engine Platform v1.0.0
+                    Mail Writer Platform v1.0.0
                 </p>
             </div>
         </div>

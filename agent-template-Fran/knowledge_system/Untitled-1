@@ -1,0 +1,320 @@
+[Docs](https://docs.railway.app/)
+- [Home](https://docs.railway.app/)
+- [Quick Start](https://docs.railway.app/quick-start)
+- [Railway Metal](https://docs.railway.app/railway-metal)
+[Home](https://docs.railway.app/)
+[Quick Start](https://docs.railway.app/quick-start)
+[Railway Metal](https://docs.railway.app/railway-metal)
+
+##### Overview
+- [About Railway](https://docs.railway.app/overview/about-railway)
+- [The Basics](https://docs.railway.app/overview/the-basics)
+- [Best Practices](https://docs.railway.app/overview/best-practices)
+- [Advanced Concepts](https://docs.railway.app/overview/advanced-concepts)
+[About Railway](https://docs.railway.app/overview/about-railway)
+[The Basics](https://docs.railway.app/overview/the-basics)
+[Best Practices](https://docs.railway.app/overview/best-practices)
+[Advanced Concepts](https://docs.railway.app/overview/advanced-concepts)
+
+##### Guides
+- [Foundations](https://docs.railway.app/guides/foundations)
+- [Languages & Frameworks](https://docs.railway.app/guides/languages-frameworks)
+- [Networking](https://docs.railway.app/guides/networking)
+- [Builds](https://docs.railway.app/guides/builds)
+- [Deployments](https://docs.railway.app/guides/deployments)
+- [Databases](https://docs.railway.app/guides/databases)
+- [Storage Buckets](https://docs.railway.app/guides/storage-buckets)
+- [Monitoring](https://docs.railway.app/guides/monitoring)
+- [Templates](https://docs.railway.app/guides/templates)
+- [Public API](https://docs.railway.app/guides/public-api)
+- [Config as Code](https://docs.railway.app/guides/config-as-code)
+- [Node.js SIGTERM](https://docs.railway.app/guides/nodejs-sigterm)
+[Foundations](https://docs.railway.app/guides/foundations)
+[Languages & Frameworks](https://docs.railway.app/guides/languages-frameworks)
+[Networking](https://docs.railway.app/guides/networking)
+[Builds](https://docs.railway.app/guides/builds)
+[Deployments](https://docs.railway.app/guides/deployments)
+[Databases](https://docs.railway.app/guides/databases)
+[Storage Buckets](https://docs.railway.app/guides/storage-buckets)
+[Monitoring](https://docs.railway.app/guides/monitoring)
+[Templates](https://docs.railway.app/guides/templates)
+[Public API](https://docs.railway.app/guides/public-api)
+[Config as Code](https://docs.railway.app/guides/config-as-code)
+[Node.js SIGTERM](https://docs.railway.app/guides/nodejs-sigterm)
+
+##### Tutorials
+- [Getting Started](https://docs.railway.app/tutorials/getting-started)
+- Technical Tutorials
+- GitHub Actions
+- GitLab
+[Getting Started](https://docs.railway.app/tutorials/getting-started)
+
+##### Reference
+- [Errors](https://docs.railway.app/reference/errors)
+- Develop
+- Deploy
+- Monitoring
+- Operations
+- [CLI API](https://docs.railway.app/reference/cli-api)
+- [MCP Server](https://docs.railway.app/reference/mcp-server)
+- [Public API](https://docs.railway.app/reference/public-api)
+- [Templates](https://docs.railway.app/reference/templates)
+- Pricing
+- [Migrate to Railway Metal](https://docs.railway.app/reference/migrate-to-railway-metal)
+- [Production Readiness Checklist](https://docs.railway.app/reference/production-readiness-checklist)
+[Errors](https://docs.railway.app/reference/errors)
+[CLI API](https://docs.railway.app/reference/cli-api)
+[MCP Server](https://docs.railway.app/reference/mcp-server)
+[Public API](https://docs.railway.app/reference/public-api)
+[Templates](https://docs.railway.app/reference/templates)
+[Migrate to Railway Metal](https://docs.railway.app/reference/migrate-to-railway-metal)
+[Production Readiness Checklist](https://docs.railway.app/reference/production-readiness-checklist)
+
+##### Maturity
+- [Philosophy](https://docs.railway.app/maturity/philosophy)
+- [Use Cases](https://docs.railway.app/maturity/use-cases)
+- [Compliance](https://docs.railway.app/maturity/compliance)
+- [Enterprise](https://docs.railway.app/maturity/enterprise)
+- [Incident Management](https://docs.railway.app/maturity/incident-management)
+- [Compare to Heroku](https://docs.railway.app/maturity/compare-to-heroku)
+- [Compare to Render](https://docs.railway.app/maturity/compare-to-render)
+- [Compare to Fly](https://docs.railway.app/maturity/compare-to-fly)
+- [Compare to Vercel](https://docs.railway.app/maturity/compare-to-vercel)
+- [Compare to DigitalOcean](https://docs.railway.app/maturity/compare-to-digitalocean)
+- [Compare to VPS](https://docs.railway.app/maturity/compare-to-vps)
+[Philosophy](https://docs.railway.app/maturity/philosophy)
+
+[Use Cases](https://docs.railway.app/maturity/use-cases)
+[Compliance](https://docs.railway.app/maturity/compliance)
+[Enterprise](https://docs.railway.app/maturity/enterprise)
+[Incident Management](https://docs.railway.app/maturity/incident-management)
+[Compare to Heroku](https://docs.railway.app/maturity/compare-to-heroku)
+[Compare to Render](https://docs.railway.app/maturity/compare-to-render)
+[Compare to Fly](https://docs.railway.app/maturity/compare-to-fly)
+[Compare to Vercel](https://docs.railway.app/maturity/compare-to-vercel)
+[Compare to DigitalOcean](https://docs.railway.app/maturity/compare-to-digitalocean)
+[Compare to VPS](https://docs.railway.app/maturity/compare-to-vps)
+
+##### Migration
+- [Migrate from Render](https://docs.railway.app/migration/migrate-from-render)
+- [Migrate from Fly](https://docs.railway.app/migration/migrate-from-fly)
+- [Migrate from Vercel](https://docs.railway.app/migration/migrate-from-vercel)
+- [Migrate from DigitalOcean](https://docs.railway.app/migration/migrate-from-digitalocean)
+- [Migrate from Heroku](https://docs.railway.app/migration/migrate-from-heroku)
+[Migrate from Render](https://docs.railway.app/migration/migrate-from-render)
+[Migrate from Fly](https://docs.railway.app/migration/migrate-from-fly)
+[Migrate from Vercel](https://docs.railway.app/migration/migrate-from-vercel)
+[Migrate from DigitalOcean](https://docs.railway.app/migration/migrate-from-digitalocean)
+[Migrate from Heroku](https://docs.railway.app/migration/migrate-from-heroku)
+
+##### Community
+- [The Conductor Program](https://docs.railway.app/community/the-conductor-program)
+- [Bounties](https://docs.railway.app/community/bounties)
+- [Affiliate Program](https://docs.railway.app/community/affiliate-program)
+[The Conductor Program](https://docs.railway.app/community/the-conductor-program)
+[Bounties](https://docs.railway.app/community/bounties)
+[Affiliate Program](https://docs.railway.app/community/affiliate-program)
+- [Go to Railway](https://railway.com/login)
+[Go to Railway](https://railway.com/login)
+[Docs](https://docs.railway.app/)
+- [Home](https://docs.railway.app/)
+- [Quick Start](https://docs.railway.app/quick-start)
+- [Railway Metal](https://docs.railway.app/railway-metal)
+[Home](https://docs.railway.app/)
+[Quick Start](https://docs.railway.app/quick-start)
+[Railway Metal](https://docs.railway.app/railway-metal)
+
+##### Overview
+- [About Railway](https://docs.railway.app/overview/about-railway)
+- [The Basics](https://docs.railway.app/overview/the-basics)
+- [Best Practices](https://docs.railway.app/overview/best-practices)
+- [Advanced Concepts](https://docs.railway.app/overview/advanced-concepts)
+[About Railway](https://docs.railway.app/overview/about-railway)
+[The Basics](https://docs.railway.app/overview/the-basics)
+[Best Practices](https://docs.railway.app/overview/best-practices)
+[Advanced Concepts](https://docs.railway.app/overview/advanced-concepts)
+
+##### Guides
+- [Foundations](https://docs.railway.app/guides/foundations)
+- [Languages & Frameworks](https://docs.railway.app/guides/languages-frameworks)
+- [Networking](https://docs.railway.app/guides/networking)
+- [Builds](https://docs.railway.app/guides/builds)
+- [Deployments](https://docs.railway.app/guides/deployments)
+- [Databases](https://docs.railway.app/guides/databases)
+- [Storage Buckets](https://docs.railway.app/guides/storage-buckets)
+- [Monitoring](https://docs.railway.app/guides/monitoring)
+- [Templates](https://docs.railway.app/guides/templates)
+- [Public API](https://docs.railway.app/guides/public-api)
+- [Config as Code](https://docs.railway.app/guides/config-as-code)
+- [Node.js SIGTERM](https://docs.railway.app/guides/nodejs-sigterm)
+[Foundations](https://docs.railway.app/guides/foundations)
+[Languages & Frameworks](https://docs.railway.app/guides/languages-frameworks)
+[Networking](https://docs.railway.app/guides/networking)
+[Builds](https://docs.railway.app/guides/builds)
+[Deployments](https://docs.railway.app/guides/deployments)
+[Databases](https://docs.railway.app/guides/databases)
+[Storage Buckets](https://docs.railway.app/guides/storage-buckets)
+[Monitoring](https://docs.railway.app/guides/monitoring)
+[Templates](https://docs.railway.app/guides/templates)
+[Public API](https://docs.railway.app/guides/public-api)
+[Config as Code](https://docs.railway.app/guides/config-as-code)
+[Node.js SIGTERM](https://docs.railway.app/guides/nodejs-sigterm)
+
+##### Tutorials
+- [Getting Started](https://docs.railway.app/tutorials/getting-started)
+
+- Technical Tutorials
+- GitHub Actions
+- GitLab
+[Getting Started](https://docs.railway.app/tutorials/getting-started)
+
+##### Reference
+- [Errors](https://docs.railway.app/reference/errors)
+- Develop
+- Deploy
+- Monitoring
+- Operations
+- [CLI API](https://docs.railway.app/reference/cli-api)
+- [MCP Server](https://docs.railway.app/reference/mcp-server)
+- [Public API](https://docs.railway.app/reference/public-api)
+- [Templates](https://docs.railway.app/reference/templates)
+- Pricing
+- [Migrate to Railway Metal](https://docs.railway.app/reference/migrate-to-railway-metal)
+- [Production Readiness Checklist](https://docs.railway.app/reference/production-readiness-checklist)
+[Errors](https://docs.railway.app/reference/errors)
+[CLI API](https://docs.railway.app/reference/cli-api)
+[MCP Server](https://docs.railway.app/reference/mcp-server)
+[Public API](https://docs.railway.app/reference/public-api)
+[Templates](https://docs.railway.app/reference/templates)
+[Migrate to Railway Metal](https://docs.railway.app/reference/migrate-to-railway-metal)
+[Production Readiness Checklist](https://docs.railway.app/reference/production-readiness-checklist)
+
+##### Maturity
+- [Philosophy](https://docs.railway.app/maturity/philosophy)
+- [Use Cases](https://docs.railway.app/maturity/use-cases)
+- [Compliance](https://docs.railway.app/maturity/compliance)
+- [Enterprise](https://docs.railway.app/maturity/enterprise)
+- [Incident Management](https://docs.railway.app/maturity/incident-management)
+- [Compare to Heroku](https://docs.railway.app/maturity/compare-to-heroku)
+- [Compare to Render](https://docs.railway.app/maturity/compare-to-render)
+- [Compare to Fly](https://docs.railway.app/maturity/compare-to-fly)
+- [Compare to Vercel](https://docs.railway.app/maturity/compare-to-vercel)
+- [Compare to DigitalOcean](https://docs.railway.app/maturity/compare-to-digitalocean)
+- [Compare to VPS](https://docs.railway.app/maturity/compare-to-vps)
+[Philosophy](https://docs.railway.app/maturity/philosophy)
+[Use Cases](https://docs.railway.app/maturity/use-cases)
+[Compliance](https://docs.railway.app/maturity/compliance)
+[Enterprise](https://docs.railway.app/maturity/enterprise)
+[Incident Management](https://docs.railway.app/maturity/incident-management)
+[Compare to Heroku](https://docs.railway.app/maturity/compare-to-heroku)
+[Compare to Render](https://docs.railway.app/maturity/compare-to-render)
+[Compare to Fly](https://docs.railway.app/maturity/compare-to-fly)
+[Compare to Vercel](https://docs.railway.app/maturity/compare-to-vercel)
+[Compare to DigitalOcean](https://docs.railway.app/maturity/compare-to-digitalocean)
+[Compare to VPS](https://docs.railway.app/maturity/compare-to-vps)
+
+##### Migration
+- [Migrate from Render](https://docs.railway.app/migration/migrate-from-render)
+- [Migrate from Fly](https://docs.railway.app/migration/migrate-from-fly)
+- [Migrate from Vercel](https://docs.railway.app/migration/migrate-from-vercel)
+- [Migrate from DigitalOcean](https://docs.railway.app/migration/migrate-from-digitalocean)
+- [Migrate from Heroku](https://docs.railway.app/migration/migrate-from-heroku)
+[Migrate from Render](https://docs.railway.app/migration/migrate-from-render)
+[Migrate from Fly](https://docs.railway.app/migration/migrate-from-fly)
+[Migrate from Vercel](https://docs.railway.app/migration/migrate-from-vercel)
+[Migrate from DigitalOcean](https://docs.railway.app/migration/migrate-from-digitalocean)
+[Migrate from Heroku](https://docs.railway.app/migration/migrate-from-heroku)
+
+##### Community
+- [The Conductor Program](https://docs.railway.app/community/the-conductor-program)
+- [Bounties](https://docs.railway.app/community/bounties)
+- [Affiliate Program](https://docs.railway.app/community/affiliate-program)
+[The Conductor Program](https://docs.railway.app/community/the-conductor-program)
+[Bounties](https://docs.railway.app/community/bounties)
+[Affiliate Program](https://docs.railway.app/community/affiliate-program)
+
+# Public API Reference
+
+The Railway public API is built with GraphQL and is the same API that powers the Railway dashboard.
+
+## https://docs.railway.app/reference/public-api[Endpoint](https://docs.railway.app/reference/public-api)
+[Endpoint](https://docs.railway.app/reference/public-api)
+The public API is accessible at the following endpoint:
+
+```
+https://backboard.railway.com/graphql/v2
+```
+
+
+```
+https://backboard.railway.com/graphql/v2
+```
+
+## https://docs.railway.app/reference/public-api[Authentication](https://docs.railway.app/reference/public-api)
+[Authentication](https://docs.railway.app/reference/public-api)
+To use the API, you will need an API token. There are three types of tokens you can create.
+
+#### Team Token and Personal Token
+You can create an API token by visiting the [tokens page](https://railway.com/account/tokens) in your account settings.
+- Team tokens are tied to a team and will have access to all the team's resources. This token cannot be used to access your personal resources on Railway so feel free to share it with your teammates.
+- Non-team tokens will be tied to your Railway account and will have access to all your resources. Do not share this token with anyone else.
+
+```
+curl --request POST \ --url https://backboard.railway.com/graphql/v2 \ --header 'Authorization: Bearer <API_TOKEN_GOES_HERE>' \ --header 'Content-Type: application/json' \ --data '{"query":"query { me { name email } }"}'
+```
+
+
+```
+curl --request POST \ --url https://backboard.railway.com/graphql/v2 \ --header 'Authorization: Bearer <API_TOKEN_GOES_HERE>' \ --header 'Content-Type: application/json' \ --data '{"query":"query { me { name email } }"}'
+```
+
+
+#### Project Token
+You can create a project token by visiting the tokens page in your project settings.
+Project tokens are scoped to a specific environment within a project and can only be used to authenticate requests to that environment.
+
+```
+curl --request POST \ --url https://backboard.railway.com/graphql/v2 \ --header 'Project-Access-Token: <PROJECT_TOKEN_GOES_HERE>' \ --header 'Content-Type: application/json' \ --data '{"query":"query { projectToken { projectId environmentId } }"}'
+```
+
+
+```
+curl --request POST \ --url https://backboard.railway.com/graphql/v2 \ --header 'Project-Access-Token: <PROJECT_TOKEN_GOES_HERE>' \ --header 'Content-Type: application/json' \ --data '{"query":"query { projectToken { projectId environmentId } }"}'
+```
+
+## https://docs.railway.app/reference/public-api[Schema](https://docs.railway.app/reference/public-api)
+[Schema](https://docs.railway.app/reference/public-api)
+The Railway API supports introspection meaning you can use popular tools like [Postman](https://www.postman.com/) or [Insomnia](https://insomnia.rest/) to query the schema. Simply set up your connection with the endpoint and Authorization token, and fetch the schema.
+
+### https://docs.railway.app/reference/public-api[API Collection File](https://docs.railway.app/reference/public-api)
+[API Collection File](https://docs.railway.app/reference/public-api)
+We provide a collection file which can be imported into your preferred API client. Once imported, you should only need to add your API token to get connected and start executing queries in the collection. Click [here](https://gql-collection-server.up.railway.app/railway_graphql_collection.json) to download it.
+
+### https://docs.railway.app/reference/public-api[GraphiQL Playground](https://docs.railway.app/reference/public-api)
+[GraphiQL Playground](https://docs.railway.app/reference/public-api)
+Use our [GraphiQL playground](https://railway.com/graphiql) to view the schema and test your queries.
+Make sure to set an Authorization header with an [auth token](https://docs.railway.app/reference/public-api#authentication). Click the "Headers" tab at the bottom of the GraphiQL page and enter this json, using your own token:
+
+```
+{ "Authorization": "Bearer <API_TOKEN_GOES_HERE>" }
+```
+
+
+```
+{ "Authorization": "Bearer <API_TOKEN_GOES_HERE>" }
+```
+
+## https://docs.railway.app/reference/public-api[Rate Limits](https://docs.railway.app/reference/public-api)
+[Rate Limits](https://docs.railway.app/reference/public-api)
+In order to protect the Railway API from spam and misusage, we have established some basic rate limits. The current limits to the API are:
+- Requests per hour: 100 RPH for Free customers, 1000 RPH for Hobby customers, 10000 RPH for Pro customers; custom for Enterprise.
+- Requests per second: 10 RPS for Hobby customers; 50 RPS for Pro customers; custom for Enterprise.
+To help you keep track of your usage, Railway sends a few headers with the response on each request.
+
+## https://docs.railway.app/reference/public-api[Support](https://docs.railway.app/reference/public-api)
+[Support](https://docs.railway.app/reference/public-api)
+For more information on how to use the Public API and for examples of queries, view the [Public API guide](https://docs.railway.app/guides/public-api).
+If you run into problems using the API or have any suggestions, feel free to join our [Discord server](https://discord.gg/railway) where you can interact with the engineers working on the API directly.
+[Edit this file on GitHub](https://github.com/railwayapp/docs/edit/main/src/docs/reference/public-api.md)
+[Prev MCP Server](https://docs.railway.app/reference/mcp-server)
+[Next Templates](https://docs.railway.app/reference/templates)

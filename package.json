@@ -1,8 +1,8 @@
 {
-    "name": "axiom-monorepo",
+    "name": "mail-writer-monorepo",
     "version": "1.0.0",
     "private": true,
-    "description": "Axiom Engine - Deterministic Content Execution System",
+    "description": "Mail Writer - AI-Powered Email Intelligence Platform",
     "scripts": {
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
         "dev:backend": "cd apps/backend && npm run dev",
@@ -19,11 +19,11 @@
         "docker:logs": "docker-compose logs -f"
     },
     "keywords": [
-        "saas",
-        "marketing",
+        "email",
+        "ai",
         "automation"
     ],
-    "author": "Axiom Team",
+    "author": "Mail Writer Team",
     "devDependencies": {
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",

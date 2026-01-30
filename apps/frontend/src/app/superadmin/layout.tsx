@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { MailWriterLogo } from '@/components/MailWriterLogo';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -128,6 +129,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
         // System
         { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'System' },
+        { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'System' },
         { name: 'Licenses', href: '/superadmin/licenses', icon: FileText, group: 'System' },
         { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'System' },
         { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'System' },
@@ -183,26 +185,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                         </button>
 
                         {/* Logo */}
-                        <div className="flex items-center gap-sm">
-                            <div className="
-                                flex items-center justify-center
-                                w-9 h-9
-                                rounded-[var(--radius-lg)]
-                                bg-primary/10
-                                transition-all duration-[var(--duration-normal)]
-                                group-hover:scale-110
-                            ">
-                                <Shield className="w-5 h-5 text-primary" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-bold text-textPrimary text-base leading-tight">
-                                    Axiom
-                                </span>
-                                <span className="text-xs text-textTertiary leading-tight">
-                                    Superadmin
-                                </span>
-                            </div>
-                        </div>
+                        <MailWriterLogo size="md" />
                     </div>
 
                     {/* Right: Theme Selector + User */}
@@ -371,19 +354,8 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                             shadow-[var(--shadow-lg)]
                             animate-slide-in-left
                         ">
-                            {/* Mobile Header */}
                             <div className="flex items-center justify-between p-lg border-b border-border">
-                                <div className="flex items-center gap-sm">
-                                    <div className="
-                                        w-9 h-9
-                                        rounded-[var(--radius-lg)]
-                                        bg-primary/10
-                                        flex items-center justify-center
-                                    ">
-                                        <Shield className="w-5 h-5 text-primary" />
-                                    </div>
-                                    <span className="font-bold text-textPrimary">Menu</span>
-                                </div>
+                                <MailWriterLogo size="sm" />
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="

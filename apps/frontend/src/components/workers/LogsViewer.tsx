@@ -29,12 +29,19 @@ export function LogsViewer({ serverId }: LogsViewerProps) {
     const loadWorkers = async () => {
         try {
             const params = new URLSearchParams();
-            if (serverId) params.append('server_id', serverId);
+            let url = '/api/superadmin/vps/pm2';
 
-            const response = await fetch(`/api/superadmin/vps/pm2?${params}`);
+            if (serverId === 'railway') {
+                url = '/api/superadmin/workers/status';
+            } else if (serverId) {
+                params.append('server_id', serverId);
+            }
+
+            const response = await fetch(`${url}?${params}`);
             if (response.ok) {
                 const data = await response.json();
-                setWorkers(data.processes || []);
+                // Both APIs return workers/processes array
+                setWorkers(data.workers || data.processes || []);
             }
         } catch (error) {
             console.error('Failed to load workers:', error);
@@ -46,10 +53,18 @@ export function LogsViewer({ serverId }: LogsViewerProps) {
 
         setLoading(true);
         try {
-            const params = new URLSearchParams({ process_name: selectedWorker, lines: '100' });
-            if (serverId) params.append('server_id', serverId);
+            const params = new URLSearchParams({ lines: '100' });
+            let url = '/api/superadmin/vps/pm2/logs';
 
-            const response = await fetch(`/api/superadmin/vps/pm2/logs?${params}`);
+            if (serverId === 'railway') {
+                url = '/api/superadmin/workers/logs';
+                params.append('workerName', selectedWorker);
+            } else {
+                params.append('process_name', selectedWorker);
+                if (serverId) params.append('server_id', serverId);
+            }
+
+            const response = await fetch(`${url}?${params}`);
             if (response.ok) {
                 const data = await response.json();
                 setLogs(data.logs || 'No logs available');

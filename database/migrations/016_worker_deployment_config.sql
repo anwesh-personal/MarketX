@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS worker_deployment_config (
     railway_environment VARCHAR(50) DEFAULT 'production',  -- Environment name
     
     -- VPS Configuration
-    -- References the vps_servers table for server credentials
-    vps_server_id UUID REFERENCES vps_servers(id) ON DELETE SET NULL,
+    -- Store VPS server ID (no foreign key since vps_servers may not exist)
+    vps_server_id UUID,
     
     -- Scaling Configuration
     auto_scale_enabled BOOLEAN DEFAULT false,  -- Only applicable for Railway
@@ -66,7 +66,6 @@ CREATE TRIGGER worker_deployment_config_updated_at
     EXECUTE FUNCTION update_worker_deployment_config_timestamp();
 
 -- Insert default configuration (VPS)
--- Uses the first active VPS server if available
 INSERT INTO worker_deployment_config (
     active_target,
     vps_server_id,
@@ -76,7 +75,7 @@ INSERT INTO worker_deployment_config (
 )
 SELECT 
     'vps',
-    (SELECT id FROM vps_servers WHERE status = 'active' LIMIT 1),
+    NULL,  -- No VPS server by default
     false,
     1,
     10
@@ -91,8 +90,8 @@ CREATE POLICY "Superadmin full access to worker_deployment_config"
     ON worker_deployment_config FOR ALL
     USING (
         EXISTS (
-            SELECT 1 FROM superadmins 
-            WHERE user_id = auth.uid() 
+            SELECT 1 FROM platform_admins 
+            WHERE email = auth.jwt() ->> 'email'
             AND is_active = true
         )
     );

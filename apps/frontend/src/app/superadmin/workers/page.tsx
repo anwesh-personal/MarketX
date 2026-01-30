@@ -58,12 +58,31 @@ export default function WorkerControlDashboard() {
 
     const loadProviderData = async () => {
         setLoading(true);
-        if (provider === 'vps') {
-            await loadVPSServers();
-        } else {
-            await loadRailwayStatus();
+        try {
+            // Check active provider from config first
+            const configRes = await fetch('/api/superadmin/workers/config');
+            if (configRes.ok) {
+                const configData = await configRes.json();
+                const activeTarget = configData.config?.active_target || 'vps';
+
+                // Only set if we're on the first mount (no provider change yet)
+                if (loading && provider === 'vps' && activeTarget === 'railway') {
+                    setProvider('railway');
+                    // Stop here as setProvider will trigger another loadProviderData via useEffect
+                    return;
+                }
+            }
+
+            if (provider === 'vps') {
+                await loadVPSServers();
+            } else {
+                await loadRailwayStatus();
+            }
+        } catch (error) {
+            console.error('Failed to load provider data:', error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const loadVPSServers = async () => {
