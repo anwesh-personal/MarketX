@@ -22,12 +22,16 @@ CREATE TABLE organizations (
     max_team_members INTEGER DEFAULT 3,
     current_kbs_count INTEGER DEFAULT 0,
     runs_this_month INTEGER DEFAULT 0,
+    client_id UUID, -- External InMarket Traffic Client UUID for integration
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_organizations_slug ON organizations(slug);
 CREATE INDEX idx_organizations_status ON organizations(status);
+CREATE INDEX idx_organizations_client_id ON organizations(client_id);
+
+COMMENT ON COLUMN organizations.client_id IS 'UUID reference to external InMarket Traffic Client record. Used for Client API and Contact API integrations.';
 
 -- Users table
 CREATE TABLE users (
