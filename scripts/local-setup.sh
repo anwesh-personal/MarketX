@@ -55,19 +55,30 @@ echo -e "\n${YELLOW}[4/6] Seeding default data...${NC}"
 # Seed is included in migration 10, so nothing extra needed
 echo -e "${GREEN}  ✓ Seed data applied (brain templates, node palette, superadmin)${NC}"
 
-# ---- Copy env files if needed ----
-echo -e "\n${YELLOW}[5/6] Checking environment files...${NC}"
+# ---- Copy env files and inject Supabase keys ----
+echo -e "\n${YELLOW}[5/6] Setting up environment files...${NC}"
+
+# Extract keys from running Supabase
+ANON_KEY=$(npx supabase status 2>/dev/null | grep "anon key" | awk '{print $NF}')
+SERVICE_KEY=$(npx supabase status 2>/dev/null | grep "service_role key" | awk '{print $NF}')
 
 if [ ! -f apps/frontend/.env.local ]; then
     cp apps/frontend/.env.example apps/frontend/.env.local
-    echo -e "${GREEN}  ✓ Created apps/frontend/.env.local from .env.example${NC}"
+    if [ -n "$ANON_KEY" ] && [ -n "$SERVICE_KEY" ]; then
+        sed -i '' "s|<get from.*anon key>|$ANON_KEY|" apps/frontend/.env.local
+        sed -i '' "s|<get from.*service_role key>|$SERVICE_KEY|" apps/frontend/.env.local
+    fi
+    echo -e "${GREEN}  ✓ Created apps/frontend/.env.local (keys auto-filled)${NC}"
 else
     echo -e "${GREEN}  ✓ apps/frontend/.env.local already exists${NC}"
 fi
 
 if [ ! -f apps/backend/.env ]; then
     cp apps/backend/.env.example apps/backend/.env
-    echo -e "${GREEN}  ✓ Created apps/backend/.env from .env.example${NC}"
+    if [ -n "$SERVICE_KEY" ]; then
+        sed -i '' "s|<get from.*service_role key>|$SERVICE_KEY|" apps/backend/.env
+    fi
+    echo -e "${GREEN}  ✓ Created apps/backend/.env (keys auto-filled)${NC}"
 else
     echo -e "${GREEN}  ✓ apps/backend/.env already exists${NC}"
 fi
