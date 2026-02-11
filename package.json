@@ -16,7 +16,10 @@
         "build:frontend": "cd apps/frontend && npm run build",
         "docker:up": "docker-compose up -d",
         "docker:down": "docker-compose down",
-        "docker:logs": "docker-compose logs -f"
+        "docker:logs": "docker-compose logs -f",
+        "local:up": "bash scripts/local-setup.sh",
+        "local:down": "npx supabase stop",
+        "db:reset": "npx supabase db reset"
     },
     "keywords": [
         "email",
