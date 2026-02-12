@@ -5,6 +5,7 @@ import dreamStateWorker from './workers/dream-state-worker'
 import fineTuningWorker from './workers/fine-tuning-worker'
 import learningLoopWorker from './workers/learning-loop-worker'
 import workflowExecutionWorker from './workers/workflow-execution-worker'
+import engineExecutionWorker from './workers/engine-execution-worker'
 import { startApiServer } from './api/server'
 
 // Start the API server for queue management
@@ -26,7 +27,8 @@ console.log('   - Fine-Tuning (1 concurrent) - Training pipeline')
 console.log('   - Learning Loop (1 concurrent) - Daily optimization')
 console.log('')
 console.log('⚡ Execution Workers:')
-console.log('   - Workflow Execution (10 concurrent) - User-facing workflow runs')
+console.log('   - Workflow Execution (10 concurrent) - Template runs')
+console.log('   - Engine Execution (2 concurrent) - Deployed engine runs')
 console.log('')
 console.log('🌐 Management API:')
 console.log(`   - Running on port ${API_PORT}`)
@@ -53,6 +55,7 @@ const shutdown = async (signal: string) => {
         fineTuningWorker.close(),
         learningLoopWorker.close(),
         workflowExecutionWorker.close(),
+        engineExecutionWorker.close(),
     ])
 
     console.log('✅ All workers shut down successfully')

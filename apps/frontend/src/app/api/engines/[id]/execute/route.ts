@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Queue } from 'bullmq';
+import { randomUUID } from 'crypto';
 
 // ============================================================================
 // REDIS/QUEUE CONFIGURATION
@@ -35,7 +36,7 @@ const getRedisConfig = () => {
     };
 };
 
-const workflowQueue = new Queue('workflow-execution', {
+const engineQueue = new Queue('engine-execution', {
     connection: getRedisConfig()
 });
 
@@ -57,7 +58,12 @@ export async function POST(
 ) {
     try {
         const engineId = params.id;
-        const body = await request.json();
+        let body: { input?: Record<string, any>; options?: Record<string, any> } = {};
+        try {
+            body = await request.json();
+        } catch {
+            // Empty body is acceptable
+        }
         const { input, options = {} } = body;
 
         // Get auth from headers or session
@@ -80,7 +86,7 @@ export async function POST(
         }
 
         // Generate execution ID
-        const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const executionId = randomUUID();
 
         // Create execution record
         const { error: logError } = await supabase
@@ -88,12 +94,10 @@ export async function POST(
             .insert({
                 id: executionId,
                 engine_id: engineId,
-                user_id: userId,
                 org_id: orgId,
-                input_data: input,
-                status: 'queued',
-                execution_data: {},
-                created_at: new Date().toISOString(),
+                input_data: input || {},
+                status: 'started',
+                started_at: new Date().toISOString(),
             });
 
         if (logError) {
@@ -104,8 +108,8 @@ export async function POST(
             );
         }
 
-        // Queue job to worker (NO BACKEND!)
-        await workflowQueue.add('engine-execution', {
+        // Queue job to engine-execution worker
+        await engineQueue.add('engine-execution', {
             executionId,
             engineId,
             engine: {

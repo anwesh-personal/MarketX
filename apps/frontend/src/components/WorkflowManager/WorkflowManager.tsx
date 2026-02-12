@@ -827,12 +827,12 @@ function WorkflowManagerInner() {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                toast.success(
-                    `Workflow executed successfully!\n` +
-                    `Duration: ${(result.durationMs / 1000).toFixed(2)}s` +
-                    (result.tokenUsage?.totalTokens ? ` | Tokens: ${result.tokenUsage.totalTokens}` : ''),
-                    { id: loadingToast, duration: 5000 }
-                );
+                const msg = result.status === 'queued'
+                    ? `Execution queued successfully! ID: ${result.executionId}`
+                    : `Workflow executed successfully!\n` +
+                      (result.durationMs ? `Duration: ${(result.durationMs / 1000).toFixed(2)}s` : '') +
+                      (result.tokenUsage?.totalTokens ? ` | Tokens: ${result.tokenUsage.totalTokens}` : '');
+                toast.success(msg, { id: loadingToast, duration: 5000 });
             } else if (response.status === 503) {
                 // Backend not running
                 toast.error(

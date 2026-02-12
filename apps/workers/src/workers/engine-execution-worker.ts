@@ -47,27 +47,6 @@ export interface EngineExecutionResult {
 }
 
 // ============================================================================
-// REDIS CONFIGURATION
-// ============================================================================
-
-const getRedisConfig = () => {
-    const redisUrl = process.env.REDIS_URL;
-    if (redisUrl) {
-        const url = new URL(redisUrl);
-        return {
-            host: url.hostname,
-            port: parseInt(url.port) || 6379,
-            password: url.password || undefined,
-        };
-    }
-    return {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD || undefined,
-    };
-};
-
-// ============================================================================
 // SUPABASE CLIENT
 // ============================================================================
 
@@ -239,13 +218,13 @@ async function updateExecutionStatus(
 // WORKER SETUP
 // ============================================================================
 
-const QUEUE_NAME = 'workflow-execution'; // Fixed: was 'workflow-execute'
+import { QueueName, getRedisConnectionOptions } from '../config/queues';
 
 const worker = new Worker<EngineExecutionJob, EngineExecutionResult>(
-    QUEUE_NAME,
+    QueueName.ENGINE_EXECUTION,
     processEngineExecution,
     {
-        connection: getRedisConfig(),
+        connection: getRedisConnectionOptions(),
         concurrency: 2,
         limiter: {
             max: 10,
@@ -271,7 +250,7 @@ worker.on('error', (error) => {
 });
 
 worker.on('ready', () => {
-    console.log(`🚀 Engine Execution Worker ready (queue: ${QUEUE_NAME})`);
+    console.log(`🚀 Engine Execution Worker ready (queue: ${QueueName.ENGINE_EXECUTION})`);
 });
 
 // ============================================================================
