@@ -18,13 +18,14 @@ const supabase = createClient(
 const ICPSchema = z.object({
     id: z.string().uuid('id must be a valid UUID'),
     client_id: z.string().uuid('client_id must be a valid UUID'),
-    job_id: z.string().uuid().optional(),
-    campaign_name: z.string().optional(),
-    segment_name: z.string().optional(),
-    revenue_band_min: z.number().optional().default(0),
-    revenue_band_max: z.number().optional().default(1000),
+    campaign_name: z.string(),
+    segment_name: z.string(),
+    revenue_band_min: z.number(),
+    revenue_band_max: z.number(),
     primary_industries: z.array(z.string()).optional().default([]),
     seniority_levels: z.array(z.string()).optional().default([]),
+    created_at: z.coerce.date(),
+    updated_at: z.coerce.date(),
 });
 
 export async function POST(request: NextRequest) {
@@ -91,13 +92,14 @@ export async function POST(request: NextRequest) {
                 imt_icp_id: data.id,
                 org_id: org.id,
                 client_id: data.client_id,
-                job_id: data.job_id || null,
-                campaign_name: data.campaign_name || null,
-                segment_name: data.segment_name || null,
-                revenue_band_min: data.revenue_band_min ?? 0,
-                revenue_band_max: data.revenue_band_max ?? 1000,
+                campaign_name: data.campaign_name,
+                segment_name: data.segment_name,
+                revenue_band_min: data.revenue_band_min,
+                revenue_band_max: data.revenue_band_max,
                 primary_industries: data.primary_industries ?? [],
                 seniority_levels: data.seniority_levels ?? [],
+                created_at: data.created_at.toISOString(),
+                updated_at: data.updated_at.toISOString(),
             })
             .select('id')
             .single();

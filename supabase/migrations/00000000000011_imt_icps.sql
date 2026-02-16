@@ -9,15 +9,14 @@ CREATE TABLE IF NOT EXISTS imt_icps (
     imt_icp_id UUID NOT NULL UNIQUE,
     org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     client_id UUID NOT NULL,
-    job_id UUID,
-    campaign_name VARCHAR(255),
-    segment_name VARCHAR(255),
-    revenue_band_min INTEGER DEFAULT 0,
-    revenue_band_max INTEGER DEFAULT 1000,
+    campaign_name TEXT NOT NULL,
+    segment_name TEXT NOT NULL,
+    revenue_band_min SMALLINT NOT NULL,
+    revenue_band_max SMALLINT NOT NULL,
     primary_industries JSONB DEFAULT '[]',
     seniority_levels JSONB DEFAULT '[]',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_imt_icps_org ON imt_icps(org_id);
