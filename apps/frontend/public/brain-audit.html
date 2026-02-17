@@ -758,9 +758,6 @@
                 <h3>MailWizz → Axiom Analytics</h3>
                 <p>We need an endpoint to receive engagement events from MailWizz. The Learning Loop reads <code>analytics_events</code> — if MailWizz/IMT never sends events (CLICK, REPLY, BOOKED_CALL, BOUNCE), the loop has no data.</p>
                 <p><strong>Action:</strong> Implement <code>POST /api/imt/analytics/events</code> — Axiom receives, validates, inserts. MailWizz sends via webhook or scheduled sync.</p>
-                <h3 style="margin-top: 24px;">"MW Dashboard" Clarification</h3>
-                <p><strong>Option A</strong> — MailWizz UI (Nino): Users see campaigns, sends, stats there.</p>
-                <p><strong>Option B</strong> — Axiom member portal (post-login): Should show flows + brain + data. Not built yet. (Axiom's side.)</p>
                 <h3 style="margin-top: 24px;">Target User Flow</h3>
                 <p>User signs up (IMT onboarding) → visits MW dashboard → sees assigned flow + brain → emails sent via MailWizz → data (flows, brain, stats) is pure gold.</p>
             </div>
