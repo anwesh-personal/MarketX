@@ -340,8 +340,8 @@ Super Admin
 
 ### 11.5 "MW Dashboard" Clarification
 
-- If "MW dashboard" = **MailWizz UI** (your side): Users see campaigns, sends, stats there. Axiom doesn’t own that.
-- If "MW dashboard" = **Axiom member portal** (post-login): It should show assigned flows + brain + data. That view is **not built yet**.
+- **Option A** — "MW dashboard" = **MailWizz UI** (Nino): Users see campaigns, sends, stats there. Axiom doesn’t own that.
+- **Option B** — "MW dashboard" = **Axiom member portal** (post-login): It should show assigned flows + brain + data. That view is **not built yet**. (Axiom's side, not Nino.)
 
 ---
 
