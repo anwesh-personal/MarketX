@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AXIOM Brain Audit — Comprehensive Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #030306;
+            --bg-card: rgba(12, 12, 20, 0.85);
+            --aqua: #00e5c7;
+            --blue: #00a8ff;
+            --purple: #a855f7;
+            --orange: #ff9f43;
+            --red: #ff6b6b;
+            --green: #00d68f;
+            --amber: #fbbf24;
+            --text: #f0f4f8;
+            --text-dim: #94a3b8;
+            --glow-aqua: 0 0 40px rgba(0, 229, 199, 0.2);
+            --glow-red: 0 0 30px rgba(255, 107, 107, 0.15);
+            --glow-green: 0 0 30px rgba(0, 214, 143, 0.15);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 100% 60% at 50% -10%, rgba(0, 229, 199, 0.08), transparent 50%),
+                radial-gradient(ellipse 60% 50% at 90% 20%, rgba(168, 85, 247, 0.06), transparent),
+                radial-gradient(ellipse 50% 40% at 10% 80%, rgba(0, 168, 255, 0.05), transparent);
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+        }
+
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(3, 3, 6, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--aqua), var(--blue));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .logo-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-pills {
+            display: flex;
+            gap: 6px;
+        }
+        .nav-pill {
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+        .nav-pill:hover {
+            color: var(--aqua);
+            background: rgba(0, 229, 199, 0.08);
+        }
+        .nav-pill.active {
+            color: var(--aqua);
+            background: rgba(0, 229, 199, 0.12);
+        }
+
+        /* Smooth nav scroll offset */
+        html { scroll-padding-top: 80px; }
+
+        .main { position: relative; z-index: 1; padding-top: 64px; }
+
+        .section {
+            padding: 80px 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 100px 32px 80px;
+        }
+        .hero-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(0, 229, 199, 0.12);
+            border: 1px solid rgba(0, 229, 199, 0.3);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--aqua);
+            margin-bottom: 24px;
+            text-transform: uppercase;
+        }
+        .hero h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, var(--aqua) 50%, var(--blue) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-sub {
+            font-size: 15px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        .hero-meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+            opacity: 0.8;
+        }
+
+        .hero-badge, .hero h1, .hero-sub, .hero-meta {
+            animation: heroFade 0.8s ease forwards;
+        }
+        .hero-badge { animation-delay: 0.1s; opacity: 0; animation-fill-mode: forwards; }
+        .hero h1 { animation-delay: 0.2s; opacity: 0; animation-fill-mode: forwards; }
+        .hero-sub { animation-delay: 0.35s; opacity: 0; animation-fill-mode: forwards; }
+        .hero-meta { animation-delay: 0.5s; opacity: 0; animation-fill-mode: forwards; }
+        @keyframes heroFade {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .letter-block {
+            background: rgba(12, 12, 20, 0.6);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-left: 4px solid var(--aqua);
+            border-radius: 0 16px 16px 0;
+            padding: 28px 32px;
+            margin: 0 auto 60px;
+            max-width: 720px;
+        }
+        .letter-block p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-dim);
+        }
+
+        .section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .section-sub {
+            font-size: 14px;
+            color: var(--text-dim);
+            margin-bottom: 32px;
+        }
+
+        /* Vision vs Reality Cards */
+        .capability-grid {
+            display: grid;
+            gap: 16px;
+        }
+        .capability-card {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 24px;
+            padding: 20px 28px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .capability-card:hover {
+            border-color: rgba(0, 229, 199, 0.2);
+            transform: translateX(4px);
+            box-shadow: var(--glow-aqua);
+        }
+        .capability-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .capability-vision {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .capability-status {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: transform 0.3s ease;
+        }
+        .capability-card:hover .capability-status { transform: scale(1.1); }
+        .status-ok { background: rgba(0, 214, 143, 0.15); border: 1px solid rgba(0, 214, 143, 0.3); }
+        .status-partial { background: rgba(251, 191, 36, 0.15); border: 1px solid rgba(251, 191, 36, 0.3); }
+        .status-gap { background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.3); }
+        .capability-current {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* Disconnect Diagram */
+        .disconnect-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 48px 32px;
+            flex-wrap: wrap;
+        }
+        .system-node {
+            flex: 1;
+            min-width: 280px;
+            max-width: 360px;
+            padding: 32px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            transition: all 0.4s ease;
+        }
+        .system-node:hover {
+            border-color: rgba(0, 229, 199, 0.3);
+            box-shadow: var(--glow-aqua);
+        }
+        .system-node.brain { border-top: 4px solid var(--aqua); }
+        .system-node.workflow { border-top: 4px solid var(--purple); }
+        .system-node h4 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+        }
+        .system-node p {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+        .connector-broken {
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--red), var(--red));
+            border-radius: 2px;
+            position: relative;
+            animation: blink 2s ease-in-out infinite;
+        }
+        .connector-broken::before {
+            content: '✕';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 32px;
+            height: 32px;
+            background: var(--bg-dark);
+            color: var(--red);
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--red);
+            border-radius: 50%;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        /* Gap Cards */
+        .gap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .gap-card {
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .gap-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+        }
+        .gap-card.critical { border-left-color: var(--red); }
+        .gap-card.high { border-left-color: var(--orange); }
+        .gap-card.medium { border-left-color: var(--amber); }
+        .gap-card.low { border-left-color: var(--text-dim); }
+        .gap-severity {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .gap-card.critical .gap-severity { color: var(--red); }
+        .gap-card.high .gap-severity { color: var(--orange); }
+        .gap-card.medium .gap-severity { color: var(--amber); }
+        .gap-card.low .gap-severity { color: var(--text-dim); }
+        .gap-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        .gap-desc {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        /* Phase Recommendations */
+        .phase-grid {
+            display: grid;
+            gap: 20px;
+        }
+        .phase-card {
+            padding: 24px 28px;
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 18px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .phase-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--phase-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .phase-card:hover {
+            border-color: rgba(255,255,255,0.1);
+            transform: translateX(6px);
+        }
+        .phase-card:hover::before { opacity: 1; }
+        .phase-card.p1 { --phase-color: var(--aqua); }
+        .phase-card.p2 { --phase-color: var(--blue); }
+        .phase-card.p3 { --phase-color: var(--purple); }
+        .phase-card.p4 { --phase-color: var(--orange); }
+        .phase-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--phase-color);
+            margin-bottom: 8px;
+        }
+        .phase-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .phase-items {
+            list-style: none;
+        }
+        .phase-items li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+        .phase-items li::before {
+            content: '→';
+            color: var(--phase-color);
+            flex-shrink: 0;
+        }
+
+        /* Nino Handoff */
+        .handoff-block {
+            background: linear-gradient(135deg, rgba(0, 229, 199, 0.08), rgba(0, 168, 255, 0.06));
+            border: 1px solid rgba(0, 229, 199, 0.2);
+            border-radius: 20px;
+            padding: 40px 44px;
+            margin-top: 48px;
+        }
+        .handoff-block h3 {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.35rem;
+            margin-bottom: 16px;
+            color: var(--aqua);
+        }
+        .handoff-block p {
+            font-size: 15px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .handoff-block code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 6px;
+            color: var(--aqua);
+        }
+
+        /* Pipeline viz */
+        .pipeline-viz {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            padding: 24px 0;
+        }
+        .pipeline-step {
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(0, 229, 199, 0.2);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .pipeline-step:hover {
+            background: rgba(0, 229, 199, 0.1);
+            border-color: var(--aqua);
+        }
+        .pipeline-arrow {
+            color: var(--text-dim);
+            font-size: 14px;
+            align-self: center;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Status pulse for critical */
+        .status-gap {
+            animation: statusPulse 3s ease-in-out infinite;
+        }
+        @keyframes statusPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 107, 107, 0); }
+        }
+
+        /* Connector line draw effect on hover */
+        .disconnect-diagram:hover .connector-broken {
+            animation: blink 1s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+            .capability-card {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .capability-status { margin: 0 auto; }
+            .section { padding: 48px 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-canvas"></div>
+    <div class="grid-overlay"></div>
+
+    <nav class="nav">
+        <div class="logo">
+            <div class="logo-icon">🧠</div>
+            <span class="logo-text">AXIOM Brain Audit</span>
+        </div>
+        <div class="nav-pills">
+            <a href="#summary" class="nav-pill">Summary</a>
+            <a href="#vision" class="nav-pill">Vision vs Reality</a>
+            <a href="#disconnect" class="nav-pill">Disconnect</a>
+            <a href="#gaps" class="nav-pill">Gaps</a>
+            <a href="#recommendations" class="nav-pill">Recommendations</a>
+            <a href="#handoff" class="nav-pill">Handoff</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <section class="hero">
+            <div class="hero-badge">Comprehensive Audit</div>
+            <h1>Brain System Audit</h1>
+            <p class="hero-sub">Self-healing • Knowledge gaps • Non-hallucinating • Semantic intelligence</p>
+            <p class="hero-meta">18 February 2026 • Prepared for Nino</p>
+        </section>
+
+        <section class="section" id="letter">
+            <div class="letter-block">
+                <p>Nino — I've put together this audit so we're fully aligned on where the Brain stands and what's missing. It covers the full stack: what works, what's disconnected, and what we need to build so we can deliver a self-healing, learning Brain that stays grounded and improves from every email sent. Use it as the single source of truth for planning and handoff.</p>
+            </div>
+        </section>
+
+        <section class="section reveal" id="summary">
+            <h2 class="section-title">Executive Summary</h2>
+            <p class="section-sub">The Brain is <strong style="color: var(--red);">NOT fully functional</strong> for the vision. It's a chat-oriented RAG + multi-agent system that works for Q&A, but is <strong>decoupled</strong> from Workflows/Engines, <strong>not wired</strong> into email stats, and <strong>lacks</strong> self-healing, knowledge-gap filling, and learning-from-outcomes loops.</p>
+        </section>
+
+        <section class="section reveal" id="vision">
+            <h2 class="section-title">Vision vs. Reality</h2>
+            <p class="section-sub">Where we are vs. where we want to be</p>
+            <div class="capability-grid">
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Self-healing</div>
+                        <div class="capability-vision">Learns from every interaction, updates itself</div>
+                    </div>
+                    <div class="capability-status status-gap">❌</div>
+                    <div class="capability-current">Not implemented — "foundations" only</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Knowledge gap filling</div>
+                        <div class="capability-vision">Detects gaps, fetches/suggests content</div>
+                    </div>
+                    <div class="capability-status status-gap">❌</div>
+                    <div class="capability-current">Not implemented</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Non-hallucinating</div>
+                        <div class="capability-vision">Grounded in KB, citations</div>
+                    </div>
+                    <div class="capability-status status-partial">🟡</div>
+                    <div class="capability-current">Partial — RAG retrieves docs, no strict grounding</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Semantic intelligence</div>
+                        <div class="capability-vision">Deep understanding, intent routing</div>
+                    </div>
+                    <div class="capability-status status-ok">✅</div>
+                    <div class="capability-current">Intent classification, multi-agent routing</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Learn from core prompts + KB</div>
+                        <div class="capability-vision">Uses hardcoded prompts + KB</div>
+                    </div>
+                    <div class="capability-status status-ok">✅</div>
+                    <div class="capability-current">RAG uses KB embeddings</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Learn from emails sent</div>
+                        <div class="capability-vision">Updates Brain from email performance</div>
+                    </div>
+                    <div class="capability-status status-gap">❌</div>
+                    <div class="capability-current">No connection</div>
+                </div>
+                <div class="capability-card">
+                    <div>
+                        <div class="capability-name">Learn from email stats</div>
+                        <div class="capability-vision">BOOKED_CALL, REPLY, CLICK → update Brain</div>
+                    </div>
+                    <div class="capability-status status-gap">❌</div>
+                    <div class="capability-current">Learning Loop updates KB metadata only, not Brain</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="architecture">
+            <h2 class="section-title">Current Brain Pipeline</h2>
+            <p class="section-sub">What the Brain IS today</p>
+            <div class="pipeline-viz">
+                <span class="pipeline-step">User Chat</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">/api/brain/chat</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">IntentClassifier</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">RAGOrchestrator</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Agent</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">LLM</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Response</span>
+            </div>
+        </section>
+
+        <section class="section reveal" id="disconnect">
+            <h2 class="section-title">Critical Disconnect</h2>
+            <p class="section-sub">Brain and Workflow/Engine do NOT talk to each other</p>
+            <div class="disconnect-diagram">
+                <div class="system-node brain">
+                    <h4>🧠 Brain</h4>
+                    <p>Chat, Q&A, content via agents. RAG embeddings, KB config. Text response.</p>
+                </div>
+                <div class="connector-broken"></div>
+                <div class="system-node workflow">
+                    <h4>⚡ Workflow/Engine</h4>
+                    <p>Execute flows (email, replies, pages). kbResolutionService, engine config. Stored in generated_content.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="gaps">
+            <h2 class="section-title">Gap Summary</h2>
+            <p class="section-sub">Prioritized by severity</p>
+            <div class="gap-grid">
+                <div class="gap-card critical">
+                    <div class="gap-severity">Critical</div>
+                    <div class="gap-title">Brain ↔ Workflow integration</div>
+                    <div class="gap-desc">Brain does not invoke engines; workflows don't use Brain</div>
+                </div>
+                <div class="gap-card critical">
+                    <div class="gap-severity">Critical</div>
+                    <div class="gap-title">Self-healing loop</div>
+                    <div class="gap-desc">No automatic Brain updates from outcomes</div>
+                </div>
+                <div class="gap-card high">
+                    <div class="gap-severity">High</div>
+                    <div class="gap-title">Knowledge gap detection</div>
+                    <div class="gap-desc">No detection or filling of KB gaps</div>
+                </div>
+                <div class="gap-card high">
+                    <div class="gap-severity">High</div>
+                    <div class="gap-title">Hallucination prevention</div>
+                    <div class="gap-desc">No strict grounding or rejection when no docs</div>
+                </div>
+                <div class="gap-card high">
+                    <div class="gap-severity">High</div>
+                    <div class="gap-title">Email stats → Brain learning</div>
+                    <div class="gap-desc">No pipeline from analytics_events to Brain</div>
+                </div>
+                <div class="gap-card high">
+                    <div class="gap-severity">High</div>
+                    <div class="gap-title">analytics_events ingestion</div>
+                    <div class="gap-desc">No MailWizz/IMT webhook to receive events</div>
+                </div>
+                <div class="gap-card medium">
+                    <div class="gap-severity">Medium</div>
+                    <div class="gap-title">User-level engine assignment</div>
+                    <div class="gap-desc">Engines assigned to org; user-level clones not clear</div>
+                </div>
+                <div class="gap-card medium">
+                    <div class="gap-severity">Medium</div>
+                    <div class="gap-title">Member dashboard</div>
+                    <div class="gap-desc">No "my flows + my brain" view for users</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="recommendations">
+            <h2 class="section-title">Recommendations</h2>
+            <p class="section-sub">Prioritized phases</p>
+            <div class="phase-grid">
+                <div class="phase-card p1">
+                    <div class="phase-label">Phase 1 — Wire the Data</div>
+                    <div class="phase-title">Foundation</div>
+                    <ul class="phase-items">
+                        <li><strong>MailWizz/IMT Analytics Webhook</strong> — <code>POST /api/imt/analytics/events</code> to receive CLICK, REPLY, BOOKED_CALL from MailWizz → insert into analytics_events. Nino — critical handoff from your side.</li>
+                        <li>Verify Learning Loop runs; promoted/demoted variants used in workflow resolution</li>
+                        <li>Add thumbs up/down or 1–5 rating in chat UI → persist to feedback</li>
+                    </ul>
+                </div>
+                <div class="phase-card p2">
+                    <div class="phase-label">Phase 2 — Brain ↔ Workflow</div>
+                    <div class="phase-title">Integration</div>
+                    <ul class="phase-items">
+                        <li>Brain invokes Engine for intents like "write email" or "generate flow"</li>
+                        <li>Optional: Engine uses Brain for intent analysis inside workflow nodes</li>
+                        <li>Unified User Dashboard: assigned engines + brain + recent runs</li>
+                    </ul>
+                </div>
+                <div class="phase-card p3">
+                    <div class="phase-label">Phase 3 — Self-Healing</div>
+                    <div class="phase-title">Learning</div>
+                    <ul class="phase-items">
+                        <li>Extend Learning Loop to update Brain config from outcomes</li>
+                        <li>Knowledge Gap Detection: when RAG relevance low, flag gap and optionally queue KB update</li>
+                        <li>Strict Grounding Mode: reject or flag when no relevant docs</li>
+                    </ul>
+                </div>
+                <div class="phase-card p4">
+                    <div class="phase-label">Phase 4 — User-Level</div>
+                    <div class="phase-title">Granularity</div>
+                    <ul class="phase-items">
+                        <li>Engine clone per user for dedicated config</li>
+                        <li>Brain per user (optional overrides)</li>
+                        <li>Reseller / Mini Super Admin hierarchy</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="handoff">
+            <h2 class="section-title">Handoff for Nino</h2>
+            <p class="section-sub">Key integration points</p>
+            <div class="handoff-block">
+                <h3>MailWizz → Axiom Analytics</h3>
+                <p>We need an endpoint to receive engagement events from MailWizz. The Learning Loop reads <code>analytics_events</code> — if MailWizz/IMT never sends events (CLICK, REPLY, BOOKED_CALL, BOUNCE), the loop has no data.</p>
+                <p><strong>Action:</strong> Implement <code>POST /api/imt/analytics/events</code> — Axiom receives, validates, inserts. MailWizz sends via webhook or scheduled sync.</p>
+                <h3 style="margin-top: 24px;">Target User Flow</h3>
+                <p>User signs up (IMT onboarding) → visits MW dashboard → sees assigned flow + brain → emails sent via MailWizz → data (flows, brain, stats) is pure gold.</p>
+            </div>
+        </section>
+
+        <footer style="padding: 48px 32px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05);">
+            <p style="font-size: 13px; color: var(--text-dim);">Evidence-based audit • No assumptions</p>
+            <p style="font-size: 11px; color: var(--text-dim); margin-top: 8px; opacity: 0.7;">18 February 2026</p>
+        </footer>
+    </main>
+
+    <script>
+        // Scroll reveal
+        const reveals = document.querySelectorAll('.reveal');
+        function reveal() {
+            reveals.forEach(el => {
+                const top = el.getBoundingClientRect().top;
+                const trigger = window.innerHeight - 120;
+                if (top < trigger) el.classList.add('visible');
+            });
+        }
+        window.addEventListener('scroll', reveal);
+        reveal();
+
+        // Stagger capability cards
+        document.querySelectorAll('.capability-card').forEach((card, i) => {
+            card.style.transitionDelay = (i * 40) + 'ms';
+        });
+
+        // Nav active state
+        const sections = document.querySelectorAll('section[id]');
+        const pills = document.querySelectorAll('.nav-pill');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(s => {
+                if (s.id && window.scrollY >= s.offsetTop - 150) current = s.id;
+            });
+            pills.forEach(p => {
+                p.classList.remove('active');
+                if (p.getAttribute('href') === '#' + current) p.classList.add('active');
+            });
+        });
+
+        // Capability card micro-interaction
+        document.querySelectorAll('.capability-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transition = 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+            });
+        });
+
+        // Gap card ripple-like effect
+        document.querySelectorAll('.gap-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.style.transform = 'translateY(-4px) scale(1.01)';
+                setTimeout(() => {
+                    this.style.transform = 'translateY(-4px)';
+                }, 150);
+            });
+        });
+    </script>
+</body>
+</html>
