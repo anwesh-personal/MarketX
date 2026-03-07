@@ -25,6 +25,46 @@ import { writerAgent } from './agents/WriterAgent';
 import { generalistAgent } from './agents/GeneralistAgent';
 import { analystAgent } from './agents/AnalystAgent';
 import { coachAgent } from './agents/CoachAgent';
+import { HallucinationInterceptor } from './interceptors/HallucinationInterceptor';
+import { aiProviderService } from '@/services/ai/AIProviderService';
+import { marketxToolExecutor } from './tools/MarketXToolExecutor';
+import type { BrainChatMessage, BrainToolDefinition, BrainChatOptions } from '@/services/ai/types';
+
+// ============================================================================
+// AGENTIC LOOP TYPES
+// ============================================================================
+
+export interface HandleTurnInput {
+    orgId:           string;
+    agentId?:        string;
+    conversationId?: string;
+    messages:        BrainChatMessage[];
+    systemPrompt:    string;
+    tools?:          BrainToolDefinition[];
+    options?: {
+        maxTurns?:         number;
+        maxTokens?:        number;
+        temperature?:      number;
+        preferredProvider?: string;
+        preferredModel?:   string;
+        responseFormat?:   { type: 'json_object' } | { type: 'text' };
+    };
+}
+
+export interface HandleTurnResult {
+    response:      string;
+    toolCallsMade: ToolCallRecord[];
+    turnsUsed:     number;
+    totalTokens:   number;
+}
+
+export interface ToolCallRecord {
+    name:       string;
+    args:       string;     // raw JSON string from LLM
+    result:     string;     // JSON-stringified result
+    success:    boolean;
+    durationMs: number;
+}
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -1196,6 +1236,160 @@ class BrainOrchestrator {
     async loadBrainConfig(orgId: string): Promise<BrainConfig | null> {
         const template = await brainConfigService.getOrgBrain(orgId);
         return template?.config ?? null;
+    }
+
+    // ============================================================================
+    // AGENTIC LOOP — handleTurn
+    // Replaces the one-shot process() for all new Brain interactions.
+    //
+    // Design:
+    //  - Up to MAX_TURNS iterations of: send → check tools → execute → send
+    //  - HallucinationInterceptor validates every tool call before execution
+    //  - Tool permission check against brain_agents.tools_granted
+    //  - All LLM calls go through AIProviderService.generateChat() — zero hardcoding
+    //  - Saves final conversation messages to Supabase on success
+    //  - Returns structured result with tool call audit trail + token total
+    // ============================================================================
+
+    async handleTurn(input: HandleTurnInput): Promise<HandleTurnResult> {
+        const { orgId, agentId, conversationId, messages, systemPrompt, tools, options } = input
+
+        const MAX_TURNS = options?.maxTurns ?? 20
+        const mutableMessages = [...messages]
+        const toolCallsMade: ToolCallRecord[] = []
+        let   turnsUsed = 0
+        let   totalTokens = 0
+
+        for (let turn = 1; turn <= MAX_TURNS; turn++) {
+            turnsUsed = turn
+
+            // ── LLM call (org-aware, auto-fallback) ──────────────────────────
+            const response = await aiProviderService.generateChat(orgId, [
+                { role: 'system', content: systemPrompt },
+                ...mutableMessages,
+            ], {
+                tools,
+                maxTokens:         options?.maxTokens,
+                temperature:       options?.temperature,
+                preferredProvider: options?.preferredProvider,
+                preferredModel:    options?.preferredModel,
+                responseFormat:    options?.responseFormat,
+            })
+
+            totalTokens += response.usage.totalTokens
+
+            // ── No tool calls → final answer ─────────────────────────────────
+            if (!response.toolCalls || response.toolCalls.length === 0) {
+                // Persist to conversation history (fire-and-forget)
+                if (conversationId) {
+                    this.saveAssistantMessage(conversationId, response.content, totalTokens)
+                        .catch(err => console.error('[BrainOrchestrator] Save message failed:', err))
+                }
+                return { response: response.content, toolCallsMade, turnsUsed, totalTokens }
+            }
+
+            // ── Hallucination check ───────────────────────────────────────────
+            const intercept = HallucinationInterceptor.validate(response.toolCalls, tools ?? [])
+
+            if (intercept.action === 'retry') {
+                // All tool calls were hallucinated — inject feedback and loop
+                mutableMessages.push({ role: 'user', content: intercept.feedback! })
+                continue
+            }
+
+            // Append assistant message (with tool_calls) to history
+            mutableMessages.push({
+                role:       'assistant',
+                content:    response.content ?? '',
+                tool_calls: intercept.validCalls,
+            })
+
+            // ── Execute valid tools ───────────────────────────────────────────
+            for (const toolCall of intercept.validCalls) {
+                const start  = Date.now()
+                let   result: unknown
+                let   success = true
+                let   errMsg  = ''
+
+                // Permission check
+                if (agentId) {
+                    const permitted = await this.checkToolPermission(agentId, toolCall.function.name)
+                    if (!permitted) {
+                        result  = { error: 'PERMISSION_DENIED', tool: toolCall.function.name }
+                        success = false
+                        errMsg  = 'Permission denied'
+                    }
+                }
+
+                if (success) {
+                    try {
+                        const args = JSON.parse(toolCall.function.arguments || '{}')
+                        result = await marketxToolExecutor.execute(
+                            toolCall.function.name,
+                            args,
+                            { orgId, agentId }
+                        )
+                    } catch (err: any) {
+                        result  = { error: err.message ?? 'Tool execution failed' }
+                        success = false
+                        errMsg  = err.message ?? 'Tool execution failed'
+                        console.error(`[BrainOrchestrator] Tool "${toolCall.function.name}" failed:`, err)
+                    }
+                }
+
+                toolCallsMade.push({
+                    name:        toolCall.function.name,
+                    args:        toolCall.function.arguments,
+                    result:      JSON.stringify(result),
+                    success,
+                    durationMs:  Date.now() - start,
+                })
+
+                // Feed tool result back into message history
+                mutableMessages.push({
+                    role:         'tool',
+                    content:      JSON.stringify(result),
+                    tool_call_id: toolCall.id,
+                })
+            }
+            // Continue to next turn with tool results in context
+        }
+
+        // MAX_TURNS exhausted
+        console.warn(`[BrainOrchestrator] MAX_TURNS (${MAX_TURNS}) reached for org ${orgId}`)
+        return {
+            response:      'I reached my processing limit for this request. Please try a more specific question.',
+            toolCallsMade,
+            turnsUsed,
+            totalTokens,
+        }
+    }
+
+    /** Check whether the agent is granted a specific tool */
+    private async checkToolPermission(agentId: string, toolName: string): Promise<boolean> {
+        const supabase = createClient()
+        const { data } = await supabase
+            .from('brain_agents')
+            .select('tools_granted')
+            .eq('id', agentId)
+            .single()
+        return (data?.tools_granted ?? []).includes(toolName)
+    }
+
+    /** Persist a single assistant message to the conversation */
+    private async saveAssistantMessage(
+        conversationId: string,
+        content: string,
+        tokens: number
+    ): Promise<void> {
+        const supabase = createClient()
+        await supabase.from('messages').insert({
+            conversation_id: conversationId,
+            role:            'assistant',
+            content,
+            tokens_used:     tokens,
+            metadata:        {},
+        })
     }
 }
 

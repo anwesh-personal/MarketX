@@ -92,3 +92,69 @@ export interface ProviderError extends Error {
     retryable: boolean
     details?: any
 }
+
+// ============================================================
+// BRAIN CHAT TYPES
+// Used by BrainOrchestrator's agentic loop — multi-turn + tools
+// ============================================================
+
+export interface BrainChatMessage {
+    role: 'system' | 'user' | 'assistant' | 'tool'
+    content: string
+    tool_call_id?: string   // required when role = 'tool'
+    tool_calls?: BrainToolCall[]  // set on assistant messages that call tools
+    name?: string
+}
+
+export interface BrainToolDefinition {
+    type: 'function'
+    function: {
+        name: string
+        description: string
+        parameters: Record<string, unknown>  // JSON Schema object
+    }
+}
+
+export interface BrainToolCall {
+    id: string
+    type: 'function'
+    function: {
+        name: string
+        arguments: string  // JSON-encoded string from the LLM
+    }
+}
+
+export interface BrainChatUsage {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+}
+
+export interface BrainChatResponse {
+    content: string
+    toolCalls: BrainToolCall[]
+    usage: BrainChatUsage
+    model: string
+    providerType: ProviderType
+    finishReason: 'stop' | 'tool_calls' | 'length' | 'error'
+}
+
+export interface BrainChatOptions {
+    model?: string
+    maxTokens?: number
+    temperature?: number
+    tools?: BrainToolDefinition[]
+    /** Force JSON output — provider must support it */
+    responseFormat?: { type: 'json_object' } | { type: 'text' }
+    /** Org-level preferred provider override */
+    preferredProvider?: string
+    /** Org-level preferred model override */
+    preferredModel?: string
+}
+
+export interface BrainEmbedResponse {
+    embeddings: number[][]   // one vector per input text
+    model: string
+    providerType: ProviderType
+    totalTokens: number
+}

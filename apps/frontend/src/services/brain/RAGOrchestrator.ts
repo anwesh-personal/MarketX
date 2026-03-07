@@ -28,6 +28,10 @@ export interface RAGResult {
         expansionUsed: boolean
         rerankingUsed: boolean
     }
+    /** Set to true when top document score is below the agent's min_confidence threshold */
+    gapDetected: boolean
+    /** The top document's confidence score (0 if no docs found) */
+    gapConfidence: number
 }
 
 export interface RetrievedDocument {
@@ -107,6 +111,10 @@ export class RAGOrchestrator {
         const retrievalTime = Date.now() - retrievalStart
 
         if (retrievedDocs.length === 0) {
+            // Record knowledge gap — no documents found at all
+            this.recordKnowledgeGap(context.orgId, query, 0).catch(err =>
+                console.error('[RAGOrchestrator] Gap recording failed:', err)
+            )
             return this.emptyResult('No relevant documents found')
         }
 
@@ -134,8 +142,20 @@ export class RAGOrchestrator {
         )
 
         // Calculate metrics
-        const avgScore = finalDocs.reduce((sum, doc) => sum + doc.score, 0) / finalDocs.length
+        const avgScore  = finalDocs.reduce((sum, doc) => sum + doc.score, 0) / finalDocs.length
+        const topScore  = finalDocs[0]?.score ?? 0
         const totalTime = Date.now() - startTime
+
+        // Gap detection: if the best document is below the confidence threshold,
+        // record it as a knowledge gap (fire-and-forget — never blocks the response)
+        const minConfidence = (context.brainConfig as any).ragMinConfidence ?? 0.65
+        const gapDetected   = topScore < minConfidence
+
+        if (gapDetected) {
+            this.recordKnowledgeGap(context.orgId, query, topScore).catch(err =>
+                console.error('[RAGOrchestrator] Gap recording failed:', err)
+            )
+        }
 
         const result: RAGResult = {
             context: contextString,
@@ -150,7 +170,9 @@ export class RAGOrchestrator {
                 cacheHit: false,
                 expansionUsed,
                 rerankingUsed
-            }
+            },
+            gapDetected,
+            gapConfidence: topScore,
         }
 
         // Cache result
@@ -573,6 +595,7 @@ export class RAGOrchestrator {
      * Return empty result
      */
     private emptyResult(reason: string): RAGResult {
+        console.debug(`[RAGOrchestrator] Empty result: ${reason}`)
         return {
             context: '',
             documents: [],
@@ -586,8 +609,65 @@ export class RAGOrchestrator {
                 cacheHit: false,
                 expansionUsed: false,
                 rerankingUsed: false
-            }
+            },
+            gapDetected:   true,
+            gapConfidence: 0,
         }
+    }
+
+    /**
+     * Record a knowledge gap in the knowledge_gaps table.
+     * Upserts by (org_id, domain) for active gaps — deduplicates automatically.
+     * Never throws — always fire-and-forget.
+     */
+    private async recordKnowledgeGap(
+        orgId: string,
+        query:  string,
+        score:  number
+    ): Promise<void> {
+        const domain      = this.inferDomain(query)
+        const description = `Low/no KB match (score: ${score.toFixed(2)}) for: "${query.slice(0, 120)}"`
+        const impact      = score === 0 ? 'high' : 'medium'
+
+        const supabase = this.getSupabase()
+        const { error } = await supabase
+            .from('knowledge_gaps')
+            .upsert(
+                {
+                    org_id:           orgId,
+                    domain,
+                    description,
+                    failed_queries:   [query],
+                    occurrence_count: 1,
+                    impact_level:     impact,
+                    last_identified:  new Date().toISOString(),
+                    status:           'identified',
+                },
+                {
+                    onConflict:        'org_id,domain',
+                    ignoreDuplicates:  false,
+                }
+            )
+
+        if (error) {
+            // Do not throw — gap recording must never break RAG
+            console.warn('[RAGOrchestrator] knowledge_gaps upsert failed:', error.message)
+        }
+    }
+
+    /**
+     * Infer the KB domain from the query text.
+     * Keeps domain keys consistent with known KB section names.
+     */
+    private inferDomain(query: string): string {
+        const q = query.toLowerCase()
+        if (q.includes('icp') || q.includes('target') || q.includes('persona') || q.includes('seniority')) return 'icp_targeting'
+        if (q.includes('offer') || q.includes('product') || q.includes('pricing') || q.includes('service')) return 'offer_details'
+        if (q.includes('brand') || q.includes('voice') || q.includes('tone') || q.includes('style'))       return 'brand_voice'
+        if (q.includes('angle') || q.includes('belief') || q.includes('hypothesis'))                       return 'angle_framework'
+        if (q.includes('competitor') || q.includes('alternative') || q.includes('comparison'))             return 'competitor_landscape'
+        if (q.includes('objection') || q.includes('pushback') || q.includes('concern'))                   return 'objection_handling'
+        return 'general'
     }
 }
 

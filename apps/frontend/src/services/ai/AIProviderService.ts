@@ -17,7 +17,7 @@
  * @date 2026-01-16
  */
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { BaseProvider } from './BaseProvider'
 import { openaiProvider } from './providers/OpenAIProvider'
 import { anthropicProvider } from './providers/AnthropicProvider'
@@ -30,7 +30,11 @@ import {
     ProviderConfig,
     GenerationOptions,
     GenerationResult,
-    ValidationResult
+    ValidationResult,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
 } from './types'
 
 export class AIProviderService {
@@ -222,6 +226,182 @@ export class AIProviderService {
         }
     }
 
+    // ============================================================
+    // BRAIN CHAT — org-aware, priority-sorted, automatic fallback
+    // This is the ONLY method Brain code should call for LLM inference.
+    // ============================================================
+
+    /**
+     * Multi-turn chat with tool calling support.
+     * Resolves provider chain for the org automatically:
+     *   1. Org's preferred_provider (from brain_agents) if set
+     *   2. Org's BYOK keys (ai_providers WHERE org_id = orgId)
+     *   3. Platform keys (ai_providers WHERE org_id IS NULL)
+     *
+     * Throws a structured error if every provider in the chain fails.
+     * Never falls back to hardcoded keys.
+     */
+    async generateChat(
+        orgId: string,
+        messages: BrainChatMessage[],
+        options: BrainChatOptions = {}
+    ): Promise<BrainChatResponse> {
+        const chain = await this.resolveProviderChain(orgId, options.preferredProvider)
+
+        if (chain.length === 0) {
+            throw new Error(
+                `[AIProviderService] No AI providers configured for org ${orgId}. ` +
+                `Please add an API key in Settings → AI Providers.`
+            )
+        }
+
+        let lastError: Error | null = null
+
+        for (const { config, provider } of chain) {
+            try {
+                const enrichedOptions: BrainChatOptions = {
+                    ...options,
+                    model: options.preferredModel ?? options.model ?? config.selectedModel ?? undefined,
+                }
+
+                const result = await provider.chat(messages, enrichedOptions, config.apiKey)
+
+                // Record success (non-blocking)
+                this.recordSuccess(config.id, result.usage.totalTokens, 0).catch(e =>
+                    console.error('[AIProviderService] Usage log failed:', e)
+                )
+
+                return result
+            } catch (error: any) {
+                lastError = error
+                console.error(`[AIProviderService] Provider ${config.provider} failed:`, error.message)
+
+                // Record failure (non-blocking)
+                this.recordFailure(config.id, error.message).catch(() => {})
+
+                // Auto-disable after threshold (non-blocking)
+                this.getConfig(config.id).then(c => {
+                    if (c && c.failures >= 3) this.autoDisable(config.id).catch(() => {})
+                }).catch(() => {})
+
+                // Rate limit and server errors: try next. Auth errors: stop immediately.
+                if (error.statusCode === 401 || error.statusCode === 403) {
+                    throw new Error(
+                        `[AIProviderService] Auth failure for provider ${config.provider}. Check your API key.`
+                    )
+                }
+
+                continue
+            }
+        }
+
+        throw new Error(
+            `[AIProviderService] All providers failed for org ${orgId}. Last error: ${lastError?.message ?? 'unknown'}`
+        )
+    }
+
+    /**
+     * Generate embeddings for an array of texts.
+     * Only tries providers that support embeddings (OpenAI, Google).
+     */
+    async embedTexts(orgId: string, texts: string[]): Promise<BrainEmbedResponse> {
+        const chain = await this.resolveProviderChain(orgId)
+
+        // Filter to embedding-capable providers only
+        const embedChain = chain.filter(({ provider }) => provider.getCapabilities().supportsEmbeddings)
+
+        if (embedChain.length === 0) {
+            throw new Error(
+                `[AIProviderService] No embedding-capable providers configured for org ${orgId}. ` +
+                `Configure OpenAI or Google Gemini in Settings → AI Providers.`
+            )
+        }
+
+        let lastError: Error | null = null
+
+        for (const { config, provider } of embedChain) {
+            try {
+                const result = await provider.embed(texts, config.apiKey)
+
+                this.recordSuccess(config.id, result.totalTokens, 0).catch(() => {})
+
+                return result
+            } catch (error: any) {
+                lastError = error
+                console.error(`[AIProviderService] Embed provider ${config.provider} failed:`, error.message)
+                this.recordFailure(config.id, error.message).catch(() => {})
+                continue
+            }
+        }
+
+        throw new Error(
+            `[AIProviderService] All embedding providers failed for org ${orgId}. Last error: ${lastError?.message ?? 'unknown'}`
+        )
+    }
+
+    /**
+     * Resolve ordered provider chain for an org.
+     * Order:
+     *   1. If preferredProvider is set AND we have a key for it → use it first
+     *   2. Org-specific BYOK keys (sorted by priority ASC, failures ASC)
+     *   3. Platform-level keys (org_id IS NULL, same sort)
+     */
+    private async resolveProviderChain(
+        orgId: string,
+        preferredProvider?: string
+    ): Promise<Array<{ config: DbProviderRow; provider: BaseProvider }>> {
+        const supabase = createClient()
+
+        // Fetch org-specific keys
+        const { data: orgKeys } = await supabase
+            .from('ai_providers')
+            .select('id, provider, name, api_key, is_active, auto_disabled_at, priority, failures, usage_count, selected_model')
+            .eq('org_id', orgId)
+            .eq('is_active', true)
+            .is('auto_disabled_at', null)
+            .not('api_key', 'is', null)
+            .order('priority',  { ascending: true })
+            .order('failures',  { ascending: true })
+
+        // Fetch platform-level keys
+        const { data: platformKeys } = await supabase
+            .from('ai_providers')
+            .select('id, provider, name, api_key, is_active, auto_disabled_at, priority, failures, usage_count, selected_model')
+            .is('org_id', null)
+            .eq('is_active', true)
+            .is('auto_disabled_at', null)
+            .not('api_key', 'is', null)
+            .order('priority',  { ascending: true })
+            .order('failures',  { ascending: true })
+
+        const allRows: DbProviderRow[] = [...(orgKeys ?? []), ...(platformKeys ?? [])]
+
+        // Build chain with resolved provider adapters
+        const chain: Array<{ config: DbProviderRow; provider: BaseProvider }> = []
+
+        // If a preferred provider is specified, put it first
+        if (preferredProvider) {
+            const preferred = allRows.find(r => r.provider === preferredProvider)
+            if (preferred) {
+                const adapter = this.providers.get(preferred.provider as ProviderType)
+                if (adapter) chain.push({ config: preferred, provider: adapter })
+            }
+        }
+
+        // Add remaining providers (skip already-added preferred)
+        for (const row of allRows) {
+            if (preferredProvider && row.provider === preferredProvider) continue
+            const adapter = this.providers.get(row.provider as ProviderType)
+            if (adapter) chain.push({ config: row, provider: adapter })
+        }
+
+        return chain
+    }
+
+    // ============================================================
+    // EXISTING METHODS (unchanged — backward compat)
+    // ============================================================
+
     /**
      * Get available providers
      */
@@ -236,6 +416,20 @@ export class AIProviderService {
         const provider = this.providers.get(providerType)
         return provider?.getCapabilities()
     }
+}
+
+// Internal type for DB rows — not exported
+interface DbProviderRow {
+    id: string
+    provider: string
+    name: string
+    api_key: string
+    is_active: boolean
+    auto_disabled_at: string | null
+    priority: number
+    failures: number
+    usage_count: number
+    selected_model?: string | null
 }
 
 // Export singleton instance

@@ -14,7 +14,12 @@ import {
     GenerationResult,
     ProviderCapabilities,
     CostConfig,
-    ProviderType
+    ProviderType,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
+    BrainToolCall,
 } from '../types'
 
 export class AnthropicProvider extends AbstractProvider {
@@ -150,6 +155,117 @@ export class AnthropicProvider extends AbstractProvider {
             supportsEmbeddings: false,
             maxContextWindow: 200000
         }
+    }
+}
+
+    // ============================================================
+    // BRAIN CHAT — multi-turn + tool calling (Anthropic tool_use)
+    // ============================================================
+    async chat(
+        messages: BrainChatMessage[],
+        options: BrainChatOptions,
+        apiKey: string
+    ): Promise<BrainChatResponse> {
+        const model = options.preferredModel || options.model || this.defaultModel
+
+        // Anthropic separates system prompt from messages array
+        const systemMsg = messages.find(m => m.role === 'system')
+        const chatMessages = messages
+            .filter(m => m.role !== 'system')
+            .map(m => {
+                if (m.role === 'tool') {
+                    return {
+                        role: 'user',
+                        content: [{ type: 'tool_result', tool_use_id: m.tool_call_id, content: m.content }],
+                    }
+                }
+                if (m.tool_calls && m.tool_calls.length > 0) {
+                    return {
+                        role: 'assistant',
+                        content: m.tool_calls.map(tc => ({
+                            type: 'tool_use',
+                            id: tc.id,
+                            name: tc.function.name,
+                            input: JSON.parse(tc.function.arguments || '{}'),
+                        })),
+                    }
+                }
+                return { role: m.role, content: m.content }
+            })
+
+        const body: Record<string, unknown> = {
+            model,
+            max_tokens:  options.maxTokens  ?? 4096,
+            temperature: options.temperature ?? 0.7,
+            messages: chatMessages,
+        }
+        if (systemMsg) body.system = systemMsg.content
+        if (options.tools && options.tools.length > 0) {
+            body.tools = options.tools.map(t => ({
+                name:         t.function.name,
+                description:  t.function.description,
+                input_schema: t.function.parameters,
+            }))
+        }
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify(body),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || `Anthropic chat error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+
+        // Extract text content and any tool_use blocks
+        let textContent = ''
+        const toolCalls: BrainToolCall[] = []
+        for (const block of data.content ?? []) {
+            if (block.type === 'text') {
+                textContent += block.text
+            } else if (block.type === 'tool_use') {
+                toolCalls.push({
+                    id:   block.id,
+                    type: 'function',
+                    function: {
+                        name:      block.name,
+                        arguments: JSON.stringify(block.input ?? {}),
+                    },
+                })
+            }
+        }
+
+        const finishReason = data.stop_reason === 'tool_use' ? 'tool_calls' : 'stop'
+
+        return {
+            content:     textContent,
+            toolCalls,
+            usage: {
+                promptTokens:     data.usage?.input_tokens    ?? 0,
+                completionTokens: data.usage?.output_tokens   ?? 0,
+                totalTokens:     (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0),
+            },
+            model,
+            providerType:  this.name,
+            finishReason: finishReason as BrainChatResponse['finishReason'],
+        }
+    }
+
+    // Anthropic does not provide an embeddings API
+    async embed(_texts: string[], _apiKey: string): Promise<BrainEmbedResponse> {
+        throw this.createError('Anthropic does not support embeddings. Configure OpenAI or Google for embeddings.', 400, false)
     }
 }
 

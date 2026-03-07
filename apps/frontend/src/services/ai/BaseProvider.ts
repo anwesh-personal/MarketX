@@ -14,43 +14,52 @@ import {
     ValidationResult,
     ProviderCapabilities,
     CostConfig,
-    ProviderType
+    ProviderType,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
 } from './types'
 
 export interface BaseProvider {
-    /**
-     * Provider identifier
-     */
+    /** Provider identifier */
     readonly name: ProviderType
 
-    /**
-     * Validate API key and discover models
-     */
+    /** Validate API key and discover models */
     validate(apiKey: string): Promise<ValidationResult>
 
     /**
-     * Generate content using the provider's API
+     * Legacy single-prompt generation (kept for backward compatibility).
+     * All new Brain code must use chat() instead.
      */
     generate(prompt: string, options: GenerationOptions, apiKey: string): Promise<GenerationResult>
 
     /**
-     * Get list of available models
+     * Multi-turn chat with optional tool definitions.
+     * This is the method the Brain's agentic loop uses exclusively.
      */
+    chat(
+        messages: BrainChatMessage[],
+        options: BrainChatOptions,
+        apiKey: string
+    ): Promise<BrainChatResponse>
+
+    /**
+     * Generate embeddings for an array of text strings.
+     * Returns one vector per input text.
+     */
+    embed(texts: string[], apiKey: string): Promise<BrainEmbedResponse>
+
+    /** Get list of available models */
     getModels(apiKey: string): Promise<AIModel[]>
 
-    /**
-     * Get provider capabilities
-     */
+    /** Get provider capabilities */
     getCapabilities(): ProviderCapabilities
 
-    /**
-     * Calculate cost for tokens used
-     */
+    /** Calculate cost for tokens used */
     calculateCost(inputTokens: number, outputTokens: number, model: string): number
 
-    /**
-     * Get cost configuration for a model
-     */
+    /** Get cost configuration for a model */
     getCostConfig(model: string): CostConfig | null
 }
 

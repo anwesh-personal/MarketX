@@ -14,7 +14,11 @@ import {
     GenerationResult,
     ProviderCapabilities,
     CostConfig,
-    ProviderType
+    ProviderType,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
 } from '../types'
 
 export class OpenAIProvider extends AbstractProvider {
@@ -158,6 +162,103 @@ export class OpenAIProvider extends AbstractProvider {
         if (modelId.includes('gpt-4-turbo')) return 4096
         if (modelId.includes('gpt-4')) return 4096
         return 2048
+    }
+}
+
+    // ============================================================
+    // BRAIN CHAT — multi-turn + tool calling
+    // ============================================================
+    async chat(
+        messages: BrainChatMessage[],
+        options: BrainChatOptions,
+        apiKey: string
+    ): Promise<BrainChatResponse> {
+        const model = options.preferredModel || options.model || 'gpt-4o'
+        const body: Record<string, unknown> = {
+            model,
+            messages: messages.map(m => {
+                const msg: Record<string, unknown> = { role: m.role, content: m.content }
+                if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+                if (m.tool_calls)   msg.tool_calls   = m.tool_calls
+                return msg
+            }),
+            max_tokens:  options.maxTokens  ?? 4096,
+            temperature: options.temperature ?? 0.7,
+        }
+
+        if (options.tools && options.tools.length > 0) {
+            body.tools = options.tools
+            body.tool_choice = 'auto'
+        }
+
+        if (options.responseFormat) {
+            body.response_format = options.responseFormat
+        }
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify(body),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || `OpenAI chat error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+        const choice = data.choices?.[0]
+
+        return {
+            content:      choice?.message?.content    ?? '',
+            toolCalls:    choice?.message?.tool_calls ?? [],
+            usage: {
+                promptTokens:     data.usage?.prompt_tokens     ?? 0,
+                completionTokens: data.usage?.completion_tokens ?? 0,
+                totalTokens:      data.usage?.total_tokens      ?? 0,
+            },
+            model,
+            providerType:  this.name,
+            finishReason: (choice?.finish_reason as BrainChatResponse['finishReason']) ?? 'stop',
+        }
+    }
+
+    // ============================================================
+    // EMBEDDINGS
+    // ============================================================
+    async embed(texts: string[], apiKey: string): Promise<BrainEmbedResponse> {
+        const model = 'text-embedding-3-large'
+
+        const response = await fetch('https://api.openai.com/v1/embeddings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model, input: texts }),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || `OpenAI embeddings error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+        const embeddings: number[][] = data.data
+            .sort((a: { index: number }, b: { index: number }) => a.index - b.index)
+            .map((item: { embedding: number[] }) => item.embedding)
+
+        return {
+            embeddings,
+            model,
+            providerType: this.name,
+            totalTokens:  data.usage?.total_tokens ?? 0,
+        }
     }
 }
 
