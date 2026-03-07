@@ -1,0 +1,697 @@
+openapi: 3.0.3
+info:
+  title: Axiom Engine API
+  description: |
+    API for managing and executing AI-powered workflow engines.
+    
+    ## Features
+    - Deploy workflow templates as runnable engines
+    - Execute engines with custom inputs (sync or async)
+    - Monitor execution progress in real-time
+    - Track token usage and costs
+    
+    ## Authentication
+    All endpoints require Bearer token authentication.
+  version: 1.0.0
+  contact:
+    email: api@axiom.example.com
+  license:
+    name: Proprietary
+    
+servers:
+  - url: https://axiom.example.com/api
+    description: Production server
+  - url: http://localhost:8080/api
+    description: Development server
+
+tags:
+  - name: Engines
+    description: Engine management operations
+  - name: Execution
+    description: Engine execution and status operations
+
+security:
+  - bearerAuth: []
+
+paths:
+  /engines:
+    get:
+      tags:
+        - Engines
+      summary: List all engines
+      description: Retrieve all engines, optionally filtered by organization or status
+      parameters:
+        - name: orgId
+          in: query
+          schema:
+            type: string
+          description: Filter by organization ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, disabled, draft]
+          description: Filter by engine status
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+          description: Only return active engines
+      responses:
+        '200':
+          description: List of engines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  engines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Engine'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /engines/deploy:
+    post:
+      tags:
+        - Engines
+      summary: Deploy a new engine
+      description: Create a new engine from a workflow configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeployEngineRequest'
+      responses:
+        '201':
+          description: Engine deployed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  engine:
+                    $ref: '#/components/schemas/Engine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /engines/stats:
+    get:
+      tags:
+        - Engines
+      summary: Get engine statistics
+      description: Retrieve analytics for all engines
+      parameters:
+        - name: days
+          in: query
+          schema:
+            type: integer
+            default: 30
+          description: Number of days to include
+      responses:
+        '200':
+          description: Engine statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EngineStats'
+
+  /engines/active:
+    get:
+      tags:
+        - Execution
+      summary: Get active executions
+      description: List all currently running executions
+      responses:
+        '200':
+          description: Active executions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  executions:
+                    type: array
+                    items:
+                      type: string
+
+  /engines/{engineId}:
+    get:
+      tags:
+        - Engines
+      summary: Get engine by ID
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      responses:
+        '200':
+          description: Engine details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Engine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - Engines
+      summary: Update engine
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEngineRequest'
+      responses:
+        '200':
+          description: Engine updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  engine:
+                    $ref: '#/components/schemas/Engine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Engines
+      summary: Delete engine
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      responses:
+        '200':
+          description: Engine deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /engines/{engineId}/duplicate:
+    post:
+      tags:
+        - Engines
+      summary: Duplicate engine
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the duplicated engine
+      responses:
+        '201':
+          description: Engine duplicated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  engine:
+                    $ref: '#/components/schemas/Engine'
+
+  /engines/{engineId}/activate:
+    post:
+      tags:
+        - Engines
+      summary: Activate engine
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      responses:
+        '200':
+          description: Engine activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  engine:
+                    $ref: '#/components/schemas/Engine'
+
+  /engines/{engineId}/deactivate:
+    post:
+      tags:
+        - Engines
+      summary: Deactivate engine
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      responses:
+        '200':
+          description: Engine deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  engine:
+                    $ref: '#/components/schemas/Engine'
+
+  /engines/{engineId}/execute:
+    post:
+      tags:
+        - Execution
+      summary: Execute engine
+      description: Run an engine with the provided input
+      parameters:
+        - $ref: '#/components/parameters/engineId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteEngineRequest'
+      responses:
+        '200':
+          description: Execution completed (sync mode)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResult'
+        '202':
+          description: Execution queued (async mode)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  executionId:
+                    type: string
+                  jobId:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          description: Server at capacity
+
+  /engines/executions/{executionId}:
+    get:
+      tags:
+        - Execution
+      summary: Get execution status
+      parameters:
+        - $ref: '#/components/parameters/executionId'
+      responses:
+        '200':
+          description: Execution status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /engines/executions/{executionId}/stop:
+    post:
+      tags:
+        - Execution
+      summary: Stop execution
+      parameters:
+        - $ref: '#/components/parameters/executionId'
+      responses:
+        '200':
+          description: Stop signal sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    engineId:
+      name: engineId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Engine ID
+
+    executionId:
+      name: executionId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Execution ID
+
+  schemas:
+    Engine:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        templateId:
+          type: string
+        orgId:
+          type: string
+        status:
+          type: string
+          enum: [draft, disabled, active]
+        tier:
+          type: string
+          enum: [hobby, pro, enterprise]
+        runCount:
+          type: integer
+        totalTokens:
+          type: integer
+        config:
+          $ref: '#/components/schemas/EngineConfig'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EngineConfig:
+      type: object
+      properties:
+        flowConfig:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkflowNode'
+            edges:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkflowEdge'
+        constitutionId:
+          type: string
+        kbId:
+          type: string
+        tier:
+          type: string
+
+    WorkflowNode:
+      type: object
+      required:
+        - id
+        - type
+        - data
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        position:
+          type: object
+          properties:
+            x:
+              type: number
+            y:
+              type: number
+        data:
+          type: object
+          properties:
+            label:
+              type: string
+            nodeType:
+              type: string
+              enum:
+                - email-trigger
+                - manual-trigger
+                - schedule-trigger
+                - input-config
+                - text-input
+                - file-upload
+                - analyze-intent
+                - generate-llm
+                - validate-constitution
+                - web-search
+                - seo-optimizer
+                - content-locker
+                - retrieve-kb
+                - logic-gate
+                - validation-check
+                - live-preview
+                - email-preview
+                - output-n8n
+                - output-store
+                - output-export
+                - output-schedule
+            description:
+              type: string
+            config:
+              type: object
+              additionalProperties: true
+
+    WorkflowEdge:
+      type: object
+      required:
+        - id
+        - source
+        - target
+      properties:
+        id:
+          type: string
+        source:
+          type: string
+        target:
+          type: string
+        animated:
+          type: boolean
+
+    DeployEngineRequest:
+      type: object
+      required:
+        - name
+        - templateId
+        - flowConfig
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        templateId:
+          type: string
+        orgId:
+          type: string
+        flowConfig:
+          type: object
+          properties:
+            nodes:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkflowNode'
+            edges:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkflowEdge'
+        tier:
+          type: string
+          enum: [hobby, pro, enterprise]
+        executionMode:
+          type: string
+          enum: [sync, async]
+        constitutionId:
+          type: string
+        kbId:
+          type: string
+
+    UpdateEngineRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, disabled, active]
+        config:
+          type: object
+          additionalProperties: true
+
+    ExecuteEngineRequest:
+      type: object
+      required:
+        - userId
+        - input
+      properties:
+        userId:
+          type: string
+        orgId:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+          description: Input data for the engine execution
+        options:
+          type: object
+          properties:
+            executionMode:
+              type: string
+              enum: [sync, async]
+              default: sync
+            tier:
+              type: string
+              enum: [hobby, pro, enterprise]
+            timeout:
+              type: integer
+              description: Timeout in milliseconds
+
+    ExecutionResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        executionId:
+          type: string
+        output:
+          type: string
+          description: Final output content
+        tokenUsage:
+          type: object
+          properties:
+            totalTokens:
+              type: integer
+            totalCost:
+              type: number
+            totalWords:
+              type: integer
+        durationMs:
+          type: integer
+        error:
+          type: string
+
+    ExecutionStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        engineId:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed, stopped]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        currentNode:
+          type: string
+        tokensUsed:
+          type: integer
+        cost:
+          type: number
+        durationMs:
+          type: integer
+        error:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+
+    EngineStats:
+      type: object
+      properties:
+        totalEngines:
+          type: integer
+        activeEngines:
+          type: integer
+        totalRuns:
+          type: integer
+        successfulRuns:
+          type: integer
+        failedRuns:
+          type: integer
+        successRate:
+          type: number
+        totalTokens:
+          type: integer
+        totalCost:
+          type: number
+        averageRunTime:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string

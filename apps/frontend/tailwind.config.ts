@@ -24,19 +24,6 @@ const config: Config = {
     theme: {
         extend: {
             /**
-             * Semantic spacing aliases (theme variable-driven)
-             * Enables classes like p-md, gap-xs, px-lg used across app.
-             */
-            spacing: {
-                xs: 'var(--spacing-xs)',
-                sm: 'var(--spacing-sm)',
-                md: 'var(--spacing-md)',
-                lg: 'var(--spacing-lg)',
-                xl: 'var(--spacing-xl)',
-                '2xl': 'var(--spacing-2xl)',
-            },
-
-            /**
              * Color System (from theme.ts)
              */
             colors: {

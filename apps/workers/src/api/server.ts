@@ -36,7 +36,6 @@ const QUEUE_NAMES = [
     QueueName.WORKFLOW_EXECUTION,      // 'workflow-execution'
     QueueName.ENGINE_EXECUTION,        // 'engine-execution'
     QueueName.SCHEDULED_TASK,          // 'scheduled-task'
-    QueueName.IMT_EMAIL_REPLY,         // 'imt-email-reply' - Phase 4 Option B
 ]
 
 // Get connection options for BullMQ (uses object format, not Redis instance)

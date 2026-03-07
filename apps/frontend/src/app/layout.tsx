@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-    title: 'MarketX - AI-Powered Marketing Intelligence Platform',
+    title: 'Market Writer - AI-Powered Marketing Intelligence Platform',
     description: 'Intelligent content creation with self-improving knowledge base',
     icons: {
         icon: '/favicon.png',

@@ -6,7 +6,6 @@ import fineTuningWorker from './workers/fine-tuning-worker'
 import learningLoopWorker from './workers/learning-loop-worker'
 import workflowExecutionWorker from './workers/workflow-execution-worker'
 import engineExecutionWorker from './workers/engine-execution-worker'
-import imtEmailReplyWorker from './workers/imt-email-reply-worker'
 import { startApiServer } from './api/server'
 
 // Start the API server for queue management
@@ -30,7 +29,6 @@ console.log('')
 console.log('⚡ Execution Workers:')
 console.log('   - Workflow Execution (10 concurrent) - Template runs')
 console.log('   - Engine Execution (2 concurrent) - Deployed engine runs')
-console.log('   - IMT Email Reply (3 concurrent) - Phase 4 Option B callback')
 console.log('')
 console.log('🌐 Management API:')
 console.log(`   - Running on port ${API_PORT}`)
@@ -58,7 +56,6 @@ const shutdown = async (signal: string) => {
         learningLoopWorker.close(),
         workflowExecutionWorker.close(),
         engineExecutionWorker.close(),
-        imtEmailReplyWorker.close(),
     ])
 
     console.log('✅ All workers shut down successfully')
