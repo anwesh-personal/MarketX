@@ -26,6 +26,9 @@ export enum QueueName {
     WORKFLOW_EXECUTION = 'workflow-execution',
     ENGINE_EXECUTION = 'engine-execution',
     SCHEDULED_TASK = 'scheduled-task',
+
+    // IMT Phase 4 - Email reply (Option B: webhook/callback)
+    IMT_EMAIL_REPLY = 'imt-email-reply',
 }
 
 // ============================================================================
@@ -79,6 +82,7 @@ interface QueueInstances {
     workflowExecution: Queue;
     engineExecution: Queue;
     scheduledTask: Queue;
+    imtEmailReply: Queue;
 }
 
 let _queues: QueueInstances | null = null;
@@ -170,6 +174,15 @@ function getQueues(): QueueInstances {
                     },
                 },
             }),
+
+            imtEmailReply: new Queue(QueueName.IMT_EMAIL_REPLY, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1,
+                    attempts: 3,
+                },
+            }),
         };
     }
     return _queues;
@@ -192,6 +205,7 @@ export const queues = new Proxy({} as QueueInstances, {
             'workflowExecution',
             'engineExecution',
             'scheduledTask',
+            'imtEmailReply',
         ];
     },
     getOwnPropertyDescriptor() {
