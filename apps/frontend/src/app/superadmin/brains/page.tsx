@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Brain, Plus, Edit2, Trash2, Users, Zap, TrendingUp, Activity, Check, X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Brain, Plus, Edit2, Trash2, Users, Zap, TrendingUp, Activity, Check, X, Sparkles, Wrench } from 'lucide-react'
 
 // ============================================================
 // TYPES
@@ -25,6 +26,7 @@ interface BrainTemplate {
 // ============================================================
 
 export default function BrainManagementPage() {
+    const router = useRouter()
     const [brains, setBrains] = useState<BrainTemplate[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [selectedBrain, setSelectedBrain] = useState<BrainTemplate | null>(null)
@@ -192,13 +194,29 @@ export default function BrainManagementPage() {
                         Manage AI brain templates and configurations
                     </p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-primary/20"
-                >
-                    <Plus className="w-5 h-5" />
-                    <span className="font-medium">Create Brain Template</span>
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.push('/superadmin/prompt-library')}
+                        className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl hover:bg-muted transition-all text-sm font-medium"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        Prompt Library
+                    </button>
+                    <button
+                        onClick={() => router.push('/superadmin/tool-registry')}
+                        className="flex items-center gap-2 px-4 py-2.5 border border-border rounded-xl hover:bg-muted transition-all text-sm font-medium"
+                    >
+                        <Wrench className="w-4 h-4" />
+                        Tool Registry
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-primary/20"
+                    >
+                        <Plus className="w-5 h-5" />
+                        <span className="font-medium">Create Brain Template</span>
+                    </button>
+                </div>
             </div>
 
             {/* Stats Overview */}
@@ -242,7 +260,7 @@ export default function BrainManagementPage() {
                             brain={brain}
                             getTierColor={getTierColor}
                             getTierLabel={getTierLabel}
-                            onSelect={() => setSelectedBrain(brain)}
+                            onSelect={() => router.push(`/superadmin/brains/${brain.id}`)}
                         />
                     ))}
                 </div>

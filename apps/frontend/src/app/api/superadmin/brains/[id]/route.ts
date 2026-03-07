@@ -157,6 +157,92 @@ export async function PATCH(
 }
 
 // ============================================================
+// PUT /api/superadmin/brains/[id]
+// Full update from the Agent Builder UI
+// Accepts the new prompt-layer FKs, default_tools, default_rag_config
+// ============================================================
+
+const putBrainSchema = z.object({
+    name:               z.string().min(1).max(255).optional(),
+    version:            z.string().regex(/^\d+\.\d+\.\d+/).optional(),
+    description:        z.string().optional(),
+    pricingTier:        z.enum(['echii', 'pulz', 'quanta']).optional(),
+    isDefault:          z.boolean().optional(),
+    isActive:           z.boolean().optional(),
+    foundationLayerId:  z.string().uuid().nullable().optional(),
+    personaLayerId:     z.string().uuid().nullable().optional(),
+    guardrailsLayerId:  z.string().uuid().nullable().optional(),
+    defaultTools:       z.array(z.string()).optional(),
+    defaultAgents:      z.array(z.string()).optional(),
+    defaultRagConfig:   z.object({
+        topK:           z.number().int().min(1).max(20),
+        minConfidence:  z.number().min(0).max(1),
+        queryExpansion: z.boolean(),
+        ftsWeight:      z.number().min(0).max(1),
+        vectorWeight:   z.number().min(0).max(1),
+    }).optional(),
+})
+
+export async function PUT(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const admin = await getSuperadmin(req)
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(params.id)) {
+            return NextResponse.json({ error: 'Invalid brain template ID format' }, { status: 400 })
+        }
+
+        const body = await req.json()
+        const validated = putBrainSchema.parse(body)
+
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = createClient()
+
+        const updatePayload: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
+        }
+        if (validated.name !== undefined)              updatePayload.name               = validated.name
+        if (validated.version !== undefined)           updatePayload.version            = validated.version
+        if (validated.description !== undefined)       updatePayload.description        = validated.description
+        if (validated.pricingTier !== undefined)       updatePayload.pricing_tier       = validated.pricingTier
+        if (validated.isDefault !== undefined)         updatePayload.is_default         = validated.isDefault
+        if (validated.isActive !== undefined)          updatePayload.is_active          = validated.isActive
+        if (validated.foundationLayerId !== undefined) updatePayload.foundation_layer_id = validated.foundationLayerId
+        if (validated.personaLayerId !== undefined)    updatePayload.persona_layer_id    = validated.personaLayerId
+        if (validated.guardrailsLayerId !== undefined) updatePayload.guardrails_layer_id = validated.guardrailsLayerId
+        if (validated.defaultTools !== undefined)      updatePayload.default_tools      = validated.defaultTools
+        if (validated.defaultAgents !== undefined)     updatePayload.default_agents     = validated.defaultAgents
+        if (validated.defaultRagConfig !== undefined)  updatePayload.default_rag_config = validated.defaultRagConfig
+
+        const { data, error } = await supabase
+            .from('brain_templates')
+            .update(updatePayload)
+            .eq('id', params.id)
+            .select()
+            .single()
+
+        if (error) {
+            if (error.code === '23505') {
+                return NextResponse.json({ error: 'A template with this name and version already exists' }, { status: 409 })
+            }
+            throw new Error(error.message)
+        }
+
+        return NextResponse.json({ template: data })
+    } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            return NextResponse.json({ error: 'Validation failed', details: error.errors }, { status: 400 })
+        }
+        console.error(`PUT /api/superadmin/brains/${params.id} failed:`, error)
+        return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 })
+    }
+}
+
+// ============================================================
 // DELETE /api/superadmin/brains/[id]
 // Deactivate brain template (soft delete)
 // ============================================================
