@@ -269,7 +269,7 @@ export class RAGOrchestrator {
         const searchPromises = queries.map(q =>
             vectorStore.search(q, {
                 orgId: context.orgId,
-                sourceTypes: ['kb', 'user_memory'], // Can be configured
+                sourceTypes: ['kb', 'user_memory', 'brain_memory', 'conversation'],
                 topK: context.brainConfig.rag.topK,
                 vectorWeight: context.brainConfig.rag.weights.vector,
                 ftsWeight: context.brainConfig.rag.weights.fts,
