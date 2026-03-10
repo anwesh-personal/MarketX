@@ -52,12 +52,12 @@ interface AIProvider {
 
 // Provider config with colors
 const PROVIDER_CONFIG: Record<string, { name: string; color: string; bgColor: string }> = {
-    openai: { name: 'OpenAI', color: 'text-emerald-400', bgColor: 'bg-emerald-500/10' },
-    anthropic: { name: 'Anthropic', color: 'text-orange-400', bgColor: 'bg-orange-500/10' },
-    google: { name: 'Google', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
-    mistral: { name: 'Mistral', color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
-    perplexity: { name: 'Perplexity', color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
-    xai: { name: 'xAI', color: 'text-gray-300', bgColor: 'bg-gray-500/10' },
+    openai: { name: 'OpenAI', color: 'text-success', bgColor: 'bg-success-muted' },
+    anthropic: { name: 'Anthropic', color: 'text-warning', bgColor: 'bg-warning-muted' },
+    google: { name: 'Google', color: 'text-info', bgColor: 'bg-info-muted' },
+    mistral: { name: 'Mistral', color: 'text-accent', bgColor: 'bg-accent/10' },
+    perplexity: { name: 'Perplexity', color: 'text-info', bgColor: 'bg-info-muted' },
+    xai: { name: 'xAI', color: 'text-textSecondary', bgColor: 'bg-surfaceHover' },
 };
 
 export default function AIModelsPage() {
@@ -409,17 +409,17 @@ export default function AIModelsPage() {
                     <p className="text-xs text-textTertiary mb-xs">Total Models</p>
                     <p className="text-2xl font-bold text-textPrimary">{stats.total}</p>
                 </div>
-                <div className="bg-surface border border-emerald-500/30 rounded-lg p-md">
-                    <p className="text-xs text-emerald-400 mb-xs">Active</p>
-                    <p className="text-2xl font-bold text-emerald-400">{stats.active}</p>
+                <div className="bg-surface border border-success/30 rounded-lg p-md">
+                    <p className="text-xs text-success mb-xs">Active</p>
+                    <p className="text-2xl font-bold text-success">{stats.active}</p>
                 </div>
-                <div className="bg-surface border border-blue-500/30 rounded-lg p-md">
-                    <p className="text-xs text-blue-400 mb-xs">Tested & Working</p>
-                    <p className="text-2xl font-bold text-blue-400">{stats.tested}</p>
+                <div className="bg-surface border border-info/30 rounded-lg p-md">
+                    <p className="text-xs text-info mb-xs">Tested & Working</p>
+                    <p className="text-2xl font-bold text-info">{stats.tested}</p>
                 </div>
-                <div className="bg-surface border border-purple-500/30 rounded-lg p-md">
-                    <p className="text-xs text-purple-400 mb-xs">Providers</p>
-                    <p className="text-2xl font-bold text-purple-400">{stats.providers}</p>
+                <div className="bg-surface border border-accent/30 rounded-lg p-md">
+                    <p className="text-xs text-accent mb-xs">Providers</p>
+                    <p className="text-2xl font-bold text-accent">{stats.providers}</p>
                 </div>
             </div>
 
@@ -452,7 +452,7 @@ export default function AIModelsPage() {
                                         <button
                                             onClick={() => handleShowAllModels(provider.id)}
                                             className={`flex items-center gap-xs px-sm py-xs border rounded-lg text-sm transition-all ${isShowingAllForThis
-                                                ? 'bg-primary text-white border-primary'
+                                                ? 'bg-primary text-textInverse border-primary'
                                                 : 'bg-surface text-textSecondary border-border hover:border-primary'
                                                 }`}
                                         >
@@ -477,8 +477,8 @@ export default function AIModelsPage() {
                                                         key={m.model_id}
                                                         className={`p-sm border rounded-lg transition-all ${m.already_added
                                                             ? m.is_active
-                                                                ? 'bg-emerald-500/10 border-emerald-500/30'
-                                                                : 'bg-red-500/10 border-red-500/30'
+                                                                ? 'bg-success-muted border-success/30'
+                                                                : 'bg-error-muted border-error/30'
                                                             : 'bg-surface border-border hover:border-primary'
                                                             }`}
                                                     >
@@ -491,7 +491,7 @@ export default function AIModelsPage() {
                                                                 )}
                                                             </div>
                                                             {m.already_added ? (
-                                                                <span className={`text-xs px-xs py-0.5 rounded ${m.is_active ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                                                <span className={`text-xs px-xs py-0.5 rounded ${m.is_active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
                                                                     }`}>
                                                                     {m.is_active ? 'Active' : 'Failed'}
                                                                 </span>
@@ -499,7 +499,7 @@ export default function AIModelsPage() {
                                                                 <button
                                                                     onClick={() => handleAddModel(m.model_id)}
                                                                     disabled={addingModelId === m.model_id}
-                                                                    className="flex items-center gap-xs px-xs py-xs bg-primary hover:bg-primary/80 text-white text-xs rounded disabled:opacity-50"
+                                                                    className="flex items-center gap-xs px-xs py-xs bg-primary hover:bg-primary/80 text-textInverse text-xs rounded disabled:opacity-50"
                                                                 >
                                                                     {addingModelId === m.model_id ? (
                                                                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -635,17 +635,17 @@ export default function AIModelsPage() {
                                         <td className="px-md py-sm">
                                             <div className="flex items-center gap-xs">
                                                 {model.supports_vision && (
-                                                    <span className="text-xs text-blue-400" title="Vision">
+                                                    <span className="text-xs text-info" title="Vision">
                                                         <Eye className="w-3.5 h-3.5" />
                                                     </span>
                                                 )}
                                                 {model.supports_function_calling && (
-                                                    <span className="text-xs text-purple-400" title="Functions">
+                                                    <span className="text-xs text-accent" title="Functions">
                                                         <Zap className="w-3.5 h-3.5" />
                                                     </span>
                                                 )}
                                                 {model.supports_streaming && (
-                                                    <span className="text-xs text-cyan-400" title="Streaming">
+                                                    <span className="text-xs text-info" title="Streaming">
                                                         <MessageSquare className="w-3.5 h-3.5" />
                                                     </span>
                                                 )}
@@ -683,7 +683,7 @@ export default function AIModelsPage() {
                                                 <button
                                                     onClick={() => openPlayground(model)}
                                                     disabled={!model.is_active}
-                                                    className="p-xs rounded bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 disabled:opacity-50 transition-all"
+                                                    className="p-xs rounded bg-info-muted text-info hover:bg-info/20 disabled:opacity-50 transition-all"
                                                     title="Chat with model"
                                                 >
                                                     <MessageSquare className="w-3.5 h-3.5" />
@@ -713,7 +713,7 @@ export default function AIModelsPage() {
 
             {/* Playground Chat Modal */}
             {playgroundOpen && playgroundModel && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70">
                     <div className="bg-background border border-border rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between p-md border-b border-border">
@@ -748,7 +748,7 @@ export default function AIModelsPage() {
                                 >
                                     <div
                                         className={`max-w-[80%] px-md py-sm rounded-lg ${msg.role === 'user'
-                                            ? 'bg-primary text-white rounded-br-none'
+                                            ? 'bg-primary text-textInverse rounded-br-none'
                                             : 'bg-surface border border-border text-textPrimary rounded-bl-none'
                                             }`}
                                     >
@@ -781,7 +781,7 @@ export default function AIModelsPage() {
                                 <button
                                     onClick={sendPlaygroundMessage}
                                     disabled={!playgroundInput.trim() || playgroundLoading}
-                                    className="px-md py-sm bg-primary text-white rounded-lg hover:bg-primary/80 disabled:opacity-50 transition-all flex items-center gap-xs"
+                                    className="px-md py-sm bg-primary text-textInverse rounded-lg hover:bg-primary/80 disabled:opacity-50 transition-all flex items-center gap-xs"
                                 >
                                     {playgroundLoading ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />

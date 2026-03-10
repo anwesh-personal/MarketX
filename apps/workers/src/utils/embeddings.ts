@@ -5,21 +5,45 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Provider endpoint mapping
+const EMBEDDING_ENDPOINTS: Record<string, string> = {
+    openai: 'https://api.openai.com/v1/embeddings',
+    // Add other providers as needed
+}
+
 /**
  * Get AI provider for embeddings
  * Fetches from AI Management, NOT hardcoded
+ * Tries org-specific first, then falls back to platform-level
  */
 async function getEmbeddingProvider(orgId: string) {
-    const { data: provider, error } = await supabase
+    // Try org-specific provider first
+    let { data: provider, error } = await supabase
         .from('ai_providers')
         .select('*')
         .eq('org_id', orgId)
-        .eq('provider_type', 'openai') // Or fetch default provider
         .eq('is_active', true)
+        .is('auto_disabled_at', null)
+        .order('priority', { ascending: true })
+        .limit(1)
         .single()
 
+    // Fall back to platform-level provider
     if (error || !provider) {
-        throw new Error('No active AI provider found for embeddings')
+        const { data: platformProvider, error: platformError } = await supabase
+            .from('ai_providers')
+            .select('*')
+            .is('org_id', null)
+            .eq('is_active', true)
+            .is('auto_disabled_at', null)
+            .order('priority', { ascending: true })
+            .limit(1)
+            .single()
+
+        if (platformError || !platformProvider) {
+            throw new Error('No active AI provider found for embeddings')
+        }
+        provider = platformProvider
     }
 
     return provider
@@ -27,21 +51,23 @@ async function getEmbeddingProvider(orgId: string) {
 
 /**
  * Generate embedding using org's configured AI provider
- * ALWAYS fetched from AI Management - NEVER hardcoded
+ * Routes to correct provider endpoint based on provider type
  */
 export async function generateEmbedding(text: string, orgId: string): Promise<number[]> {
     // Get provider from database
     const provider = await getEmbeddingProvider(orgId)
+    const providerType = provider.provider || 'openai'
+    const endpoint = EMBEDDING_ENDPOINTS[providerType] || EMBEDDING_ENDPOINTS.openai
 
     // Call provider's API
-    const response = await fetch('https://api.openai.com/v1/embeddings', {
+    const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${provider.api_key}`,  // From database
+            'Authorization': `Bearer ${provider.api_key}`,
         },
         body: JSON.stringify({
-            model: provider.model || 'text-embedding-3-large',  // From provider config
+            model: provider.selected_model || 'text-embedding-3-large',
             input: text,
             dimensions: 1536,
         }),

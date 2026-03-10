@@ -194,7 +194,7 @@ export default function AIValidationPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-info" />
             </div>
         )
     }
@@ -204,14 +204,14 @@ export default function AIValidationPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">🛡️ AI Validation</h1>
-                    <p className="text-gray-400 mt-1">Test and validate AI models before enabling</p>
+                    <h1 className="text-3xl font-bold text-textPrimary">🛡️ AI Validation</h1>
+                    <p className="text-textTertiary mt-1">Test and validate AI models before enabling</p>
                 </div>
 
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={loadData}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="flex items-center space-x-2 bg-surface hover:bg-surfaceHover text-textPrimary px-4 py-2 rounded-lg transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />
                         <span>Refresh</span>
@@ -220,7 +220,7 @@ export default function AIValidationPage() {
                     <button
                         onClick={testAllModels}
                         disabled={testingAll}
-                        className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="flex items-center space-x-2 bg-info hover:bg-info/80 disabled:bg-surfaceHover text-textInverse px-4 py-2 rounded-lg transition-colors"
                     >
                         {testingAll ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -234,63 +234,63 @@ export default function AIValidationPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-4 gap-4">
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div className="bg-surface border border-border rounded-xl p-4">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-900/30 rounded-lg">
-                            <Zap className="w-5 h-5 text-blue-400" />
+                        <div className="p-2 bg-info-muted rounded-lg">
+                            <Zap className="w-5 h-5 text-info" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-white">{activeModels.length}</div>
-                            <div className="text-sm text-gray-400">Active Models</div>
+                            <div className="text-2xl font-bold text-textPrimary">{activeModels.length}</div>
+                            <div className="text-sm text-textTertiary">Active Models</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div className="bg-surface border border-border rounded-xl p-4">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-purple-900/30 rounded-lg">
-                            <Shield className="w-5 h-5 text-purple-400" />
+                        <div className="p-2 bg-accent/30 rounded-lg">
+                            <Shield className="w-5 h-5 text-accent" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-white">{testedModels.length}</div>
-                            <div className="text-sm text-gray-400">Tested</div>
+                            <div className="text-2xl font-bold text-textPrimary">{testedModels.length}</div>
+                            <div className="text-sm text-textTertiary">Tested</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div className="bg-surface border border-border rounded-xl p-4">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-green-900/30 rounded-lg">
-                            <CheckCheck className="w-5 h-5 text-green-400" />
+                        <div className="p-2 bg-success-muted rounded-lg">
+                            <CheckCheck className="w-5 h-5 text-success" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-white">{passedModels.length}</div>
-                            <div className="text-sm text-gray-400">Passed</div>
+                            <div className="text-2xl font-bold text-textPrimary">{passedModels.length}</div>
+                            <div className="text-sm text-textTertiary">Passed</div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+                <div className="bg-surface border border-border rounded-xl p-4">
                     <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-red-900/30 rounded-lg">
-                            <Ban className="w-5 h-5 text-red-400" />
+                        <div className="p-2 bg-error-muted rounded-lg">
+                            <Ban className="w-5 h-5 text-error" />
                         </div>
                         <div>
-                            <div className="text-2xl font-bold text-white">{failedModels.length}</div>
-                            <div className="text-sm text-gray-400">Failed</div>
+                            <div className="text-2xl font-bold text-textPrimary">{failedModels.length}</div>
+                            <div className="text-sm text-textTertiary">Failed</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Provider Filter */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl p-4">
+            <div className="bg-surface border border-border rounded-xl p-4">
                 <div className="flex items-center space-x-4">
-                    <span className="text-sm text-gray-400">Filter by Provider:</span>
+                    <span className="text-sm text-textTertiary">Filter by Provider:</span>
                     <select
                         value={selectedProvider}
                         onChange={(e) => setSelectedProvider(e.target.value)}
-                        className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-1.5 text-white text-sm"
+                        className="bg-surfaceHover border border-border rounded-lg px-3 py-1.5 text-textPrimary text-sm"
                     >
                         <option value="all">All Providers</option>
                         {providers.map(p => (
@@ -304,7 +304,7 @@ export default function AIValidationPage() {
                         <button
                             onClick={() => testProvider(selectedProvider)}
                             disabled={testingModel !== null}
-                            className="flex items-center space-x-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors"
+                            className="flex items-center space-x-1 bg-accent hover:bg-accent/80 disabled:bg-surfaceHover text-textInverse px-3 py-1.5 rounded-lg text-sm transition-colors"
                         >
                             <Play className="w-3 h-3" />
                             <span>Test All {selectedProvider}</span>
@@ -314,34 +314,34 @@ export default function AIValidationPage() {
             </div>
 
             {/* Models Table */}
-            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden">
+            <div className="bg-surface border border-border rounded-xl overflow-hidden">
                 <table className="w-full">
-                    <thead className="bg-gray-900">
+                    <thead className="bg-background">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Model</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Provider</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Capabilities</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Tested</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Action</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Model</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Provider</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Capabilities</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-textTertiary uppercase tracking-wider">Last Tested</th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-textTertiary uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700">
+                    <tbody className="divide-y divide-border">
                         {filteredModels.map((model) => {
                             const result = testResults[model.model_id]
                             const isTesting = testingModel === model.model_id
 
                             return (
-                                <tr key={model.id} className="hover:bg-gray-700/50">
+                                <tr key={model.id} className="hover:bg-surfaceHover">
                                     <td className="px-6 py-4">
                                         <div>
-                                            <div className="text-sm font-medium text-white">{model.model_name}</div>
-                                            <div className="text-xs text-gray-400">{model.model_id}</div>
+                                            <div className="text-sm font-medium text-textPrimary">{model.model_name}</div>
+                                            <div className="text-xs text-textTertiary">{model.model_id}</div>
                                         </div>
                                     </td>
 
                                     <td className="px-6 py-4">
-                                        <span className="px-2 py-1 bg-gray-700 text-gray-300 rounded text-xs capitalize">
+                                        <span className="px-2 py-1 bg-surfaceHover text-textTertiary rounded text-xs capitalize">
                                             {model.provider}
                                         </span>
                                     </td>
@@ -349,18 +349,18 @@ export default function AIValidationPage() {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-2">
                                             {model.supports_vision && (
-                                                <span title="Vision" className="p-1 bg-purple-900/30 rounded">
-                                                    <Eye className="w-3 h-3 text-purple-400" />
+                                                <span title="Vision" className="p-1 bg-accent/30 rounded">
+                                                    <Eye className="w-3 h-3 text-accent" />
                                                 </span>
                                             )}
                                             {model.supports_function_calling && (
-                                                <span title="Function Calling" className="p-1 bg-blue-900/30 rounded">
-                                                    <Wrench className="w-3 h-3 text-blue-400" />
+                                                <span title="Function Calling" className="p-1 bg-info-muted rounded">
+                                                    <Wrench className="w-3 h-3 text-info" />
                                                 </span>
                                             )}
                                             {model.supports_streaming && (
-                                                <span title="Streaming" className="p-1 bg-green-900/30 rounded">
-                                                    <Zap className="w-3 h-3 text-green-400" />
+                                                <span title="Streaming" className="p-1 bg-success-muted rounded">
+                                                    <Zap className="w-3 h-3 text-success" />
                                                 </span>
                                             )}
                                         </div>
@@ -368,50 +368,50 @@ export default function AIValidationPage() {
 
                                     <td className="px-6 py-4">
                                         {isTesting ? (
-                                            <span className="flex items-center space-x-1 text-blue-400">
+                                            <span className="flex items-center space-x-1 text-info">
                                                 <Loader2 className="w-4 h-4 animate-spin" />
                                                 <span className="text-xs">Testing...</span>
                                             </span>
                                         ) : result ? (
                                             result.passed ? (
-                                                <span className="flex items-center space-x-1 text-green-400">
+                                                <span className="flex items-center space-x-1 text-success">
                                                     <CheckCircle className="w-4 h-4" />
                                                     <span className="text-xs">{result.latency}ms</span>
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center space-x-1 text-red-400" title={result.error}>
+                                                <span className="flex items-center space-x-1 text-error" title={result.error}>
                                                     <XCircle className="w-4 h-4" />
                                                     <span className="text-xs truncate max-w-[100px]">{result.error}</span>
                                                 </span>
                                             )
                                         ) : model.test_passed !== null ? (
                                             model.test_passed ? (
-                                                <span className="flex items-center space-x-1 text-green-400">
+                                                <span className="flex items-center space-x-1 text-success">
                                                     <CheckCircle className="w-4 h-4" />
                                                     <span className="text-xs">Passed</span>
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center space-x-1 text-red-400" title={model.test_error || ''}>
+                                                <span className="flex items-center space-x-1 text-error" title={model.test_error || ''}>
                                                     <XCircle className="w-4 h-4" />
                                                     <span className="text-xs">Failed</span>
                                                 </span>
                                             )
                                         ) : (
-                                            <span className="flex items-center space-x-1 text-gray-400">
+                                            <span className="flex items-center space-x-1 text-textTertiary">
                                                 <AlertTriangle className="w-4 h-4" />
                                                 <span className="text-xs">Not tested</span>
                                             </span>
                                         )}
                                     </td>
 
-                                    <td className="px-6 py-4 text-sm text-gray-400">
+                                    <td className="px-6 py-4 text-sm text-textTertiary">
                                         {model.last_tested ? (
                                             <span className="flex items-center space-x-1">
                                                 <Clock className="w-3 h-3" />
                                                 <span>{new Date(model.last_tested).toLocaleString()}</span>
                                             </span>
                                         ) : (
-                                            <span className="text-gray-500">Never</span>
+                                            <span className="text-textSecondary">Never</span>
                                         )}
                                     </td>
 
@@ -419,7 +419,7 @@ export default function AIValidationPage() {
                                         <button
                                             onClick={() => testModel(model)}
                                             disabled={isTesting || testingAll}
-                                            className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm transition-colors ml-auto"
+                                            className="flex items-center space-x-1 bg-info hover:bg-info/80 disabled:bg-surfaceHover text-textInverse px-3 py-1.5 rounded-lg text-sm transition-colors ml-auto"
                                         >
                                             {isTesting ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -436,7 +436,7 @@ export default function AIValidationPage() {
                 </table>
 
                 {filteredModels.length === 0 && (
-                    <div className="p-8 text-center text-gray-400">
+                    <div className="p-8 text-center text-textTertiary">
                         No models found. Add AI providers first.
                     </div>
                 )}

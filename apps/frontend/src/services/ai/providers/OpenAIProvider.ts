@@ -163,7 +163,6 @@ export class OpenAIProvider extends AbstractProvider {
         if (modelId.includes('gpt-4')) return 4096
         return 2048
     }
-}
 
     // ============================================================
     // BRAIN CHAT — multi-turn + tool calling

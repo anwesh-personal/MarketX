@@ -33,11 +33,51 @@ export async function enqueueConversationSummary(data: {
 }
 
 export async function enqueueAnalytics(data: {
-    type: 'daily' | 'hourly' | 'realtime'
+    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine'
     date?: string
+    orgId?: string
+    lookbackDays?: number
 }) {
     const job = await queues.analytics.add('aggregate', data, {
         jobId: `analytics-${data.type}-${data.date || Date.now()}`,
+    })
+
+    return {
+        jobId: job.id!,
+        queueName: 'analytics',
+    }
+}
+
+export async function enqueueBeliefConfidenceRecompute(data: {
+    orgId?: string
+    lookbackDays?: number
+}) {
+    const payload = {
+        type: 'belief-confidence' as const,
+        orgId: data.orgId,
+        lookbackDays: data.lookbackDays ?? 7,
+    }
+    const job = await queues.analytics.add('aggregate', payload, {
+        jobId: `analytics-belief-confidence-${data.orgId || 'all'}-${Date.now()}`,
+    })
+
+    return {
+        jobId: job.id!,
+        queueName: 'analytics',
+    }
+}
+
+export async function enqueueAllocationRebalance(data: {
+    orgId?: string
+    lookbackDays?: number
+}) {
+    const payload = {
+        type: 'allocation-engine' as const,
+        orgId: data.orgId,
+        lookbackDays: data.lookbackDays ?? 14,
+    }
+    const job = await queues.analytics.add('aggregate', payload, {
+        jobId: `analytics-allocation-engine-${data.orgId || 'all'}-${Date.now()}`,
     })
 
     return {

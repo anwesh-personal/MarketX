@@ -1,5 +1,6 @@
 import { Job } from 'bullmq'
 import { createClient } from '@supabase/supabase-js'
+import { aiService } from '../../utils/ai-service'
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -10,26 +11,6 @@ export interface SummaryJob {
     conversationId: string
     orgId: string  // REQUIRED to fetch AI provider
     messageCount?: number
-}
-
-/**
- * Get AI provider for chat/summarization
- * Fetches from AI Management, NOT hardcoded
- */
-async function getChatProvider(orgId: string) {
-    const { data: provider, error } = await supabase
-        .from('ai_providers')
-        .select('*')
-        .eq('org_id', orgId)
-        .eq('provider_type', 'openai')
-        .eq('is_active', true)
-        .single()
-
-    if (error || !provider) {
-        throw new Error('No active AI provider found for chat')
-    }
-
-    return provider
 }
 
 export async function summarizeConversation(job: Job<SummaryJob>) {
@@ -66,48 +47,22 @@ export async function summarizeConversation(job: Job<SummaryJob>) {
 
         job.updateProgress(40)
 
-        // 3. Get AI provider from database
-        const provider = await getChatProvider(orgId)
-
-        // 4. Generate summary using org's AI provider
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.api_key}`,  // From database
-            },
-            body: JSON.stringify({
-                model: provider.model || 'gpt-4-turbo-preview',  // From provider config
-                messages: [
-                    {
-                        role: 'system',
-                        content: `Summarize the following conversation concisely. Extract:
+        // 3-4. Generate summary using AIService (handles provider resolution)
+        const aiResult = await aiService.call(conversationText, {
+            systemPrompt: `Summarize the following conversation concisely. Extract:
 1. Main topics discussed
 2. Key decisions or conclusions
 3. Action items or follow-ups
 4. Important facts or data mentioned
 
 Provide a structured summary in clear paragraphs.`,
-                    },
-                    {
-                        role: 'user',
-                        content: conversationText,
-                    },
-                ],
-                temperature: 0.3,
-                max_tokens: 500,
-            }),
+            temperature: 0.3,
+            maxTokens: 500
         })
-
-        if (!response.ok) {
-            throw new Error(`Chat API failed: ${response.statusText}`)
-        }
-
-        const result = await response.json() as { choices: Array<{ message: { content: string } }> }
 
         job.updateProgress(70)
 
-        const summary = result.choices[0].message.content || ''
+        const summary = aiResult.content || ''
 
         console.log(`📝 Generated summary (${summary.length} chars)`)
 

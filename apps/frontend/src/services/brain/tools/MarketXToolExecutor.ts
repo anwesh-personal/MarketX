@@ -13,6 +13,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
+import { queues } from '@/lib/worker-queues'
+import { randomUUID } from 'crypto'
 
 interface ExecutorContext {
     orgId:    string
@@ -283,25 +285,184 @@ class MarketXToolExecutor {
         return { updated: true, section, length: updated.length }
     }
 
-    // generate_email is intentionally deferred — it requires the
-    // full MarketWriter generation pipeline (Phases 4-5 of the roadmap).
-    // Until then, it returns a structured placeholder so the Brain
-    // acknowledges the intent without hallucinating a fake email.
     private async executeGenerateEmail(
         args: Record<string, unknown>,
         ctx: ExecutorContext
     ): Promise<unknown> {
-        const beliefId   = String(args.belief_id   ?? '')
-        const angleClass = String(args.angle_class  ?? '')
-        if (!beliefId)   throw new Error('[generate_email] belief_id is required')
+        const beliefId   = String(args.belief_id ?? '')
+        const angleClass = String(args.angle_class ?? '')
+        const emailCount = Math.max(1, Math.min(10, Number(args.email_count ?? 5)))
+        const flowGoal   = String(args.flow_goal ?? 'MEANINGFUL_REPLY')
+        let icpId        = String(args.icp_id ?? '')
+        let offerId      = String(args.offer_id ?? '')
+
+        if (!beliefId) throw new Error('[generate_email] belief_id is required')
         if (!angleClass) throw new Error('[generate_email] angle_class is required')
 
-        return {
-            status:     'queued',
-            message:    'Email generation has been queued. The MarketWriter pipeline will process it.',
-            belief_id:  beliefId,
-            angle_class: angleClass,
+        // Resolve missing ICP/OFFER from belief record where possible.
+        if (!icpId || !offerId) {
+            const beliefContext = await this.resolveBeliefContext(beliefId, ctx.orgId)
+            icpId = icpId || beliefContext.icpId || ''
+            offerId = offerId || beliefContext.offerId || ''
         }
+
+        if (!icpId || !offerId) {
+            throw new Error(
+                '[generate_email] Could not resolve icp_id/offer_id. Provide them explicitly or ensure belief has both fields.'
+            )
+        }
+
+        const supabase = createClient()
+        const templateId = 'template-email-flow-generator'
+
+        // 1) Fetch template flow for engine bootstrap.
+        const { data: template, error: templateError } = await supabase
+            .from('workflow_templates')
+            .select('id, name, nodes, edges, status')
+            .eq('id', templateId)
+            .eq('status', 'active')
+            .single()
+
+        if (templateError || !template) {
+            throw new Error('[generate_email] Email flow template is missing or inactive.')
+        }
+
+        // 2) Reuse org engine if present; otherwise create one.
+        let { data: engine } = await supabase
+            .from('engine_instances')
+            .select('id, name, config, status')
+            .eq('org_id', ctx.orgId)
+            .eq('template_id', templateId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (!engine) {
+            const { data: createdEngine, error: createEngineError } = await supabase
+                .from('engine_instances')
+                .insert({
+                    name: `Email Flow Generator - ${ctx.orgId.slice(0, 8)}`,
+                    template_id: templateId,
+                    org_id: ctx.orgId,
+                    status: 'active',
+                    config: {
+                        flowConfig: {
+                            nodes: template.nodes,
+                            edges: template.edges
+                        }
+                    }
+                })
+                .select('id, name, config, status')
+                .single()
+
+            if (createEngineError || !createdEngine) {
+                throw new Error(`[generate_email] Failed to create engine: ${createEngineError?.message ?? 'unknown'}`)
+            }
+            engine = createdEngine
+        }
+
+        const executionId = randomUUID()
+        const inputPayload = {
+            belief_id: beliefId,
+            angle_class: angleClass,
+            icp_id: icpId,
+            offer_id: offerId,
+            email_count: emailCount,
+            flow_goal: flowGoal,
+            user_instruction: String(args.user_instruction ?? ''),
+        }
+
+        // 3) Create run log first for observability/audit.
+        const { error: runLogError } = await supabase
+            .from('engine_run_logs')
+            .insert({
+                id: executionId,
+                engine_id: engine.id,
+                org_id: ctx.orgId,
+                input_data: inputPayload,
+                status: 'started',
+                started_at: new Date().toISOString(),
+            })
+
+        if (runLogError) {
+            throw new Error(`[generate_email] Failed to create run log: ${runLogError.message}`)
+        }
+
+        // 4) Queue execution to worker.
+        const job = await queues.engineExecution.add(
+            'engine-execution',
+            {
+                executionId,
+                engineId: engine.id,
+                engine: {
+                    id: engine.id,
+                    name: engine.name,
+                    config: engine.config,
+                    status: engine.status,
+                },
+                userId: ctx.agentId || 'brain-agent',
+                orgId: ctx.orgId,
+                input: inputPayload,
+                options: {
+                    tier: 'pro',
+                    timeout: 300000,
+                },
+            },
+            {
+                jobId: `brain-email-${executionId}`
+            }
+        )
+
+        return {
+            status: 'queued',
+            message: 'Email generation job queued to engine-execution worker.',
+            execution_id: executionId,
+            queue_job_id: job.id,
+            engine_id: engine.id,
+            template_id: templateId,
+            belief_id: beliefId,
+            angle_class: angleClass,
+            icp_id: icpId,
+            offer_id: offerId,
+            email_count: emailCount,
+            flow_goal: flowGoal,
+        }
+    }
+
+    private async resolveBeliefContext(
+        beliefId: string,
+        orgId: string
+    ): Promise<{ icpId: string | null; offerId: string | null }> {
+        const supabase = createClient()
+
+        const tryFetch = async (table: 'belief' | 'beliefs') => {
+            const { data } = await supabase
+                .from(table)
+                .select('icp_id, offer_id')
+                .eq('org_id', orgId)
+                .eq('id', beliefId)
+                .limit(1)
+                .maybeSingle()
+            return data ?? null
+        }
+
+        const primary = await tryFetch('belief')
+        if (primary) {
+            return {
+                icpId: primary.icp_id ?? null,
+                offerId: primary.offer_id ?? null,
+            }
+        }
+
+        const fallback = await tryFetch('beliefs')
+        if (fallback) {
+            return {
+                icpId: fallback.icp_id ?? null,
+                offerId: fallback.offer_id ?? null,
+            }
+        }
+
+        return { icpId: null, offerId: null }
     }
 }
 

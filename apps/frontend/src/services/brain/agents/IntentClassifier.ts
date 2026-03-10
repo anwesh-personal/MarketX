@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { aiProviderService } from '../../ai/AIProviderService'
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -23,8 +24,10 @@ export class IntentClassifier {
     /**
      * Classify user intent to route to appropriate agent
      * Uses pattern matching first (fast), falls back to LLM (accurate)
+     * @param input - The user's input text
+     * @param orgId - Organization ID for provider resolution (optional, enables LLM fallback)
      */
-    async classify(input: string, providerId?: string): Promise<IntentClassificationResult> {
+    async classify(input: string, orgId?: string): Promise<IntentClassificationResult> {
         // Try pattern matching first (fast, no API cost)
         const patternMatch = await this.patternMatching(input)
 
@@ -38,8 +41,8 @@ export class IntentClassifier {
         }
 
         // Fall back to LLM classification (accurate but slower)
-        if (providerId) {
-            const llmResult = await this.llmClassification(input, providerId)
+        if (orgId) {
+            const llmResult = await this.llmClassification(input, orgId)
             return {
                 ...llmResult,
                 method: 'llm'
@@ -139,34 +142,18 @@ export class IntentClassifier {
     }
 
     /**
-     * LLM-based classification for complex queries
+     * LLM-based classification for complex queries via AIProviderService
      */
     private async llmClassification(
         input: string,
-        providerId: string
+        orgId: string
     ): Promise<{ intent: Intent, confidence: number }> {
         try {
-            // Get provider config
-            const { data: provider } = await this.getSupabase()
-                .from('ai_providers')
-                .select('*')
-                .eq('id', providerId)
-                .single()
-
-            if (!provider) {
-                return { intent: 'generalist', confidence: 0.5 }
-            }
-
-            // Call LLM for classification
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${provider.api_key}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [{
+            // Call LLM for classification via AIProviderService
+            const chatResponse = await aiProviderService.generateChat(
+                orgId,
+                [
+                    {
                         role: 'system',
                         content: `Classify the user's intent into one of these categories:
 
@@ -177,21 +164,19 @@ export class IntentClassifier {
 
 Respond with ONLY a JSON object in this format:
 {"intent": "writer|analyst|coach|generalist", "confidence": 0.0-1.0}`
-                    }, {
+                    },
+                    {
                         role: 'user',
                         content: input
-                    }],
+                    }
+                ],
+                {
                     temperature: 0.0,
-                    max_tokens: 50
-                })
-            })
+                    maxTokens: 50
+                }
+            )
 
-            if (!response.ok) {
-                throw new Error('LLM classification failed')
-            }
-
-            const result = await response.json()
-            const content = result.choices[0].message.content?.trim()
+            const content = chatResponse.content?.trim()
 
             // Parse JSON response
             const parsed = JSON.parse(content || '{"intent": "generalist", "confidence": 0.5}')
@@ -215,10 +200,10 @@ Respond with ONLY a JSON object in this format:
      */
     async batchClassify(
         inputs: string[],
-        providerId?: string
+        orgId?: string
     ): Promise<IntentClassificationResult[]> {
         const results = await Promise.all(
-            inputs.map(input => this.classify(input, providerId))
+            inputs.map(input => this.classify(input, orgId))
         )
 
         return results

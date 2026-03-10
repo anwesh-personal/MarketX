@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { aiProviderService } from '../ai/AIProviderService'
 import crypto from 'crypto'
 
 // ============================================================
@@ -93,8 +94,8 @@ export class VectorStore {
             }
         }
 
-        // Generate new embedding via AI provider
-        const embedding = await this.callEmbeddingAPI(text, providerId)
+        // Generate new embedding via AIProviderService (uses orgId to resolve provider)
+        const embedding = await this.callEmbeddingAPI(text, orgId)
 
         // Estimate tokens (rough: 1 token ~= 4 chars)
         const tokensUsed = Math.ceil(text.length / 4)
@@ -150,9 +151,9 @@ export class VectorStore {
                 }
             }
 
-            // Generate embeddings for uncached texts
+            // Generate embeddings for uncached texts via AIProviderService
             if (uncachedTexts.length > 0) {
-                const newEmbeddings = await this.callEmbeddingAPIBatch(uncachedTexts, providerId)
+                const newEmbeddings = await this.callEmbeddingAPIBatch(uncachedTexts, orgId)
 
                 // Cache new embeddings
                 for (let j = 0; j < uncachedTexts.length; j++) {
@@ -403,81 +404,20 @@ export class VectorStore {
     // ============================================================
 
     /**
-     * Call embedding API via AI provider
-     * Retrieves provider configuration from database and calls appropriate API
+     * Call embedding API via AIProviderService
+     * Uses org's configured embedding provider with automatic failover
      */
-    private async callEmbeddingAPI(text: string, providerId: string): Promise<number[]> {
-        // Get provider configuration from database
-
-        // Get provider config
-        const { data: provider } = await this.getSupabase()
-            .from('ai_providers')
-            .select('*')
-            .eq('id', providerId)
-            .single()
-
-        if (!provider) {
-            throw new Error('AI provider not found')
-        }
-
-        // Call provider's API based on type
-        // This is a placeholder - actual implementation depends on provider type
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.api_key}`
-            },
-            body: JSON.stringify({
-                model: this.embeddingModel,
-                input: text,
-                dimensions: this.dimensions
-            })
-        })
-
-        if (!response.ok) {
-            throw new Error(`Embedding API failed: ${response.statusText}`)
-        }
-
-        const result = await response.json()
-        return result.data[0].embedding
+    private async callEmbeddingAPI(text: string, orgId: string): Promise<number[]> {
+        const result = await aiProviderService.embedTexts(orgId, [text])
+        return result.embeddings[0]
     }
 
     /**
-     * Call embedding API in batch
+     * Call embedding API in batch via AIProviderService
      */
-    private async callEmbeddingAPIBatch(texts: string[], providerId: string): Promise<number[][]> {
-        // Get provider config
-        const { data: provider } = await this.getSupabase()
-            .from('ai_providers')
-            .select('*')
-            .eq('id', providerId)
-            .single()
-
-        if (!provider) {
-            throw new Error('AI provider not found')
-        }
-
-        // Call provider's API
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.api_key}`
-            },
-            body: JSON.stringify({
-                model: this.embeddingModel,
-                input: texts,
-                dimensions: this.dimensions
-            })
-        })
-
-        if (!response.ok) {
-            throw new Error(`Batch embedding API failed: ${response.statusText}`)
-        }
-
-        const result = await response.json()
-        return result.data.map((d: any) => d.embedding)
+    private async callEmbeddingAPIBatch(texts: string[], orgId: string): Promise<number[][]> {
+        const result = await aiProviderService.embedTexts(orgId, texts)
+        return result.embeddings
     }
 
     /**

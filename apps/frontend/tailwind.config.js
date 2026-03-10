@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+    darkMode: ['selector', '[data-theme$="-night"]'],
     content: [
         './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
         './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -7,40 +8,35 @@ module.exports = {
     ],
     theme: {
         extend: {
-            // ===== THEME-AWARE COLORS =====
             colors: {
-                // Core colors
                 primary: 'var(--color-primary)',
+                'primary-hover': 'var(--color-primary-hover)',
                 secondary: 'var(--color-secondary)',
                 accent: 'var(--color-accent)',
-
-                // Backgrounds
+                'accent-hover': 'var(--color-accent-hover)',
                 background: 'var(--color-background)',
                 surface: 'var(--color-surface)',
                 surfaceHover: 'var(--color-surface-hover)',
-
-                // Text
+                surfaceElevated: 'var(--color-surface-elevated)',
                 textPrimary: 'var(--color-text-primary)',
                 textSecondary: 'var(--color-text-secondary)',
                 textTertiary: 'var(--color-text-tertiary)',
-
-                // Borders
+                textInverse: 'var(--color-text-inverse)',
                 border: 'var(--color-border)',
                 borderHover: 'var(--color-border-hover)',
                 borderFocus: 'var(--color-border-focus)',
-
-                // States
-                success: 'var(--color-success)',
-                warning: 'var(--color-warning)',
-                error: 'var(--color-error)',
-                info: 'var(--color-info)',
-
-                // Functional
                 overlay: 'var(--color-overlay)',
                 shadow: 'var(--color-shadow)',
+                success: 'var(--color-success)',
+                'success-muted': 'var(--color-success-muted)',
+                warning: 'var(--color-warning)',
+                'warning-muted': 'var(--color-warning-muted)',
+                error: 'var(--color-error)',
+                'error-muted': 'var(--color-error-muted)',
+                info: 'var(--color-info)',
+                'info-muted': 'var(--color-info-muted)',
+                glow: 'var(--color-glow)',
             },
-
-            // ===== THEME-AWARE SPACING =====
             spacing: {
                 xs: 'var(--spacing-xs)',
                 sm: 'var(--spacing-sm)',
@@ -49,15 +45,11 @@ module.exports = {
                 xl: 'var(--spacing-xl)',
                 '2xl': 'var(--spacing-2xl)',
             },
-
-            // ===== THEME-AWARE FONTS =====
             fontFamily: {
                 sans: 'var(--font-sans)',
                 mono: 'var(--font-mono)',
                 display: 'var(--font-display)',
             },
-
-            // ===== THEME-AWARE FONT SIZES =====
             fontSize: {
                 xs: 'var(--text-xs)',
                 sm: 'var(--text-sm)',
@@ -68,8 +60,6 @@ module.exports = {
                 '3xl': 'var(--text-3xl)',
                 '4xl': 'var(--text-4xl)',
             },
-
-            // ===== THEME-AWARE BORDER RADIUS =====
             borderRadius: {
                 sm: 'var(--radius-sm)',
                 md: 'var(--radius-md)',
@@ -77,24 +67,23 @@ module.exports = {
                 xl: 'var(--radius-xl)',
                 full: 'var(--radius-full)',
             },
-
-            // ===== THEME-AWARE BOX SHADOWS =====
             boxShadow: {
                 sm: 'var(--shadow-sm)',
                 md: 'var(--shadow-md)',
                 lg: 'var(--shadow-lg)',
                 xl: 'var(--shadow-xl)',
+                glow: 'var(--shadow-glow)',
+                'glow-lg': 'var(--shadow-glow-lg)',
             },
-
-            // ===== THEME-AWARE ANIMATIONS =====
             transitionDuration: {
                 fast: 'var(--duration-fast)',
                 normal: 'var(--duration-normal)',
                 slow: 'var(--duration-slow)',
             },
-
             transitionTimingFunction: {
                 theme: 'var(--easing)',
+                smooth: 'var(--easing-smooth)',
+                bounce: 'var(--easing-bounce)',
             },
         },
     },

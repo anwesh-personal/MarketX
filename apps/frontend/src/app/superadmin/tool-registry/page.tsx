@@ -16,16 +16,16 @@ interface BrainTool {
 }
 
 const CAT_COLORS: Record<string, string> = {
-    generation: 'bg-pink-500/10 text-pink-600 border-pink-500/20',
-    retrieval:  'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    analysis:   'bg-purple-500/10 text-purple-600 border-purple-500/20',
-    action:     'bg-green-500/10 text-green-600 border-green-500/20',
+    generation: 'bg-warning-muted text-warning border-warning/20',
+    retrieval:  'bg-info-muted text-info border-info/20',
+    analysis:   'bg-accent/10 text-accent border-accent/20',
+    action:     'bg-success-muted text-success border-success/20',
 }
 
 const TIER_COLORS: Record<string, string> = {
-    basic:      'bg-slate-500/10 text-slate-600',
-    medium:     'bg-indigo-500/10 text-indigo-600',
-    enterprise: 'bg-orange-500/10 text-orange-600',
+    basic:      'bg-surfaceHover text-textSecondary',
+    medium:     'bg-accent/10 text-accent',
+    enterprise: 'bg-warning-muted text-warning',
 }
 
 export default function ToolRegistryPage() {
@@ -110,9 +110,9 @@ export default function ToolRegistryPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                     { label: 'Total Tools',  value: stats.total,      color: 'text-foreground' },
-                    { label: 'Enabled',      value: stats.enabled,    color: 'text-green-600' },
-                    { label: 'Basic+',       value: stats.basic,      color: 'text-slate-600' },
-                    { label: 'Medium+',      value: stats.medium,     color: 'text-indigo-600' },
+                    { label: 'Enabled',      value: stats.enabled,    color: 'text-success' },
+                    { label: 'Basic+',       value: stats.basic,      color: 'text-textSecondary' },
+                    { label: 'Medium+',      value: stats.medium,     color: 'text-accent' },
                 ].map(s => (
                     <div key={s.label} className="rounded-xl border border-border/40 bg-background p-4 text-center">
                         <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -152,7 +152,7 @@ export default function ToolRegistryPage() {
                                                         {tool.min_tier}+
                                                     </span>
                                                     {tool.requires_confirm && (
-                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">
+                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-warning-muted text-warning font-medium">
                                                             requires confirm
                                                         </span>
                                                     )}

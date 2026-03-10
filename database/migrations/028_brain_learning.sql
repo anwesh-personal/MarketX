@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS brain_memories (
   emotional_arousal   FLOAT   NOT NULL DEFAULT 0    CHECK (emotional_arousal BETWEEN 0 AND 1),
 
   -- Belief attribution (MarketX-specific)
-  belief_id           UUID    REFERENCES beliefs(id) ON DELETE SET NULL,
+  belief_id           UUID    REFERENCES belief(id) ON DELETE SET NULL,
   angle_class         TEXT,
 
   -- Resonance

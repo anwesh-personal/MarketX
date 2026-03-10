@@ -41,6 +41,7 @@ export interface HandleTurnInput {
     messages:        BrainChatMessage[];
     systemPrompt:    string;
     tools?:          BrainToolDefinition[];
+    onEvent?:        (event: HandleTurnEvent) => void | Promise<void>;
     options?: {
         maxTurns?:         number;
         maxTokens?:        number;
@@ -48,6 +49,11 @@ export interface HandleTurnInput {
         preferredProvider?: string;
         preferredModel?:   string;
         responseFormat?:   { type: 'json_object' } | { type: 'text' };
+        grounding?: {
+            strict?: boolean;
+            gapDetected?: boolean;
+            gapConfidence?: number;
+        };
     };
 }
 
@@ -64,6 +70,17 @@ export interface ToolCallRecord {
     result:     string;     // JSON-stringified result
     success:    boolean;
     durationMs: number;
+}
+
+export interface HandleTurnEvent {
+    type: 'turn_start' | 'llm_response' | 'tool_result' | 'final';
+    turn?: number;
+    content?: string;
+    toolName?: string;
+    success?: boolean;
+    durationMs?: number;
+    toolCallsCount?: number;
+    totalTokens?: number;
 }
 
 // ============================================================================
@@ -1253,8 +1270,18 @@ class BrainOrchestrator {
 
     async handleTurn(input: HandleTurnInput): Promise<HandleTurnResult> {
         const { orgId, agentId, conversationId, messages, systemPrompt, tools, options } = input
+        const emit = async (event: HandleTurnEvent) => {
+            if (!input.onEvent) return
+            try {
+                await input.onEvent(event)
+            } catch (eventError) {
+                console.error('[BrainOrchestrator] onEvent callback failed:', eventError)
+            }
+        }
 
         const MAX_TURNS = options?.maxTurns ?? 20
+        const MAX_TOOL_CALLS_TOTAL = 50
+        const MAX_TOOL_CALLS_PER_TURN = 8
         const mutableMessages = [...messages]
         const toolCallsMade: ToolCallRecord[] = []
         let   turnsUsed = 0
@@ -1262,6 +1289,7 @@ class BrainOrchestrator {
 
         for (let turn = 1; turn <= MAX_TURNS; turn++) {
             turnsUsed = turn
+            await emit({ type: 'turn_start', turn, totalTokens })
 
             // ── LLM call (org-aware, auto-fallback) ──────────────────────────
             const response = await aiProviderService.generateChat(orgId, [
@@ -1277,15 +1305,32 @@ class BrainOrchestrator {
             })
 
             totalTokens += response.usage.totalTokens
+            await emit({
+                type: 'llm_response',
+                turn,
+                content: response.content,
+                toolCallsCount: response.toolCalls?.length ?? 0,
+                totalTokens
+            })
 
             // ── No tool calls → final answer ─────────────────────────────────
             if (!response.toolCalls || response.toolCalls.length === 0) {
+                const groundedResponse = this.enforceGroundingPolicy(
+                    response.content,
+                    options?.grounding
+                )
+                await emit({
+                    type: 'final',
+                    turn,
+                    content: groundedResponse,
+                    totalTokens
+                })
                 // Persist to conversation history (fire-and-forget)
                 if (conversationId) {
-                    this.saveAssistantMessage(conversationId, response.content, totalTokens)
+                    this.saveAssistantMessage(conversationId, groundedResponse, totalTokens)
                         .catch(err => console.error('[BrainOrchestrator] Save message failed:', err))
                 }
-                return { response: response.content, toolCallsMade, turnsUsed, totalTokens }
+                return { response: groundedResponse, toolCallsMade, turnsUsed, totalTokens }
             }
 
             // ── Hallucination check ───────────────────────────────────────────
@@ -1297,6 +1342,15 @@ class BrainOrchestrator {
                 continue
             }
 
+            if (intercept.validCalls.length > MAX_TOOL_CALLS_PER_TURN) {
+                const limitedCalls = intercept.validCalls.slice(0, MAX_TOOL_CALLS_PER_TURN)
+                console.warn(
+                    `[BrainOrchestrator] Tool call limit exceeded in a single turn. ` +
+                    `Requested=${intercept.validCalls.length}, allowed=${MAX_TOOL_CALLS_PER_TURN}.`
+                )
+                intercept.validCalls = limitedCalls
+            }
+
             // Append assistant message (with tool_calls) to history
             mutableMessages.push({
                 role:       'assistant',
@@ -1306,6 +1360,24 @@ class BrainOrchestrator {
 
             // ── Execute valid tools ───────────────────────────────────────────
             for (const toolCall of intercept.validCalls) {
+                if (toolCallsMade.length >= MAX_TOOL_CALLS_TOTAL) {
+                    console.warn(
+                        `[BrainOrchestrator] MAX_TOOL_CALLS_TOTAL (${MAX_TOOL_CALLS_TOTAL}) reached for org ${orgId}`
+                    )
+                    await emit({
+                        type: 'final',
+                        turn,
+                        content: 'I reached my tool execution safety limit for this request. Please refine and try again.',
+                        totalTokens
+                    })
+                    return {
+                        response: 'I reached my tool execution safety limit for this request. Please refine and try again.',
+                        toolCallsMade,
+                        turnsUsed,
+                        totalTokens,
+                    }
+                }
+
                 const start  = Date.now()
                 let   result: unknown
                 let   success = true
@@ -1313,7 +1385,7 @@ class BrainOrchestrator {
 
                 // Permission check
                 if (agentId) {
-                    const permitted = await this.checkToolPermission(agentId, toolCall.function.name)
+                    const permitted = await this.checkToolPermission(agentId, orgId, toolCall.function.name)
                     if (!permitted) {
                         result  = { error: 'PERMISSION_DENIED', tool: toolCall.function.name }
                         success = false
@@ -1344,6 +1416,14 @@ class BrainOrchestrator {
                     success,
                     durationMs:  Date.now() - start,
                 })
+                await emit({
+                    type: 'tool_result',
+                    turn,
+                    toolName: toolCall.function.name,
+                    success,
+                    durationMs: Date.now() - start,
+                    totalTokens
+                })
 
                 // Feed tool result back into message history
                 mutableMessages.push({
@@ -1357,6 +1437,12 @@ class BrainOrchestrator {
 
         // MAX_TURNS exhausted
         console.warn(`[BrainOrchestrator] MAX_TURNS (${MAX_TURNS}) reached for org ${orgId}`)
+        await emit({
+            type: 'final',
+            turn: turnsUsed,
+            content: 'I reached my processing limit for this request. Please try a more specific question.',
+            totalTokens
+        })
         return {
             response:      'I reached my processing limit for this request. Please try a more specific question.',
             toolCallsMade,
@@ -1365,13 +1451,48 @@ class BrainOrchestrator {
         }
     }
 
+    private enforceGroundingPolicy(
+        response: string,
+        grounding?: {
+            strict?: boolean;
+            gapDetected?: boolean;
+            gapConfidence?: number;
+        }
+    ): string {
+        if (!grounding?.strict || !grounding?.gapDetected) {
+            return response
+        }
+
+        const text = (response || '').trim()
+        const lower = text.toLowerCase()
+        const hasUncertaintyDisclosure =
+            lower.includes("i don't have") ||
+            lower.includes('i do not have') ||
+            lower.includes('not in my knowledge base') ||
+            lower.includes('i am not sure') ||
+            lower.includes('insufficient information') ||
+            lower.includes('not enough context')
+
+        if (hasUncertaintyDisclosure) {
+            return text
+        }
+
+        const confidencePct = Math.round((grounding.gapConfidence ?? 0) * 100)
+        const disclosure =
+            `I don't have high-confidence information for this in the current knowledge base` +
+            ` (confidence ${confidencePct}%). Please add or approve supporting context, and I can answer precisely.\n\n`
+
+        return `${disclosure}${text}`
+    }
+
     /** Check whether the agent is granted a specific tool */
-    private async checkToolPermission(agentId: string, toolName: string): Promise<boolean> {
+    private async checkToolPermission(agentId: string, orgId: string, toolName: string): Promise<boolean> {
         const supabase = createClient()
         const { data } = await supabase
             .from('brain_agents')
             .select('tools_granted')
             .eq('id', agentId)
+            .eq('org_id', orgId)
             .single()
         return (data?.tools_granted ?? []).includes(toolName)
     }

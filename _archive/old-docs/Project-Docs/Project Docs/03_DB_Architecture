@@ -1,0 +1,59 @@
+AXIOM DATABASE ARCHITECTURE (PostgreSQL)
+
+1. Philosophy: JSONB as a Document Store
+
+Because the client's business logic is defined in JSON Schemas (Contracts) that may evolve, we will use Postgres's JSONB features heavily. This gives us the flexibility of NoSQL with the ACID compliance of SQL.
+
+2. Table Definitions (database/init.sql)
+
+Table: knowledge_bases
+
+The source of truth.
+
+CREATE TABLE knowledge_bases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    version VARCHAR(50) NOT NULL, -- e.g. "1.0.1"
+    stage VARCHAR(20) NOT NULL, -- "pre-embeddings"
+    data JSONB NOT NULL, -- The Full Validated 01-KB JSON
+    is_active BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
+Table: runs
+
+The Execution Log.
+
+CREATE TABLE runs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    run_type VARCHAR(20), -- "ON_DEMAND" or "DAILY_SCHEDULED"
+    input_snapshot JSONB NOT NULL, -- Copy of the 02-Writer-Input used
+    output_snapshot JSONB, -- The Resulting 03-Writer-Output
+    status VARCHAR(20) DEFAULT 'PENDING', -- PENDING, COMPLETED, FAILED
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+
+Table: analytics_events
+
+The Market Feedback loop.
+
+CREATE TABLE analytics_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    run_id UUID REFERENCES runs(id),
+    variant_id VARCHAR(100), -- Link to specific content piece
+    event_type VARCHAR(50) NOT NULL, -- BOOKED_CALL, REPLY, CLICK
+    payload JSONB, -- Context (URL, User Agent, etc.)
+    occurred_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+-- Index for speed
+CREATE INDEX idx_analytics_date ON analytics_events(occurred_at);
+CREATE INDEX idx_analytics_variant ON analytics_events(variant_id);
+
+
+3. Query Strategy
+
+Fetching specific ICPs: SELECT data->'icp_library'->'segments' FROM knowledge_bases WHERE is_active = true;
+
+Updating Preferences (The Learning): We will use jsonb_set to strictly update only the learning section of the KB without rewriting the whole document.

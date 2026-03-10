@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { vectorStore } from './VectorStore'
 import { BrainConfig } from './BrainConfigService'
+import { aiProviderService } from '../ai/AIProviderService'
 import crypto from 'crypto'
 
 // ============================================================
@@ -202,67 +203,34 @@ export class RAGOrchestrator {
     }
 
     /**
-     * Expand query into alternative phrasings using LLM
+     * Expand query into alternative phrasings using LLM via AIProviderService
      */
     private async expandQuery(
         query: string,
         context: RAGContext
     ): Promise<QueryExpansion> {
         try {
-            // Get AI provider from brain config
-            const providerId = context.brainConfig.providers.chat
-
-            if (!providerId) {
-                // Fallback to simple expansion if no provider
-                return {
-                    original: query,
-                    expanded: [query],
-                    method: 'synonyms'
-                }
-            }
-
-            // Get provider config
-            const { data: provider } = await this.getSupabase()
-                .from('ai_providers')
-                .select('*')
-                .eq('id', providerId)
-                .single()
-
-            if (!provider) {
-                return {
-                    original: query,
-                    expanded: [query],
-                    method: 'synonyms'
-                }
-            }
-
-            // Use LLM to generate alternative queries
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${provider.api_key}`
-                },
-                body: JSON.stringify({
-                    model: provider.model,
-                    messages: [{
+            // Use LLM to generate alternative queries via AIProviderService
+            // AIProviderService handles provider resolution automatically for the org
+            const chatResponse = await aiProviderService.generateChat(
+                context.orgId,
+                [
+                    {
                         role: 'system',
                         content: 'You are a query expansion assistant. Generate 2-3 alternative phrasings of the user\'s query to improve search recall. Return ONLY a JSON array of strings, nothing else.'
-                    }, {
+                    },
+                    {
                         role: 'user',
                         content: query
-                    }],
+                    }
+                ],
+                {
                     temperature: 0.7,
-                    max_tokens: 200
-                })
-            })
+                    maxTokens: 200
+                }
+            )
 
-            if (!response.ok) {
-                throw new Error('Query expansion failed')
-            }
-
-            const result = await response.json()
-            const content = result.choices[0].message.content
+            const content = chatResponse.content
 
             // Parse JSON array
             const expanded = JSON.parse(content.trim())
@@ -339,7 +307,7 @@ export class RAGOrchestrator {
     }
 
     /**
-     * Rerank documents by actual relevance to original query using LLM
+     * Rerank documents by actual relevance to original query using LLM via AIProviderService
      */
     private async rerankDocuments(
         query: string,
@@ -347,27 +315,10 @@ export class RAGOrchestrator {
         context: RAGContext
     ): Promise<RetrievedDocument[]> {
         try {
-            const providerId = context.brainConfig.providers.chat
-
-            if (!providerId) {
-                return documents
-            }
-
-            // Get provider config
-            const { data: provider } = await this.getSupabase()
-                .from('ai_providers')
-                .select('*')
-                .eq('id', providerId)
-                .single()
-
-            if (!provider) {
-                return documents
-            }
-
-            // Score each document
+            // Score each document using org's configured provider via AIProviderService
             const scoredDocs = await Promise.all(
                 documents.map(async (doc) => {
-                    const score = await this.scoreRelevance(query, doc.content, provider)
+                    const score = await this.scoreRelevance(query, doc.content, context.orgId)
                     return { ...doc, score }
                 })
             )
@@ -384,36 +335,33 @@ export class RAGOrchestrator {
     }
 
     /**
-     * Score document relevance using LLM
+     * Score document relevance using LLM via AIProviderService
      */
     private async scoreRelevance(
         query: string,
         content: string,
-        provider: any
+        orgId: string
     ): Promise<number> {
         try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${provider.api_key}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-3.5-turbo',
-                    messages: [{
+            const chatResponse = await aiProviderService.generateChat(
+                orgId,
+                [
+                    {
                         role: 'system',
                         content: 'Score the relevance of this passage to the query on a scale of 0.0 to 1.0. Respond with ONLY the number, nothing else.'
-                    }, {
+                    },
+                    {
                         role: 'user',
                         content: `Query: ${query}\n\nPassage: ${content.substring(0, 500)}`
-                    }],
+                    }
+                ],
+                {
                     temperature: 0.0,
-                    max_tokens: 10
-                })
-            })
+                    maxTokens: 10
+                }
+            )
 
-            const result = await response.json()
-            const scoreText = result.choices[0].message.content.trim()
+            const scoreText = chatResponse.content.trim()
             const score = parseFloat(scoreText)
 
             return isNaN(score) ? 0.5 : Math.max(0, Math.min(1, score))

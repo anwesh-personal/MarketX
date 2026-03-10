@@ -100,20 +100,20 @@ function TooltipIcon({ param }: { param: string }) {
 
     return (
         <div className="group relative">
-            <Info className="w-4 h-4 text-gray-400 hover:text-blue-400 cursor-help" />
-            <div className="absolute left-0 top-6 w-80 bg-gray-900 border border-gray-600 rounded-lg p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <Info className="w-4 h-4 text-textTertiary hover:text-info cursor-help" />
+            <div className="absolute left-0 top-6 w-80 bg-background border border-border rounded-lg p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="space-y-3">
                     <div className="flex items-center space-x-2">
-                        <Info className="w-4 h-4 text-blue-400" />
-                        <h4 className="font-semibold text-white">{tooltip.title}</h4>
+                        <Info className="w-4 h-4 text-info" />
+                        <h4 className="font-semibold text-textPrimary">{tooltip.title}</h4>
                     </div>
 
-                    <p className="text-sm text-gray-300">{tooltip.description}</p>
-                    <p className="text-xs text-gray-400">{tooltip.details}</p>
+                    <p className="text-sm text-textTertiary">{tooltip.description}</p>
+                    <p className="text-xs text-textTertiary">{tooltip.details}</p>
 
-                    <div className="flex items-start space-x-2 p-2 bg-yellow-900/20 border border-yellow-700/50 rounded">
-                        <DollarSign className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-xs text-yellow-300">{tooltip.economic}</p>
+                    <div className="flex items-start space-x-2 p-2 bg-warning-muted border border-warning/50 rounded">
+                        <DollarSign className="w-3 h-3 text-warning mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-warning">{tooltip.economic}</p>
                     </div>
                 </div>
             </div>
@@ -307,7 +307,7 @@ export default function AIPlaygroundPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-info" />
             </div>
         )
     }
@@ -317,21 +317,21 @@ export default function AIPlaygroundPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-white">🎮 AI Playground</h1>
-                    <p className="text-gray-400 mt-1">Test and experiment with AI models in real-time</p>
+                    <h1 className="text-3xl font-bold text-textPrimary">🎮 AI Playground</h1>
+                    <p className="text-textTertiary mt-1">Test and experiment with AI models in real-time</p>
                 </div>
 
                 <div className="flex items-center space-x-3">
                     <button
                         onClick={loadData}
-                        className="flex items-center space-x-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="flex items-center space-x-2 bg-surface hover:bg-surfaceHover text-textPrimary px-4 py-2 rounded-lg transition-colors"
                     >
                         <RefreshCw className="w-4 h-4" />
                         <span>Refresh</span>
                     </button>
 
-                    <div className="bg-green-900/20 border border-green-700/50 rounded-lg px-4 py-2">
-                        <div className="flex items-center space-x-2 text-green-300">
+                    <div className="bg-success-muted border border-success/50 rounded-lg px-4 py-2">
+                        <div className="flex items-center space-x-2 text-success">
                             <CheckCircle className="w-4 h-4" />
                             <span className="text-sm font-medium">{activeProviderCount} providers ready</span>
                         </div>
@@ -343,17 +343,17 @@ export default function AIPlaygroundPage() {
                 {/* Configuration Panel */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* Provider/Model Selection */}
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4">AI Configuration</h3>
+                    <div className="bg-surface border border-border rounded-xl p-6">
+                        <h3 className="text-lg font-semibold text-textPrimary mb-4">AI Configuration</h3>
 
                         <div className="space-y-4">
                             {/* Provider */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Provider</label>
+                                <label className="block text-sm font-medium text-textTertiary mb-2">Provider</label>
                                 <select
                                     value={selectedProvider}
                                     onChange={(e) => setSelectedProvider(e.target.value)}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                                    className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary"
                                 >
                                     {providers.map(p => (
                                         <option key={p.id} value={p.provider_type}>
@@ -365,11 +365,11 @@ export default function AIPlaygroundPage() {
 
                             {/* Model */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">Model</label>
+                                <label className="block text-sm font-medium text-textTertiary mb-2">Model</label>
                                 <select
                                     value={selectedModel}
                                     onChange={(e) => setSelectedModel(e.target.value)}
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white"
+                                    className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary"
                                 >
                                     {providerModels.map(m => (
                                         <option key={m.id} value={m.model_id}>
@@ -381,24 +381,24 @@ export default function AIPlaygroundPage() {
 
                             {/* System Prompt */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">System Prompt (Optional)</label>
+                                <label className="block text-sm font-medium text-textTertiary mb-2">System Prompt (Optional)</label>
                                 <textarea
                                     value={systemPrompt}
                                     onChange={(e) => setSystemPrompt(e.target.value)}
                                     placeholder="You are a helpful assistant..."
-                                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white h-20 resize-none"
+                                    className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary h-20 resize-none"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Parameters */}
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <div className="bg-surface border border-border rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">Parameters</h3>
+                            <h3 className="text-lg font-semibold text-textPrimary">Parameters</h3>
                             <button
                                 onClick={() => setShowAdvanced(!showAdvanced)}
-                                className="text-blue-400 hover:text-blue-300 text-sm flex items-center space-x-1"
+                                className="text-info hover:text-info/80 text-sm flex items-center space-x-1"
                             >
                                 <Sliders className="w-4 h-4" />
                                 <span>{showAdvanced ? 'Hide' : 'Show'} Advanced</span>
@@ -409,7 +409,7 @@ export default function AIPlaygroundPage() {
                             {/* Temperature */}
                             <div>
                                 <div className="flex items-center space-x-2 mb-2">
-                                    <label className="text-sm font-medium text-gray-300">Temperature</label>
+                                    <label className="text-sm font-medium text-textTertiary">Temperature</label>
                                     <TooltipIcon param="temperature" />
                                 </div>
                                 <input
@@ -421,9 +421,9 @@ export default function AIPlaygroundPage() {
                                     onChange={(e) => setParameters(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
                                     className="w-full"
                                 />
-                                <div className="flex justify-between text-xs text-gray-400">
+                                <div className="flex justify-between text-xs text-textTertiary">
                                     <span>Focused</span>
-                                    <span className="text-white font-medium">{parameters.temperature}</span>
+                                    <span className="text-textPrimary font-medium">{parameters.temperature}</span>
                                     <span>Creative</span>
                                 </div>
                             </div>
@@ -431,7 +431,7 @@ export default function AIPlaygroundPage() {
                             {/* Max Tokens */}
                             <div>
                                 <div className="flex items-center space-x-2 mb-2">
-                                    <label className="text-sm font-medium text-gray-300">Max Tokens</label>
+                                    <label className="text-sm font-medium text-textTertiary">Max Tokens</label>
                                     <TooltipIcon param="maxTokens" />
                                 </div>
                                 <input
@@ -443,21 +443,21 @@ export default function AIPlaygroundPage() {
                                     onChange={(e) => setParameters(prev => ({ ...prev, maxTokens: parseInt(e.target.value) }))}
                                     className="w-full"
                                 />
-                                <div className="flex justify-between text-xs text-gray-400">
+                                <div className="flex justify-between text-xs text-textTertiary">
                                     <span>Short</span>
-                                    <span className="text-white font-medium">{parameters.maxTokens}</span>
+                                    <span className="text-textPrimary font-medium">{parameters.maxTokens}</span>
                                     <span>Long</span>
                                 </div>
 
                                 {/* Token Context */}
                                 <div className="mt-2 grid grid-cols-2 gap-2">
-                                    <div className="bg-blue-900/20 border border-blue-700/50 rounded p-2 text-center">
-                                        <div className="text-xs text-blue-300">Words</div>
-                                        <div className="text-sm font-bold text-white">{tokenContext.words}</div>
+                                    <div className="bg-info-muted border border-info/50 rounded p-2 text-center">
+                                        <div className="text-xs text-info">Words</div>
+                                        <div className="text-sm font-bold text-textPrimary">{tokenContext.words}</div>
                                     </div>
-                                    <div className="bg-green-900/20 border border-green-700/50 rounded p-2 text-center">
-                                        <div className="text-xs text-green-300">Pages</div>
-                                        <div className="text-sm font-bold text-white">{tokenContext.pages}</div>
+                                    <div className="bg-success-muted border border-success/50 rounded p-2 text-center">
+                                        <div className="text-xs text-success">Pages</div>
+                                        <div className="text-sm font-bold text-textPrimary">{tokenContext.pages}</div>
                                     </div>
                                 </div>
                             </div>
@@ -467,7 +467,7 @@ export default function AIPlaygroundPage() {
                                 <>
                                     <div>
                                         <div className="flex items-center space-x-2 mb-2">
-                                            <label className="text-sm font-medium text-gray-300">Top P</label>
+                                            <label className="text-sm font-medium text-textTertiary">Top P</label>
                                             <TooltipIcon param="topP" />
                                         </div>
                                         <input
@@ -479,12 +479,12 @@ export default function AIPlaygroundPage() {
                                             onChange={(e) => setParameters(prev => ({ ...prev, topP: parseFloat(e.target.value) }))}
                                             className="w-full"
                                         />
-                                        <div className="text-center text-xs text-white font-medium">{parameters.topP}</div>
+                                        <div className="text-center text-xs text-textPrimary font-medium">{parameters.topP}</div>
                                     </div>
 
                                     <div>
                                         <div className="flex items-center space-x-2 mb-2">
-                                            <label className="text-sm font-medium text-gray-300">Frequency Penalty</label>
+                                            <label className="text-sm font-medium text-textTertiary">Frequency Penalty</label>
                                             <TooltipIcon param="frequencyPenalty" />
                                         </div>
                                         <input
@@ -496,12 +496,12 @@ export default function AIPlaygroundPage() {
                                             onChange={(e) => setParameters(prev => ({ ...prev, frequencyPenalty: parseFloat(e.target.value) }))}
                                             className="w-full"
                                         />
-                                        <div className="text-center text-xs text-white font-medium">{parameters.frequencyPenalty}</div>
+                                        <div className="text-center text-xs text-textPrimary font-medium">{parameters.frequencyPenalty}</div>
                                     </div>
 
                                     <div>
                                         <div className="flex items-center space-x-2 mb-2">
-                                            <label className="text-sm font-medium text-gray-300">Presence Penalty</label>
+                                            <label className="text-sm font-medium text-textTertiary">Presence Penalty</label>
                                             <TooltipIcon param="presencePenalty" />
                                         </div>
                                         <input
@@ -513,15 +513,15 @@ export default function AIPlaygroundPage() {
                                             onChange={(e) => setParameters(prev => ({ ...prev, presencePenalty: parseFloat(e.target.value) }))}
                                             className="w-full"
                                         />
-                                        <div className="text-center text-xs text-white font-medium">{parameters.presencePenalty}</div>
+                                        <div className="text-center text-xs text-textPrimary font-medium">{parameters.presencePenalty}</div>
                                     </div>
                                 </>
                             )}
                         </div>
 
                         {/* Cost Estimate */}
-                        <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded">
-                            <div className="flex items-center space-x-2 text-yellow-300">
+                        <div className="mt-4 p-3 bg-warning-muted border border-warning/50 rounded">
+                            <div className="flex items-center space-x-2 text-warning">
                                 <DollarSign className="w-4 h-4" />
                                 <span className="text-sm">
                                     Estimated cost: <strong>${calculateEstimatedCost()}</strong>
@@ -534,12 +534,12 @@ export default function AIPlaygroundPage() {
                 {/* Main Playground */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* Prompt Input */}
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <div className="bg-surface border border-border rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">Prompt</h3>
+                            <h3 className="text-lg font-semibold text-textPrimary">Prompt</h3>
                             <button
                                 onClick={handleClear}
-                                className="text-gray-400 hover:text-white p-2"
+                                className="text-textTertiary hover:text-textPrimary p-2"
                                 title="Clear"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -550,11 +550,11 @@ export default function AIPlaygroundPage() {
                             value={prompt}
                             onChange={(e) => setPrompt(e.target.value)}
                             placeholder="Enter your prompt here..."
-                            className="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
+                            className="w-full bg-surfaceHover border border-border rounded-lg px-4 py-3 text-textPrimary placeholder-textTertiary focus:outline-none focus:ring-2 focus:ring-borderFocus h-32 resize-none"
                         />
 
                         <div className="flex items-center justify-between mt-4">
-                            <div className="text-sm text-gray-400">
+                            <div className="text-sm text-textTertiary">
                                 {prompt.length} characters
                             </div>
 
@@ -562,7 +562,7 @@ export default function AIPlaygroundPage() {
                                 {isGenerating ? (
                                     <button
                                         onClick={handleStop}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                                        className="flex items-center space-x-2 px-4 py-2 bg-error hover:bg-error/80 text-textInverse rounded-lg"
                                     >
                                         <Pause className="w-4 h-4" />
                                         <span>Stop</span>
@@ -571,7 +571,7 @@ export default function AIPlaygroundPage() {
                                     <button
                                         onClick={handleGenerate}
                                         disabled={!prompt.trim() || !selectedProvider || !selectedModel}
-                                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg"
+                                        className="flex items-center space-x-2 px-4 py-2 bg-info hover:bg-info/80 disabled:bg-surfaceHover disabled:cursor-not-allowed text-textInverse rounded-lg"
                                     >
                                         <Send className="w-4 h-4" />
                                         <span>Generate</span>
@@ -582,15 +582,15 @@ export default function AIPlaygroundPage() {
                     </div>
 
                     {/* Response */}
-                    <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
+                    <div className="bg-surface border border-border rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">Response</h3>
+                            <h3 className="text-lg font-semibold text-textPrimary">Response</h3>
 
                             {response && (
                                 <div className="flex items-center space-x-2">
                                     <button
                                         onClick={handleCopyResponse}
-                                        className="text-gray-400 hover:text-white p-2"
+                                        className="text-textTertiary hover:text-textPrimary p-2"
                                         title="Copy Response"
                                     >
                                         <Copy className="w-4 h-4" />
@@ -598,7 +598,7 @@ export default function AIPlaygroundPage() {
 
                                     <button
                                         onClick={handleDownloadResponse}
-                                        className="text-gray-400 hover:text-white p-2"
+                                        className="text-textTertiary hover:text-textPrimary p-2"
                                         title="Download Response"
                                     >
                                         <Download className="w-4 h-4" />
@@ -607,21 +607,21 @@ export default function AIPlaygroundPage() {
                             )}
                         </div>
 
-                        <div className="min-h-[300px] bg-gray-900 border border-gray-600 rounded-lg p-4">
+                        <div className="min-h-[300px] bg-background border border-border rounded-lg p-4">
                             {isGenerating && (
-                                <div className="flex items-center space-x-2 text-blue-400 mb-4">
+                                <div className="flex items-center space-x-2 text-info mb-4">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     <span className="text-sm">Generating response...</span>
                                 </div>
                             )}
 
                             {response ? (
-                                <div className="text-white whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                                <div className="text-textPrimary whitespace-pre-wrap font-mono text-sm leading-relaxed">
                                     {response}
                                     {isGenerating && <span className="animate-pulse">|</span>}
                                 </div>
                             ) : !isGenerating ? (
-                                <div className="flex items-center justify-center h-full text-gray-500">
+                                <div className="flex items-center justify-center h-full text-textSecondary">
                                     <div className="text-center">
                                         <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
                                         <p>Response will appear here</p>
@@ -634,29 +634,29 @@ export default function AIPlaygroundPage() {
 
                     {/* History */}
                     {history.length > 0 && (
-                        <div className="bg-gray-800 border border-gray-700 rounded-xl p-6">
-                            <h3 className="text-lg font-semibold text-white mb-4">Recent Generations</h3>
+                        <div className="bg-surface border border-border rounded-xl p-6">
+                            <h3 className="text-lg font-semibold text-textPrimary mb-4">Recent Generations</h3>
 
                             <div className="space-y-4 max-h-64 overflow-y-auto">
                                 {history.slice(0, 5).map((entry) => (
-                                    <div key={entry.id} className="bg-gray-700 rounded-lg p-4">
+                                    <div key={entry.id} className="bg-surfaceHover rounded-lg p-4">
                                         <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center space-x-2">
-                                                <span className="text-sm font-medium text-white capitalize">{entry.provider}</span>
-                                                <span className="text-xs text-gray-400">{entry.model}</span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-sm font-medium text-textPrimary capitalize">{entry.provider}</span>
+                                                <span className="text-xs text-textTertiary">{entry.model}</span>
+                                                <span className="text-xs text-textSecondary">
                                                     {new Date(entry.timestamp).toLocaleTimeString()}
                                                 </span>
                                             </div>
 
-                                            <div className="flex items-center space-x-4 text-xs text-gray-400">
+                                            <div className="flex items-center space-x-4 text-xs text-textTertiary">
                                                 <span>{(entry.duration / 1000).toFixed(1)}s</span>
                                                 <span>{entry.tokensUsed} tokens</span>
                                                 <span>${entry.cost}</span>
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-gray-300 truncate">{entry.prompt}</p>
+                                        <p className="text-sm text-textTertiary truncate">{entry.prompt}</p>
                                     </div>
                                 ))}
                             </div>

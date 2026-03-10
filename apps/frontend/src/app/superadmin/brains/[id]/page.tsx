@@ -386,7 +386,7 @@ export default function BrainTemplatePage() {
                             onClick={() => setIsDefault(!isDefault)}
                             className={`relative w-11 h-6 rounded-full transition-colors ${isDefault ? 'bg-primary' : 'bg-muted-foreground/30'}`}
                         >
-                            <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${isDefault ? 'translate-x-6' : 'translate-x-1'}`} />
+                            <span className={`absolute top-1 w-4 h-4 bg-surface rounded-full shadow transition-transform ${isDefault ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
                         <div>
                             <p className="text-sm font-medium">Default Template</p>
@@ -399,10 +399,10 @@ export default function BrainTemplatePage() {
             {/* ── Prompts Tab ── */}
             {tab === 'prompts' && (
                 <div className="space-y-6">
-                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex gap-3 text-sm">
-                        <Shield className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                    <div className="rounded-xl border border-warning/30 bg-warning-muted p-4 flex gap-3 text-sm">
+                        <Shield className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-semibold text-amber-600">Prompt Stack Rules</p>
+                            <p className="font-semibold text-warning">Prompt Stack Rules</p>
                             <p className="text-muted-foreground mt-0.5">
                                 Foundation and Guardrails are locked from clients — they're copied at deploy time.
                                 Domain prompt is editable by org admins. Persona is visible to clients but not editable.
@@ -420,7 +420,7 @@ export default function BrainTemplatePage() {
                             <div className="flex items-center justify-between p-5 border-b border-border/40">
                                 <div className="flex items-center gap-3">
                                     {layer.locked ? (
-                                        <Shield className="w-5 h-5 text-amber-500" />
+                                        <Shield className="w-5 h-5 text-warning" />
                                     ) : (
                                         <Sparkles className="w-5 h-5 text-primary" />
                                     )}
@@ -430,7 +430,7 @@ export default function BrainTemplatePage() {
                                     </div>
                                 </div>
                                 {layer.locked && (
-                                    <span className="text-xs bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-warning-muted text-warning border border-warning/20 px-2 py-0.5 rounded-full font-medium">
                                         Locked from clients
                                     </span>
                                 )}
@@ -522,15 +522,15 @@ export default function BrainTemplatePage() {
                                                     <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                                                         active ? 'bg-primary border-primary' : 'border-border'
                                                     }`}>
-                                                        {active && <Check className="w-3 h-3 text-white" />}
+                                                        {active && <Check className="w-3 h-3 text-textInverse" />}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <span className="font-mono text-sm font-semibold">{tool.name}</span>
                                                             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                                                tool.min_tier === 'basic'      ? 'bg-blue-500/10 text-blue-600' :
-                                                                tool.min_tier === 'medium'     ? 'bg-purple-500/10 text-purple-600' :
-                                                                'bg-orange-500/10 text-orange-600'
+                                                                tool.min_tier === 'basic'      ? 'bg-info-muted text-info' :
+                                                                tool.min_tier === 'medium'     ? 'bg-accent/10 text-accent' :
+                                                                'bg-warning-muted text-warning'
                                                             }`}>
                                                                 {tierLabel(tool)}+
                                                             </span>
@@ -625,7 +625,7 @@ export default function BrainTemplatePage() {
                     </FormField>
 
                     {deployResult && (
-                        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/30 text-green-700 text-sm">
+                        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-success-muted border border-success/30 text-success text-sm">
                             <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
                             {deployResult}
                         </div>
@@ -707,7 +707,7 @@ function ToggleField({ label, description, value, onChange }: {
                 onClick={() => onChange(!value)}
                 className={`relative mt-0.5 w-11 h-6 rounded-full flex-shrink-0 transition-colors ${value ? 'bg-primary' : 'bg-muted-foreground/30'}`}
             >
-                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+                <span className={`absolute top-1 w-4 h-4 bg-surface rounded-full shadow transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
             <div>
                 <p className="text-sm font-medium">{label}</p>

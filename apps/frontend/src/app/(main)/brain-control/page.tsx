@@ -70,12 +70,12 @@ export default function BrainControlPage() {
     }, [])
 
     const sections = [
-        { id: 'overview', label: 'Overview', icon: Activity, color: 'from-blue-500 to-cyan-500' },
-        { id: 'memory', label: 'Memory Palace', icon: Database, color: 'from-purple-500 to-pink-500' },
-        { id: 'agents', label: 'Agent Control', icon: Users, color: 'from-green-500 to-emerald-500' },
-        { id: 'training', label: 'Training Center', icon: Target, color: 'from-orange-500 to-red-500' },
-        { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'from-indigo-500 to-purple-500' },
-        { id: 'config', label: 'Configuration', icon: Settings, color: 'from-gray-500 to-slate-500' }
+        { id: 'overview', label: 'Overview', icon: Activity, color: 'from-info to-info/70' },
+        { id: 'memory', label: 'Memory Palace', icon: Database, color: 'from-accent to-accent/70' },
+        { id: 'agents', label: 'Agent Control', icon: Users, color: 'from-success to-success/70' },
+        { id: 'training', label: 'Training Center', icon: Target, color: 'from-warning to-error' },
+        { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'from-accent/80 to-accent' },
+        { id: 'config', label: 'Configuration', icon: Settings, color: 'from-muted-foreground to-muted-foreground/70' }
     ]
 
     return (
@@ -108,21 +108,21 @@ export default function BrainControlPage() {
                                 value={stats?.totalRequests.toLocaleString() || '---'}
                                 icon={Zap}
                                 trend="+12%"
-                                color="text-blue-500"
+                                color="text-info"
                             />
                             <QuickStat
                                 label="Success Rate"
                                 value={stats ? `${(stats.successRate * 100).toFixed(1)}%` : '---'}
                                 icon={TrendingUp}
                                 trend="+2.3%"
-                                color="text-green-500"
+                                color="text-success"
                             />
                             <QuickStat
                                 label="Avg Response"
                                 value={stats ? `${stats.avgResponseTime}ms` : '---'}
                                 icon={Activity}
                                 trend="-18ms"
-                                color="text-purple-500"
+                                color="text-accent"
                             />
                         </div>
                     </div>
@@ -235,28 +235,28 @@ function OverviewSection({ stats }: { stats: BrainStats | null }) {
             value: stats?.totalRequests.toLocaleString() || '---',
             change: '+12.3%',
             icon: Zap,
-            color: 'from-blue-500 to-cyan-500'
+            color: 'from-info to-info/70'
         },
         {
             label: 'Avg Response Time',
             value: stats ? `${stats.avgResponseTime}ms` : '---',
             change: '-18ms',
             icon: Activity,
-            color: 'from-purple-500 to-pink-500'
+            color: 'from-accent to-accent/70'
         },
         {
             label: 'Success Rate',
             value: stats ? `${(stats.successRate * 100).toFixed(1)}%` : '---',
             change: '+2.1%',
             icon: TrendingUp,
-            color: 'from-green-500 to-emerald-500'
+            color: 'from-success to-success/70'
         },
         {
             label: 'Tokens Used',
             value: stats ? `${(stats.tokensUsed / 1000).toFixed(1)}K` : '---',
             change: '+5.4%',
             icon: Cpu,
-            color: 'from-orange-500 to-red-500'
+            color: 'from-warning to-error'
         }
     ]
 
@@ -313,9 +313,9 @@ function MetricCard({ label, value, change, icon: Icon, color }: any) {
 
 function ActivityFeed() {
     const activities = [
-        { type: 'agent', message: 'Writer Agent completed task', time: '2m ago', color: 'text-primary-500' },
+        { type: 'agent', message: 'Writer Agent completed task', time: '2m ago', color: 'text-primary' },
         { type: 'rag', message: 'RAG cache hit rate improved', time: '5m ago', color: 'text-success' },
-        { type: 'training', message: 'New intent pattern learned', time: '12m ago', color: 'text-secondary-500' },
+        { type: 'training', message: 'New intent pattern learned', time: '12m ago', color: 'text-accent' },
         { type: 'system', message: 'Embeddings index updated', time: '23m ago', color: 'text-warning' }
     ]
 
@@ -364,10 +364,10 @@ function RecentQueries() {
 
 function AgentStatusGrid() {
     const agents = [
-        { name: 'Writer Agent', status: 'active', sessions: 234, success: 97.2, color: 'from-blue-500 to-cyan-500' },
-        { name: 'Generalist Agent', status: 'active', sessions: 156, success: 95.8, color: 'from-green-500 to-emerald-500' },
-        { name: 'Analyst Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-purple-500 to-pink-500' },
-        { name: 'Coach Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-orange-500 to-red-500' }
+        { name: 'Writer Agent', status: 'active', sessions: 234, success: 97.2, color: 'from-info to-info/70' },
+        { name: 'Generalist Agent', status: 'active', sessions: 156, success: 95.8, color: 'from-success to-success/70' },
+        { name: 'Analyst Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-accent to-accent/70' },
+        { name: 'Coach Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-warning to-error' }
     ]
 
     return (
@@ -383,7 +383,7 @@ function AgentStatusGrid() {
                         <div className="relative">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-neutral-400'
+                                    <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-muted-foreground'
                                         }`} />
                                     <span className="text-xs text-muted-foreground">{agent.status}</span>
                                 </div>
@@ -497,30 +497,30 @@ function MemoryPalaceSection() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-purple-500/5 to-pink-500/5">
+                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-accent/5 to-accent/10">
                     <div className="flex items-center gap-2 mb-2">
-                        <Database className="w-5 h-5 text-purple-500" />
+                        <Database className="w-5 h-5 text-accent" />
                         <span className="text-sm text-muted-foreground">Total Embeddings</span>
                     </div>
                     <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
                 </div>
-                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-info/5 to-info/10">
                     <div className="flex items-center gap-2 mb-2">
-                        <BookOpen className="w-5 h-5 text-blue-500" />
+                        <BookOpen className="w-5 h-5 text-info" />
                         <span className="text-sm text-muted-foreground">Knowledge Base</span>
                     </div>
                     <p className="text-2xl font-bold">{stats.kb.toLocaleString()}</p>
                 </div>
-                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-success/5 to-success/10">
                     <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-5 h-5 text-green-500" />
+                        <Users className="w-5 h-5 text-success" />
                         <span className="text-sm text-muted-foreground">Conversations</span>
                     </div>
                     <p className="text-2xl font-bold">{stats.conversation.toLocaleString()}</p>
                 </div>
-                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-orange-500/5 to-red-500/5">
+                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-warning/5 to-error/5">
                     <div className="flex items-center gap-2 mb-2">
-                        <Brain className="w-5 h-5 text-orange-500" />
+                        <Brain className="w-5 h-5 text-warning" />
                         <span className="text-sm text-muted-foreground">User Memories</span>
                     </div>
                     <p className="text-2xl font-bold">{stats.memory.toLocaleString()}</p>
@@ -570,7 +570,7 @@ function MemoryPalaceSection() {
                             className="p-4 rounded-xl border border-border/40 bg-background hover:border-primary/40 hover:shadow-lg transition-all cursor-pointer"
                         >
                             <div className="flex items-start justify-between mb-2">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-primary-500/10 text-primary-500' :
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-primary/10 text-primary' :
                                     embedding.source_type === 'conversation' ? 'bg-success/10 text-success' :
                                         'bg-warning/10 text-warning'
                                     }`}>
@@ -597,7 +597,7 @@ function MemoryPalaceSection() {
 
             {/* Detail Modal */}
             {selectedEmbedding && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-background rounded-2xl border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40 flex items-center justify-between">
                             <h3 className="text-xl font-bold">Embedding Details</h3>
@@ -752,10 +752,10 @@ function AgentControlSection() {
                             key={agent.id}
                             className="relative overflow-hidden rounded-2xl border border-border/40 bg-background hover:shadow-xl transition-all duration-300"
                         >
-                            <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-br ${agent.agent_type === 'writer' ? 'from-blue-500/20 to-cyan-500/20' :
-                                agent.agent_type === 'analyst' ? 'from-purple-500/20 to-pink-500/20' :
-                                    agent.agent_type === 'coach' ? 'from-orange-500/20 to-red-500/20' :
-                                        'from-green-500/20 to-emerald-500/20'
+                            <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-br ${agent.agent_type === 'writer' ? 'from-info/20 to-info/10' :
+                                agent.agent_type === 'analyst' ? 'from-accent/20 to-accent/10' :
+                                    agent.agent_type === 'coach' ? 'from-warning/20 to-error/20' :
+                                        'from-success/20 to-success/10'
                                 }`} />
 
                             <div className="relative p-6 space-y-4">
@@ -773,7 +773,7 @@ function AgentControlSection() {
                                                 }`}
                                         >
                                             <span
-                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${agent.is_active ? 'translate-x-6' : 'translate-x-1'
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${agent.is_active ? 'translate-x-6' : 'translate-x-1'
                                                     }`}
                                             />
                                         </button>
@@ -821,7 +821,7 @@ function AgentControlSection() {
 
             {/* Edit Modal */}
             {isEditing && selectedAgent && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-background rounded-2xl border border-border/40 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40">
                             <h3 className="text-2xl font-bold">Configure {selectedAgent.name}</h3>
@@ -890,7 +890,7 @@ function AgentControlSection() {
 
             {/* View Details Modal */}
             {selectedAgent && !isEditing && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-background rounded-2xl border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40 flex items-center justify-between">
                             <h3 className="text-xl font-bold">{selectedAgent.name} Details</h3>
@@ -908,7 +908,7 @@ function AgentControlSection() {
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-muted-foreground">Status</label>
-                                <p className={`mt-1 font-medium ${selectedAgent.is_active ? 'text-green-500' : 'text-red-500'}`}>
+                                <p className={`mt-1 font-medium ${selectedAgent.is_active ? 'text-success' : 'text-error'}`}>
                                     {selectedAgent.is_active ? 'Active' : 'Inactive'}
                                 </p>
                             </div>
@@ -1090,19 +1090,19 @@ function TrainingCenterSection() {
                     {activeTab === 'feedback' && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-success/5 to-success/10">
                                     <div className="text-sm text-muted-foreground mb-1">Positive Feedback</div>
-                                    <div className="text-2xl font-bold text-green-500">
+                                    <div className="text-2xl font-bold text-success">
                                         {feedbackData.filter(f => f.rating > 0).length}
                                     </div>
                                 </div>
-                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-red-500/5 to-orange-500/5">
+                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-error/5 to-warning/5">
                                     <div className="text-sm text-muted-foreground mb-1">Negative Feedback</div>
-                                    <div className="text-2xl font-bold text-red-500">
+                                    <div className="text-2xl font-bold text-error">
                                         {feedbackData.filter(f => f.rating < 0).length}
                                     </div>
                                 </div>
-                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+                                <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-info/5 to-info/10">
                                     <div className="text-sm text-muted-foreground mb-1">Avg Satisfaction</div>
                                     <div className="text-2xl font-bold">
                                         {feedbackData.length > 0
@@ -1125,7 +1125,7 @@ function TrainingCenterSection() {
                                             <div className="flex items-start justify-between mb-2">
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${feedback.rating > 0 ? 'bg-success/10 text-success' :
                                                     feedback.rating < 0 ? 'bg-error/10 text-error' :
-                                                        'bg-neutral-500/10 text-neutral-500'
+                                                        'bg-muted text-muted-foreground'
                                                     }`}>
                                                     {feedback.rating > 0 ? '👍 Positive' : feedback.rating < 0 ? '👎 Negative' : 'Neutral'}
                                                 </span>
@@ -1194,7 +1194,7 @@ function TrainingCenterSection() {
                                                         }`}
                                                 >
                                                     <span
-                                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${pattern.is_active ? 'translate-x-6' : 'translate-x-1'
+                                                        className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${pattern.is_active ? 'translate-x-6' : 'translate-x-1'
                                                             }`}
                                                     />
                                                 </button>
@@ -1206,7 +1206,7 @@ function TrainingCenterSection() {
 
                             {/* Add Pattern Modal */}
                             {showAddPattern && (
-                                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                     <div className="bg-background rounded-2xl border border-border/40 max-w-lg w-full">
                                         <div className="p-6 border-b border-border/40">
                                             <h3 className="text-xl font-bold">Add Intent Pattern</h3>
@@ -1373,40 +1373,40 @@ function AnalyticsSection() {
                 <>
                     {/* Key Metrics */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-info/5 to-info/10">
                             <div className="flex items-center gap-2 mb-3">
-                                <Zap className="w-5 h-5 text-blue-500" />
+                                <Zap className="w-5 h-5 text-info" />
                                 <span className="text-sm text-muted-foreground">Total Requests</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.totalRequests?.toLocaleString() || '0'}</p>
-                            <p className="text-xs text-green-500">+12% from previous period</p>
+                            <p className="text-xs text-success">+12% from previous period</p>
                         </div>
 
-                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-success/5 to-success/10">
                             <div className="flex items-center gap-2 mb-3">
-                                <TrendingUp className="w-5 h-5 text-green-500" />
+                                <TrendingUp className="w-5 h-5 text-success" />
                                 <span className="text-sm text-muted-foreground">Success Rate</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.successRate ? `${(analyticsData.successRate * 100).toFixed(1)}%` : '0%'}</p>
-                            <p className="text-xs text-green-500">+2.3% from previous period</p>
+                            <p className="text-xs text-success">+2.3% from previous period</p>
                         </div>
 
-                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-purple-500/5 to-pink-500/5">
+                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-accent/5 to-accent/10">
                             <div className="flex items-center gap-2 mb-3">
-                                <Activity className="w-5 h-5 text-purple-500" />
+                                <Activity className="w-5 h-5 text-accent" />
                                 <span className="text-sm text-muted-foreground">Avg Response</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.avgResponseTime || '0'}ms</p>
-                            <p className="text-xs text-green-500">-18ms from previous period</p>
+                            <p className="text-xs text-success">-18ms from previous period</p>
                         </div>
 
-                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-orange-500/5 to-red-500/5">
+                        <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-warning/5 to-error/5">
                             <div className="flex items-center gap-2 mb-3">
-                                <Cpu className="w-5 h-5 text-orange-500" />
+                                <Cpu className="w-5 h-5 text-warning" />
                                 <span className="text-sm text-muted-foreground">Tokens Used</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.tokensUsed ? `${(analyticsData.tokensUsed / 1000).toFixed(1)}K` : '0'}</p>
-                            <p className="text-xs text-orange-500">+5.4% from previous period</p>
+                            <p className="text-xs text-warning">+5.4% from previous period</p>
                         </div>
                     </div>
 
@@ -1422,7 +1422,7 @@ function AnalyticsSection() {
                                     </div>
                                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+                                            className="h-full bg-gradient-to-r from-success to-success/70 transition-all"
                                             style={{ width: `${(analyticsData?.ragMetrics?.cacheHitRate || 0) * 100}%` }}
                                         />
                                     </div>
@@ -1435,7 +1435,7 @@ function AnalyticsSection() {
                                     </div>
                                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+                                            className="h-full bg-gradient-to-r from-accent to-accent/70 transition-all"
                                             style={{ width: `${(analyticsData?.ragMetrics?.rerankingUsage || 0) * 100}%` }}
                                         />
                                     </div>
@@ -1448,7 +1448,7 @@ function AnalyticsSection() {
                                     </div>
                                     <div className="h-2 rounded-full bg-muted overflow-hidden">
                                         <div
-                                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all"
+                                            className="h-full bg-gradient-to-r from-info to-info/70 transition-all"
                                             style={{ width: '75%' }}
                                         />
                                     </div>
@@ -1462,8 +1462,8 @@ function AnalyticsSection() {
                                 {analyticsData?.agentUsage?.map((agent: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${agent.type === 'writer' ? 'bg-primary-500' :
-                                                agent.type === 'analyst' ? 'bg-secondary-500' :
+                                            <div className={`w-2 h-2 rounded-full ${agent.type === 'writer' ? 'bg-primary' :
+                                                agent.type === 'analyst' ? 'bg-accent' :
                                                     agent.type === 'coach' ? 'bg-warning' :
                                                         'bg-success'
                                                 }`} />
@@ -1518,7 +1518,7 @@ function AnalyticsSection() {
                                     <span className="text-sm text-muted-foreground">200-500ms</span>
                                     <div className="flex items-center gap-2 flex-1 mx-4">
                                         <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                                            <div className="h-full bg-primary-500" style={{ width: '25%' }} />
+                                            <div className="h-full bg-primary" style={{ width: '25%' }} />
                                         </div>
                                         <span className="text-sm font-medium w-12 text-right">25%</span>
                                     </div>
@@ -1823,7 +1823,7 @@ function ConfigurationSection() {
                                         className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-primary/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${provider.is_active ? 'bg-success animate-pulse' : 'bg-neutral-400'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${provider.is_active ? 'bg-success animate-pulse' : 'bg-muted-foreground'}`} />
                                             <div>
                                                 <p className="font-medium">{provider.name}</p>
                                                 <p className="text-xs text-muted-foreground">{provider.provider_type}</p>
@@ -1833,7 +1833,7 @@ function ConfigurationSection() {
                                             <span className="text-xs text-muted-foreground">
                                                 {provider.capabilities?.join(', ')}
                                             </span>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-success/10 text-success' : 'bg-neutral-500/10 text-neutral-500'
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
                                                 }`}>
                                                 {provider.is_active ? 'Active' : 'Inactive'}
                                             </span>
@@ -1846,17 +1846,17 @@ function ConfigurationSection() {
 
                     {/* System Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-blue-500/5 to-cyan-500/5">
+                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-info/5 to-info/10">
                             <div className="text-sm text-muted-foreground mb-1">Active Template</div>
                             <div className="text-lg font-bold">{activeBrain?.name || 'None'}</div>
                         </div>
-                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-purple-500/5 to-pink-500/5">
+                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-accent/5 to-accent/10">
                             <div className="text-sm text-muted-foreground mb-1">Total Providers</div>
                             <div className="text-lg font-bold">{providers.length}</div>
                         </div>
-                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+                        <div className="p-4 rounded-xl border border-border/40 bg-gradient-to-br from-success/5 to-success/10">
                             <div className="text-sm text-muted-foreground mb-1">RAG Status</div>
-                            <div className="text-lg font-bold text-green-500">
+                            <div className="text-lg font-bold text-success">
                                 {ragConfig?.enabled ? 'Enabled' : 'Disabled'}
                             </div>
                         </div>

@@ -156,7 +156,6 @@ export class AnthropicProvider extends AbstractProvider {
             maxContextWindow: 200000
         }
     }
-}
 
     // ============================================================
     // BRAIN CHAT — multi-turn + tool calling (Anthropic tool_use)

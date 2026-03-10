@@ -4,11 +4,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { theme } = useTheme();
     const supabase = createClient();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

@@ -1,0 +1,92 @@
+AXIOM BACKEND SPECIFICATIONS (apps/backend)
+
+1. Directory Structure (Strict)
+
+The backend must follow this exact modular structure to separate "Contracts" from "Logic".
+
+apps/backend/
+├── src/
+│   ├── index.ts                # Entry point (Server + Cron init)
+│   ├── config/                 # Env variables & Constants
+│   ├── schemas/                # THE LAW (Zod definitions of Client Contracts)
+│   │   ├── kb.schema.ts        # Maps to 01-KB.docx
+│   │   ├── writer.input.ts     # Maps to 02-Writer-Input.docx
+│   │   ├── writer.output.ts    # Maps to 03-Writer-Output.docx
+│   │   └── learning.rules.ts   # Maps to 05-Learning-Loop.docx
+│   ├── core/                   # The Logic (Business Layer)
+│   │   ├── writer.engine.ts    # Deterministic Assembly Logic
+│   │   ├── learning.loop.ts    # Optimization Logic
+│   │   └── ops.scheduler.ts    # Cron Job (07-Ops)
+│   ├── routes/                 # API Endpoints
+│   │   └── api.ts              # Main Router
+│   ├── db/                     # Database Access Layer
+│   │   └── index.ts            # PG Connection Pool
+│   └── utils/                  # Shared Helpers
+├── Dockerfile
+└── package.json
+
+
+2. Schema Implementation Strategy (Zod)
+
+You must translate the Client's DOCX requirements into Zod schemas.
+
+Example Requirement (from 01-KB):
+
+"brand_name_exact": "InMarket"
+
+Implementation (src/schemas/kb.schema.ts):
+
+import { z } from "zod";
+
+export const BrandRulesSchema = z.object({
+  brand_name_exact: z.literal("InMarket"), // STRICT: Fails if not exact
+  voice_rules: z.array(z.string()).min(1),
+  // ...
+});
+
+
+Directives:
+
+Every external input (API body, DB read) MUST be parsed via .parse() or .safeParse().
+
+Export the TypeScript type from the Zod schema: export type KnowledgeBase = z.infer<typeof KnowledgeBaseSchema>;.
+
+3. The Core Modules
+
+A. Writer Engine (core/writer.engine.ts)
+
+Responsibility: Take WriterInput + KnowledgeBase -> Return WriterOutput.
+
+Constraint: Pre-embeddings. Use Exact ID Matching (Array .find()) to locate ICPs and Offers.
+
+Behavior: Do not use LLMs for strategy. Use LLMs (or templates) only for text generation within strict bounds defined by the Blueprint.
+
+B. Learning Loop (core/learning.loop.ts)
+
+Responsibility: Analyze AnalyticsEvents -> Update KnowledgeBase.
+
+Logic:
+
+Fetch stats for PREVIOUS_CALENDAR_DAY.
+
+Identify Winners: booked_calls > 0.
+
+Identify Losers: bounce_rate > 0.15 (Guardrail).
+
+Action: Update the knowledge_bases table JSONB blob (promote/demote/kill).
+
+C. Ops Scheduler (core/ops.scheduler.ts)
+
+Library: node-cron.
+
+Schedule: 0 6 * * * (06:00 AM daily).
+
+Action: Trigger runDailyOptimization().
+
+4. API Endpoints (routes/api.ts)
+
+GET /stats: Retrieve analytics for dashboard.
+
+POST /kb/upload: Upload and validate a new KB version.
+
+POST /run/manual: Trigger the Writer manually (Bypasses scheduler).

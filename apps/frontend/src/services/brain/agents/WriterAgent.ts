@@ -1,5 +1,6 @@
 import { Agent, AgentConfig, AgentContext } from './Agent'
 import { ragOrchestrator } from '../RAGOrchestrator'
+import { aiProviderService } from '../../ai/AIProviderService'
 
 // ============================================================
 // WRITER AGENT
@@ -100,41 +101,32 @@ Content Types You Excel At:
     }
 
     /**
-     * Generate content outline using LLM
+     * Generate content outline using LLM via AIProviderService
      */
     private async generateOutline(
         topic: string,
         context: AgentContext
     ): Promise<any> {
         try {
-            const provider = await this.getProvider(context)
-
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${provider.api_key}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4-turbo-preview',
-                    messages: [{
+            const chatResponse = await aiProviderService.generateChat(
+                context.orgId,
+                [
+                    {
                         role: 'system',
                         content: 'You are a content strategist. Generate a detailed outline for the given topic with main sections and key points. Format as a structured list.'
-                    }, {
+                    },
+                    {
                         role: 'user',
                         content: `Topic: ${topic}`
-                    }],
+                    }
+                ],
+                {
                     temperature: 0.7,
-                    max_tokens: 800
-                })
-            })
+                    maxTokens: 800
+                }
+            )
 
-            if (!response.ok) {
-                throw new Error('Outline generation failed')
-            }
-
-            const result = await response.json()
-            const outlineText = result.choices[0].message.content
+            const outlineText = chatResponse.content
 
             // Parse outline into sections
             const sections = outlineText

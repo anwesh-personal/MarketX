@@ -1,5 +1,9 @@
 import { Job } from 'bullmq'
 import { createClient } from '@supabase/supabase-js'
+import { recomputeBeliefConfidence } from './confidence-engine'
+import { rebalanceBeliefAllocations } from './allocation-engine'
+import { runPromotionEngine } from './promotion-engine'
+import { runNetworkLearning } from './network-learning'
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -7,12 +11,70 @@ const supabase = createClient(
 )
 
 export interface AnalyticsJob {
-    type: 'daily' | 'hourly' | 'realtime'
+    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine' | 'promotion-engine' | 'network-learning'
     date?: string
+    orgId?: string
+    lookbackDays?: number
+    objectType?: string
 }
 
 export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
     const { type, date } = job.data
+
+    if (type === 'belief-confidence') {
+        job.updateProgress(10)
+        const result = await recomputeBeliefConfidence({
+            orgId: job.data.orgId,
+            lookbackDays: job.data.lookbackDays,
+        })
+        job.updateProgress(100)
+        return {
+            success: true,
+            type,
+            ...result,
+        }
+    }
+
+    if (type === 'allocation-engine') {
+        job.updateProgress(10)
+        const result = await rebalanceBeliefAllocations({
+            orgId: job.data.orgId,
+            lookbackDays: job.data.lookbackDays,
+        })
+        job.updateProgress(100)
+        return {
+            success: true,
+            type,
+            ...result,
+        }
+    }
+
+    if (type === 'promotion-engine') {
+        job.updateProgress(10)
+        const result = await runPromotionEngine({
+            orgId: job.data.orgId,
+            lookbackDays: job.data.lookbackDays,
+        })
+        job.updateProgress(100)
+        return {
+            success: true,
+            type,
+            ...result,
+        }
+    }
+
+    if (type === 'network-learning') {
+        job.updateProgress(10)
+        const result = await runNetworkLearning({
+            objectType: job.data.objectType,
+        })
+        job.updateProgress(100)
+        return {
+            success: true,
+            type,
+            ...result,
+        }
+    }
 
     const targetDate = date || new Date().toISOString().split('T')[0]
 

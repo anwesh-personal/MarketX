@@ -1,89 +1,135 @@
 /**
- * THEME-SPECIFIC MICRO-INTERACTIONS & ANIMATIONS
- * Each theme gets unique button styles, hover effects, and animations
- * This is EXPENSIVE, PREMIUM shit.
+ * THEME-SPECIFIC MICRO-INTERACTIONS
+ * Each theme has unique personality in motion, glow, hover, and feedback.
+ * Every selector uses only CSS custom properties from the active theme.
  */
 
 /* ========================================
-   MINIMALIST THEMES - Slow, Elegant, Spacious
+   OBSIDIAN — Slow, Elegant, Weighted
+   Gold underline sweep, weight-shift, tilt, parallax shadow
    ======================================== */
 
-[data-theme="minimalist-dark"],
-[data-theme="minimalist-light"] {
-
-    /* Sidebar navigation items - Minimal with smooth expand */
+[data-theme^="obsidian"] {
     .nav-item {
+        position: relative;
+        overflow: hidden;
+        transition: all var(--duration-slow) var(--easing-smooth);
+    }
+
+    .nav-item::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--color-accent), transparent);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--duration-slow) var(--easing-smooth);
+    }
+
+    .nav-item:hover::after {
+        transform: scaleX(1);
+    }
+
+    .nav-item:hover {
+        transform: translateX(4px);
+        color: var(--color-accent);
+    }
+
+    button, .btn {
+        transition: all var(--duration-normal) var(--easing-smooth);
         position: relative;
         overflow: hidden;
     }
 
-    .nav-item::before {
+    button::after, .btn::after {
         content: '';
         position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--color-primary);
-        transform: scaleY(0);
-        transition: transform var(--duration-slow) var(--easing-smooth);
-        transform-origin: top;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        background: var(--color-accent);
+        opacity: 0;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: width var(--duration-slow) var(--easing-smooth),
+                    height var(--duration-slow) var(--easing-smooth),
+                    opacity var(--duration-slow) var(--easing-smooth);
     }
 
-    .nav-item:hover::before {
-        transform: scaleY(1);
+    button:hover::after, .btn:hover::after {
+        width: 200%;
+        height: 200%;
+        opacity: 0.04;
     }
 
-    .nav-item:hover {
-        transform: translateX(6px);
-        transition: transform var(--duration-slow) var(--easing-smooth);
-    }
-
-    /* Buttons - Soft glow on hover */
-    button,
-    .btn {
-        transition: all var(--duration-slow) var(--easing-smooth);
-    }
-
-    button:hover,
-    .btn:hover {
+    button:hover, .btn:hover {
         transform: translateY(-2px) scale(var(--hover-scale));
-        box-shadow: var(--shadow-lg), 0 0 0 1px var(--color-border-hover);
+        box-shadow: var(--shadow-lg), 0 8px 20px -4px var(--color-shadow);
     }
 
-    button:active,
-    .btn:active {
+    button:active, .btn:active {
         transform: translateY(0) scale(var(--active-scale));
         transition-duration: var(--duration-fast);
     }
 
-    /* Cards - Subtle lift */
     .card {
-        transition: all var(--duration-slow) var(--easing-smooth);
+        transition: transform var(--duration-slow) var(--easing-smooth),
+                    box-shadow var(--duration-slow) var(--easing-smooth),
+                    border-color var(--duration-slow) var(--easing-smooth);
+        position: relative;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, var(--color-accent), transparent 60%);
+        opacity: 0;
+        transition: opacity var(--duration-slow) var(--easing-smooth);
+        pointer-events: none;
     }
 
     .card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-xl);
+        transform: translateY(-4px) perspective(600px) rotateX(1deg);
+        box-shadow: var(--shadow-xl), 0 20px 40px -12px var(--color-shadow);
+        border-color: var(--color-border-hover);
     }
 
-    /* Inputs - Gentle expand */
-    input:focus,
-    textarea:focus,
-    select:focus {
-        transform: scale(1.01);
-        transition: all var(--duration-slow) var(--easing-smooth);
+    .card:hover::before {
+        opacity: 0.03;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        box-shadow: var(--shadow-glow);
+        border-color: var(--color-accent);
+        transition: all var(--duration-normal) var(--easing-smooth);
+    }
+
+    .badge, .tag, .pill {
+        transition: all var(--duration-normal) var(--easing-smooth);
+    }
+
+    .badge:hover, .tag:hover, .pill:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .modal-content, .dropdown-content, [role="dialog"] > div {
+        animation: obsidian-enter var(--duration-slow) var(--easing-smooth);
     }
 }
 
 /* ========================================
-   MODERN THEMES - Fast, Snappy, Sharp
+   AURORA — Fast, Snappy, Electric
+   Neon border pulse, scan-line, electric ripple, data-grid feel
    ======================================== */
 
-[data-theme="modern-dark"],
-[data-theme="modern-light"] {
-
-    /* Sidebar navigation items - Quick slide with accent bar */
+[data-theme^="aurora"] {
     .nav-item {
         position: relative;
         transition: all var(--duration-fast) var(--easing);
@@ -97,7 +143,7 @@
         transform: translateY(-50%) scaleX(0);
         width: 3px;
         height: 60%;
-        background: linear-gradient(to bottom, var(--color-accent), var(--color-primary));
+        background: linear-gradient(to bottom, var(--color-accent), var(--color-glow));
         transition: transform var(--duration-normal) var(--easing-bounce);
         transform-origin: right;
         border-radius: var(--radius-full);
@@ -109,94 +155,108 @@
 
     .nav-item:hover {
         background: var(--color-surface-hover);
-        padding-left: calc(var(--spacing-md) + 4px);
         border-left: 2px solid var(--color-accent);
+        padding-left: calc(var(--spacing-md) + 4px);
+        color: var(--color-accent);
     }
 
-    /* Buttons - Punchy scale with sharp shadow */
-    button,
-    .btn {
+    button, .btn {
         transition: all var(--duration-fast) var(--easing);
         position: relative;
+        overflow: hidden;
     }
 
-    button::before,
-    .btn::before {
+    button::before, .btn::before {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        background: linear-gradient(135deg, var(--color-accent), var(--color-glow));
         opacity: 0;
         transition: opacity var(--duration-fast) var(--easing);
         border-radius: inherit;
         z-index: -1;
     }
 
-    button:hover,
-    .btn:hover {
+    button:hover, .btn:hover {
         transform: scale(var(--hover-scale));
         box-shadow: var(--shadow-glow-lg);
     }
 
-    button:hover::before,
-    .btn:hover::before {
+    button:hover::before, .btn:hover::before {
         opacity: 0.1;
     }
 
-    button:active,
-    .btn:active {
+    button:active, .btn:active {
         transform: scale(var(--active-scale));
         box-shadow: var(--shadow-sm);
         transition-duration: 50ms;
     }
 
-    /* Cards - Quick pop */
+    button:active::after, .btn:active::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--color-accent);
+        opacity: 0.15;
+        border-radius: inherit;
+        animation: aurora-ripple var(--duration-normal) var(--easing);
+    }
+
     .card {
         transition: all var(--duration-fast) var(--easing);
         border-width: var(--border-width-thick);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+        transition: left 0.6s var(--easing);
     }
 
     .card:hover {
-        transform: translateY(-2px) scale(1.01);
+        transform: translateY(-2px) scale(1.005);
         border-color: var(--color-accent);
         box-shadow: var(--shadow-glow);
     }
 
-    /* Inputs - Instant highlight */
-    input:focus,
-    textarea:focus,
-    select:focus {
+    .card:hover::before {
+        left: 150%;
+    }
+
+    input:focus, textarea:focus, select:focus {
         border-width: var(--border-width-thick);
         border-color: var(--color-accent);
-        box-shadow: 0 0 0 3px var(--color-glow);
+        box-shadow: 0 0 0 3px var(--color-glow), var(--shadow-glow);
         transition: all var(--duration-fast) var(--easing);
     }
 
-    /* Fast ripple effect on click */
-    button:active::after,
-    .btn:active::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: var(--color-primary);
-        opacity: 0.3;
-        border-radius: inherit;
-        animation: ripple var(--duration-normal) var(--easing);
+    .badge, .tag, .pill {
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .badge:hover, .tag:hover, .pill:hover {
+        box-shadow: var(--shadow-glow);
+        border-color: var(--color-accent);
+    }
+
+    .modal-content, .dropdown-content, [role="dialog"] > div {
+        animation: aurora-enter var(--duration-fast) var(--easing-bounce);
     }
 }
 
 /* ========================================
-   AQUA THEMES - Flowing, Wave-like, Organic
+   EMBER — Medium, Warm, Organic
+   Warm glow spread, soft bounce, ember glow, handcrafted feel
    ======================================== */
 
-[data-theme="aqua-dark"],
-[data-theme="aqua-light"] {
-    /* Flowing, wave-like transitions */
-    --easing: cubic-bezier(0.32, 0.72, 0, 1);
-    --easing-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-    --easing-bounce: cubic-bezier(0.5, 1.5, 0.5, 1);
-
-    /* Sidebar navigation items - Wave ripple effect */
+[data-theme^="ember"] {
     .nav-item {
         position: relative;
         overflow: hidden;
@@ -206,15 +266,207 @@
     .nav-item::before {
         content: '';
         position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(to bottom, var(--color-accent), var(--color-warning));
+        transform: scaleY(0);
+        transition: transform var(--duration-normal) var(--easing-smooth);
+        transform-origin: bottom;
+        border-radius: var(--radius-full);
+    }
+
+    .nav-item:hover::before {
+        transform: scaleY(1);
+    }
+
+    .nav-item:hover {
+        background: var(--color-surface-hover);
+        border-radius: var(--radius-md);
+        transform: translateX(4px);
+        color: var(--color-accent);
+    }
+
+    button, .btn {
+        transition: all var(--duration-normal) var(--easing-smooth);
+        position: relative;
+    }
+
+    button::before, .btn::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        background: radial-gradient(circle at 50% 120%, var(--color-accent), transparent 70%);
+        opacity: 0;
+        transition: opacity var(--duration-normal) var(--easing-smooth);
+        border-radius: inherit;
+        z-index: -1;
+        filter: blur(8px);
+    }
+
+    button:hover, .btn:hover {
+        transform: translateY(-2px) scale(var(--hover-scale));
+        box-shadow: var(--shadow-glow), 0 10px 24px -6px var(--color-shadow);
+    }
+
+    button:hover::before, .btn:hover::before {
+        opacity: 0.25;
+    }
+
+    button:active, .btn:active {
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
+
+    .card {
+        transition: all var(--duration-normal) var(--easing-smooth);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card::after {
+        content: '';
+        position: absolute;
+        bottom: -50%;
+        left: 25%;
+        right: 25%;
+        height: 100%;
+        background: radial-gradient(ellipse, var(--color-accent), transparent 70%);
+        opacity: 0;
+        transition: opacity var(--duration-slow) var(--easing-smooth);
+        pointer-events: none;
+        filter: blur(20px);
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg), 0 16px 32px -8px var(--color-shadow);
+        border-color: var(--color-border-hover);
+    }
+
+    .card:hover::after {
+        opacity: 0.06;
+    }
+
+    input:focus, textarea:focus, select:focus {
+        box-shadow: var(--shadow-glow);
+        border-color: var(--color-accent);
+        transition: all var(--duration-normal) var(--easing-smooth);
+    }
+
+    .badge, .tag, .pill {
+        transition: all var(--duration-normal) var(--easing-bounce);
+    }
+
+    .badge:hover, .tag:hover, .pill:hover {
+        transform: translateY(-2px) scale(1.04);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .modal-content, .dropdown-content, [role="dialog"] > div {
+        animation: ember-enter var(--duration-normal) var(--easing-bounce);
+    }
+}
+
+/* ========================================
+   ARCTIC — Crisp, Precise, No Flourish
+   Underline expand, opacity shift, clean border, quiet confidence
+   ======================================== */
+
+[data-theme^="arctic"] {
+    .nav-item {
+        position: relative;
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .nav-item::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: var(--spacing-sm);
+        right: var(--spacing-sm);
+        height: 1px;
+        background: var(--color-text-primary);
+        transform: scaleX(0);
+        transition: transform var(--duration-normal) var(--easing);
+        transform-origin: left;
+    }
+
+    .nav-item:hover::after {
+        transform: scaleX(1);
+    }
+
+    .nav-item:hover {
+        opacity: 0.8;
+    }
+
+    button, .btn {
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    button:hover, .btn:hover {
+        opacity: 0.85;
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+    }
+
+    button:active, .btn:active {
+        transform: scale(var(--active-scale));
+        opacity: 1;
+        transition-duration: 60ms;
+    }
+
+    .card {
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .card:hover {
+        border-color: var(--color-border-hover);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    input:focus, textarea:focus, select:focus {
+        border-color: var(--color-border-focus);
+        box-shadow: var(--shadow-glow);
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .badge, .tag, .pill {
+        transition: all var(--duration-fast) var(--easing);
+    }
+
+    .badge:hover, .tag:hover, .pill:hover {
+        border-color: var(--color-border-hover);
+    }
+
+    .modal-content, .dropdown-content, [role="dialog"] > div {
+        animation: arctic-enter var(--duration-normal) var(--easing);
+    }
+}
+
+/* ========================================
+   VELVET — Flowing, Silk-smooth, Dramatic
+   Gradient border reveal, scale-with-rotate, shimmer, depth
+   ======================================== */
+
+[data-theme^="velvet"] {
+    .nav-item {
+        position: relative;
+        overflow: hidden;
+        transition: all var(--duration-normal) var(--easing-smooth);
+    }
+
+    .nav-item::before {
+        content: '';
+        position: absolute;
         left: -100%;
         top: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg,
-                transparent,
-                var(--color-primary) 50%,
-                transparent);
-        opacity: 0.1;
+        background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+        opacity: 0.06;
         transition: left var(--duration-slow) var(--easing-smooth);
     }
 
@@ -225,241 +477,243 @@
     .nav-item:hover {
         background: var(--color-surface-hover);
         border-radius: var(--radius-lg);
-        padding-left: calc(var(--spacing-md) + 6px);
-        box-shadow: 0 0 20px rgba(var(--color-primary), 0.2);
+        padding-left: calc(var(--spacing-md) + 4px);
+        color: var(--color-accent);
     }
 
-    /* Buttons - Floating, wave-like */
-    button,
-    .btn {
+    button, .btn {
         transition: all var(--duration-normal) var(--easing-smooth);
         position: relative;
+        overflow: hidden;
     }
 
-    button::before,
-    .btn::before {
+    button::before, .btn::before {
         content: '';
         position: absolute;
         inset: -2px;
-        background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+        background: linear-gradient(135deg, var(--color-accent), var(--color-secondary));
         opacity: 0;
-        filter: blur(8px);
+        filter: blur(6px);
         transition: opacity var(--duration-normal) var(--easing-smooth);
         border-radius: inherit;
         z-index: -1;
     }
 
-    button:hover,
-    .btn:hover {
-        transform: translateY(-3px) scale(var(--hover-scale));
+    button::after, .btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 40%,
+            rgba(255,255,255,0.03) 45%,
+            rgba(255,255,255,0.06) 50%,
+            rgba(255,255,255,0.03) 55%,
+            transparent 60%
+        );
+        transform: translateX(-100%);
+        transition: none;
+    }
+
+    button:hover, .btn:hover {
+        transform: translateY(-2px) scale(var(--hover-scale));
         box-shadow: var(--shadow-glow-lg);
     }
 
-    button:hover::before,
-    .btn:hover::before {
-        opacity: 0.4;
+    button:hover::before, .btn:hover::before {
+        opacity: 0.25;
     }
 
-    button:active,
-    .btn:active {
-        transform: translateY(-1px) scale(var(--active-scale));
+    button:hover::after, .btn:hover::after {
+        animation: velvet-shimmer 0.8s var(--easing-smooth);
+    }
+
+    button:active, .btn:active {
+        transform: translateY(-1px) scale(var(--active-scale)) rotate(-0.5deg);
         transition-duration: var(--duration-fast);
     }
 
-    /* Cards - Gentle float with turquoise glow */
     .card {
         transition: all var(--duration-normal) var(--easing-smooth);
         position: relative;
-        border: 1px solid var(--color-border);
+        overflow: hidden;
     }
 
-    .card::after {
+    .card::before {
         content: '';
         position: absolute;
         inset: 0;
         border-radius: inherit;
-        background: radial-gradient(circle at 50% 0%, var(--color-primary), transparent 70%);
+        background: radial-gradient(circle at 50% 0%, var(--color-accent), transparent 70%);
         opacity: 0;
         transition: opacity var(--duration-slow) var(--easing-smooth);
         pointer-events: none;
     }
 
+    .card::after {
+        content: '';
+        position: absolute;
+        top: -100%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            45deg,
+            transparent 40%,
+            rgba(255,255,255,0.02) 45%,
+            rgba(255,255,255,0.04) 50%,
+            rgba(255,255,255,0.02) 55%,
+            transparent 60%
+        );
+        transform: translateX(-100%);
+        pointer-events: none;
+    }
+
     .card:hover {
-        transform: translateY(-6px) rotate(0.5deg);
-        border-color: #14b8a6;
-        box-shadow: 0 0 0 1px #14b8a6, 0 0 20px rgba(20, 184, 166, 0.4), 0 0 40px rgba(20, 184, 166, 0.2);
+        transform: translateY(-4px) perspective(800px) rotateX(0.5deg);
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-glow), 0 20px 40px -12px var(--color-shadow);
+    }
+
+    .card:hover::before {
+        opacity: 0.05;
     }
 
     .card:hover::after {
-        opacity: 0.08;
+        animation: velvet-shimmer 1.2s var(--easing-smooth);
     }
 
-    /* Buttons - Turquoise border glow */
-    button:hover,
-    .btn:hover {
-        border-color: #14b8a6;
-        box-shadow: 0 0 0 1px #14b8a6, 0 0 16px rgba(20, 184, 166, 0.5);
-    }
-
-    /* Inputs - Turquoise glow on focus */
-    input:focus,
-    textarea:focus,
-    select:focus {
-        transform: scale(1.01);
-        border-color: #14b8a6;
-        box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.3), 0 0 20px rgba(20, 184, 166, 0.4);
+    input:focus, textarea:focus, select:focus {
+        border-color: var(--color-accent);
+        box-shadow: var(--shadow-glow);
         transition: all var(--duration-normal) var(--easing-smooth);
     }
 
-    /* Tables - Turquoise border glow on hover */
-    table tr:hover {
-        border-color: #14b8a6;
-        box-shadow: 0 0 0 1px #14b8a6, 0 0 12px rgba(20, 184, 166, 0.3);
+    .badge, .tag, .pill {
+        transition: all var(--duration-normal) var(--easing-smooth);
+    }
+
+    .badge:hover, .tag:hover, .pill:hover {
+        transform: translateY(-1px) scale(1.03) rotate(-0.5deg);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-accent);
+    }
+
+    .modal-content, .dropdown-content, [role="dialog"] > div {
+        animation: velvet-enter var(--duration-normal) var(--easing-smooth);
     }
 }
 
 /* ========================================
-   KEYFRAME ANIMATIONS
+   KEYFRAMES — Theme-personality animations
    ======================================== */
 
-@keyframes ripple {
-    0% {
-        transform: scale(0);
-        opacity: 1;
-    }
+@keyframes aurora-ripple {
+    0% { transform: scale(0); opacity: 0.4; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
 
-    100% {
-        transform: scale(2);
-        opacity: 0;
-    }
+@keyframes velvet-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+@keyframes obsidian-enter {
+    0% { opacity: 0; transform: translateY(12px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes aurora-enter {
+    0% { opacity: 0; transform: scale(0.92); }
+    60% { transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes ember-enter {
+    0% { opacity: 0; transform: translateY(16px); }
+    60% { transform: translateY(-3px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes arctic-enter {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes velvet-enter {
+    0% { opacity: 0; transform: translateY(8px) scale(0.98) rotate(-0.3deg); }
+    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--color-glow); }
+    50% { box-shadow: 0 0 0 8px transparent; }
 }
 
 @keyframes wave-pulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0 0 var(--color-glow);
-    }
-
-    50% {
-        box-shadow: 0 0 0 6px transparent;
-    }
-}
-
-/* Bubble float animations for Aqua theme */
-@keyframes bubble-float-1 {
-    0% {
-        transform: translateY(0) scale(0);
-        opacity: 0;
-    }
-
-    10% {
-        opacity: 0.6;
-    }
-
-    50% {
-        opacity: 0.5;
-    }
-
-    100% {
-        transform: translateY(-120px) translateX(-20px) scale(1.2);
-        opacity: 0;
-    }
-}
-
-@keyframes bubble-float-2 {
-    0% {
-        transform: translateY(0) scale(0);
-        opacity: 0;
-    }
-
-    15% {
-        opacity: 0.5;
-    }
-
-    60% {
-        opacity: 0.4;
-    }
-
-    100% {
-        transform: translateY(-100px) translateX(30px) scale(0.9);
-        opacity: 0;
-    }
-}
-
-@keyframes bubble-float-3 {
-    0% {
-        transform: translateY(0) scale(0);
-        opacity: 0;
-    }
-
-    20% {
-        opacity: 0.5;
-    }
-
-    70% {
-        opacity: 0.3;
-    }
-
-    100% {
-        transform: translateY(-110px) translateX(-10px) scale(1);
-        opacity: 0;
-    }
+    0%, 100% { box-shadow: 0 0 0 0 var(--color-glow); }
+    50% { box-shadow: 0 0 0 6px transparent; }
 }
 
 /* ========================================
    THEME-SPECIFIC SCROLLBAR
    ======================================== */
 
-[data-theme="minimalist-dark"] ::-webkit-scrollbar-thumb,
-[data-theme="minimalist-light"] ::-webkit-scrollbar-thumb {
-    border-radius: var(--radius-full);
-    transition: background var(--duration-slow) var(--easing-smooth);
+[data-theme^="obsidian"] ::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background: var(--color-border-hover);
+}
+[data-theme^="obsidian"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
 }
 
-[data-theme="modern-dark"] ::-webkit-scrollbar-thumb,
-[data-theme="modern-light"] ::-webkit-scrollbar-thumb {
+[data-theme^="aurora"] ::-webkit-scrollbar-thumb {
     border-radius: var(--radius-sm);
-    transition: background var(--duration-fast) var(--easing);
+    background: var(--color-border-hover);
+}
+[data-theme^="aurora"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+    box-shadow: 0 0 6px var(--color-glow);
 }
 
-[data-theme="aqua-dark"] ::-webkit-scrollbar-thumb,
-[data-theme="aqua-light"] ::-webkit-scrollbar-thumb {
+[data-theme^="ember"] ::-webkit-scrollbar-thumb {
     border-radius: var(--radius-lg);
-    background: linear-gradient(to bottom, var(--color-primary), var(--color-accent));
-    transition: all var(--duration-normal) var(--easing-smooth);
+    background: var(--color-border-hover);
+}
+[data-theme^="ember"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-accent);
+}
+
+[data-theme^="arctic"] ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-full);
+}
+
+[data-theme^="velvet"] ::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-lg);
+    background: linear-gradient(to bottom, var(--color-accent), var(--color-secondary));
+}
+[data-theme^="velvet"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, var(--color-secondary), var(--color-accent));
 }
 
 /* ========================================
-   LOADING STATES - Theme-specific
+   LOADING STATES — Per-variant spinner feel
    ======================================== */
 
-[data-theme^="minimalist"] .loading {
-    animation: spin 1.2s linear infinite;
-}
-
-[data-theme^="modern"] .loading {
-    animation: spin 0.6s linear infinite;
-}
-
-[data-theme^="aqua"] .loading {
-    animation: wave-spin 1s ease-in-out infinite;
-}
+[data-theme^="obsidian"] .loading { animation: spin 1.4s linear infinite; }
+[data-theme^="aurora"] .loading { animation: spin 0.5s linear infinite; }
+[data-theme^="ember"] .loading { animation: spin 1s linear infinite; }
+[data-theme^="arctic"] .loading { animation: spin 0.8s linear infinite; }
+[data-theme^="velvet"] .loading { animation: wave-spin 1.2s ease-in-out infinite; }
 
 @keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 }
 
 @keyframes wave-spin {
-
-    0%,
-    100% {
-        transform: rotate(0deg) scale(1);
-    }
-
-    50% {
-        transform: rotate(180deg) scale(1.1);
-    }
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.08); }
 }

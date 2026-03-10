@@ -5,6 +5,7 @@ import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Setti
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { useTheme } from '@/contexts/ThemeContext'
 
 // ============================================================
 // TYPES
@@ -37,6 +38,7 @@ interface BrainTemplate {
 // ============================================================
 
 export default function BrainChatPage() {
+    const { mode } = useTheme()
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -445,7 +447,7 @@ function MessageBubble({ message }: { message: Message }) {
                     ? 'bg-primary text-primary-foreground ml-auto'
                     : 'bg-muted/50 border border-border/40 backdrop-blur-sm'
                     } transition-all duration-200 hover:shadow-md`}>
-                    {message.isStreaming ? (
+                    {message.isStreaming && !message.content.trim() ? (
                         <div className="flex items-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                             <span className="text-sm text-muted-foreground">Thinking...</span>
@@ -453,7 +455,7 @@ function MessageBubble({ message }: { message: Message }) {
                     ) : isUser ? (
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     ) : (
-                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                        <div className={`prose prose-sm max-w-none ${mode === 'night' ? 'prose-invert' : ''}`}>
                             <ReactMarkdown
                                 components={{
                                     code(props) {
@@ -478,6 +480,9 @@ function MessageBubble({ message }: { message: Message }) {
                             >
                                 {message.content}
                             </ReactMarkdown>
+                            {message.isStreaming && (
+                                <span className="inline-block w-2 h-4 ml-1 align-middle bg-primary/70 animate-pulse rounded-sm" />
+                            )}
                         </div>
                     )}
                 </div>

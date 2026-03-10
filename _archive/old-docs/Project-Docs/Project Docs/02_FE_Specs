@@ -1,0 +1,74 @@
+AXIOM FRONTEND SPECIFICATIONS (apps/frontend)
+
+1. Vision
+
+This is not a "website." It is a Mission Control Dashboard.
+The aesthetic should be: Dark Mode, Data-Dense, Engineering-First. (Think SpaceX Dashboard or Bloomberg Terminal).
+
+2. Tech Stack
+
+Framework: Next.js 14 (App Router).
+
+UI Library: Tailwind CSS + Shadcn/UI (for robust, accessible components).
+
+Charts: Recharts (for Analytics visualization).
+
+Icons: Lucide React or FontAwesome.
+
+3. Site Map & Functionality
+
+A. Command Center (/dashboard)
+
+Header: System Status (Green/Red indicator based on backend health).
+
+KPI Cards:
+
+"Booked Calls (Yesterday)"
+
+"Active Experiments"
+
+"KB Version"
+
+Action Panel:
+
+"Manual Run" Button: Calls POST /api/run/manual.
+
+"Force Sync" Button.
+
+B. Knowledge Base Manager (/kb-manager)
+
+Purpose: Interface to view and update the "Contracts" (01-KB).
+
+Feature: Schema Validator:
+
+User drags & drops a JSON file.
+
+Frontend validates it against the Zod Schema (shared or mirrored).
+
+If valid, uploads to Backend.
+
+Visualizer: A read-only view of the current active Brand Rules and ICP Segments.
+
+C. Analytics Deep Dive (/analytics)
+
+Table View: List of all Content Variants generated.
+
+Columns: Variant ID | ICP | Offer | Replies | Booked Calls | Status (Active/Killed).
+
+Filter: "Show Winners Only".
+
+4. Architecture Details
+
+src/lib/api.ts: Centralized API client. All fetches must go through this typed layer.
+
+src/components/ui/: Reusable atoms (Buttons, Cards, Inputs).
+
+src/app/layout.tsx: Global layout with Sidebar navigation.
+
+5. Design Guidelines
+
+Background: Slate-950 (#020617).
+
+Accents: Blue-500 (Primary), Red-500 (Destructive/Error), Amber-500 (Warning).
+
+Typography: Inter (Sans) and Fira Code (Monospace for IDs and JSON).

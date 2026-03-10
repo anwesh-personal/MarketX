@@ -1,0 +1,79 @@
+AXIOM CORE LOGIC SPECIFICATIONS
+
+This document defines the "Brain" logic. Do not hallucinate. Implement this logic exactly to satisfy the Client Contracts.
+
+MODULE 1: The Writer Engine (executeRun)
+
+Goal: Transform WriterInput + KnowledgeBase -> WriterOutput.
+
+Logic Flow:
+
+Context Resolution (Pre-Embeddings):
+
+Input contains icp_id and offer_id.
+
+Action: Iterate through kb.icp_library.segments. Find the one where segment.icp_id === input.icp.icp_id.
+
+Action: Iterate through kb.offer_library.offers. Find the one where offer.offer_id === input.offer.offer_id.
+
+Error Handling: If not found, throw strict Error: Context ID ${id} not found in Active KB.
+
+Blueprint Selection:
+
+Input contains generation_requests (e.g., "WEBSITE" / "LANDING").
+
+Action: Look up kb.libraries.website.page_blueprints.
+
+Filter for page_type === 'LANDING'.
+
+Constraint: If multiple blueprints exist, select the one flagged as "Default" or the first one (V1 logic).
+
+Content Assembly (The "Generation"):
+
+Do NOT simply ask OpenAI "Write a landing page."
+
+Construct a Prompt/Context Object:
+
+Pain_Points: From ICP Segment.
+
+Value_Prop: From Offer.
+
+Constraints: From KB Brand Rules (Voice, Forbidden Claims).
+
+Structure: From Blueprint required_sections.
+
+Output Construction: Map the generated text into the strict PageOutputSchema (slug, markdown, cta object).
+
+MODULE 2: The Learning Loop (runDailyOptimization)
+
+Goal: Read Analytics -> Write KB Preferences.
+
+Logic Flow:
+
+Define Window:
+
+Start: Yesterday 00:00.
+
+End: Yesterday 23:59.
+
+Aggregate Data:
+
+Query analytics_events. Group by variant_id.
+
+Calculate: Total Replies, Total Booked Calls, Bounce Rate.
+
+Apply Policies (Document 05):
+
+Winner Rule: IF booked_calls > 0 THEN status = WINNER.
+
+Loser Rule: IF bounce_rate > 0.15 (15%) THEN status = KILL.
+
+Execute KB Updates:
+
+For Winners: Create a PromoteDirective. Update kb.learning.preferences. Add PREFER_ANGLE for this variant's Angle ID.
+
+For Losers: Create a PauseDirective. Add to kb.guardrails.paused_patterns.
+
+Audit Log:
+
+Log this action in a system log so the User can see "System promoted Variant X at 06:01 AM".

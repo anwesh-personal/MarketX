@@ -23,22 +23,21 @@ export function MailWriterLogo({ className = '', size = 'md' }: MailWriterLogoPr
 
     const height = heights[size];
     const textSize = textSizes[size];
-    const isDark = theme.includes('dark');
+    const isNight = theme.endsWith('-night');
 
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <img
-                src={isDark ? '/mw-logo-dark.png' : '/mw-logo-light.png'}
-                alt="Market Writer"
+                src={isNight ? '/mw-logo-dark.png' : '/mw-logo-light.png'}
+                alt="MarketX"
                 style={{
                     height: `${height}px`,
                     width: 'auto',
-                    filter: isDark ? 'drop-shadow(0 0 8px rgba(6, 182, 212, 0.3))' : 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))'
                 }}
                 className="transition-all duration-300"
             />
             <span className={`${textSize} font-semibold tracking-tight text-textPrimary`}>
-                Market Writer
+                MarketX
             </span>
         </div>
     );

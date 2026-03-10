@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { ragOrchestrator } from '../RAGOrchestrator'
 import { BrainConfig } from '../BrainConfigService'
+import { aiProviderService } from '../../ai/AIProviderService'
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -84,11 +85,8 @@ export abstract class Agent {
             // 3. Build messages for LLM
             const messages = this.buildMessages(input, ragContext, toolsUsed)
 
-            // 4. Get AI provider
-            const provider = await this.getProvider(context)
-
-            // 5. Generate response
-            const response = await this.callLLM(messages, provider)
+            // 4-5. Generate response via AIProviderService (handles provider resolution)
+            const response = await this.callLLM(messages, context.orgId)
             const content = response.content
             const tokensUsed = response.tokensUsed
 
@@ -138,11 +136,8 @@ export abstract class Agent {
             // Build messages
             const messages = this.buildMessages(input, ragContext, toolResults)
 
-            // Get provider
-            const provider = await this.getProvider(context)
-
-            // Stream response
-            const stream = await this.callLLMStream(messages, provider)
+            // Stream response via AIProviderService
+            const stream = this.callLLMStream(messages, context.orgId)
 
             let totalTokens = 0
             for await (const chunk of stream) {
@@ -342,95 +337,48 @@ export abstract class Agent {
     }
 
     /**
-     * Call LLM (non-streaming)
+     * Call LLM (non-streaming) via AIProviderService
      */
     protected async callLLM(
         messages: ChatMessage[],
-        provider: any
+        orgId: string
     ): Promise<{ content: string, tokensUsed: number }> {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.api_key}`
-            },
-            body: JSON.stringify({
-                model: provider.model,
-                messages: messages,
+        const response = await aiProviderService.generateChat(
+            orgId,
+            messages.map(m => ({ role: m.role, content: m.content })),
+            {
                 temperature: this.config.temperature,
-                max_tokens: this.config.maxTokens
-            })
-        })
-
-        if (!response.ok) {
-            throw new Error(`LLM call failed: ${response.statusText}`)
-        }
-
-        const result = await response.json()
+                maxTokens: this.config.maxTokens
+            }
+        )
 
         return {
-            content: result.choices[0].message.content || '',
-            tokensUsed: result.usage?.total_tokens || 0
+            content: response.content || '',
+            tokensUsed: response.usage?.totalTokens || 0
         }
     }
 
     /**
-     * Call LLM with streaming
+     * Call LLM with streaming via AIProviderService
+     * Currently yields the full response as one chunk until provider-level streaming is available.
      */
     protected async *callLLMStream(
         messages: ChatMessage[],
-        provider: any
+        orgId: string
     ): AsyncGenerator<string> {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${provider.api_key}`
-            },
-            body: JSON.stringify({
-                model: provider.model,
-                messages: messages,
+        // For now, use non-streaming and yield the full response
+        // True streaming can be added to AIProviderService later
+        const response = await aiProviderService.generateChat(
+            orgId,
+            messages.map(m => ({ role: m.role, content: m.content })),
+            {
                 temperature: this.config.temperature,
-                max_tokens: this.config.maxTokens,
-                stream: true
-            })
-        })
-
-        if (!response.ok) {
-            throw new Error(`LLM streaming failed: ${response.statusText}`)
-        }
-
-        const reader = response.body?.getReader()
-        const decoder = new TextDecoder()
-
-        if (!reader) {
-            throw new Error('No response body')
-        }
-
-        while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-
-            const chunk = decoder.decode(value)
-            const lines = chunk.split('\n').filter(line => line.trim() !== '')
-
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const data = line.slice(6)
-                    if (data === '[DONE]') continue
-
-                    try {
-                        const parsed = JSON.parse(data)
-                        const content = parsed.choices[0]?.delta?.content
-                        if (content) {
-                            yield content
-                        }
-                    } catch (e) {
-                        // Skip invalid JSON
-                    }
-                }
+                maxTokens: this.config.maxTokens
             }
-        }
+        )
+
+        // Yield the full response as a single chunk
+        yield response.content || ''
     }
 
     /**

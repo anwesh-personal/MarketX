@@ -1,0 +1,83 @@
+PROJECT AXIOM: MASTER STRATEGIC PLAN
+
+1. Identity & Vision
+
+Project Name: Project AXIOM (The Axiom Engine)
+Type: Deterministic Content Execution System (SaaS Infrastructure)
+Core Philosophy: "Writer executes. Analytics observes. KB learns."
+Deployment Target: Production-Grade Enterprise Environment (Not MVP).
+
+Critical Directive:
+We are NOT building a generic AI wrapper. We are building a self-healing marketing infrastructure. The system must be deterministic, strictly typed, and fault-tolerant. "Hallucinations" or "Best Guesses" are system failures.
+
+2. The Technology Stack (Non-Negotiable)
+
+Infrastructure (Monorepo)
+
+Orchestration: Docker Compose (Service-based architecture).
+
+Containerization: Multi-stage Dockerfiles for optimized production builds.
+
+The Brain (Backend)
+
+Runtime: Node.js (v20+ LTS).
+
+Language: TypeScript (Strict Mode).
+
+Framework: Express.js (Modular Router Pattern).
+
+Validation: Zod (The absolute law. All inputs/outputs must be validated against Zod schemas matching the Client Contracts).
+
+Scheduling: node-cron (For the 06:00 AM Ops Loop).
+
+The Face (Frontend)
+
+Framework: Next.js 14+ (App Router).
+
+Language: TypeScript.
+
+Styling: Tailwind CSS (Enterprise UI Kit).
+
+State: React Server Components (RSC) where possible.
+
+The Memory (Database)
+
+Database: PostgreSQL 16+.
+
+Driver: node-postgres (pg).
+
+Strategy: JSONB Heavy.
+
+Why: The client's schemas (KB, Input, Output) are complex and nested. We store them as validated JSONB documents to allow schema evolution without painful SQL migrations.
+
+3. The Architecture (Service Map)
+
+The project follows a strict Separation of Concerns:
+
+graph TD
+    User[Admin User] -->|HTTPS| Web[Next.js Frontend]
+    Web -->|REST API| API[Node.js Backend]
+    
+    subgraph "The Axiom Engine (Backend)"
+        API --> Validator[Zod Schema Guard]
+        Validator --> Engine[Writer Engine]
+        Validator --> Loop[Learning Loop]
+        
+        Engine -->|Reads| DB[(Postgres DB)]
+        Loop -->|Updates| DB
+        
+        Cron[Ops Scheduler] -->|Triggers 6AM| Loop
+    end
+
+
+4. Execution Standards
+
+No "Any" Types: TypeScript strict: true is mandatory.
+
+Schema First: Do not write logic until the Zod schema is defined.
+
+Error Handling: Global Error Handlers in Express. No silent failures.
+
+Logging: Structured logging (JSON format) for all system events.
+
+NEXT STEP: Refer to 01_BACKEND_SPECS.md to begin the Core implementation.
