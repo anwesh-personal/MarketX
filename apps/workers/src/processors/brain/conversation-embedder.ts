@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { generateEmbedding } from '../../utils/embeddings'
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -28,7 +29,6 @@ export async function embedConversation(input: ConversationEmbedInput) {
         .select('source_id')
         .eq('org_id', orgId)
         .eq('source_type', 'conversation')
-        .like('metadata->>conversation_id', conversationId)
 
     const existingMsgIds = new Set((existingEmbeds ?? []).map(e => e.source_id))
 
@@ -55,39 +55,11 @@ export async function embedConversation(input: ConversationEmbedInput) {
 
     if (!chunks.length) return { success: true, embedded: 0 }
 
-    const { data: providerRow } = await supabase
-        .from('ai_providers')
-        .select('api_key')
-        .eq('org_id', orgId)
-        .eq('is_active', true)
-        .order('priority', { ascending: false })
-        .limit(1)
-        .single()
-
-    if (!providerRow?.api_key) {
-        const { data: platformKey } = await supabase
-            .from('ai_providers')
-            .select('api_key')
-            .is('org_id', null)
-            .eq('is_active', true)
-            .limit(1)
-            .single()
-        if (!platformKey?.api_key) return { success: true, embedded: 0, reason: 'No embedding API key' }
-        providerRow!.api_key = platformKey.api_key
-    }
-
     let embedded = 0
 
     for (const chunk of chunks) {
         try {
-            const response = await fetch('https://api.openai.com/v1/embeddings', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${providerRow!.api_key}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model: 'text-embedding-3-large', input: chunk.content }),
-            })
-            const data = await response.json()
-            const embedding = data.data?.[0]?.embedding
-            if (!embedding) continue
+            const embedding = await generateEmbedding(chunk.content, orgId)
 
             await supabase.from('embeddings').insert({
                 org_id: orgId,

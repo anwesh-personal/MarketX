@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import aiService from '../../utils/ai-service'
+import { generateEmbedding } from '../../utils/embeddings'
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -26,15 +28,6 @@ export async function extractMemoriesFromConversation(input: MemoryExtractionInp
 
     const transcript = messages.map(m => `[${m.role}]: ${m.content}`).join('\n')
 
-    const { data: providerRow } = await supabase
-        .from('ai_providers')
-        .select('id, provider, api_key')
-        .eq('org_id', orgId)
-        .eq('is_active', true)
-        .order('priority', { ascending: false })
-        .limit(1)
-        .single()
-
     let extractedFacts: Array<{
         type: 'fact' | 'preference' | 'instruction' | 'context' | 'feedback'
         content: string
@@ -42,37 +35,17 @@ export async function extractMemoriesFromConversation(input: MemoryExtractionInp
         keywords: string[]
     }> = []
 
-    if (providerRow?.api_key) {
-        try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${providerRow.api_key}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    temperature: 0,
-                    response_format: { type: 'json_object' },
-                    messages: [
-                        {
-                            role: 'system',
-                            content: `Extract memorable facts, preferences, instructions, and context from this conversation.
+    try {
+        const result = await aiService.call(transcript.slice(0, 8000), {
+            systemPrompt: `Extract memorable facts, preferences, instructions, and context from this conversation.
 Return JSON: { "memories": [{ "type": "fact|preference|instruction|context|feedback", "content": "...", "confidence": 0.0-1.0, "keywords": ["..."] }] }
 Only extract non-trivial, reusable information. Skip greetings and trivial exchanges.
-Max 10 memories per conversation.`
-                        },
-                        { role: 'user', content: transcript.slice(0, 8000) }
-                    ],
-                }),
-            })
-            const data = await response.json()
-            const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
-            extractedFacts = parsed.memories ?? []
-        } catch {
-            extractedFacts = extractFactsHeuristic(messages)
-        }
-    } else {
+Max 10 memories per conversation.`,
+            temperature: 0,
+        })
+        const parsed = JSON.parse(result.content)
+        extractedFacts = parsed.memories ?? []
+    } catch {
         extractedFacts = extractFactsHeuristic(messages)
     }
 
@@ -87,7 +60,7 @@ Max 10 memories per conversation.`
         keywords: f.keywords,
         confidence: f.confidence,
         source_conversation_id: conversationId,
-        metadata: { extraction_method: providerRow ? 'llm' : 'heuristic' },
+        metadata: { extraction_method: 'provider_abstraction' },
     }))
 
     const { data: inserted, error: insertErr } = await supabase
@@ -96,24 +69,18 @@ Max 10 memories per conversation.`
         .select('id, content')
     if (insertErr) throw insertErr
 
-    const embeddingInserts = (inserted ?? []).map(m => ({
-        org_id: orgId,
-        source_type: 'brain_memory',
-        source_id: m.id,
-        chunk_index: 0,
-        content: m.content,
-        metadata: { conversation_id: conversationId, user_id: userId },
-    }))
-
-    for (const emb of embeddingInserts) {
+    for (const mem of (inserted ?? [])) {
         try {
-            const embResponse = await generateEmbedding(emb.content, providerRow?.api_key)
-            if (embResponse) {
-                await supabase.from('embeddings').insert({
-                    ...emb,
-                    embedding: embResponse,
-                })
-            }
+            const embedding = await generateEmbedding(mem.content, orgId)
+            await supabase.from('embeddings').insert({
+                org_id: orgId,
+                source_type: 'brain_memory',
+                source_id: mem.id,
+                chunk_index: 0,
+                content: mem.content,
+                embedding,
+                metadata: { conversation_id: conversationId, user_id: userId },
+            })
         } catch { /* embedding failure shouldn't block memory storage */ }
     }
 
@@ -138,28 +105,13 @@ function extractFactsHeuristic(messages: any[]): Array<{
         if (text.length < 20) continue
 
         if (/i (prefer|like|want|need|always|never)/i.test(text)) {
-            facts.push({
-                type: 'preference',
-                content: text.slice(0, 500),
-                confidence: 0.6,
-                keywords: extractKeywords(text),
-            })
+            facts.push({ type: 'preference', content: text.slice(0, 500), confidence: 0.6, keywords: extractKeywords(text) })
         }
         if (/my (company|team|product|service|industry|budget)/i.test(text)) {
-            facts.push({
-                type: 'context',
-                content: text.slice(0, 500),
-                confidence: 0.7,
-                keywords: extractKeywords(text),
-            })
+            facts.push({ type: 'context', content: text.slice(0, 500), confidence: 0.7, keywords: extractKeywords(text) })
         }
         if (/(please|make sure|don't|do not|always|must|should)/i.test(text) && text.length > 30) {
-            facts.push({
-                type: 'instruction',
-                content: text.slice(0, 500),
-                confidence: 0.5,
-                keywords: extractKeywords(text),
-            })
+            facts.push({ type: 'instruction', content: text.slice(0, 500), confidence: 0.5, keywords: extractKeywords(text) })
         }
     }
 
@@ -173,17 +125,4 @@ function extractKeywords(text: string): string[] {
         .split(/\s+/)
         .filter(w => w.length > 3 && !stopWords.has(w))
         .slice(0, 10)
-}
-
-async function generateEmbedding(text: string, apiKey?: string): Promise<number[] | null> {
-    if (!apiKey) return null
-    try {
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'text-embedding-3-large', input: text }),
-        })
-        const data = await response.json()
-        return data.data?.[0]?.embedding ?? null
-    } catch { return null }
 }
