@@ -4,6 +4,9 @@ import { recomputeBeliefConfidence } from './confidence-engine'
 import { rebalanceBeliefAllocations } from './allocation-engine'
 import { runPromotionEngine } from './promotion-engine'
 import { runNetworkLearning } from './network-learning'
+import { runDailyRollup } from './rollup-engine'
+import { runSelfHealingLoop } from './self-healing'
+import { runNetworkEffectMonitor } from './network-effect-monitor'
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -11,7 +14,7 @@ const supabase = createClient(
 )
 
 export interface AnalyticsJob {
-    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine' | 'promotion-engine' | 'network-learning'
+    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine' | 'promotion-engine' | 'network-learning' | 'daily-rollup' | 'self-healing' | 'network-effect-monitor'
     date?: string
     orgId?: string
     lookbackDays?: number
@@ -61,6 +64,33 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             type,
             ...result,
         }
+    }
+
+    if (type === 'daily-rollup') {
+        job.updateProgress(10)
+        const result = await runDailyRollup({
+            orgId: job.data.orgId,
+            date: job.data.date,
+        })
+        job.updateProgress(100)
+        return { success: true, type, ...result }
+    }
+
+    if (type === 'self-healing') {
+        job.updateProgress(10)
+        const result = await runSelfHealingLoop({
+            orgId: job.data.orgId,
+            lookbackDays: job.data.lookbackDays,
+        })
+        job.updateProgress(100)
+        return { success: true, type, ...result }
+    }
+
+    if (type === 'network-effect-monitor') {
+        job.updateProgress(10)
+        const result = await runNetworkEffectMonitor()
+        job.updateProgress(100)
+        return { success: true, type, ...result }
     }
 
     if (type === 'network-learning') {

@@ -297,21 +297,21 @@ Phase 6 complete.
 **Goal:** Clients see their data. The golden insights that make them stay.
 
 ### Tasks
-- [ ] Build 12-section measurement implementation
+- [x] Build 12-section measurement implementation
   - Sections 1–12 from Tommy's Measurement doc
   - Materialized rollups (`belief_daily_rollup`)
   - Gating: downstream sections invalid if upstream fails
-- [ ] Build Partner Dashboard
+- [x] Build Partner Dashboard
   - Total Sends, Reply Rate, Booked Calls, Show Rate, Revenue, Revenue/1K Sends
   - Active Satellites, Belief status, Angle performance
-- [ ] Build Belief Dashboard
+- [x] Build Belief Dashboard
   - Confidence Score, Allocation %, Sends, Replies by type, Status, Hierarchy Level
-- [ ] Build Member Portal
+- [x] Build Member Portal
   - Client login → sees their assigned Brain, flows, insights
   - Basic: metrics only
   - Medium: + chat with Brain + train
   - Enterprise: + write emails + feed Brain + flow builder access
-- [ ] Build feature gating by tier
+- [x] Build feature gating by tier
 
 ### Exit Criteria
 - Partner dashboards show real data
@@ -328,7 +328,7 @@ Phase 5+ (needs signal data and promotion state).
 **Goal:** The system compounds. Network effect activates.
 
 ### Tasks
-- [ ] Build Self-Healing Loop
+- [x] Build Self-Healing Loop
   - Nightly: review signal_events per partner
   - Identify: winning beliefs → boost angle weights in Local KB
   - Identify: knowledge gaps (low-confidence RAG retrievals) → flag for fill
@@ -338,11 +338,11 @@ Phase 5+ (needs signal data and promotion state).
   - Oraya runs: gap detection, research, reflection
   - Returns: KB update suggestions
   - JS Brain applies validated updates
-- [ ] Build Scale Expansion Logic
+- [x] Build Scale Expansion Logic
   - Activate next satellite when: durability positive + deliverability stable + rev/1K healthy
   - Horizontal before vertical
   - Offer tier escalation ($10K + $5K/month)
-- [ ] Build Network Effect Monitoring
+- [x] Build Network Effect Monitoring
   - Track: more partners → more signal → better priors → better performance → more partners
   - Dashboard for network health
 

@@ -697,3 +697,127 @@ Next: Phase 8 — Dashboards + Member Portal
   - Live test panel: input JSON → execute agent → see result
   - Duplicate agent for org-specific overrides
 
+## Phase 8 Progress (Measurement Rollups)
+
+- Added migration `supabase/migrations/00000000000027_measurement_rollups.sql`:
+  - `belief_daily_rollup` table: per-belief daily metrics with computed rates (bounce, complaint, open, click, reply, booking, show, revenue/1K)
+  - Reply quality breakdown (interested, clarification, objection, timing, referral, negative, noise)
+  - `partner_daily_rollup` table: aggregated across all beliefs per partner per day
+  - `member_portal_config` table: per-partner feature gating (10 boolean features + 3 numeric limits)
+  - 3 tier defaults seeded into config_table (basic, medium, enterprise)
+- Added rollup worker:
+  - `apps/workers/src/processors/analytics/rollup-engine.ts`
+  - Aggregates signal_events per belief per day into belief_daily_rollup
+  - Rolls up partner-level summary with satellite counts
+  - Wired into analytics aggregator as `type = 'daily-rollup'`
+
+## Phase 8 Progress (Partner Dashboard)
+
+- Added partner dashboard API:
+  - `apps/frontend/src/app/api/dashboard/partner/route.ts`
+  - Headline metrics: total sends, reply rate, booked calls, show rate, revenue, rev/1K
+  - Satellite stats: active count, avg reputation
+  - Belief distribution by status
+  - Daily trend data for charting
+
+## Phase 8 Progress (Belief Dashboard - Partner-facing)
+
+- Added belief dashboard API:
+  - `apps/frontend/src/app/api/dashboard/beliefs/route.ts`
+  - List view: all active beliefs with period sends/replies/bookings
+  - Detail view: daily rollups + promotion history per belief
+
+## Phase 8 Progress (Member Portal)
+
+- Added portal config API:
+  - `apps/frontend/src/app/api/portal/config/route.ts`
+  - Returns tier + feature flags for authenticated user's org
+  - Falls back to basic tier defaults if no config exists
+- Added superadmin tier management:
+  - `apps/frontend/src/app/api/superadmin/portal-tiers/route.ts`
+  - List all org configs, upsert tier + features per org
+- Added Member Portal UI:
+  - `apps/frontend/src/app/(main)/portal/page.tsx`
+  - Headline metric cards (sends, reply rate, bookings, show rate, revenue, rev/1K)
+  - Infrastructure cards (satellites, beliefs, trend)
+  - Feature tiles with lock icons for gated features
+  - Tier badge display
+  - Locked features show upgrade prompt
+
+## Phase 8 — COMPLETE
+
+All Phase 8 items implemented:
+1. Measurement rollups (belief_daily_rollup + partner_daily_rollup)
+2. Partner Dashboard API (headline metrics + trend)
+3. Belief Dashboard API (per-belief detail + rollups)
+4. Member Portal (UI + config API + tier-based feature gating)
+5. Feature gating by tier (basic/medium/enterprise with superadmin control)
+
+Next: Phase 9 — Scale + Self-Healing (final phase)
+
+## Phase 9 Progress (Self-Healing Loop)
+
+- Added self-healing worker:
+  - `apps/workers/src/processors/analytics/self-healing.ts`
+  - Per-partner nightly processing:
+    1. Identifies winning beliefs (SW+ with confidence >= 0.6) and boosts angle weights in Local KB
+    2. Creates/updates `angle_performance` knowledge objects with blended confidence and signal rates
+    3. Detects knowledge gaps from `knowledge_gaps` table (low-confidence RAG retrievals) and creates gap KOs for filling
+    4. Scale expansion: auto-activates next inactive satellite when deliverability + engagement healthy
+  - Wired into analytics aggregator as `type = 'self-healing'`
+- Added trigger API:
+  - `apps/frontend/src/app/api/system/self-healing/route.ts`
+
+## Phase 9 Progress (Scale Expansion)
+
+- Added scale expansion API:
+  - `apps/frontend/src/app/api/system/scale-expansion/route.ts`
+  - 3 checks before expansion: deliverability stable (bounce < warning threshold), engagement positive (reply rate > 1%), revenue healthy (rev/1K > $5)
+  - Horizontal-first strategy: activates next inactive satellite
+  - All thresholds read from config_table
+  - Returns detailed check results and metrics
+
+## Phase 9 Progress (Network Effect Monitoring)
+
+- Added network effect monitor worker:
+  - `apps/workers/src/processors/analytics/network-effect-monitor.ts`
+  - Computes network health score (0-100) from:
+    - Total active partners, KB coverage, global KB objects
+    - Weekly signal volume, weekly agent decisions
+    - 30-day sends, bookings, revenue
+  - Persists snapshot to `config_table.network_effect_snapshot`
+- Added health API:
+  - `apps/frontend/src/app/api/system/network-health/route.ts`
+  - GET: returns latest snapshot
+  - POST (superadmin): triggers fresh monitor run
+
+## Phase 9 — COMPLETE
+
+All Phase 9 items implemented:
+1. Self-Healing Loop (winning belief KB boost, knowledge gap detection, auto satellite activation)
+2. Scale Expansion Logic (3-check gate, horizontal-first, config-driven thresholds)
+3. Network Effect Monitoring (health score, snapshot persistence, API access)
+4. Oraya/RUST Brain Integration deferred as optional enhancement
+
+## ALL PHASES COMPLETE (0-9)
+
+Full RS:OS platform build sequence executed:
+- Phase 0: Foundation Reset (migrations 12-18)
+- Phase 1: Market Writer Core (briefs, beliefs, flows, angles, reply classification)
+- Phase 2: Signal Engine (ingestion, confidence, gating, allocation, webhooks)
+- Phase 3: Market Builder (ICP construction, identity sourcing, contact decisions)
+- Phase 4: Market Surface (satellites, pacing, deliverability, domains, email providers)
+- Phase 5: Promotion + Extension (promotion engine, flow extension, analysis, belief dashboard)
+- Phase 6: Mastery Agents (9 agents, KB schema, decision logging, pipelines)
+- Phase 7: Knowledge Governance (promotion lifecycle, revalidation, network learning, global KB)
+- Phase 8: Dashboards + Member Portal (rollups, partner dashboard, portal, tier gating)
+- Phase 9: Scale + Self-Healing (self-healing loop, expansion logic, network effect monitor)
+
+Infrastructure additions:
+- Email provider configs (modular, multi-provider)
+- Platform config system (zero hardcoded, all UI-controlled)
+- Dynamic agent executor (DB-driven rule engine)
+- Mastery agent manager (UI create/edit/test/duplicate)
+
+Migrations: 00000000000012 through 00000000000027 (16 migrations)
+
