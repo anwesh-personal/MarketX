@@ -8,7 +8,7 @@ const STATS = [
   { label: 'Overall Completion', value: '95%', sub: 'Code complete · Infra = last mile', color: 'from-violet-500 to-purple-600', icon: '🎯' },
   { label: 'API Routes', value: '65+', sub: 'Unified webhook + new tools', color: 'from-blue-500 to-cyan-600', icon: '🔌' },
   { label: 'Workers', value: '9/9', sub: 'All registered & running', color: 'from-emerald-500 to-teal-600', icon: '⚡' },
-  { label: 'Email Providers', value: '4', sub: 'MailWizz · Mailgun · SES · SendGrid', color: 'from-orange-500 to-amber-600', icon: '📧' },
+  { label: 'Email Integration', value: '2 layers', sub: 'Autoresponder (MailWizz) + SMTP Relay (SES/Mailgun/SendGrid)', color: 'from-orange-500 to-amber-600', icon: '📧' },
 ]
 
 const COMPLETION_BARS = [
@@ -840,7 +840,7 @@ export default function SystemMap() {
             <span className={dark ? 'text-white/75' : 'text-slate-600'}>Honest. Complete. Visual.</span>
           </motion.h1>
           <motion.p variants={fadeUp} className={`${muted} max-w-xl mx-auto text-sm leading-relaxed`}>
-            Multi-org SaaS · Agentic Brain with RAG · 9 Workers · 65+ API Routes · ~80 DB Tables · 24 Superadmin Pages · 4 Email Providers
+            Multi-org SaaS · Agentic Brain with RAG · 9 Workers · 65+ API Routes · ~80 DB Tables · 24 Superadmin Pages · MailWizz autoresponder + SES/Mailgun/SendGrid SMTP relay
           </motion.p>
         </motion.div>
 
