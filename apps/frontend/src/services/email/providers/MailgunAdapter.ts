@@ -22,9 +22,11 @@ const EVENT_MAP: Record<string, CanonicalEventType> = {
 }
 
 export class MailgunAdapter implements EmailProviderAdapter {
-  readonly id   = 'mailgun'
-  readonly name = 'Mailgun'
-  readonly capabilities = {
+  readonly id               = 'mailgun'
+  readonly name             = 'Mailgun'
+  /** Mailgun is an SMTP relay / managed delivery service — a real MTA. */
+  readonly providerCategory = 'smtp_relay' as const
+  readonly capabilities     = {
     send: true, bulkSend: true, webhooks: true, campaignStats: true, replyTracking: false,
   }
 

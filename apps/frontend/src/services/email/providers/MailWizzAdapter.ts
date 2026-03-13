@@ -27,9 +27,18 @@ const EVENT_MAP: Record<string, CanonicalEventType> = {
 }
 
 export class MailWizzAdapter implements EmailProviderAdapter {
-  readonly id   = 'mailwizz'
-  readonly name = 'MailWizz'
-  readonly capabilities = {
+  readonly id               = 'mailwizz'
+  readonly name             = 'MailWizz'
+  /**
+   * MailWizz is an AUTORESPONDER / CAMPAIGN MANAGER — not an SMTP server.
+   * It manages subscriber lists, email sequences, and campaign scheduling.
+   * Internally it routes actual email delivery through a configured SMTP
+   * relay (AWS SES, Mailgun, Postfix, etc.) — that relay is the real MTA.
+   * MarketX uses MailWizz for: subscriber management, campaign dispatch,
+   * and receiving open/click/reply/bounce webhooks.
+   */
+  readonly providerCategory = 'autoresponder' as const
+  readonly capabilities     = {
     send: true, bulkSend: true, webhooks: true, campaignStats: true, replyTracking: true,
   }
 

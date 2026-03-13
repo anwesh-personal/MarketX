@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
@@ -24,51 +24,265 @@ const COMPLETION_BARS = [
   { label: 'Deployment / Infrastructure', pct: 60 },
 ]
 
-const USER_PAGES = [
-  { route: '/dashboard', title: 'Dashboard', status: 'done', desc: 'Stats, recent runs, org info' },
-  { route: '/writer', title: 'Writer Studio', status: 'done', desc: 'Run history, filter, search' },
-  { route: '/writer/new', title: 'New Run', status: 'partial', desc: 'Legacy KB selector UI; execution path is correct' },
-  { route: '/brain-chat', title: 'Brain Chat', status: 'done', desc: 'Streaming, push-to-brain, runtime banner' },
-  { route: '/brain-control', title: 'Brain Control', status: 'done', desc: '2048 lines — agents, config, RAG, training' },
-  { route: '/kb-manager', title: 'KB Manager', status: 'done', desc: 'Full CRUD for knowledge bases' },
-  { route: '/analytics', title: 'Analytics', status: 'done', desc: 'Charts, time range, filters' },
-  { route: '/learning', title: 'Learning', status: 'done', desc: 'Memories, gaps, reflections, dreams' },
-  { route: '/settings', title: 'Settings', status: 'done', desc: 'Profile, org info, logout' },
-  { route: '/chat', title: 'Chat (Legacy)', status: 'partial', desc: 'Hardcoded default-org → replace with brain-chat' },
-  { route: '/portal', title: 'Portal', status: 'stub', desc: 'Feature gates visible, tier-locked content stub' },
+// ─── Modal types ─────────────────────────────────────────────────────────────
+
+interface ModalInfo {
+  title: string
+  badge?: string
+  status?: string
+  what: string
+  how: string
+  tech: string[]
+  note?: string
+}
+
+// ─── Page Data with rich modal info ──────────────────────────────────────────
+
+const USER_PAGES: Array<{ route: string; title: string; status: string; desc: string; modal: ModalInfo }> = [
+  {
+    route: '/dashboard', title: 'Dashboard', status: 'done', desc: 'Home screen — live stats, recent runs, org overview',
+    modal: {
+      title: 'Dashboard', status: 'done',
+      what: 'The first page a user sees after login. Shows at-a-glance stats: total email runs, success rate, KB documents indexed, and a live feed of the most recent runs.',
+      how: 'Pulls from engine_run_logs (run counts, status), kb_documents (KB size), and brain_agents (active brain status). All queries are org-scoped via the user\'s org_id.',
+      tech: ['engine_run_logs', 'kb_documents', 'brain_agents', 'Supabase RLS'],
+    },
+  },
+  {
+    route: '/writer', title: 'Writer Studio', status: 'done', desc: 'Browse all past email runs with filters',
+    modal: {
+      title: 'Writer Studio', status: 'done',
+      what: 'A searchable, filterable list of every email generation run. Users can filter by status (success/failed), date range, and see token usage and cost per run.',
+      how: 'Queries engine_run_logs ordered by created_at. Clicking a run shows the full output, input used, and Brain context snapshot.',
+      tech: ['engine_run_logs', 'runs table', 'output_data JSONB'],
+    },
+  },
+  {
+    route: '/writer/new', title: 'New Run', status: 'partial', desc: 'Start a new AI email generation run',
+    modal: {
+      title: 'New Run', status: 'partial',
+      what: 'Where users kick off a new email generation. They describe their target (ICP, topic, tone) and Brain generates a hyper-personalized email using their KB, beliefs, and offer context.',
+      how: 'Calls POST /api/writer/execute → BullMQ → engine-execution-worker → workflowExecutionService. Returns executionId for polling.',
+      tech: ['/api/writer/execute', 'BrainKBService', 'engine-execution queue', 'workflow-execution-processor.ts'],
+      note: 'UI partial — legacy KB selector visible. Execution path itself is 100% correct and production-ready.',
+    },
+  },
+  {
+    route: '/brain-chat', title: 'Brain Chat', status: 'done', desc: 'Talk to your AI Brain in real-time',
+    modal: {
+      title: 'Brain Chat', status: 'done',
+      what: 'A full streaming chat interface where users converse with their deployed Brain agent. The Brain has access to the KB, ICP data, beliefs, and all 15 tools. Responses stream word-by-word.',
+      how: 'SSE stream from POST /api/brain/chat → BrainOrchestrator → RAGOrchestrator (hybrid retrieval) → AIProviderService → stream chunks back. Push-to-brain saves the conversation as a memory.',
+      tech: ['BrainOrchestrator', 'RAGOrchestrator', 'Server-Sent Events', 'MarketXToolExecutor', 'brain_memories'],
+    },
+  },
+  {
+    route: '/brain-control', title: 'Brain Control', status: 'done', desc: 'Full Brain configuration panel',
+    modal: {
+      title: 'Brain Control', status: 'done',
+      what: 'The most powerful user-facing page — 2048 lines. Lets users view and manage their deployed Brain: agents, performance metrics, RAG configuration, training feedback, intent patterns, and knowledge gap tracking.',
+      how: 'Communicates with /api/brain/agents, /api/brain/config, /api/brain/config/rag, /api/brain/training/*. Changes write directly to brain_agents and brain_config tables.',
+      tech: ['brain_agents', 'brain_config', 'brain_reflections', 'RAG settings', 'intent_patterns'],
+    },
+  },
+  {
+    route: '/kb-manager', title: 'KB Manager', status: 'done', desc: 'Manage your Knowledge Base',
+    modal: {
+      title: 'KB Manager', status: 'done',
+      what: 'Full CRUD for the Brain\'s Knowledge Base. Users create KB sections (e.g. "Case Studies", "Objection Handling"), upload documents, and track embedding status per document.',
+      how: 'Documents go: upload → kb_documents INSERT (status: pending) → BullMQ kb-processing queue → semantic chunker → text-embedding-3-large → embeddings table (status: ready).',
+      tech: ['kb_sections', 'kb_documents', 'embeddings (pgvector)', 'kb-processing worker', 'semantic chunker'],
+    },
+  },
+  {
+    route: '/analytics', title: 'Analytics', status: 'done', desc: 'Email run performance charts',
+    modal: {
+      title: 'Analytics', status: 'done',
+      what: 'Time-series charts showing email run volume, success rates, average duration, and cost per run. Filterable by time range (7d, 30d, 90d).',
+      how: 'Aggregates engine_run_logs by time bucket. All charts are client-rendered with real data — no mock data.',
+      tech: ['engine_run_logs', 'time-series aggregation', 'Chart components'],
+    },
+  },
+  {
+    route: '/learning', title: 'Learning Loop', status: 'done', desc: 'See how the Brain learns over time',
+    modal: {
+      title: 'Learning Loop', status: 'done',
+      what: 'Shows the Brain\'s internal learning state: long-term memories it has formed, knowledge gaps it has identified, self-reflections (what went well / what to improve), and dream cycle logs (nightly memory consolidation).',
+      how: 'Queries brain_memories, knowledge_gaps, brain_reflections, brain_dream_logs — all org-scoped. Schema-correct column names: description (not question), narrative (not summary), first_identified (not created_at).',
+      tech: ['brain_memories', 'knowledge_gaps', 'brain_reflections', 'brain_dream_logs', 'dream-state-worker'],
+    },
+  },
+  {
+    route: '/settings', title: 'Settings', status: 'done', desc: 'Profile and organization settings',
+    modal: {
+      title: 'Settings', status: 'done',
+      what: 'User profile management, organization info display, and logout. Shows current plan tier and org details.',
+      how: 'Reads from users and organizations tables. Updates write back via Supabase client.',
+      tech: ['users table', 'organizations table', 'Supabase auth'],
+    },
+  },
+  {
+    route: '/chat', title: 'Chat (Legacy)', status: 'partial', desc: 'Old chat interface — superseded by Brain Chat',
+    modal: {
+      title: 'Chat (Legacy)', status: 'partial',
+      what: 'An older chat interface that lets users select a brain template and chat. Now superseded by /brain-chat which uses the full Brain runtime.',
+      how: 'Fixed: org_id now comes from real Supabase auth (was hardcoded "default-org"). Should eventually redirect to /brain-chat.',
+      tech: ['ChatInterface component', 'Supabase auth', 'brain_templates'],
+      note: 'Recommend: add a redirect from /chat → /brain-chat post-launch.',
+    },
+  },
+  {
+    route: '/portal', title: 'Portal', status: 'stub', desc: 'Client-facing tier portal — in progress',
+    modal: {
+      title: 'Portal', status: 'stub',
+      what: 'A client-facing dashboard showing platform metrics and feature access based on tier (echii/pulz/quanta). Feature tiles link to the correct working pages.',
+      how: 'Calls /api/portal/config and /api/dashboard/partner. Dead links fixed to point to real routes. Tier-locked features show lock icon.',
+      tech: ['/api/portal/config', 'feature flags', 'tier system'],
+      note: 'Portal config and metrics APIs exist. Full tier-gating UI needs completion post-launch.',
+    },
+  },
 ]
 
-const SUPERADMIN_PAGES = [
-  { route: 'engine-bundles', title: 'Engine Bundles', status: 'done', lines: 1233 },
-  { route: 'agents', title: 'Agent Templates', status: 'done', lines: 1208 },
-  { route: 'ai-playground', title: 'AI Playground', status: 'done', lines: 947 },
-  { route: 'redis', title: 'Redis / Queues', status: 'done', lines: 850 },
-  { route: 'ai-providers', title: 'AI Providers', status: 'done', lines: 800 },
-  { route: 'infrastructure', title: 'Infrastructure', status: 'done', lines: 677 },
-  { route: 'email-providers', title: 'Email Providers', status: 'done', lines: 684 },
-  { route: 'mastery-agents', title: 'Mastery Agents', status: 'partial', lines: 723 },
-  { route: 'licenses', title: 'Licenses', status: 'partial', lines: 609 },
-  { route: 'analytics', title: 'Analytics', status: 'done', lines: 506 },
-  { route: 'engines', title: 'Engine Instances', status: 'done', lines: 483 },
-  { route: 'workers', title: 'Worker Control', status: 'done', lines: 458 },
-  { route: 'users', title: 'User Management', status: 'done', lines: 551 },
-  { route: 'organizations', title: 'Organizations', status: 'done', lines: 323 },
-  { route: 'brains', title: 'Brain Templates', status: 'done', lines: 500 },
-  { route: 'prompt-library', title: 'Prompt Library', status: 'partial', lines: 369 },
-  { route: 'dashboard', title: 'SA Dashboard', status: 'done', lines: 400 },
-  { route: 'workflow-manager', title: 'Workflow Manager', status: 'done', lines: 3611 },
+const SUPERADMIN_PAGES: Array<{ route: string; title: string; status: string; lines: number; desc: string; modal: ModalInfo }> = [
+  {
+    route: 'engine-bundles', title: 'Engine Bundles', status: 'done', lines: 1233,
+    desc: 'Create and deploy packaged AI engines to orgs',
+    modal: {
+      title: 'Engine Bundles', badge: 'Core Feature', status: 'done',
+      what: 'The main deployment unit. Superadmin creates a bundle (Brain Template + Workflow Template + Email Provider + API key mode), then deploys it to an organization in one click.',
+      how: 'Deploy atomically creates: (1) brain_agents record for the org, (2) engine_instances record (deployed clone). Per-instance overrides let you customize any field without touching the master bundle.',
+      tech: ['engine_bundles', 'engine_instances', 'engine_bundle_deployments', 'brain_agents', 'agents_config JSONB', 'override audit log'],
+    },
+  },
+  {
+    route: 'agents', title: 'Agent Templates', status: 'done', lines: 1208,
+    desc: 'Build reusable AI agent templates',
+    modal: {
+      title: 'Agent Templates', status: 'done',
+      what: 'Create AI agent personas with specific roles (writer, analyst, coach, generalist). Each agent has its own LLM config, 4-layer prompt stack, tool permissions, and RAG settings.',
+      how: 'Creates agent_templates records. When deployed, becomes a brain_agents row for the target org. Agent config includes: provider, model, temperature, foundation/persona/domain/guardrail prompts, tools_granted array.',
+      tech: ['agent_templates', 'brain_agents', 'prompt_layers', 'brain_tools_granted', 'LLM config per agent'],
+    },
+  },
+  {
+    route: 'ai-playground', title: 'AI Playground', status: 'done', lines: 947,
+    desc: 'Test any AI model directly',
+    modal: {
+      title: 'AI Playground', status: 'done',
+      what: 'Direct LLM testing interface. Select any configured provider and model, write a prompt, and see raw output with token usage and latency. Test streaming vs non-streaming. Save test prompts.',
+      how: 'Calls /api/superadmin/ai-chat which routes to AIProviderService with the selected provider. Bypasses Brain entirely — raw model access.',
+      tech: ['AIProviderService', '/api/superadmin/ai-chat', '6 providers', 'stream + non-stream'],
+    },
+  },
+  {
+    route: 'redis', title: 'Redis / Queue Monitor', status: 'done', lines: 850,
+    desc: 'Real-time queue health and job management',
+    modal: {
+      title: 'Redis / Queue Monitor', status: 'done',
+      what: 'Live view of all 9 BullMQ queues: active jobs, waiting, completed, failed, delayed counts. Retry failed jobs by ID, drain or pause queues, view job details, test Redis connection.',
+      how: 'Worker Management API (port 3100) exposes queue stats. Superadmin page calls /api/superadmin/redis/status and /api/workers/jobs endpoints.',
+      tech: ['BullMQ', 'Redis', 'Worker API :3100', '9 queues', 'axiom: prefix'],
+    },
+  },
+  {
+    route: 'infrastructure', title: 'Infrastructure Config', status: 'done', lines: 677,
+    desc: 'Configure servers, Redis, and deployment targets',
+    modal: {
+      title: 'Infrastructure Config', status: 'done',
+      what: 'Superadmin sets the deployment target (Local/VPS/Railway/Dedicated server), configures Redis connection, Worker API URL, and VPS/SSH credentials — all from the UI.',
+      how: 'Writes to infra_config table. infra-config.ts reads from DB first, falls back to env vars. Includes connection tests for Redis and Worker API.',
+      tech: ['infra_config table', 'infra-config.ts', 'Redis test', 'Worker API test', 'SSH config'],
+    },
+  },
+  {
+    route: 'email-providers', title: 'Email Providers', status: 'done', lines: 684,
+    desc: 'Configure autoresponders and SMTP relays',
+    modal: {
+      title: 'Email Providers', badge: 'Two-Layer Architecture', status: 'done',
+      what: 'IMPORTANT: MarketX integrates with TWO distinct layers.\n\n1. AUTORESPONDER (MailWizz): Manages subscriber lists, email sequences, campaign scheduling, open/click/reply tracking. MailWizz is NOT an MTA — it routes actual delivery through an SMTP relay.\n\n2. SMTP RELAY (SES / Mailgun / SendGrid): The real mail servers that physically send email bytes. MailWizz connects to one of these under the hood.',
+      how: 'Config stored on engine_instances.email_provider_config (JSONB). EmailDispatchService loads provider from DB, configures the right adapter, and sends. Unified webhook /api/webhooks/email/[provider] handles events from all providers.',
+      tech: ['EmailProviderAdapter interface', 'MailWizzAdapter (autoresponder)', 'SESAdapter (smtp_relay)', 'MailgunAdapter (smtp_relay)', 'SendGridAdapter (smtp_relay)', 'engine_instances.email_provider_config'],
+      note: 'MailWizz ≠ MTA. MailWizz uses SES/Mailgun/SendGrid as its SMTP relay. They serve different purposes in the stack.',
+    },
+  },
+  {
+    route: 'users', title: 'User Management', status: 'done', lines: 551,
+    desc: 'Manage users, impersonate, reset passwords',
+    modal: {
+      title: 'User Management', status: 'done',
+      what: 'View all users across all orgs. Impersonate any user (generate impersonation session for debugging), reset passwords, view activity.',
+      how: '/api/superadmin/users/impersonate generates a scoped session. Password reset goes through Supabase admin API.',
+      tech: ['users table', 'Supabase admin API', 'impersonation sessions'],
+    },
+  },
+  {
+    route: 'workflow-manager', title: 'Workflow Manager', status: 'done', lines: 3611,
+    desc: 'Visual drag-and-drop workflow builder (ReactFlow)',
+    modal: {
+      title: 'Workflow Manager', badge: 'Most Mature', status: 'done',
+      what: 'Full visual workflow builder using ReactFlow with 36 node types across 8 categories: Triggers, Resolvers, Generators, Validators, Enrichers, Transforms, Outputs, Utilities. Build complex multi-step AI pipelines with drag-and-drop.',
+      how: 'Builder saves workflow_templates to DB. Execution goes through BullMQ → engine-execution-worker → workflowExecutionService (3611-line processor). Supports checkpoint/resume on failure, token tracking per node.',
+      tech: ['ReactFlow', '36 node types', 'workflow_templates', 'workflow-execution-processor.ts (3611 lines)', 'topological sort', 'checkpoint/resume'],
+    },
+  },
+  { route: 'ai-providers', title: 'AI Providers', status: 'done', lines: 800, desc: 'Add/configure AI providers and models', modal: { title: 'AI Providers', status: 'done', what: 'Add API keys for OpenAI, Anthropic, Google, Mistral, xAI, Perplexity. Configure fallback chain order. Discover available models from provider API. Set pricing per model.', how: 'Writes to ai_providers and ai_models tables. AIProviderService reads from DB at runtime — model selection is fully dynamic, not hardcoded.', tech: ['ai_providers', 'ai_models', 'AIProviderService', '6 providers', 'fallback chain'] } },
+  { route: 'mastery-agents', title: 'Mastery Agents', status: 'partial', lines: 723, desc: '9 specialized AI agents for deep analysis', modal: { title: 'Mastery Agents', status: 'partial', what: '9 specialized agents: Angle, BuyerStage, BuyingRole, ContactDecision, ReplyMeaning, SendPacing, SequenceProgression, TimingWindow, UncertaintyResolution. Each has deep domain expertise.', how: 'Agents are invoked by BrainOrchestrator for specific analytical tasks. Config stored in brain_agents with role-specific system prompts.', tech: ['MarketingCoachService', '9 mastery agent types', 'brain_agents', 'specialized prompts'], note: 'Some CRUD actions partial — read and view is complete.' } },
+  { route: 'organizations', title: 'Organizations', status: 'done', lines: 323, desc: 'Create and manage client orgs', modal: { title: 'Organizations', status: 'done', what: 'Create new organizations with plan tier, assign active brain template, view run counts and usage per org.', how: 'Writes to organizations table. Org creation can trigger welcome email (TODO). Brain assignment updates brain_agents.org_id.', tech: ['organizations', 'org_id scoping', 'plan tiers: echii/pulz/quanta'] } },
+  { route: 'brains', title: 'Brain Templates', status: 'done', lines: 500, desc: 'Build and version AI brain templates', modal: { title: 'Brain Templates', status: 'done', what: 'Master brain blueprints. Each template defines the LLM config, RAG settings, agent configuration, and prompt layers. Versioned — can roll back.', how: 'brain_templates table with version history. Deployed via Engine Bundle to create a live brain_agents record for an org.', tech: ['brain_templates', 'brain_version_history', 'RAG config', 'prompt_layers'] } },
+  { route: 'licenses', title: 'Licenses', status: 'partial', lines: 609, desc: 'Manage org quotas and usage limits', modal: { title: 'Licenses', status: 'partial', what: 'View license stats per org (runs quota, KB quota). Transaction history. Upgrade/downgrade plan tiers.', how: 'Reads from licenses and license_transactions tables. Some management actions are partial.', tech: ['licenses', 'license_transactions', 'runs_quota', 'kb_quota'] } },
+  { route: 'analytics', title: 'SA Analytics', status: 'done', lines: 506, desc: 'Platform-wide metrics dashboard', modal: { title: 'SA Analytics', status: 'done', what: 'Cross-org platform metrics: total runs by org, AI cost by provider/model, error rates, usage trends.', how: 'Aggregates engine_run_logs, brain_request_logs, ai_usage_logs across all orgs.', tech: ['engine_run_logs', 'brain_request_logs', 'ai_usage_logs', 'cross-org aggregation'] } },
+  { route: 'engines', title: 'Engine Instances', status: 'done', lines: 483, desc: 'View all deployed engine instances', modal: { title: 'Engine Instances', status: 'done', what: 'Lists all deployed engine instances across all orgs. Shows status, run history, API keys, token usage.', how: 'Queries engine_instances joined with organizations and engine_bundles.', tech: ['engine_instances', 'engine_run_logs', 'api_key_mode', 'byok_keys'] } },
+  { route: 'workers', title: 'Worker Control', status: 'done', lines: 458, desc: 'Start/stop/restart workers, view logs', modal: { title: 'Worker Control', status: 'done', what: 'View all 9 workers with status, start/stop/restart, view logs, check Railway deployment.', how: 'Calls Worker Management API (:3100) for live stats and control actions.', tech: ['Worker API :3100', 'PM2 process management', 'Railway integration'] } },
+  { route: 'prompt-library', title: 'Prompt Library', status: 'partial', lines: 369, desc: 'Create reusable prompt layers', modal: { title: 'Prompt Library', status: 'partial', what: 'Create and manage prompt layers: foundation (what the AI is), persona (how it communicates), domain (what it knows), guardrails (what it must never do). These become building blocks for Brain Templates.', how: 'Writes to prompt_layers table with type, tier, and content fields.', tech: ['prompt_layers', '4 layer types', 'tier-based access'], note: 'Some save/delete actions are placeholder stubs.' } },
+  { route: 'dashboard', title: 'SA Dashboard', status: 'done', lines: 400, desc: 'Superadmin home with platform stats', modal: { title: 'SA Dashboard', status: 'done', what: 'Platform overview: total orgs, total users, total runs today/week/month, error rate, Redis health, worker status.', how: '/api/superadmin/stats aggregates across all tables.', tech: ['/api/superadmin/stats', 'cross-table aggregation', 'worker health'] } },
 ]
 
-const WORKERS = [
-  { name: 'engine-execution-worker', queue: 'engine-execution', concurrency: 2, status: 'done', desc: 'Runs deployed engine workflows end-to-end' },
-  { name: 'workflow-execution-worker', queue: 'workflow-execution', concurrency: 10, status: 'done', desc: 'Template-based workflow runs (most powerful)' },
-  { name: 'scheduled-task-worker', queue: 'scheduled-task', concurrency: 5, status: 'done', desc: 'NEW — Cron/event fan-out dispatcher' },
-  { name: 'kb-worker', queue: 'kb-processing', concurrency: 5, status: 'done', desc: 'Chunk → embed → store KB documents' },
-  { name: 'conversation-worker', queue: 'conversation-summary', concurrency: 3, status: 'done', desc: 'Summarize conversation history' },
-  { name: 'analytics-worker', queue: 'analytics', concurrency: 2, status: 'done', desc: 'Aggregate usage metrics per org' },
-  { name: 'dream-state-worker', queue: 'dream-state', concurrency: 2, status: 'done', desc: 'Memory consolidation, cleanup, 7 job types' },
-  { name: 'learning-loop-worker', queue: 'learning-loop', concurrency: 1, status: 'done', desc: 'Daily optimization + Marketing Coach async' },
-  { name: 'fine-tuning-worker', queue: 'fine-tuning', concurrency: 1, status: 'partial', desc: 'Simulated submit/monitor — OpenAI API not wired yet' },
+const WORKERS: Array<{ name: string; queue: string; concurrency: number; status: string; desc: string; modal: ModalInfo }> = [
+  {
+    name: 'engine-execution-worker', queue: 'engine-execution', concurrency: 2, status: 'done',
+    desc: 'Runs deployed engine workflows end-to-end',
+    modal: { title: 'Engine Execution Worker', status: 'done', what: 'The most critical worker. Picks up engine run jobs and executes the full workflow: loads engine config from DB, runs nodes in topological order, tracks tokens/cost, saves results. This is what actually generates email content.', how: 'Listens to engine-execution BullMQ queue. Calls workflowExecutionService.executeWorkflow(). Publishes progress to Redis pub/sub for SSE streaming. Updates engine_run_logs on completion.', tech: ['BullMQ', 'workflowExecutionService', 'Redis pub/sub SSE', 'engine_run_logs', 'token tracking'] },
+  },
+  {
+    name: 'workflow-execution-worker', queue: 'workflow-execution', concurrency: 10, status: 'done',
+    desc: 'Template-based workflow runs (high concurrency)',
+    modal: { title: 'Workflow Execution Worker', status: 'done', what: 'Handles direct workflow template execution with 10x concurrency (vs 2x for engine execution). Used for superadmin workflow tests and template-based runs outside the engine bundle system.', how: 'Simpler processor than engine-execution. Handles basic node types: trigger, input, ai_generation, output, condition, transform.', tech: ['BullMQ', 'workflow-execution queue', 'concurrency: 10', 'workflow-processor.ts'] },
+  },
+  {
+    name: 'scheduled-task-worker', queue: 'scheduled-task', concurrency: 5, status: 'done',
+    desc: 'Cron/event fan-out dispatcher',
+    modal: { title: 'Scheduled Task Worker', status: 'done', what: 'A fan-out dispatcher for scheduled jobs. Accepts job types (dream_cycle, learning_loop, kb_reprocess, analytics_rollup) and routes them to the appropriate downstream worker queue.', how: 'External schedulers (pg_cron, Railway Cron, GitHub Actions) push jobs here. The worker just routes — it doesn\'t execute directly.', tech: ['BullMQ', 'fan-out routing', '4 job types', 'external scheduler compatible'] },
+  },
+  {
+    name: 'kb-worker', queue: 'kb-processing', concurrency: 5, status: 'done',
+    desc: 'Semantic chunk → embed → store KB documents',
+    modal: { title: 'KB Processing Worker', status: 'done', what: 'The full KB pipeline: takes a raw document, semantically chunks it (paragraph → sentence → word boundaries with sliding overlap), generates embeddings via text-embedding-3-large, stores chunks in the embeddings table.', how: 'semanticChunk() splits on natural language boundaries. generateEmbedding() calls the org\'s configured AI provider. Upserts to embeddings table with org_id for RLS. Updates kb_documents status: pending → chunking → embedding → ready.', tech: ['semantic chunker', 'text-embedding-3-large', 'embeddings (pgvector)', 'kb_documents status flow', '5x concurrency'] },
+  },
+  {
+    name: 'conversation-worker', queue: 'conversation-summary', concurrency: 3, status: 'done',
+    desc: 'LLM-powered conversation summarization',
+    modal: { title: 'Conversation Summary Worker', status: 'done', what: 'Periodically compresses old conversations (>7 days) into summaries to save storage and improve future context retrieval.', how: 'Fetches conversation messages, sends to LLM with summarization prompt, writes summary back to conversations.summary. Fixed: now uses real LLM call, not stub string.', tech: ['conversations', 'messages', 'LLM summarization', 'aiService.generateText()'] },
+  },
+  {
+    name: 'analytics-worker', queue: 'analytics', concurrency: 2, status: 'done',
+    desc: 'Aggregate usage metrics per org',
+    modal: { title: 'Analytics Worker', status: 'done', what: 'Aggregates usage events (runs, tokens, costs) into time-bucketed analytics rows for fast dashboard queries.', how: 'Reads engine_run_logs and brain_request_logs, groups by org/time, writes to analytics aggregation tables.', tech: ['engine_run_logs', 'brain_request_logs', 'time-bucket aggregation'] },
+  },
+  {
+    name: 'dream-state-worker', queue: 'dream-state', concurrency: 2, status: 'done',
+    desc: 'Nightly memory consolidation — 7 job types',
+    modal: { title: 'Dream State Worker', status: 'done', what: 'The Brain\'s nightly consolidation cycle. Handles 7 job types: memory_consolidation (merge related memories), embedding_optimization (clean stale vectors), conversation_summary (compress old chats), feedback_analysis (learn from ratings), pattern_precomputation (cache common queries), cleanup (remove expired data), full_cycle (run all).', how: 'Runs on schedule (via scheduled-task-worker) or on-demand. Writes to brain_memories, brain_dream_logs. LLM used for conversation summaries.', tech: ['brain_memories', 'brain_dream_logs', '7 job types', 'memory decay', 'LLM summarization'] },
+  },
+  {
+    name: 'learning-loop-worker', queue: 'learning-loop', concurrency: 1, status: 'done',
+    desc: 'Marketing Coach — daily AI optimization',
+    modal: { title: 'Learning Loop Worker', status: 'done', what: 'The feedback brain. After every email campaign cycle, analyzes signal_events (opens, clicks, replies, bounces) per belief. High-performing beliefs gain confidence. Underperformers lose it. Results written to brain_memories and brain_reflections.', how: 'MarketingCoachProcessor reads signal_event aggregated by belief_id. Updates brain_beliefs.confidence_score (+/-0.1 bounded). Writes brain_memories and brain_reflections for audit trail.', tech: ['MarketingCoachProcessor', 'signal_event', 'brain_beliefs', 'brain_memories', 'brain_reflections', 'concurrency: 1'] },
+  },
+  {
+    name: 'fine-tuning-worker', queue: 'fine-tuning', concurrency: 1, status: 'done',
+    desc: 'OpenAI fine-tuning pipeline — real API wired',
+    modal: { title: 'Fine-Tuning Worker', status: 'done', what: 'Manages the complete OpenAI fine-tuning pipeline: collect training examples from feedback, format as JSONL, upload to OpenAI Files API, submit fine-tuning job, poll job status, deploy the resulting model ID into brain_templates.config.', how: 'Real API: OpenAI Files API (POST /v1/files) + Fine-tuning Jobs API (POST /v1/fine_tuning/jobs). Monitor polls GET /v1/fine_tuning/jobs/{id}. Deploy writes actual fine_tuned_model ID to brain_templates.', tech: ['OpenAI Files API', 'OpenAI Fine-tuning API', 'brain_templates.config.model', 'JSONL format', 'brain_version_history'] },
+  },
 ]
 
 type FlowKey = 'writer' | 'brain' | 'engine'
@@ -159,6 +373,264 @@ function Bar({ pct }: { pct: number }) {
     <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
       <motion.div className={`h-full rounded-full bg-gradient-to-r ${color}`}
         initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.1, ease: 'easeOut', delay: 0.15 }} />
+    </div>
+  )
+}
+
+// ─── Modal ────────────────────────────────────────────────────────────────────
+
+function Modal({ info, onClose, dark }: { info: ModalInfo; onClose: () => void; dark: boolean }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const card = dark ? 'bg-[#13131f] border-white/15' : 'bg-white border-slate-200'
+  const muted = dark ? 'text-white/55' : 'text-slate-500'
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+        {/* Panel */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92, y: 24 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.92, y: 16 }}
+          transition={{ type: 'spring', bounce: 0.18, duration: 0.4 }}
+          className={`relative w-full max-w-xl rounded-2xl border ${card} shadow-2xl overflow-hidden`}
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Gradient accent top */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500" />
+
+          <div className="p-6 space-y-5">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="text-xl font-black">{info.title}</h2>
+                  {info.badge && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-400 border border-violet-500/30">{info.badge}</span>
+                  )}
+                  {info.status && <StatusBadge status={info.status} />}
+                </div>
+              </div>
+              <button onClick={onClose}
+                className={`w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-lg ${dark ? 'hover:bg-white/10' : 'hover:bg-slate-100'} transition-colors`}>
+                ×
+              </button>
+            </div>
+
+            {/* What it does */}
+            <div>
+              <div className={`text-xs font-bold uppercase tracking-widest ${muted} mb-2`}>What it does</div>
+              <p className="text-base leading-relaxed whitespace-pre-line">{info.what}</p>
+            </div>
+
+            {/* How it works */}
+            <div>
+              <div className={`text-xs font-bold uppercase tracking-widest ${muted} mb-2`}>How it works</div>
+              <p className={`text-sm leading-relaxed ${muted}`}>{info.how}</p>
+            </div>
+
+            {/* Tech stack */}
+            <div>
+              <div className={`text-xs font-bold uppercase tracking-widest ${muted} mb-2`}>Tech / Tables / Services</div>
+              <div className="flex flex-wrap gap-2">
+                {info.tech.map(t => (
+                  <span key={t} className={`px-2.5 py-1 rounded-lg text-sm font-mono font-medium ${dark ? 'bg-white/[0.06] text-violet-300' : 'bg-violet-50 text-violet-700'}`}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Note if any */}
+            {info.note && (
+              <div className={`rounded-xl p-4 text-sm leading-relaxed ${dark ? 'bg-amber-500/10 border border-amber-500/20 text-amber-200' : 'bg-amber-50 border border-amber-200 text-amber-800'}`}>
+                <span className="font-bold">Note: </span>{info.note}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
+// ─── Clickable Card ───────────────────────────────────────────────────────────
+
+function ClickCard({
+  children, onClick, dark, className = '',
+}: {
+  children: React.ReactNode
+  onClick: () => void
+  dark: boolean
+  className?: string
+}) {
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null)
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setRipple({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+    setTimeout(() => setRipple(null), 600)
+    onClick()
+  }
+
+  return (
+    <motion.div
+      onClick={handleClick}
+      whileHover={{ scale: 1.02, boxShadow: dark ? '0 0 0 1px rgba(139,92,246,0.4), 0 8px 30px rgba(139,92,246,0.15)' : '0 0 0 1px rgba(139,92,246,0.3), 0 8px 20px rgba(139,92,246,0.1)' }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      className={`relative overflow-hidden cursor-pointer select-none ${className}`}
+    >
+      {children}
+      {/* Ripple */}
+      {ripple && (
+        <motion.div
+          initial={{ width: 0, height: 0, opacity: 0.4 }}
+          animate={{ width: 300, height: 300, opacity: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{ left: ripple.x - 150, top: ripple.y - 150 }}
+          className="absolute rounded-full bg-violet-400 pointer-events-none"
+        />
+      )}
+    </motion.div>
+  )
+}
+
+// ─── Flow Graph (node-based) ──────────────────────────────────────────────────
+
+interface FlowNodeDef {
+  id: string
+  icon: string
+  label: string
+  sub: string
+  modal: ModalInfo
+  type: 'trigger' | 'api' | 'brain' | 'queue' | 'worker' | 'db' | 'user'
+}
+
+const nodeColors: Record<string, string> = {
+  trigger: 'from-violet-500/25 to-purple-500/25 border-violet-500/40',
+  api:     'from-blue-500/25 to-cyan-500/25 border-blue-500/40',
+  brain:   'from-emerald-500/25 to-teal-500/25 border-emerald-500/40',
+  queue:   'from-orange-500/25 to-amber-500/25 border-orange-500/40',
+  worker:  'from-rose-500/25 to-pink-500/25 border-rose-500/40',
+  db:      'from-slate-500/25 to-gray-500/25 border-slate-500/40',
+  user:    'from-cyan-500/25 to-sky-500/25 border-cyan-500/40',
+}
+const nodeGlow: Record<string, string> = {
+  trigger: 'rgba(139,92,246,0.5)',
+  api:     'rgba(59,130,246,0.5)',
+  brain:   'rgba(16,185,129,0.5)',
+  queue:   'rgba(249,115,22,0.5)',
+  worker:  'rgba(244,63,94,0.5)',
+  db:      'rgba(100,116,139,0.5)',
+  user:    'rgba(6,182,212,0.5)',
+}
+
+const FLOW_NODES: Record<FlowKey, FlowNodeDef[]> = {
+  writer: [
+    { id: 'w1', icon: '👤', label: 'User', sub: '/writer/new', type: 'user', modal: { title: 'User Action', what: 'User visits /writer/new and submits a run request: target ICP, topic, tone, and any specific instructions.', how: 'Form submit triggers POST /api/writer/execute with the input payload.', tech: ['/writer/new page', 'form submission'] } },
+    { id: 'w2', icon: '🔐', label: 'Auth + Org', sub: 'Supabase session', type: 'api', modal: { title: 'Auth Check', what: 'Supabase session is verified. The user\'s org_id is loaded from the users table. No anonymous runs allowed.', how: 'createServerClient().auth.getUser() → users.select(org_id). If no session → 401.', tech: ['Supabase session', 'users.org_id', 'createServerClient()'] } },
+    { id: 'w3', icon: '🧠', label: 'Brain Runtime', sub: 'Active agent loaded', type: 'brain', modal: { title: 'Brain Runtime Resolver', what: 'The active brain_agent for the org is loaded. This is the single source of truth for all Brain operations — LLM config, tools, RAG settings, prompt layers.', how: 'BrainRuntimeResolver.resolveForOrg(orgId). Reads brain_agents table. Caches per request.', tech: ['BrainRuntimeResolver', 'brain_agents', 'requireActiveBrainRuntime()'] } },
+    { id: 'w4', icon: '📚', label: 'KB Context', sub: 'ICP + beliefs + offer', type: 'brain', modal: { title: 'KB Context Build', what: 'Full context package assembled: KB sections, ICP profile, belief scores, offer details, and pre-assembled prompt stack. This becomes the brain_context payload.', how: 'BrainKBService.buildWriterContext(orgId). Pulls kb_sections, icp_segments, brain_beliefs, offers in parallel.', tech: ['BrainKBService', 'kb_sections', 'icp_segments', 'brain_beliefs', 'offers'] } },
+    { id: 'w5', icon: '📦', label: 'BullMQ Queue', sub: 'Redis job created', type: 'queue', modal: { title: 'Job Queued', what: 'A BullMQ job is pushed to the engine-execution queue in Redis. The API returns immediately with an executionId — the user doesn\'t wait for the AI response.', how: 'engineQueue.add(\'engine-execution\', { executionId, engineId, brain_context, input }). Redis stores the job.', tech: ['BullMQ', 'engine-execution queue', 'Redis', 'axiom: prefix', 'executionId returned'] } },
+    { id: 'w6', icon: '⚡', label: 'Worker', sub: 'concurrency: 2', type: 'worker', modal: { title: 'Engine Execution Worker', what: 'The worker picks up the job. Loads engine config from DB. Runs the workflow nodes in topological order. Publishes progress updates to Redis pub/sub for real-time streaming.', how: 'engine-execution-worker.ts → workflowExecutionService.executeWorkflow(). Kahn\'s topological sort on the workflow graph. Each node executes in sequence.', tech: ['engine-execution-worker', 'workflowExecutionService', 'topological sort', 'Redis pub/sub', 'concurrency: 2'] } },
+    { id: 'w7', icon: '🤖', label: 'AI Generate', sub: 'KB + ICP + beliefs', type: 'brain', modal: { title: 'AI Generation Node', what: 'The AI generation node in the workflow runs. Brain context (KB content, ICP, beliefs, offer) is injected into the prompt. The LLM generates a hyper-personalized email.', how: 'executeAIGenerationNode() in workflow-execution-processor.ts. Calls aiService.generateText() with assembled prompt. Token usage tracked per node.', tech: ['ai_generation node', 'aiService', 'brain_context injection', 'token tracking', 'cost tracking'] } },
+    { id: 'w8', icon: '💾', label: 'Save to DB', sub: 'engine_run_logs', type: 'db', modal: { title: 'Result Saved', what: 'The generated email, token usage, cost, and duration are saved to engine_run_logs. Status updated from "running" to "completed".', how: 'updateExecutionStatus(executionId, \'completed\', { result, tokensUsed, cost, durationMs }).', tech: ['engine_run_logs', 'output_data JSONB', 'tokens_used', 'cost_usd', 'duration_ms'] } },
+    { id: 'w9', icon: '✅', label: 'User Sees', sub: 'Poll → display', type: 'user', modal: { title: 'Result Displayed', what: 'Frontend polls GET /api/engines/executions/[id] until status is "completed". The generated email is displayed to the user.', how: 'setInterval polling every 2s. On completed: stop polling, display output_data.finalOutput.', tech: ['GET /api/engines/executions/[id]', 'polling', 'output_data.finalOutput'] } },
+  ],
+  brain: [
+    { id: 'b1', icon: '💬', label: 'User Message', sub: '/brain-chat', type: 'user', modal: { title: 'User Sends Message', what: 'User types a message in /brain-chat. Could be anything: "Write a follow-up for this reply", "What angle works for fintech CTOs?", "How are my campaigns doing?"', how: 'POST /api/brain/chat with { message, conversationId? }. Supports streaming (EventSource SSE).', tech: ['/brain-chat page', 'POST /api/brain/chat', 'conversationId optional'] } },
+    { id: 'b2', icon: '🎯', label: 'Runtime Resolve', sub: 'Single source of truth', type: 'api', modal: { title: 'Brain Runtime Resolver', what: 'The active brain_agent for this org is resolved. Never stale — always reads from brain_agents table which is the single source of truth.', how: 'BrainRuntimeResolver.resolveForOrg(orgId). Returns full agent config: LLM settings, tools_granted, RAG config, prompt layer IDs.', tech: ['BrainRuntimeResolver', 'brain_agents', 'ToolLoader'] } },
+    { id: 'b3', icon: '📝', label: 'Prompt Assembly', sub: '4 layers injected', type: 'brain', modal: { title: 'Prompt Assembly', what: 'Four prompt layers are assembled: Foundation (what the AI is), Persona (how it speaks), Domain (what it knows about the business), Guardrails (what it must never do). Plus memory context and RAG results.', how: 'PromptAssembler.assemble(agentConfig, ragResults, memories). Reads prompt_layers table for each layer type.', tech: ['PromptAssembler', 'prompt_layers', 'foundation + persona + domain + guardrails', 'memory injection'] } },
+    { id: 'b4', icon: '🔍', label: 'RAG Retrieval', sub: 'Hybrid vector + FTS', type: 'brain', modal: { title: 'RAG Orchestrator', what: 'Retrieves the most relevant KB content using hybrid search: 70% vector similarity + 30% full-text search. Reranks results. Detects knowledge gaps if retrieval scores are low.', how: 'RAGOrchestrator.retrieve(query, orgId). Calls hybrid_search Postgres RPC (vector + FTS). Min similarity: 0.5 floor. Gap detected → inserts to knowledge_gaps table.', tech: ['RAGOrchestrator', 'hybrid_search() RPC', 'embeddings (pgvector)', 'knowledge_gaps', 'min_similarity: 0.5'] } },
+    { id: 'b5', icon: '🤖', label: 'Agentic Loop', sub: 'Tool calls + guard', type: 'brain', modal: { title: 'BrainOrchestrator Agentic Loop', what: 'Multi-turn reasoning loop. The LLM can call tools (write_email, search_kb, get_campaign_insights, etc.). Every tool call goes through HallucinationInterceptor before execution. Supports up to N turns.', how: 'BrainOrchestrator.handleTurn(). Tool call → HallucinationInterceptor.validate() → MarketXToolExecutor.execute(). All 15 tools available based on agent\'s tools_granted.', tech: ['BrainOrchestrator (1524 lines)', 'HallucinationInterceptor', 'MarketXToolExecutor', '15 tools', 'multi-turn'] } },
+    { id: 'b6', icon: '📡', label: 'SSE Stream', sub: 'Real-time chunks', type: 'api', modal: { title: 'Server-Sent Events Stream', what: 'Response streams word-by-word to the frontend in real-time. Events: turn_start, llm_response, tool_result, chunk (text), done.', how: 'AIProviderService.streamText() → yields chunks → SSE response. Frontend EventSource receives chunks and renders incrementally.', tech: ['Server-Sent Events', 'AIProviderService.streamText()', 'EventSource API', 'ReadableStream'] } },
+    { id: 'b7', icon: '💾', label: 'Save + Learn', sub: 'Memory + coach queued', type: 'db', modal: { title: 'Save & Trigger Learning', what: 'Conversation saved to messages table. brain_request_logs updated. Marketing Coach job queued async (non-blocking) to analyze the interaction and potentially update belief scores.', how: 'saveAssistantMessage() → messages INSERT. brainConfigService.logRequest() → brain_request_logs. learningQueue.add(\'coach_analysis\') → non-blocking async.', tech: ['messages', 'brain_request_logs', 'learning-loop queue', 'MarketingCoachProcessor (async)'] } },
+  ],
+  engine: [
+    { id: 'e1', icon: '▶️', label: 'Trigger', sub: 'User / webhook / API', type: 'trigger', modal: { title: 'Execution Trigger', what: 'Execution can be triggered by: user clicking Run in the UI, an incoming email webhook, an external API call with authentication, or a scheduled task.', how: 'All routes to POST /api/engines/[id]/execute. Auth checked (Supabase session or x-user-id header for server-to-server).', tech: ['POST /api/engines/[id]/execute', 'Supabase session auth', 'webhook trigger', 'API key trigger'] } },
+    { id: 'e2', icon: '🔐', label: 'Auth + Load', sub: 'Engine instance loaded', type: 'api', modal: { title: 'Auth & Engine Load', what: 'Session verified. engine_instances record loaded from DB (includes workflow config, Brain config, email provider). org context resolved.', how: 'Supabase session → users.org_id. engine_instances.select(*).eq(id, engineId). Includes flowConfig (nodes + edges).', tech: ['engine_instances', 'flowConfig JSONB', 'org_id resolution', 'Supabase auth'] } },
+    { id: 'e3', icon: '📋', label: 'Log Created', sub: 'status: started', type: 'db', modal: { title: 'Execution Log Created', what: 'An engine_run_logs row is inserted immediately with status "started". This gives the user a reference ID and creates the audit trail.', how: 'supabase.from(\'engine_run_logs\').insert({ id: executionId, engine_id, org_id, input_data, status: \'started\', started_at }).', tech: ['engine_run_logs', 'executionId (UUID)', 'input_data JSONB', 'status: started'] } },
+    { id: 'e4', icon: '📦', label: 'Queue Job', sub: 'Returns immediately', type: 'queue', modal: { title: 'BullMQ Job Queued', what: 'Job pushed to Redis via BullMQ. API returns { executionId, status: "queued" } immediately — no waiting for AI. The heavy lifting happens async in the worker.', how: 'engineQueue.add(\'engine-execution\', jobData). Job has: executionId, engineId, engine config, userId, orgId, input, options.', tech: ['BullMQ', 'Redis', 'engine-execution queue', 'async dispatch', 'immediate response'] } },
+    { id: 'e5', icon: '🗂️', label: 'Topo Sort', sub: "Kahn's algorithm", type: 'worker', modal: { title: 'Topological Sort', what: 'The workflow graph (nodes + edges) is topologically sorted so nodes execute in the correct dependency order. If Node B needs output from Node A, Node A always runs first.', how: "Kahn's algorithm on the directed acyclic graph. Nodes with no incoming edges run first. Parallel nodes can run concurrently (future enhancement).", tech: ["Kahn's algorithm", 'directed acyclic graph', 'workflow nodes/edges', 'dependency resolution'] } },
+    { id: 'e6', icon: '⚙️', label: 'Node Execution', sub: '36 node types', type: 'worker', modal: { title: 'Node-by-Node Execution', what: 'Each node runs in order: trigger → input → KB retrieval → AI generation → condition → transform → output. Each node type has its own executor in workflow-execution-processor.ts.', how: 'executeNode(node, pipelineData) dispatches to the correct executor based on node.data.nodeType. Output of each node becomes input for the next.', tech: ['workflow-execution-processor.ts (3611 lines)', '36 node types', 'pipelineData pipeline', 'token tracking per node', 'checkpoint/resume'] } },
+    { id: 'e7', icon: '📊', label: 'Progress SSE', sub: 'Redis pub/sub', type: 'queue', modal: { title: 'Progress Streaming', what: 'As each node completes, a progress event is published to Redis pub/sub on channel execution:{id}:progress. Frontend can subscribe via SSE to see live node completion.', how: 'publishProgress(executionId, { nodeId, status, output }). Redis PUBLISH. Frontend SSE endpoint SUBSCRIBE and forward chunks.', tech: ['Redis pub/sub', 'publishProgress()', 'execution:{id}:progress channel', 'SSE endpoint'] } },
+    { id: 'e8', icon: '✅', label: 'Complete', sub: 'tokens + cost saved', type: 'db', modal: { title: 'Execution Complete', what: 'Final result saved. engine_run_logs updated with: status "completed", output_data (final output), tokens_used, cost_usd, duration_ms. Completion event published to Redis.', how: 'updateExecutionStatus(executionId, \'completed\', { result, tokensUsed, cost, durationMs }). publishExecutionComplete(executionId).', tech: ['engine_run_logs', 'output_data.finalOutput', 'tokens_used', 'cost_usd', 'duration_ms', 'publishExecutionComplete()'] } },
+  ],
+}
+
+function FlowGraph({ flowKey, onNodeClick, dark }: { flowKey: FlowKey; onNodeClick: (m: ModalInfo) => void; dark: boolean }) {
+  const nodes = FLOW_NODES[flowKey]
+  const [activeNode, setActiveNode] = useState<string | null>(null)
+
+  return (
+    <div className="w-full overflow-x-auto pb-4">
+      <div className="flex items-center gap-0 min-w-max px-2 py-6">
+        {nodes.map((node, i) => (
+          <div key={node.id} className="flex items-center">
+            {/* Node */}
+            <motion.div
+              onHoverStart={() => setActiveNode(node.id)}
+              onHoverEnd={() => setActiveNode(null)}
+              onClick={() => onNodeClick(node.modal)}
+              whileHover={{ scale: 1.08, boxShadow: `0 0 24px ${nodeGlow[node.type]}, 0 0 8px ${nodeGlow[node.type]}` }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+              className={`relative w-[120px] cursor-pointer rounded-2xl border-2 bg-gradient-to-br p-3 text-center flex-shrink-0 ${nodeColors[node.type]}`}
+            >
+              {/* Pulse ring when active */}
+              {activeNode === node.id && (
+                <motion.div
+                  initial={{ scale: 1, opacity: 0.5 }}
+                  animate={{ scale: 1.3, opacity: 0 }}
+                  transition={{ duration: 0.8, repeat: Infinity }}
+                  className="absolute inset-0 rounded-2xl border-2 border-violet-400"
+                />
+              )}
+              <div className="text-2xl mb-1.5">{node.icon}</div>
+              <div className="text-xs font-bold leading-tight">{node.label}</div>
+              <div className={`text-[10px] mt-0.5 leading-snug ${dark ? 'text-white/50' : 'text-slate-500'}`}>{node.sub}</div>
+              {/* Click hint */}
+              <div className={`absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-medium ${dark ? 'text-white/30' : 'text-slate-400'} whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity`}>
+                click for details
+              </div>
+            </motion.div>
+
+            {/* Arrow connector */}
+            {i < nodes.length - 1 && (
+              <div className="flex items-center flex-shrink-0 mx-1">
+                <motion.div
+                  className={`h-px w-8 ${dark ? 'bg-gradient-to-r from-white/20 to-white/40' : 'bg-gradient-to-r from-slate-200 to-slate-400'}`}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: i * 0.1, duration: 0.3 }}
+                />
+                <motion.div
+                  className={`w-0 h-0 border-t-4 border-b-4 border-l-8 border-t-transparent border-b-transparent ${dark ? 'border-l-white/40' : 'border-l-slate-400'}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.1 + 0.2 }}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <p className={`text-sm text-center mt-2 ${dark ? 'text-white/30' : 'text-slate-400'}`}>
+        Click any node to see what happens inside
+      </p>
     </div>
   )
 }
@@ -301,6 +773,9 @@ export default function SystemMap() {
   const [dark, setDark] = useState(true)
   const [tab, setTab] = useState<Tab>('Overview')
   const [flowTab, setFlowTab] = useState<FlowKey>('writer')
+  const [modal, setModal] = useState<ModalInfo | null>(null)
+  const openModal = useCallback((info: ModalInfo) => setModal(info), [])
+  const closeModal = useCallback(() => setModal(null), [])
 
   const bg = dark ? 'bg-[#080810]' : 'bg-slate-50'
   const text = dark ? 'text-white' : 'text-slate-900'
@@ -311,6 +786,8 @@ export default function SystemMap() {
 
   return (
     <div className={`min-h-screen ${bg} ${text} transition-colors duration-200`}>
+      {/* Modal overlay */}
+      {modal && <Modal info={modal} onClose={closeModal} dark={dark} />}
 
       {/* NAV */}
       <nav className={`sticky top-0 z-50 border-b ${navBg} backdrop-blur-xl px-5 py-3 flex items-center justify-between`}>
@@ -488,18 +965,24 @@ export default function SystemMap() {
               <div className={`rounded-2xl border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-1">User App — 11 Pages</h2>
                 <p className={`text-sm ${muted} mb-5`}>What logged-in users see and use every day.</p>
+                <p className={`text-xs ${muted} mb-4`}>Click any card for full details</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {USER_PAGES.map((p, i) => (
-                    <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                      className={`rounded-xl border ${sub} p-3.5 hover:border-violet-500/30 transition-colors`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="text-base font-semibold">{p.title}</div>
-                          <div className={`text-sm font-mono ${muted} mt-0.5`}>{p.route}</div>
-                          <div className={`text-sm ${muted} mt-2 leading-snug`}>{p.desc}</div>
+                    <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
+                      <ClickCard dark={dark} onClick={() => openModal(p.modal)}
+                        className={`rounded-xl border ${sub} p-3.5`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-base font-semibold">{p.title}</div>
+                            <div className={`text-sm font-mono ${muted} mt-0.5`}>{p.route}</div>
+                            <div className={`text-sm ${muted} mt-2 leading-snug`}>{p.desc}</div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1.5">
+                            <StatusBadge status={p.status} />
+                            <span className={`text-xs ${muted}`}>tap ↗</span>
+                          </div>
                         </div>
-                        <StatusBadge status={p.status} />
-                      </div>
+                      </ClickCard>
                     </motion.div>
                   ))}
                 </div>
@@ -508,18 +991,24 @@ export default function SystemMap() {
               <div className={`rounded-2xl border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-1">Superadmin — 18 Pages</h2>
                 <p className={`text-sm ${muted} mb-5`}>The control panel. Only platform operators have access — users never see this.</p>
+                <p className={`text-xs ${muted} mb-4`}>Click any card for full details</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                   {SUPERADMIN_PAGES.map((p, i) => (
-                    <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.035 }}
-                      className={`rounded-xl border ${sub} p-3.5 hover:border-blue-500/30 transition-colors`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="text-base font-semibold">{p.title}</div>
-                          <div className={`text-sm font-mono ${muted} mt-0.5`}>/{p.route}</div>
-                          <div className="text-sm text-violet-400 mt-1 font-medium">{p.lines.toLocaleString()} lines</div>
+                    <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.035 }}>
+                      <ClickCard dark={dark} onClick={() => openModal(p.modal)}
+                        className={`rounded-xl border ${sub} p-3.5`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-base font-semibold">{p.title}</div>
+                            <div className={`text-sm font-mono ${muted} mt-0.5`}>/{p.route}</div>
+                            <div className="text-sm text-violet-400 mt-1 font-medium">{p.lines.toLocaleString()} lines</div>
+                          </div>
+                          <div className="flex flex-col items-end gap-1.5">
+                            <StatusBadge status={p.status} />
+                            <span className={`text-xs ${muted}`}>tap ↗</span>
+                          </div>
                         </div>
-                        <StatusBadge status={p.status} />
-                      </div>
+                      </ClickCard>
                     </motion.div>
                   ))}
                 </div>
@@ -537,22 +1026,26 @@ export default function SystemMap() {
                     8/9 Production-ready
                   </div>
                 </div>
+                <p className={`text-xs ${muted} mb-4`}>Click any worker for full details</p>
                 <div className="space-y-2.5">
                   {WORKERS.map((w, i) => (
-                    <motion.div key={w.name} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.055 }}
-                      className={`flex items-center gap-4 p-4 rounded-xl border ${sub} hover:border-violet-500/20 transition-colors`}>
-                      <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${w.status === 'done' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-base font-semibold font-mono ${dark ? 'text-white/90' : 'text-slate-800'}`}>{w.name}</span>
-                          <StatusBadge status={w.status} />
+                    <motion.div key={w.name} initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.055 }}>
+                      <ClickCard dark={dark} onClick={() => openModal(w.modal)}
+                        className={`flex items-center gap-4 p-4 rounded-xl border ${sub}`}>
+                        <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${w.status === 'done' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-base font-semibold font-mono ${dark ? 'text-white/90' : 'text-slate-800'}`}>{w.name}</span>
+                            <StatusBadge status={w.status} />
+                          </div>
+                          <div className={`text-sm ${muted} mt-0.5`}>{w.desc}</div>
                         </div>
-                        <div className={`text-sm ${muted} mt-0.5`}>{w.desc}</div>
-                      </div>
-                      <div className="text-right flex-shrink-0 hidden md:block">
-                        <div className={`text-sm font-mono ${muted}`}>{w.queue}</div>
-                        <div className="text-sm text-violet-400 font-semibold mt-0.5">×{w.concurrency} concurrent</div>
-                      </div>
+                        <div className="text-right flex-shrink-0 hidden md:flex flex-col items-end gap-0.5">
+                          <div className={`text-sm font-mono ${muted}`}>{w.queue}</div>
+                          <div className="text-sm text-violet-400 font-semibold">×{w.concurrency} concurrent</div>
+                          <div className={`text-xs ${muted}`}>tap ↗</div>
+                        </div>
+                      </ClickCard>
                     </motion.div>
                   ))}
                 </div>
@@ -579,28 +1072,11 @@ export default function SystemMap() {
               <AnimatePresence mode="wait">
                 <motion.div key={flowTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
                   className={`rounded-2xl border ${card} p-5`}>
-                  <h2 className="text-base font-bold mb-6">
-                    {flowTab === 'writer' ? 'Writer Run — Full Execution Chain' : flowTab === 'brain' ? 'Brain Chat — Agentic Loop' : 'Engine Run — Workflow Pipeline'}
+                  <h2 className="text-xl font-bold mb-1">
+                    {flowTab === 'writer' ? '✍️ Writer Run — Full Execution Chain' : flowTab === 'brain' ? '🧠 Brain Chat — Agentic Loop' : '⚡ Engine Run — Workflow Pipeline'}
                   </h2>
-                  <div className="space-y-0">
-                    {EXECUTION_STEPS[flowTab].map((s, i) => (
-                      <motion.div key={s.step} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                        className="flex items-start gap-3 group">
-                        <div className="flex flex-col items-center flex-shrink-0">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${dark ? 'bg-violet-500/15 border border-violet-500/25' : 'bg-violet-50 border border-violet-200'} group-hover:bg-violet-500/25 transition-colors`}>
-                            {s.icon}
-                          </div>
-                          {i < EXECUTION_STEPS[flowTab].length - 1 && (
-                            <div className={`w-px h-6 mt-1 ${dark ? 'bg-violet-500/20' : 'bg-violet-200'}`} />
-                          )}
-                        </div>
-                        <div className="pt-1.5 pb-5 min-w-0">
-                          <div className="text-base font-semibold">{s.step}. {s.label}</div>
-                          <div className={`text-sm ${muted} mt-1 leading-relaxed`}>{s.detail}</div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                  <p className={`text-sm ${muted} mb-6`}>Each node is interactive — click to see exactly what happens inside.</p>
+                  <FlowGraph flowKey={flowTab} onNodeClick={openModal} dark={dark} />
                 </motion.div>
               </AnimatePresence>
             </motion.div>

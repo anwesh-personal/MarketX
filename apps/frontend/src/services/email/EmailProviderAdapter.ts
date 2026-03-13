@@ -1,17 +1,37 @@
 /**
  * EMAIL PROVIDER ADAPTER
  * ======================
- * Clean interface every MTA/ESP must implement.
- * Add a new provider by:
- *   1. Create apps/frontend/src/services/email/providers/YourProvider.ts
- *   2. Implement EmailProviderAdapter
- *   3. Register in EmailProviderRegistry below
+ * MarketX integrates with TWO distinct layers of email infrastructure.
+ * These are NOT the same thing — do not confuse them:
+ *
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │  LAYER 1 — Autoresponder / Campaign Manager                     │
+ * │  Examples: MailWizz, Mailchimp, ActiveCampaign                  │
+ * │  What it does: manages subscriber LISTS, SEQUENCES, CAMPAIGNS,  │
+ * │  UNSUBSCRIBES, opens/click TRACKING (pixel + link wrapping).    │
+ * │  MailWizz does NOT send bytes directly — it routes through an   │
+ * │  SMTP relay (SES, Mailgun, Postfix) that it's configured to use.│
+ * │  MarketX uses MailWizz to: add subscribers, trigger sequences,  │
+ * │  and receive open/click/reply webhooks.                         │
+ * ├─────────────────────────────────────────────────────────────────┤
+ * │  LAYER 2 — SMTP Relay / Mail Delivery Service                   │
+ * │  Examples: AWS SES, Mailgun, SendGrid                           │
+ * │  What it does: actually DELIVERS the email bytes over SMTP.     │
+ * │  These are real MTAs (Mail Transfer Agents) or managed SMTP     │
+ * │  relays. MailWizz connects to one of these to send emails.      │
+ * │  MarketX uses these directly when bypassing MailWizz for        │
+ * │  transactional/one-off sends (e.g. notifications, AI replies).  │
+ * └─────────────────────────────────────────────────────────────────┘
+ *
+ * This adapter interface covers BOTH layers with the same contract.
+ * The `providerCategory` field identifies which layer a provider is.
  *
  * Canonical event types (all providers normalize to these):
  *   send | open | click | reply | bounce | complaint
  *
  * Signal flow:
- *   MTA webhook → verifyWebhook → parseEvents → CanonicalEmailEvent[]
+ *   Webhook (MailWizz OR SES/Mailgun/SendGrid) → verifyWebhook
+ *   → parseEvents → CanonicalEmailEvent[]
  *   → signal_event table → learning-loop-worker → Brain improves
  */
 
@@ -124,11 +144,21 @@ export interface ConnectionTestResult {
 
 // ─── Adapter Interface ────────────────────────────────────────────────────────
 
+export type ProviderCategory =
+  | 'autoresponder'  // Campaign manager: MailWizz, Mailchimp — manages lists/sequences
+  | 'smtp_relay'     // SMTP delivery: SES, Mailgun, SendGrid — actually sends bytes
+
 export interface EmailProviderAdapter {
-  /** Unique slug: 'mailwizz' | 'mailgun' | 'ses' | 'sendgrid' | 'smtp' */
+  /** Unique slug: 'mailwizz' | 'mailgun' | 'ses' | 'sendgrid' */
   readonly id: string
   /** Human-readable name */
   readonly name: string
+  /**
+   * Which infrastructure layer this provider belongs to.
+   * autoresponder = campaign manager (MailWizz)
+   * smtp_relay    = actual mail delivery server (SES, Mailgun, SendGrid)
+   */
+  readonly providerCategory: ProviderCategory
   /** Supported features */
   readonly capabilities: {
     send: boolean

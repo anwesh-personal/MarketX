@@ -24,9 +24,11 @@ const EVENT_MAP: Record<string, CanonicalEventType> = {
 }
 
 export class SendGridAdapter implements EmailProviderAdapter {
-  readonly id   = 'sendgrid'
-  readonly name = 'SendGrid'
-  readonly capabilities = {
+  readonly id               = 'sendgrid'
+  readonly name             = 'SendGrid'
+  /** SendGrid is an SMTP relay / managed delivery service — a real MTA. */
+  readonly providerCategory = 'smtp_relay' as const
+  readonly capabilities     = {
     send: true, bulkSend: true, webhooks: true, campaignStats: true, replyTracking: false,
   }
 

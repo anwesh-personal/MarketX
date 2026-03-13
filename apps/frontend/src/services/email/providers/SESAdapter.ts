@@ -20,9 +20,11 @@ const NOTIF_MAP: Record<string, CanonicalEventType> = {
 }
 
 export class SESAdapter implements EmailProviderAdapter {
-  readonly id   = 'ses'
-  readonly name = 'AWS SES'
-  readonly capabilities = {
+  readonly id               = 'ses'
+  readonly name             = 'AWS SES'
+  /** AWS SES is a managed SMTP relay — a real MTA/delivery service. MailWizz often routes through SES. */
+  readonly providerCategory = 'smtp_relay' as const
+  readonly capabilities     = {
     send: true, bulkSend: true, webhooks: true, campaignStats: false, replyTracking: false,
   }
 
