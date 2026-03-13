@@ -146,8 +146,8 @@ const stagger = { show: { transition: { staggerChildren: 0.06 } } }
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border flex-shrink-0 ${statusColors[status] || statusColors.stub}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${statusDot[status] || statusDot.stub}`} />
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold border flex-shrink-0 ${statusColors[status] || statusColors.stub}`}>
+      <span className={`w-2 h-2 rounded-full ${statusDot[status] || statusDot.stub}`} />
       {statusLabel[status] || status}
     </span>
   )
@@ -156,7 +156,7 @@ function StatusBadge({ status }: { status: string }) {
 function Bar({ pct }: { pct: number }) {
   const color = pct === 100 ? 'from-emerald-400 to-teal-400' : pct >= 85 ? 'from-violet-400 to-purple-400' : pct >= 70 ? 'from-blue-400 to-cyan-400' : 'from-amber-400 to-yellow-400'
   return (
-    <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+    <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
       <motion.div className={`h-full rounded-full bg-gradient-to-r ${color}`}
         initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1.1, ease: 'easeOut', delay: 0.15 }} />
     </div>
@@ -428,12 +428,12 @@ export default function SystemMap() {
 
               {/* Completion bars */}
               <div className={`rounded-2xl border ${card} p-5 space-y-4`}>
-                <h2 className="text-base font-bold">Completion by Layer</h2>
+                <h2 className="text-xl font-bold">Completion by Layer</h2>
                 {COMPLETION_BARS.map(b => (
-                  <div key={b.label} className="space-y-1.5">
+                  <div key={b.label} className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm">{b.label}</span>
-                      <span className={`text-sm font-bold tabular-nums ${b.pct === 100 ? 'text-emerald-400' : b.pct >= 85 ? 'text-violet-400' : 'text-amber-400'}`}>{b.pct}%</span>
+                      <span className="text-base">{b.label}</span>
+                      <span className={`text-base font-bold tabular-nums ${b.pct === 100 ? 'text-emerald-400' : b.pct >= 85 ? 'text-violet-400' : 'text-amber-400'}`}>{b.pct}%</span>
                     </div>
                     <Bar pct={b.pct} />
                   </div>
@@ -442,7 +442,8 @@ export default function SystemMap() {
 
               {/* 5-layer arch */}
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-5">Platform Architecture — 5 Layers</h2>
+                <h2 className="text-xl font-bold mb-6">Platform Architecture — 5 Layers</h2>
+                <p className={`text-base ${muted} -mt-3 mb-6`}>How MarketX is structured internally — from what users see down to where data lives.</p>
                 <div className="space-y-2.5">
                   {[
                     { layer: 'L1', label: 'Presentation', items: ['User App (11 pages)', 'Superadmin (24 pages)', 'Dark/Light themes'], grad: 'from-violet-500/15 to-purple-500/15', border: 'border-violet-500/25', dot: 'bg-violet-400' },
@@ -457,8 +458,8 @@ export default function SystemMap() {
                         <span className="text-white font-black text-xs">{l.layer}</span>
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-bold">{l.label}</div>
-                        <div className={`text-xs ${muted} flex flex-wrap gap-x-3 mt-0.5`}>
+                        <div className="text-base font-bold">{l.label}</div>
+                        <div className={`text-sm ${muted} flex flex-wrap gap-x-3 mt-1`}>
                           {l.items.map(it => <span key={it}>· {it}</span>)}
                         </div>
                       </div>
@@ -468,14 +469,15 @@ export default function SystemMap() {
               </div>
 
               {/* Legend */}
-              <div className={`rounded-xl border ${card} px-4 py-3 flex flex-wrap items-center gap-4`}>
+              <div className={`rounded-xl border ${card} px-5 py-4 flex flex-wrap items-center gap-5`}>
+                <span className="text-sm font-semibold">Status Legend:</span>
                 {Object.entries(statusLabel).map(([k, v]) => (
-                  <div key={k} className="flex items-center gap-1.5">
-                    <span className={`w-2 h-2 rounded-full ${statusDot[k]}`} />
-                    <span className={`text-xs ${muted}`}>{v}</span>
+                  <div key={k} className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${statusDot[k]}`} />
+                    <span className={`text-sm ${muted}`}>{v}</span>
                   </div>
                 ))}
-                <span className={`text-xs ${muted} ml-auto`}>Audit: 2026-03-13 · .agent/Audit/</span>
+                <span className={`text-sm ${muted} ml-auto`}>Last audit: 2026-03-13</span>
               </div>
             </motion.div>
           )}
@@ -484,16 +486,17 @@ export default function SystemMap() {
             <motion.div key="pg" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-4">User App — 11 Pages</h2>
+                <h2 className="text-xl font-bold mb-1">User App — 11 Pages</h2>
+                <p className={`text-sm ${muted} mb-5`}>What logged-in users see and use every day.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {USER_PAGES.map((p, i) => (
                     <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                       className={`rounded-xl border ${sub} p-3.5 hover:border-violet-500/30 transition-colors`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold">{p.title}</div>
-                          <div className={`text-xs font-mono ${muted} mt-0.5`}>{p.route}</div>
-                          <div className={`text-xs ${muted} mt-1.5 leading-snug`}>{p.desc}</div>
+                          <div className="text-base font-semibold">{p.title}</div>
+                          <div className={`text-sm font-mono ${muted} mt-0.5`}>{p.route}</div>
+                          <div className={`text-sm ${muted} mt-2 leading-snug`}>{p.desc}</div>
                         </div>
                         <StatusBadge status={p.status} />
                       </div>
@@ -503,16 +506,17 @@ export default function SystemMap() {
               </div>
 
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-4">Superadmin — 18 Pages</h2>
+                <h2 className="text-xl font-bold mb-1">Superadmin — 18 Pages</h2>
+                <p className={`text-sm ${muted} mb-5`}>The control panel. Only platform operators have access — users never see this.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
                   {SUPERADMIN_PAGES.map((p, i) => (
                     <motion.div key={p.route} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.035 }}
                       className={`rounded-xl border ${sub} p-3.5 hover:border-blue-500/30 transition-colors`}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="text-sm font-semibold">{p.title}</div>
-                          <div className={`text-xs font-mono ${muted} mt-0.5`}>/{p.route}</div>
-                          <div className={`text-xs text-violet-400 mt-1`}>{p.lines.toLocaleString()} lines</div>
+                          <div className="text-base font-semibold">{p.title}</div>
+                          <div className={`text-sm font-mono ${muted} mt-0.5`}>/{p.route}</div>
+                          <div className="text-sm text-violet-400 mt-1 font-medium">{p.lines.toLocaleString()} lines</div>
                         </div>
                         <StatusBadge status={p.status} />
                       </div>
@@ -527,7 +531,7 @@ export default function SystemMap() {
             <motion.div key="wk" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <div className={`rounded-2xl border ${card} p-5`}>
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-base font-bold">Worker System — 9 Workers</h2>
+                  <h2 className="text-xl font-bold">Worker System — 9 Workers</h2>
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${dark ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     8/9 Production-ready
@@ -540,21 +544,21 @@ export default function SystemMap() {
                       <div className={`w-1.5 h-10 rounded-full flex-shrink-0 ${w.status === 'done' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-sm font-semibold font-mono ${dark ? 'text-white/90' : 'text-slate-800'}`}>{w.name}</span>
+                          <span className={`text-base font-semibold font-mono ${dark ? 'text-white/90' : 'text-slate-800'}`}>{w.name}</span>
                           <StatusBadge status={w.status} />
                         </div>
-                        <div className={`text-xs ${muted} mt-0.5`}>{w.desc}</div>
+                        <div className={`text-sm ${muted} mt-0.5`}>{w.desc}</div>
                       </div>
                       <div className="text-right flex-shrink-0 hidden md:block">
-                        <div className={`text-xs font-mono ${muted}`}>{w.queue}</div>
-                        <div className="text-xs text-violet-400 font-semibold mt-0.5">×{w.concurrency}</div>
+                        <div className={`text-sm font-mono ${muted}`}>{w.queue}</div>
+                        <div className="text-sm text-violet-400 font-semibold mt-0.5">×{w.concurrency} concurrent</div>
                       </div>
                     </motion.div>
                   ))}
                 </div>
-                <div className={`mt-4 p-3.5 rounded-xl border ${sub}`}>
-                  <div className={`text-xs ${muted}`}>
-                    All queues: prefix <span className="font-mono text-violet-400">axiom:</span> · 3 retry attempts · exponential backoff from 5s · Management API on <span className="font-mono text-violet-400">:3100</span>
+                  <div className={`mt-4 p-4 rounded-xl border ${sub}`}>
+                  <div className={`text-sm ${muted}`}>
+                    All queues use prefix <span className="font-mono text-violet-400">axiom:</span> · 3 retry attempts with exponential backoff · Worker Management API on port <span className="font-mono text-violet-400">:3100</span>
                   </div>
                 </div>
               </div>
@@ -591,8 +595,8 @@ export default function SystemMap() {
                           )}
                         </div>
                         <div className="pt-1.5 pb-5 min-w-0">
-                          <div className="text-sm font-semibold">{s.step}. {s.label}</div>
-                          <div className={`text-xs ${muted} mt-0.5 leading-relaxed`}>{s.detail}</div>
+                          <div className="text-base font-semibold">{s.step}. {s.label}</div>
+                          <div className={`text-sm ${muted} mt-1 leading-relaxed`}>{s.detail}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -610,13 +614,13 @@ export default function SystemMap() {
                   <span className="text-2xl">🚦</span>
                   <div>
                     <div className="font-bold text-violet-400 text-sm">The code is done. Infrastructure is the only thing left.</div>
-                    <div className={`text-xs ${muted} mt-1`}>Code is done and committed. Dedicated server setup → Redis + PM2 + workers → env vars → migrations 029–036 → live.</div>
+                    <div className={`text-sm ${muted} mt-1`}>Code is done and committed. Dedicated server setup → Redis + PM2 + workers → env vars → migrations 029–036 → live.</div>
                   </div>
                 </div>
               </div>
 
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-5">Launch Blockers — Honest Priority List</h2>
+                <h2 className="text-xl font-bold mb-5">Launch Blockers — Honest Priority List</h2>
                 <div className="space-y-2.5">
                   {BLOCKERS.map((b, i) => (
                     <motion.div key={b.label} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
@@ -625,8 +629,8 @@ export default function SystemMap() {
                         {b.priority}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold">{b.label}</div>
-                        <div className={`text-xs ${muted} mt-0.5 leading-relaxed`}>{b.desc}</div>
+                          <div className="text-base font-semibold">{b.label}</div>
+                          <div className={`text-sm ${muted} mt-1 leading-relaxed`}>{b.desc}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -634,7 +638,7 @@ export default function SystemMap() {
               </div>
 
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-5">Timeline</h2>
+                <h2 className="text-xl font-bold mb-5">Timeline to Live</h2>
                 <div className="space-y-3">
                   {[
                     { phase: 'Today', label: 'Server Setup', desc: 'Dedicated server · Redis + PM2 + all 9 workers deployed', active: true },
@@ -654,8 +658,8 @@ export default function SystemMap() {
                       <div className="flex items-start gap-2.5 pb-4">
                         <div className={`w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 ${t.active ? 'bg-violet-400 animate-pulse' : dark ? 'bg-white/15' : 'bg-slate-300'}`} />
                         <div>
-                          <div className="text-sm font-semibold">{t.label}</div>
-                          <div className={`text-xs ${muted} mt-0.5`}>{t.desc}</div>
+                          <div className="text-base font-semibold">{t.label}</div>
+                          <div className={`text-sm ${muted} mt-0.5`}>{t.desc}</div>
                         </div>
                       </div>
                     </motion.div>
@@ -672,8 +676,8 @@ export default function SystemMap() {
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🏆</span>
                   <div>
-                    <div className="font-bold text-emerald-400">Verdict: 3–4× more sophisticated than originally scoped</div>
-                    <div className={`text-xs ${muted} mt-1`}>Ahead on every technical dimension. The only delay is infrastructure, not code.</div>
+                    <div className="font-bold text-emerald-400 text-base">Verdict: 3–4× more sophisticated than originally scoped</div>
+                    <div className={`text-sm ${muted} mt-1`}>Ahead on every technical dimension. The only delay is infrastructure, not code.</div>
                   </div>
                 </div>
               </div>
@@ -698,7 +702,7 @@ export default function SystemMap() {
               </div>
 
               <div className={`rounded-2xl border ${card} p-5`}>
-                <h2 className="text-base font-bold mb-4">Built Beyond Original Scope</h2>
+                <h2 className="text-xl font-bold mb-4">Built Beyond Original Scope</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {[
                     { item: 'Mastery Agent System', desc: '9 specialized agents: angle, buyer stage, timing, sequence, etc.' },
@@ -718,8 +722,8 @@ export default function SystemMap() {
                       className={`p-3.5 rounded-xl border ${sub} flex items-start gap-2.5`}>
                       <span className="text-emerald-400 font-bold flex-shrink-0 mt-0.5">+</span>
                       <div>
-                        <div className="text-sm font-semibold">{x.item}</div>
-                        <div className={`text-xs ${muted} mt-0.5 leading-snug`}>{x.desc}</div>
+                        <div className="text-base font-semibold">{x.item}</div>
+                        <div className={`text-sm ${muted} mt-0.5 leading-snug`}>{x.desc}</div>
                       </div>
                     </motion.div>
                   ))}
@@ -760,10 +764,10 @@ export default function SystemMap() {
                         <div className={`w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-lg ${dark ? 'bg-white/[0.07]' : 'bg-slate-50'}`}>{step.icon}</div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold ${phase.dot.replace('bg-', 'text-')}`}>{pi + 1}.{si + 1}</span>
-                            <span className="text-sm font-semibold">{step.label}</span>
+                            <span className={`text-sm font-bold ${phase.dot.replace('bg-', 'text-')}`}>{pi + 1}.{si + 1}</span>
+                            <span className="text-base font-semibold">{step.label}</span>
                           </div>
-                          <div className={`text-xs ${muted} mt-1 leading-relaxed`}>{step.desc}</div>
+                          <div className={`text-sm ${muted} mt-1 leading-relaxed`}>{step.desc}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -782,7 +786,7 @@ export default function SystemMap() {
               ))}
 
               <div className={`rounded-2xl border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
-                <h3 className="text-sm font-bold mb-4">What superadmin controls that users never see</h3>
+                <h3 className="text-lg font-bold mb-4">What Superadmin controls that users never see</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                   {[
                     { icon: '🤖', label: 'Which LLM model runs' },
@@ -797,7 +801,7 @@ export default function SystemMap() {
                   ].map(x => (
                     <div key={x.label} className={`rounded-xl border ${dark ? 'bg-white/[0.025] border-white/[0.06]' : 'bg-slate-50 border-slate-200'} p-3 flex items-center gap-2.5`}>
                       <span className="text-base flex-shrink-0">{x.icon}</span>
-                      <span className="text-xs font-medium">{x.label}</span>
+                      <span className="text-sm font-medium">{x.label}</span>
                     </div>
                   ))}
                 </div>
@@ -842,8 +846,8 @@ export default function SystemMap() {
                           {si < phase.steps.length - 1 && <div className={`w-px h-5 mt-1 ${dark ? 'bg-white/15' : 'bg-slate-200'}`} />}
                         </div>
                         <div className="pt-1.5 pb-4 min-w-0">
-                          <div className="text-sm font-semibold">{step.label}</div>
-                          <div className={`text-xs ${muted} mt-0.5 leading-relaxed`}>{step.desc}</div>
+                          <div className="text-base font-semibold">{step.label}</div>
+                          <div className={`text-sm ${muted} mt-0.5 leading-relaxed`}>{step.desc}</div>
                         </div>
                       </motion.div>
                     ))}
@@ -853,8 +857,8 @@ export default function SystemMap() {
 
               {/* Before / After benefits */}
               <div className={`rounded-2xl border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
-                <h3 className="text-base font-bold mb-2">Before Axiom vs After Axiom</h3>
-                <div className={`text-xs ${muted} mb-5`}>What changes for a sales/marketing professional the day they start using this platform</div>
+                <h3 className="text-xl font-bold mb-2">Before MarketX vs After MarketX</h3>
+                <div className={`text-sm ${muted} mb-5`}>What changes for a sales or marketing professional the day they start using this platform</div>
 
                 <div className="space-y-3">
                   {USER_BENEFITS.map((b, i) => (
@@ -864,12 +868,12 @@ export default function SystemMap() {
                         <span className="text-xl flex-shrink-0 mt-0.5">{b.icon}</span>
                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className={`rounded-lg border ${dark ? 'bg-red-500/[0.07] border-red-500/20' : 'bg-red-50 border-red-200'} p-3`}>
-                            <div className="text-xs font-bold text-red-400 mb-1">BEFORE</div>
-                            <div className={`text-xs ${dark ? 'text-white/70' : 'text-slate-600'} leading-relaxed`}>{b.before}</div>
+                            <div className="text-sm font-bold text-red-400 mb-1">BEFORE</div>
+                            <div className={`text-sm ${dark ? 'text-white/70' : 'text-slate-600'} leading-relaxed`}>{b.before}</div>
                           </div>
                           <div className={`rounded-lg border ${dark ? 'bg-emerald-500/[0.07] border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'} p-3`}>
-                            <div className="text-xs font-bold text-emerald-400 mb-1">AFTER AXIOM</div>
-                            <div className={`text-xs ${dark ? 'text-white/70' : 'text-slate-600'} leading-relaxed`}>{b.after}</div>
+                            <div className="text-sm font-bold text-emerald-400 mb-1">AFTER MARKETX</div>
+                            <div className={`text-sm ${dark ? 'text-white/70' : 'text-slate-600'} leading-relaxed`}>{b.after}</div>
                           </div>
                         </div>
                       </div>
@@ -883,8 +887,8 @@ export default function SystemMap() {
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">💡</span>
                   <div>
-                    <div className="font-bold text-sm text-violet-400">The key insight</div>
-                    <div className={`text-xs ${muted} mt-1 leading-relaxed`}>
+                    <div className="font-bold text-base text-violet-400">The key insight</div>
+                    <div className={`text-sm ${muted} mt-1 leading-relaxed`}>
                       A 10-year-old could use the writing interface. A PhD wouldn't fully understand what runs underneath. That gap — simplicity on top, power underneath — is the product.
                     </div>
                   </div>
@@ -897,20 +901,26 @@ export default function SystemMap() {
         </AnimatePresence>
 
         {/* FOOTER */}
-        <div className={`text-center py-6 border-t ${dark ? 'border-white/10' : 'border-slate-200'} space-y-3`}>
+        <div className={`text-center py-8 border-t ${dark ? 'border-white/10' : 'border-slate-200'} space-y-4`}>
           <div className="flex justify-center">
             <Image
               src={dark ? '/1.png' : '/2.png'}
               alt="MarketX"
-              width={100}
-              height={30}
-              className="object-contain opacity-50"
-              style={{ height: 28, width: 'auto' }}
+              width={120}
+              height={36}
+              className="object-contain opacity-60"
+              style={{ height: 34, width: 'auto' }}
             />
           </div>
-          <div className={`text-xs ${muted}`}>
-            MarketX · 95% complete · Commit 05b4aed · 2026-03-13 · Full audit at{' '}
+          <div className={`text-sm ${muted}`}>
+            95% complete · Commit 05b4aed · 2026-03-13 · Full audit at{' '}
             <span className="font-mono text-violet-400">.agent/Audit/FULL_SYSTEM_AUDIT_2026-03-13.md</span>
+          </div>
+          <div className={`pt-2 border-t ${dark ? 'border-white/[0.06]' : 'border-slate-100'}`}>
+            <p className={`text-sm ${muted} mb-1`}>Designed & built by</p>
+            <p className={`text-xl font-black tracking-tight bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent`}>
+              Anwesh Rath
+            </p>
           </div>
         </div>
 
