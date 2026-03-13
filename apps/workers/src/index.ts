@@ -7,6 +7,7 @@ import learningLoopWorker from './workers/learning-loop-worker'
 import workflowExecutionWorker from './workers/workflow-execution-worker'
 import engineExecutionWorker from './workers/engine-execution-worker'
 import scheduledTaskWorker from './workers/scheduled-task-worker'
+import masteryAgentWorker from './workers/mastery-agent-worker'
 import { startApiServer } from './api/server'
 
 // Start the API server for queue management
@@ -31,6 +32,8 @@ console.log('⚡ Execution Workers:')
 console.log('   - Workflow Execution (10 concurrent) - Template runs')
 console.log('   - Engine Execution (2 concurrent) - Deployed engine runs')
 console.log('   - Scheduled Task (5 concurrent) - Cron / event-triggered jobs')
+console.log('🎯 Mastery Agents:')
+console.log('   - Mastery Agent (8 concurrent) - 9 async decision agents')
 console.log('')
 console.log('🌐 Management API:')
 console.log(`   - Running on port ${API_PORT}`)
@@ -59,6 +62,7 @@ const shutdown = async (signal: string) => {
         workflowExecutionWorker.close(),
         engineExecutionWorker.close(),
         scheduledTaskWorker.close(),
+        masteryAgentWorker.close(),
     ])
 
     console.log('✅ All workers shut down successfully')

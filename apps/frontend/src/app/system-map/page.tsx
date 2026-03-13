@@ -5,15 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
 const STATS = [
-  { label: 'Overall Completion', value: '95%', sub: 'Code complete · Infra = last mile', color: 'from-violet-500 to-purple-600', icon: '🎯' },
-  { label: 'API Routes', value: '65+', sub: 'Unified webhook + new tools', color: 'from-blue-500 to-cyan-600', icon: '🔌' },
-  { label: 'Workers', value: '9/9', sub: 'All registered & running', color: 'from-emerald-500 to-teal-600', icon: '⚡' },
+  { label: 'Overall Completion', value: '96%', sub: 'Code complete · Infra = last mile', color: 'from-violet-500 to-purple-600', icon: '🎯' },
+  { label: 'Workers', value: '10/10', sub: '9 core + Mastery Agent Worker (new)', color: 'from-emerald-500 to-teal-600', icon: '⚡' },
+  { label: 'Mastery Agents', value: '9', sub: 'Angle · BuyerStage · Timing · Reply + 5 more', color: 'from-blue-500 to-cyan-600', icon: '🎯' },
   { label: 'Email Integration', value: '2 layers', sub: 'Autoresponder (MailWizz) + SMTP Relay (SES/Mailgun/SendGrid)', color: 'from-orange-500 to-amber-600', icon: '📧' },
 ]
 
 const COMPLETION_BARS = [
   { label: 'Brain System (Orchestrator, RAG, Agents, 4 new chat tools)', pct: 98 },
-  { label: 'Worker System (9/9 workers, BullMQ, Redis, Scheduled Task)', pct: 97 },
+  { label: 'Worker System (10/10 workers — incl. Mastery Agent Worker, async)', pct: 99 },
   { label: 'MTA / Email Integration (4 providers, send + receive + learn loop)', pct: 92 },
   { label: 'Superadmin (24 pages, full control panel)', pct: 88 },
   { label: 'Database Schema (36 migrations, ~80 tables)', pct: 100 },
@@ -277,6 +277,11 @@ const WORKERS: Array<{ name: string; queue: string; concurrency: number; status:
     name: 'learning-loop-worker', queue: 'learning-loop', concurrency: 1, status: 'done',
     desc: 'Marketing Coach — daily AI optimization',
     modal: { title: 'Learning Loop Worker', status: 'done', what: 'The feedback brain. After every email campaign cycle, analyzes signal_events (opens, clicks, replies, bounces) per belief. High-performing beliefs gain confidence. Underperformers lose it. Results written to brain_memories and brain_reflections.', how: 'MarketingCoachProcessor reads signal_event aggregated by belief_id. Updates brain_beliefs.confidence_score (+/-0.1 bounded). Writes brain_memories and brain_reflections for audit trail.', tech: ['MarketingCoachProcessor', 'signal_event', 'brain_beliefs', 'brain_memories', 'brain_reflections', 'concurrency: 1'] },
+  },
+  {
+    name: 'mastery-agent-worker', queue: 'mastery-agent', concurrency: 8, status: 'done',
+    desc: '9 async decision agents — angle, buyer stage, timing, reply, pacing + more',
+    modal: { title: 'Mastery Agent Worker', badge: 'NEW', status: 'done', what: 'Runs 9 specialized decision agents asynchronously. Previously these ran synchronously inside BrainOrchestrator (blocking the response). Now they are fully async — Brain returns the response immediately and agent decisions happen in the background.', how: 'BrainOrchestrator queues a mastery-agent job after each turn. Worker picks it up (concurrency: 8), runs the appropriate agent (AngleSelection, BuyerStage, BuyingRole, ContactDecision, ReplyMeaning, SendPacing, SequenceProgression, TimingWindow, UncertaintyResolution), writes result to brain_decisions table, updates brain_beliefs.confidence_score if relevant.', tech: ['mastery-agent queue', 'BullMQ concurrency: 8', 'brain_decisions', 'brain_beliefs', '9 agent types', 'KB-confidence weighted decisions', 'non-blocking'] },
   },
   {
     name: 'fine-tuning-worker', queue: 'fine-tuning', concurrency: 1, status: 'done',
@@ -840,7 +845,7 @@ export default function SystemMap() {
             <span className={dark ? 'text-white/75' : 'text-slate-600'}>Honest. Complete. Visual.</span>
           </motion.h1>
           <motion.p variants={fadeUp} className={`${muted} max-w-xl mx-auto text-sm leading-relaxed`}>
-            Multi-org SaaS · Agentic Brain with RAG · 9 Workers · 65+ API Routes · ~80 DB Tables · 24 Superadmin Pages · MailWizz autoresponder + SES/Mailgun/SendGrid SMTP relay
+            Multi-org SaaS · Agentic Brain with RAG · 10 Workers · 9 Mastery Agents (async) · 65+ API Routes · ~80 DB Tables · 24 Superadmin Pages
           </motion.p>
         </motion.div>
 
@@ -1021,7 +1026,7 @@ export default function SystemMap() {
                   <h2 className="text-xl font-bold">Worker System — 9 Workers</h2>
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${dark ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    8/9 Production-ready
+                    10/10 Production-ready
                   </div>
                 </div>
                 <p className={`text-xs ${muted} mb-4`}>Click any worker for full details</p>

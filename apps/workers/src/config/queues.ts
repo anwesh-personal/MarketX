@@ -26,6 +26,9 @@ export enum QueueName {
     WORKFLOW_EXECUTION = 'workflow-execution',
     ENGINE_EXECUTION = 'engine-execution',
     SCHEDULED_TASK = 'scheduled-task',
+
+    // Mastery Agents (async, non-blocking)
+    MASTERY_AGENT = 'mastery-agent',
 }
 
 // ============================================================================
@@ -79,6 +82,7 @@ interface QueueInstances {
     workflowExecution: Queue;
     engineExecution: Queue;
     scheduledTask: Queue;
+    masteryAgent: Queue;
 }
 
 let _queues: QueueInstances | null = null;
@@ -170,6 +174,19 @@ function getQueues(): QueueInstances {
                     },
                 },
             }),
+
+            masteryAgent: new Queue(QueueName.MASTERY_AGENT, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 2,
+                    attempts: 3,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 3000,
+                    },
+                },
+            }),
         };
     }
     return _queues;
@@ -192,6 +209,7 @@ export const queues = new Proxy({} as QueueInstances, {
             'workflowExecution',
             'engineExecution',
             'scheduledTask',
+            'masteryAgent',
         ];
     },
     getOwnPropertyDescriptor() {
