@@ -323,11 +323,9 @@ const EXECUTION_STEPS: Record<FlowKey, Array<{ step: number; label: string; deta
 const BLOCKERS = [
   { priority: 'P0', label: 'Dedicated Server Setup', desc: 'Redis + Workers on dedicated server. Plan ready at .agent/Plans/Active/DEDICATED_SERVER_DEPLOYMENT_PLAN.md' },
   { priority: 'P0', label: 'Production Env Vars', desc: 'REDIS_URL, SUPABASE_SERVICE_ROLE_KEY, AI API keys on Railway + server' },
-  { priority: 'P0', label: 'DB Migrations 029–035', desc: 'New tables: brain_memories FK fix, writer execution ID, agent templates, engine bundles — MUST run on prod Supabase' },
-  { priority: 'P1', label: '/chat → /brain-chat redirect', desc: 'Legacy page has hardcoded "default-org". Simple redirect fix.' },
-  { priority: 'P1', label: 'Fine-tuning Real API', desc: 'Wire OpenAI fine-tune API in fine-tuning-worker (non-blocking for launch)' },
-  { priority: 'P2', label: 'Workflow Manager Component', desc: 'Page shell is 12 lines — WorkflowManager component needs building' },
-  { priority: 'P2', label: 'Dream State LLM Summary', desc: 'Uses stub text "Conversation with N messages" — wire to real LLM call' },
+  { priority: 'P0', label: 'DB Migrations 029–036', desc: 'All new tables (engine bundles, agent templates, signal_event idempotency, 4 new brain tools) — MUST run on prod Supabase before deploy' },
+  { priority: 'P1', label: '/chat → /brain-chat redirect', desc: 'Legacy page org_id is now fixed via real auth. Final step: add a redirect so /chat → /brain-chat automatically.' },
+  { priority: 'P1', label: 'Portal tier-gating UI', desc: 'Portal page links to real routes now. Full tier-locked feature gating UI needs completion.' },
 ]
 
 const ORIGINAL_VS_NOW = [
@@ -1118,12 +1116,11 @@ export default function SystemMap() {
                 <div className="space-y-3">
                   {[
                     { phase: 'Today', label: 'Server Setup', desc: 'Dedicated server · Redis + PM2 + all 9 workers deployed', active: true },
-                    { phase: 'Today', label: 'Env Configuration', desc: 'REDIS_URL, SUPABASE keys, AI keys on Railway + server', active: true },
-                    { phase: 'Today', label: 'Run DB Migrations', desc: 'Migrations 029–035 on prod Supabase (engine bundles, agent templates, etc.)', active: true },
-                    { phase: 'Today', label: '🚀 GO LIVE', desc: 'Frontend (Railway) + Workers (Dedicated) + Redis (Server) = done', active: true },
-                    { phase: 'Week 1', label: 'Fix /chat', desc: 'Redirect to /brain-chat — 5 minute change', active: false },
-                    { phase: 'Week 1', label: 'Workflow Manager', desc: 'Build WorkflowManager component (shell page exists)', active: false },
-                    { phase: 'Week 2', label: 'Fine-tuning Pipeline', desc: 'Wire OpenAI fine-tune API (non-blocking)', active: false },
+                    { phase: 'Today', label: 'Env Configuration', desc: 'REDIS_URL, SUPABASE keys, AI API keys on Railway + server', active: true },
+                    { phase: 'Today', label: 'Run DB Migrations 029–036', desc: 'Engine bundles, agent templates, signal_event idempotency, 4 new brain tools — all on prod Supabase', active: true },
+                    { phase: 'Today', label: '🚀 GO LIVE', desc: 'Frontend (Railway) + Workers (Dedicated) + Redis (Server) = production', active: true },
+                    { phase: 'Week 1', label: 'Add /chat redirect', desc: 'One-line: redirect /chat → /brain-chat', active: false },
+                    { phase: 'Week 1', label: 'Portal tier-gating', desc: 'Complete the tier-locked feature gating UI in /portal', active: false },
                   ].map((t, i) => (
                     <motion.div key={t.label} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}
                       className="flex items-start gap-4">
