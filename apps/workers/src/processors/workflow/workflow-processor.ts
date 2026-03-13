@@ -15,6 +15,7 @@
 import { Job } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
+import { getSupabaseConfig } from '../../config/supabase';
 import { aiService, AICallResult } from '../../utils/ai-service';
 
 // ============================================================================
@@ -100,9 +101,7 @@ export interface ExecutionResult {
 // SUPABASE CLIENT
 // ============================================================================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
+const { url: supabaseUrl, serviceKey: supabaseServiceKey } = getSupabaseConfig();
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ============================================================================

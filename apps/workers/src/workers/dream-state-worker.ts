@@ -20,6 +20,8 @@ import { aiService } from '../utils/ai-service'
  * NO INTERNAL SCHEDULER - Jobs are queued by external triggers
  */
 
+const MAX_SUMMARY_INPUT_CHARS = 8000
+
 interface DreamStateJob {
     type: 'memory_consolidation' | 'embedding_optimization' | 'conversation_summary' |
     'feedback_analysis' | 'pattern_precomputation' | 'cleanup' | 'full_cycle'
@@ -103,16 +105,11 @@ async function processDreamStateJob(job: Job<DreamStateJob>) {
 
                     let summary: string
                     try {
-                        const result = await aiService.generateText(
-                            orgId,
-                            [{
-                                role: 'user',
-                                content: `Summarize this conversation in 2-3 concise sentences. Capture the main topic, key decisions or outcomes, and any follow-up actions mentioned.\n\n${transcript.substring(0, 8000)}`
-                            }],
-                            { maxTokens: 200, temperature: 0.3 }
-                        )
-                        summary = result.content || `Conversation with ${messages.rowCount} messages`
-                    } catch {
+                        const prompt = `Summarize this conversation in 2-3 concise sentences. Capture the main topic, key decisions or outcomes, and any follow-up actions mentioned.\n\n${transcript.substring(0, MAX_SUMMARY_INPUT_CHARS)}`
+                        const result = await aiService.call(prompt, { maxTokens: 200, temperature: 0.3 })
+                        summary = result?.content || `Conversation with ${messages.rowCount} messages`
+                    } catch (err) {
+                        console.warn(`[Dream State] conversation_summary failed orgId=${orgId} conversationId=${conv.id}`, err)
                         summary = `Conversation with ${messages.rowCount} messages`
                     }
 

@@ -14,6 +14,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseConfig } from '../config/supabase';
 
 // ============================================================================
 // TYPES
@@ -157,9 +158,7 @@ export const AI_MODELS: Record<string, AIModel> = {
 // SUPABASE CLIENT
 // ============================================================================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
+const { url: supabaseUrl, serviceKey: supabaseServiceKey } = getSupabaseConfig();
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // ============================================================================

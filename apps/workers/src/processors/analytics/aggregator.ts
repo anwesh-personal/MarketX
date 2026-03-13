@@ -31,11 +31,7 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             lookbackDays: job.data.lookbackDays,
         })
         job.updateProgress(100)
-        return {
-            success: true,
-            type,
-            ...result,
-        }
+        return { type, ...result }
     }
 
     if (type === 'allocation-engine') {
@@ -45,11 +41,7 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             lookbackDays: job.data.lookbackDays,
         })
         job.updateProgress(100)
-        return {
-            success: true,
-            type,
-            ...result,
-        }
+        return { type, ...result }
     }
 
     if (type === 'promotion-engine') {
@@ -59,11 +51,7 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             lookbackDays: job.data.lookbackDays,
         })
         job.updateProgress(100)
-        return {
-            success: true,
-            type,
-            ...result,
-        }
+        return { type, ...result }
     }
 
     if (type === 'daily-rollup') {
@@ -73,7 +61,7 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             date: job.data.date,
         })
         job.updateProgress(100)
-        return { success: true, type, ...result }
+        return { type, ...result }
     }
 
     if (type === 'self-healing') {
@@ -83,14 +71,14 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             lookbackDays: job.data.lookbackDays,
         })
         job.updateProgress(100)
-        return { success: true, type, ...result }
+        return { type, ...result }
     }
 
     if (type === 'network-effect-monitor') {
         job.updateProgress(10)
         const result = await runNetworkEffectMonitor()
         job.updateProgress(100)
-        return { success: true, type, ...result }
+        return { type, ...result }
     }
 
     if (type === 'network-learning') {
@@ -99,11 +87,7 @@ export async function aggregateAnalytics(job: Job<AnalyticsJob>) {
             objectType: job.data.objectType,
         })
         job.updateProgress(100)
-        return {
-            success: true,
-            type,
-            ...result,
-        }
+        return { type, ...result }
     }
 
     const targetDate = date || new Date().toISOString().split('T')[0]

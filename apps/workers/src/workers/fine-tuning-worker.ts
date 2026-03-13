@@ -42,9 +42,49 @@ interface FineTuningResult {
     status?: string
     exampleCount?: number
     collected?: number
+    fineTunedModel?: string | null
 }
 
 const isProduction = process.env.NODE_ENV === 'production'
+
+/** Throw with status and body if !res.ok; otherwise return parsed JSON. */
+async function fetchOkJson<T = unknown>(res: Response): Promise<T> {
+    const text = await res.text()
+    let body: unknown
+    try {
+        body = text ? JSON.parse(text) : {}
+    } catch {
+        body = {}
+    }
+    if (!res.ok) {
+        const msg = typeof (body as { error?: { message?: string } })?.error?.message === 'string'
+            ? (body as { error: { message: string } }).error.message
+            : text || res.statusText
+        throw new Error(`OpenAI API ${res.status}: ${msg}`)
+    }
+    return body as T
+}
+
+/** Validate file upload response has id. */
+function assertFileResponse(body: unknown): { id: string } {
+    if (!body || typeof body !== 'object' || !('id' in body) || typeof (body as { id: unknown }).id !== 'string') {
+        throw new Error(`OpenAI file response missing id: ${JSON.stringify(body)}`)
+    }
+    return body as { id: string }
+}
+
+/** Validate fine-tune job response has expected shape. */
+function assertJobResponse(body: unknown): { id?: string; status?: string; fine_tuned_model?: string | null } {
+    if (!body || typeof body !== 'object') {
+        throw new Error(`OpenAI job response invalid: ${JSON.stringify(body)}`)
+    }
+    const b = body as Record<string, unknown>
+    return {
+        id: typeof b.id === 'string' ? b.id : undefined,
+        status: typeof b.status === 'string' ? b.status : undefined,
+        fine_tuned_model: b.fine_tuned_model == null ? null : typeof b.fine_tuned_model === 'string' ? b.fine_tuned_model : null,
+    }
+}
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -149,8 +189,7 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
                             return fd
                         })(),
                     })
-                    const fileData = await fileRes.json()
-                    if (!fileData.id) throw new Error(`OpenAI file upload failed: ${JSON.stringify(fileData)}`)
+                    const fileData = assertFileResponse(await fetchOkJson(fileRes))
 
                     // Create fine-tuning job
                     const ftRes = await fetch('https://api.openai.com/v1/fine_tuning/jobs', {
@@ -162,8 +201,8 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
                             suffix: `marketx-${orgId.slice(0, 8)}`,
                         }),
                     })
-                    const ftData = await ftRes.json()
-                    if (!ftData.id) throw new Error(`OpenAI fine-tune submit failed: ${JSON.stringify(ftData)}`)
+                    const ftData = assertJobResponse(await fetchOkJson(ftRes))
+                    if (!ftData.id) throw new Error(`OpenAI fine-tune submit failed: missing job id`)
                     newJobId = ftData.id
                 } else {
                     throw new Error(`Fine-tuning for provider "${provider}" not yet implemented. Only "openai" is supported.`)
@@ -193,10 +232,9 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
                     const res = await fetch(`https://api.openai.com/v1/fine_tuning/jobs/${jobId}`, {
                         headers: { Authorization: `Bearer ${openaiKey}` },
                     })
-                    const data = await res.json()
-                    // OpenAI statuses: validating_files | queued | running | succeeded | failed | cancelled
+                    const data = assertJobResponse(await fetchOkJson(res))
                     const status = data.status || 'unknown'
-                    const fineTunedModel = data.fine_tuned_model || null
+                    const fineTunedModel = data.fine_tuned_model ?? null
 
                     console.log(`🎯 Fine-tune job ${jobId} status: ${status}${fineTunedModel ? ` → model: ${fineTunedModel}` : ''}`)
                     return { type, jobId, status, fineTunedModel }
@@ -217,11 +255,11 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
                     const res = await fetch(`https://api.openai.com/v1/fine_tuning/jobs/${jobId}`, {
                         headers: { Authorization: `Bearer ${openaiKey}` },
                     })
-                    const data = await res.json()
+                    const data = assertJobResponse(await fetchOkJson(res))
                     if (data.status !== 'succeeded') {
-                        throw new Error(`Cannot deploy: fine-tune job ${jobId} status is "${data.status}", not "succeeded"`)
+                        throw new Error(`Cannot deploy: fine-tune job ${jobId} status is "${data.status ?? 'unknown'}", not "succeeded"`)
                     }
-                    fineTunedModel = data.fine_tuned_model
+                    fineTunedModel = data.fine_tuned_model ?? null
                 }
 
                 if (!fineTunedModel) throw new Error(`No fine-tuned model ID found for job ${jobId}`)
