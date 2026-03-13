@@ -5,21 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
 const STATS = [
-  { label: 'Overall Completion', value: '90%', sub: 'Code production-ready', color: 'from-violet-500 to-purple-600', icon: '🎯' },
+  { label: 'Overall Completion', value: '95%', sub: 'Code complete · Infra = last mile', color: 'from-violet-500 to-purple-600', icon: '🎯' },
   { label: 'API Routes', value: '65+', sub: 'Unified webhook + new tools', color: 'from-blue-500 to-cyan-600', icon: '🔌' },
   { label: 'Workers', value: '9/9', sub: 'All registered & running', color: 'from-emerald-500 to-teal-600', icon: '⚡' },
   { label: 'Email Providers', value: '4', sub: 'MailWizz · Mailgun · SES · SendGrid', color: 'from-orange-500 to-amber-600', icon: '📧' },
 ]
 
 const COMPLETION_BARS = [
-  { label: 'Brain System (Orchestrator, RAG, Agents, Tools + 4 new chat tools)', pct: 97 },
-  { label: 'Worker System (9 workers, BullMQ, Redis, Scheduled Task)', pct: 95 },
-  { label: 'MTA / Email Integration (4 providers, send + receive + learn loop)', pct: 88 },
+  { label: 'Brain System (Orchestrator, RAG, Agents, 4 new chat tools)', pct: 98 },
+  { label: 'Worker System (9/9 workers, BullMQ, Redis, Scheduled Task)', pct: 97 },
+  { label: 'MTA / Email Integration (4 providers, send + receive + learn loop)', pct: 92 },
   { label: 'Superadmin (24 pages, full control panel)', pct: 88 },
-  { label: 'Database Schema (35 migrations, ~80 tables)', pct: 100 },
-  { label: 'API Routes (65+ endpoints, unified webhook)', pct: 90 },
-  { label: 'User App (main pages)', pct: 80 },
-  { label: 'Engine Bundle System (deploy, override, snapshot)', pct: 90 },
+  { label: 'Database Schema (36 migrations, ~80 tables)', pct: 100 },
+  { label: 'API Routes (65+ endpoints, unified webhook, tier enforcement)', pct: 93 },
+  { label: 'User App (chat, learning, portal — all schema-correct)', pct: 88 },
+  { label: 'Engine Bundle System (deploy, override, snapshot, audit)', pct: 92 },
+  { label: 'KB Pipeline (semantic chunking, embedding, status flow)', pct: 95 },
   { label: 'Deployment / Infrastructure', pct: 60 },
 ]
 
@@ -331,7 +332,7 @@ export default function SystemMap() {
         <div className="flex items-center gap-3">
           <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${dark ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            90% Complete · Launch Ready
+            95% Complete · Code Done · Infra Pending
           </div>
           <button onClick={() => setDark(d => !d)}
             className={`p-2 rounded-lg border text-base transition-all ${dark ? 'border-white/10 hover:bg-white/10' : 'border-slate-200 hover:bg-slate-100'}`}>
@@ -356,7 +357,7 @@ export default function SystemMap() {
           </motion.div>
           <motion.div variants={fadeUp}
             className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-semibold ${dark ? 'bg-violet-500/10 border-violet-500/25 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-600'}`}>
-            🚀 Production-ready code · Dedicated server arriving · Infrastructure = last mile
+            🚀 Code complete · Commit 05b4aed · 194 files changed · Dedicated server = last mile
           </motion.div>
           <motion.h1 variants={fadeUp} className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
             <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Everything Built.</span>
@@ -373,14 +374,14 @@ export default function SystemMap() {
           className={`rounded-2xl border p-4 bg-gradient-to-r ${dark ? 'from-emerald-500/10 via-teal-500/10 to-blue-500/10 border-emerald-500/20' : 'from-emerald-50 via-teal-50 to-blue-50 border-emerald-200'}`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-base">⚡</span>
-            <span className="text-sm font-bold text-emerald-400">Updated Today — 2026-03-13</span>
+            <span className="text-sm font-bold text-emerald-400">Session Complete — 2026-03-13 · Commit 05b4aed</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {[
-              { icon: '🔍', label: 'minSimilarity Bug Fixed', desc: 'VectorStore was returning noise (0.0 floor → 0.5 floor)' },
-              { icon: '📧', label: 'MTA Adapter Layer', desc: '4 providers: MailWizz, Mailgun, SES, SendGrid — clean interface' },
-              { icon: '📤', label: 'Email Send Capability', desc: 'Platform was receive-only. Now sends via any configured provider.' },
-              { icon: '🧠', label: '4 New Brain Tools', desc: 'Campaign insights, self-reflection, knowledge gaps, brain health — all via chat' },
+              { icon: '🔍', label: 'Memory System Fixed', desc: 'minSimilarity 0.0→0.5, semantic chunker (paragraph/sentence/word), kb status flow corrected' },
+              { icon: '📧', label: 'MTA Adapter Layer', desc: '4 providers: MailWizz, Mailgun, SES, SendGrid — clean interface, send + receive + learn' },
+              { icon: '🐛', label: '10 Bugs Squashed', desc: 'chat org, learning page columns, webhook shadow, env vars, tier enforcement, portal links' },
+              { icon: '🧠', label: '4 New Brain Tools', desc: 'Campaign insights, self-reflection, knowledge gaps, brain health — user asks via chat' },
             ].map(u => (
               <div key={u.label} className={`rounded-xl p-3 border ${dark ? 'bg-white/[0.03] border-white/[0.06]' : 'bg-white border-slate-200'}`}>
                 <div className="text-base mb-1">{u.icon}</div>
@@ -609,7 +610,7 @@ export default function SystemMap() {
                   <span className="text-2xl">🚦</span>
                   <div>
                     <div className="font-bold text-violet-400 text-sm">The code is done. Infrastructure is the only thing left.</div>
-                    <div className={`text-xs ${muted} mt-1`}>Dedicated server arriving in hours. Once Redis + workers are up and env vars are set — this goes live.</div>
+                    <div className={`text-xs ${muted} mt-1`}>Code is done and committed. Dedicated server setup → Redis + PM2 + workers → env vars → migrations 029–036 → live.</div>
                   </div>
                 </div>
               </div>
@@ -908,7 +909,7 @@ export default function SystemMap() {
             />
           </div>
           <div className={`text-xs ${muted}`}>
-            MarketX · Built with intent · Full audit at{' '}
+            MarketX · 95% complete · Commit 05b4aed · 2026-03-13 · Full audit at{' '}
             <span className="font-mono text-violet-400">.agent/Audit/FULL_SYSTEM_AUDIT_2026-03-13.md</span>
           </div>
         </div>
