@@ -8,6 +8,7 @@
  */
 
 import { AbstractProvider } from '../BaseProvider'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 import {
     AIModel,
     GenerationOptions,
@@ -42,7 +43,7 @@ export class MistralProvider extends AbstractProvider {
         messages.push({ role: 'user', content: prompt })
 
         try {
-            const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -102,7 +103,7 @@ export class MistralProvider extends AbstractProvider {
 
     async getModels(apiKey: string): Promise<AIModel[]> {
         try {
-            const response = await fetch('https://api.mistral.ai/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/models`, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`
                 }

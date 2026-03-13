@@ -158,200 +158,241 @@ export default function DashboardPage() {
     const successRate = stats?.total_runs ? Math.round((stats.successful_runs / stats.total_runs) * 100) : 0;
 
     return (
-        <div className="space-y-lg">
+        <div className="space-y-8 max-w-7xl mx-auto">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold text-textPrimary mb-xs">
-                    Welcome back, {userName}
-                </h1>
-                <p className="text-textSecondary">
-                    {stats?.org_name} • {stats?.org_plan.toUpperCase()} Plan
-                </p>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-display font-bold text-textPrimary tracking-tight mb-1">
+                        Dashboard
+                    </h1>
+                    <p className="text-textSecondary text-lg">
+                        Welcome back, <span className="text-textPrimary font-medium">{userName}</span>
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="badge badge-accent">
+                        {stats?.org_name}
+                    </div>
+                    <div className="badge border-border">
+                        {stats?.org_plan.toUpperCase()} Plan
+                    </div>
+                </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-md">
-                {/* Total Runs */}
-                <div className="card">
-                    <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
-                            <Zap className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="text-xs text-textTertiary">
-                            {stats?.runs_this_week || 0} this week
-                        </div>
+            {/* Bento Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                
+                {/* Main Stat: Total Runs (Spans 2 columns) */}
+                <div className="premium-card md:col-span-2 bg-gradient-to-br from-accent to-accent-secondary text-onAccent border-none group">
+                    <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
+                        <Zap className="w-32 h-32 transform rotate-12" />
                     </div>
-                    <p className="text-2xl font-bold text-textPrimary mb-xs">
-                        {stats?.total_runs || 0}
-                    </p>
-                    <p className="text-sm text-textSecondary">Total Runs</p>
-                    <div className="mt-sm text-xs text-textTertiary">
-                        {stats?.quota_runs || 0} per month
+                    <div className="relative z-10 h-full flex flex-col justify-between">
+                        <div className="flex items-start justify-between mb-8">
+                            <div>
+                                <p className="text-onAccent/80 font-medium mb-1">Total Runs</p>
+                                <h2 className="text-6xl font-display font-bold tracking-tight">
+                                    {stats?.total_runs || 0}
+                                </h2>
+                            </div>
+                            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-sm font-medium">
+                                <TrendingUp className="w-4 h-4" />
+                                <span>{stats?.runs_this_week || 0} this week</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-onAccent/70 border-t border-white/20 pt-4">
+                            <span>{stats?.quota_runs || 0} runs per month limit</span>
+                            <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-white rounded-full" 
+                                    style={{ width: `${Math.min(((stats?.total_runs || 0) / (stats?.quota_runs || 1)) * 100, 100)}%` }}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* Success Rate */}
-                <div className="card">
-                    <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
-                            <CheckCircle className="w-5 h-5 text-success" />
+                <div className="premium-card flex flex-col justify-between group">
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-textSecondary font-medium">Success Rate</p>
+                        <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center text-success group-hover:scale-110 transition-transform">
+                            <CheckCircle className="w-5 h-5" />
                         </div>
-                        <TrendingUp className="w-4 h-4 text-success" />
                     </div>
-                    <p className="text-2xl font-bold text-textPrimary mb-xs">
-                        {successRate}%
-                    </p>
-                    <p className="text-sm text-textSecondary">Success Rate</p>
-                    <div className="mt-sm text-xs text-textTertiary">
-                        {stats?.successful_runs || 0} successful
+                    <div>
+                        <h3 className="text-4xl font-display font-bold text-textPrimary mb-1">
+                            {successRate}%
+                        </h3>
+                        <p className="text-sm text-success flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            {stats?.successful_runs || 0} successful runs
+                        </p>
                     </div>
                 </div>
 
                 {/* Knowledge Bases */}
-                <div className="card">
-                    <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-info/10">
-                            <Database className="w-5 h-5 text-info" />
+                <div className="premium-card flex flex-col justify-between group">
+                    <div className="flex items-center justify-between mb-4">
+                        <p className="text-textSecondary font-medium">Knowledge Bases</p>
+                        <div className="w-10 h-10 rounded-full bg-info-muted flex items-center justify-center text-info group-hover:scale-110 transition-transform">
+                            <Database className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-2xl font-bold text-textPrimary mb-xs">
-                        {stats?.total_kbs || 0}
-                    </p>
-                    <p className="text-sm text-textSecondary">Knowledge Bases</p>
-                    <div className="mt-sm text-xs text-textTertiary">
-                        {stats?.quota_kbs || 0} max allowed
+                    <div>
+                        <h3 className="text-4xl font-display font-bold text-textPrimary mb-1">
+                            {stats?.total_kbs || 0}
+                            <span className="text-lg text-textTertiary font-normal ml-1">/ {stats?.quota_kbs || 0}</span>
+                        </h3>
+                        <p className="text-sm text-textSecondary">
+                            Active bases
+                        </p>
                     </div>
                 </div>
 
-                {/* Failed Runs */}
-                <div className="card">
-                    <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-error/10">
-                            <Activity className="w-5 h-5 text-error" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-textPrimary mb-xs">
-                        {stats?.failed_runs || 0}
-                    </p>
-                    <p className="text-sm text-textSecondary">Failed Runs</p>
-                </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="card">
-                <h2 className="text-xl font-bold text-textPrimary mb-md">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
-                    <Link
-                        href="/writer/new"
-                        className="
-                            flex items-center justify-between
-                            p-md
-                            bg-primary/5 border border-primary/20
-                            rounded-[var(--radius-md)]
-                            hover:bg-primary/10 hover:scale-[1.02]
-                            transition-all
-                        "
-                    >
-                        <div className="flex items-center gap-sm">
-                            <Plus className="w-5 h-5 text-primary" />
-                            <span className="font-medium text-textPrimary">New Run</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-textSecondary" />
-                    </Link>
-
-                    <Link
-                        href="/kb-manager"
-                        className="
-                            flex items-center justify-between
-                            p-md
-                            bg-info/5 border border-info/20
-                            rounded-[var(--radius-md)]
-                            hover:bg-info/10 hover:scale-[1.02]
-                            transition-all
-                        "
-                    >
-                        <div className="flex items-center gap-sm">
-                            <Database className="w-5 h-5 text-info" />
-                            <span className="font-medium text-textPrimary">Manage KBs</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-textSecondary" />
-                    </Link>
-
-                    <Link
-                        href="/analytics"
-                        className="
-                            flex items-center justify-between
-                            p-md
-                            bg-accent/5 border border-accent/20
-                            rounded-[var(--radius-md)]
-                            hover:bg-accent/10 hover:scale-[1.02]
-                            transition-all
-                        "
-                    >
-                        <div className="flex items-center gap-sm">
-                            <Activity className="w-5 h-5 text-accent" />
-                            <span className="font-medium text-textPrimary">View Analytics</span>
-                        </div>
-                        <ArrowRight className="w-4 h-4 text-textSecondary" />
-                    </Link>
-                </div>
-            </div>
-
-            {/* Recent Runs */}
-            <div className="card">
-                <div className="flex items-center justify-between mb-md">
-                    <h2 className="text-xl font-bold text-textPrimary">Recent Runs</h2>
-                    <Link href="/writer" className="text-sm text-primary hover:underline">
-                        View All
-                    </Link>
-                </div>
-
-                {recentRuns.length > 0 ? (
-                    <div className="space-y-sm">
-                        {recentRuns.map((run) => (
-                            <div
-                                key={run.id}
-                                className="flex items-center justify-between p-md bg-surfaceHover rounded-[var(--radius-md)] hover:bg-surface transition-all"
-                            >
-                                <div className="flex items-center gap-md">
-                                    <div className={`
-                                        w-2 h-2 rounded-full
-                                        ${run.status === 'completed' ? 'bg-success' :
-                                            run.status === 'failed' ? 'bg-error' :
-                                                run.status === 'running' ? 'bg-warning animate-pulse' :
-                                                    'bg-textTertiary'}
-                                    `} />
-                                    <div>
-                                        <p className="text-sm font-medium text-textPrimary">
-                                            {run.kb_name || 'Run'}
-                                        </p>
-                                        <p className="text-xs text-textTertiary flex items-center gap-xs">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(run.created_at).toLocaleString()}
-                                        </p>
-                                    </div>
+                {/* Quick Actions (Spans full width) */}
+                <div className="premium-card md:col-span-3 lg:col-span-4 !p-0 overflow-hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+                        <Link href="/writer/new" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-onAccent transition-colors">
+                                    <Plus className="w-6 h-6" />
                                 </div>
-                                <span className={`
-                                    text-xs font-medium px-sm py-xs rounded-full
-                                    ${run.status === 'completed' ? 'bg-success/10 text-success' :
-                                        run.status === 'failed' ? 'bg-error/10 text-error' :
-                                            run.status === 'running' ? 'bg-warning/10 text-warning' :
-                                                'bg-textTertiary/10 text-textTertiary'}
-                                `}>
-                                    {run.status}
-                                </span>
+                                <div>
+                                    <h4 className="font-semibold text-textPrimary group-hover:text-accent transition-colors">New Run</h4>
+                                    <p className="text-sm text-textSecondary">Generate new content</p>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-xl">
-                        <FileText className="w-12 h-12 text-textTertiary mx-auto mb-sm opacity-20" />
-                        <p className="text-sm text-textSecondary">No runs yet</p>
-                        <Link href="/writer/new" className="text-sm text-primary hover:underline mt-xs inline-block">
-                            Create your first run
+                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                        </Link>
+
+                        <Link href="/kb-manager" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center text-info group-hover:bg-info group-hover:text-white transition-colors">
+                                    <Database className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-textPrimary group-hover:text-info transition-colors">Manage KBs</h4>
+                                    <p className="text-sm text-textSecondary">Update knowledge</p>
+                                </div>
+                            </div>
+                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-info group-hover:translate-x-1 transition-all" />
+                        </Link>
+
+                        <Link href="/analytics" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                    <Activity className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-textPrimary group-hover:text-primary transition-colors">Analytics</h4>
+                                    <p className="text-sm text-textSecondary">View performance</p>
+                                </div>
+                            </div>
+                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-primary group-hover:translate-x-1 transition-all" />
                         </Link>
                     </div>
-                )}
+                </div>
+
+                {/* Recent Runs (Spans 2 columns) */}
+                <div className="premium-card md:col-span-2 lg:col-span-3 flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-textPrimary">Recent Activity</h2>
+                        <Link href="/writer" className="btn btn-ghost btn-sm">
+                            View All
+                        </Link>
+                    </div>
+
+                    <div className="flex-1">
+                        {recentRuns.length > 0 ? (
+                            <div className="space-y-2">
+                                {recentRuns.map((run, i) => (
+                                    <div
+                                        key={run.id}
+                                        className="group flex items-center justify-between p-4 rounded-xl hover:bg-surfaceHover border border-transparent hover:border-border transition-all animate-fade-in-up"
+                                        style={{ animationDelay: `${i * 50}ms` }}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`
+                                                w-10 h-10 rounded-full flex items-center justify-center
+                                                ${run.status === 'completed' ? 'bg-success-muted text-success' :
+                                                    run.status === 'failed' ? 'bg-error-muted text-error' :
+                                                        run.status === 'running' ? 'bg-warning-muted text-warning' :
+                                                            'bg-surface text-textTertiary border border-border'}
+                                            `}>
+                                                {run.status === 'completed' ? <CheckCircle className="w-5 h-5" /> :
+                                                 run.status === 'failed' ? <X className="w-5 h-5" /> :
+                                                 run.status === 'running' ? <RefreshCw className="w-5 h-5 animate-spin" /> :
+                                                 <Clock className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-textPrimary group-hover:text-accent transition-colors">
+                                                    {run.kb_name || 'Content Generation Run'}
+                                                </p>
+                                                <p className="text-xs text-textTertiary mt-0.5">
+                                                    {new Date(run.created_at).toLocaleString(undefined, { 
+                                                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className={`
+                                                badge
+                                                ${run.status === 'completed' ? 'badge-success' :
+                                                    run.status === 'failed' ? 'badge-error' :
+                                                        run.status === 'running' ? 'badge-warning' : ''}
+                                            `}>
+                                                {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
+                                            </span>
+                                            <ChevronRight className="w-4 h-4 text-textTertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center py-12 text-center">
+                                <div className="w-16 h-16 rounded-full bg-surfaceHover flex items-center justify-center mb-4">
+                                    <FileText className="w-8 h-8 text-textTertiary" />
+                                </div>
+                                <h3 className="text-lg font-medium text-textPrimary mb-1">No runs yet</h3>
+                                <p className="text-sm text-textSecondary mb-6 max-w-sm">
+                                    Start generating content using your knowledge bases and AI brains.
+                                </p>
+                                <Link href="/writer/new" className="btn btn-primary">
+                                    <Plus className="w-4 h-4" />
+                                    Create First Run
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Failed Runs / Alert (Spans 1 column) */}
+                <div className="premium-card bg-gradient-to-b from-surface to-error-muted/30 border-error/20 flex flex-col justify-between">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-full bg-error-muted flex items-center justify-center text-error">
+                            <Activity className="w-5 h-5" />
+                        </div>
+                        <h3 className="font-semibold text-textPrimary">Failed Runs</h3>
+                    </div>
+                    
+                    <div>
+                        <h2 className="text-5xl font-display font-bold text-error mb-2">
+                            {stats?.failed_runs || 0}
+                        </h2>
+                        <p className="text-sm text-textSecondary">
+                            Requires attention
+                        </p>
+                    </div>
+                    
+                    {stats?.failed_runs ? (
+                        <button className="btn btn-ghost w-full mt-6 border border-error/20 text-error hover:bg-error hover:text-white">
+                            Review Errors
+                        </button>
+                    ) : null}
+                </div>
+
             </div>
         </div>
     );

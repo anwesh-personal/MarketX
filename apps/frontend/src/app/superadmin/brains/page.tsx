@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Brain, Plus, Edit2, Trash2, Users, Zap, TrendingUp, Activity, Check, X, Sparkles, Wrench } from 'lucide-react'
+import { BrainBackground } from '@/components/BrainBackground'
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth'
 
 // ============================================================
 // TYPES
@@ -27,6 +29,7 @@ interface BrainTemplate {
 
 export default function BrainManagementPage() {
     const router = useRouter()
+    const { fetchWithAuth } = useSuperadminAuth()
     const [brains, setBrains] = useState<BrainTemplate[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [selectedBrain, setSelectedBrain] = useState<BrainTemplate | null>(null)
@@ -54,7 +57,7 @@ export default function BrainManagementPage() {
 
     const loadBrains = async () => {
         try {
-            const response = await fetch('/api/superadmin/brains')
+            const response = await fetchWithAuth('/api/superadmin/brains')
             if (response.ok) {
                 const data = await response.json()
                 setBrains(data.brains || [])
@@ -68,13 +71,12 @@ export default function BrainManagementPage() {
 
     const loadStats = async () => {
         try {
-            // Load real stats from API
-            const response = await fetch('/api/superadmin/stats')
+            const response = await fetchWithAuth('/api/superadmin/stats')
             if (response.ok) {
                 const data = await response.json()
                 setStats({
-                    totalOrgs: data.organizations || 0,
-                    requestsToday: data.requestsToday || 0
+                    totalOrgs: data.stats?.active_orgs || 0,
+                    requestsToday: data.stats?.total_runs || 0
                 })
             }
         } catch (error) {
@@ -146,9 +148,8 @@ export default function BrainManagementPage() {
                 }
             }
 
-            const response = await fetch('/api/superadmin/brains', {
+            const response = await fetchWithAuth('/api/superadmin/brains', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: formData.name,
                     version: formData.version,
@@ -182,9 +183,10 @@ export default function BrainManagementPage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="relative space-y-8 min-h-[60vh]">
+            <BrainBackground opacity={0.2} animation="float" mixBlendMode="soft-light" />
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="relative z-10 flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold flex items-center gap-3">
                         <Brain className="w-8 h-8 text-primary" />
@@ -261,6 +263,19 @@ export default function BrainManagementPage() {
                             getTierColor={getTierColor}
                             getTierLabel={getTierLabel}
                             onSelect={() => router.push(`/superadmin/brains/${brain.id}`)}
+                            onDelete={async () => {
+                                if (!confirm(`Kya aap "${brain.name}" brain template delete karna chahte hain?`)) return
+                                try {
+                                    const res = await fetchWithAuth(`/api/superadmin/brains/${brain.id}`, { method: 'DELETE' })
+                                    if (!res.ok) {
+                                        const err = await res.json()
+                                        throw new Error(err.error || 'Delete failed')
+                                    }
+                                    await loadBrains()
+                                } catch (error: any) {
+                                    alert(error.message || 'Failed to delete brain template')
+                                }
+                            }}
                         />
                     ))}
                 </div>
@@ -274,7 +289,7 @@ export default function BrainManagementPage() {
                     <p className="text-muted-foreground mb-6">
                         Get started by creating your first brain template
                     </p>
-                    <button className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all">
+                    <button onClick={() => setShowCreateModal(true)} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all">
                         Create Brain Template
                     </button>
                 </div>
@@ -398,7 +413,7 @@ function StatCard({ label, value, icon: Icon, color }: any) {
 // BRAIN CARD
 // ============================================================
 
-function BrainCard({ brain, getTierColor, getTierLabel, onSelect }: any) {
+function BrainCard({ brain, getTierColor, getTierLabel, onSelect, onDelete }: any) {
     return (
         <div className="group relative overflow-hidden rounded-2xl border border-border/40 bg-background hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
             {/* Gradient Background */}
@@ -454,7 +469,7 @@ function BrainCard({ brain, getTierColor, getTierLabel, onSelect }: any) {
                         <Edit2 className="w-4 h-4" />
                         Configure
                     </button>
-                    <button className="p-2.5 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all">
+                    <button onClick={onDelete} className="p-2.5 rounded-xl hover:bg-destructive/10 hover:text-destructive transition-all">
                         <Trash2 className="w-4 h-4" />
                     </button>
                 </div>

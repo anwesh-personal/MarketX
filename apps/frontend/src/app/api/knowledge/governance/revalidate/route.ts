@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import {
+    KNOWLEDGE_SUSPEND_EVIDENCE_MIN,
+    KNOWLEDGE_DEMOTE_STABILITY_MAX,
+    KNOWLEDGE_DEMOTE_CONFIDENCE_MAX,
+    KNOWLEDGE_SLOW_CYCLE_CONFIDENCE_MIN,
+    KNOWLEDGE_SLOW_CYCLE_STABILITY_MIN,
+    KNOWLEDGE_FAST_CYCLE_CONFIDENCE_MAX,
+} from '@/lib/config-defaults'
 
 const CYCLE_DAYS: Record<string, number> = { fast: 7, medium: 30, slow: 90 }
 
@@ -53,16 +61,16 @@ export async function POST(req: NextRequest) {
         let newStatus = 'active'
         let newCycle = ko.revalidation_cycle
 
-        if (daysSinceObserved > cycleDays * 3 && ko.evidence_count < 3) {
+        if (daysSinceObserved > cycleDays * 3 && ko.evidence_count < KNOWLEDGE_SUSPEND_EVIDENCE_MIN) {
             newStatus = 'suspended'
             suspended++
-        } else if (Number(ko.stability_score) < 0.3 && Number(ko.confidence) < 0.4) {
+        } else if (Number(ko.stability_score) < KNOWLEDGE_DEMOTE_STABILITY_MAX && Number(ko.confidence) < KNOWLEDGE_DEMOTE_CONFIDENCE_MAX) {
             newStatus = 'demoted'
             demoted++
         } else {
-            if (Number(ko.confidence) > 0.8 && Number(ko.stability_score) > 0.7) {
+            if (Number(ko.confidence) > KNOWLEDGE_SLOW_CYCLE_CONFIDENCE_MIN && Number(ko.stability_score) > KNOWLEDGE_SLOW_CYCLE_STABILITY_MIN) {
                 newCycle = 'slow'
-            } else if (Number(ko.confidence) < 0.5) {
+            } else if (Number(ko.confidence) < KNOWLEDGE_FAST_CYCLE_CONFIDENCE_MAX) {
                 newCycle = 'fast'
             } else {
                 newCycle = 'medium'

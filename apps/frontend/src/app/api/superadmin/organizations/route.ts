@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, slug, license_tier = 'hobby', owner_email } = body;
+        const { name, slug, plan = 'hobby', owner_email } = body;
 
         // Validate required fields
         if (!name || !slug) {
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
             enterprise: { max_kbs: 100, max_runs_per_month: 10000, max_team_members: 100 },
         };
 
-        const orgQuotas = quotas[license_tier] || quotas.hobby;
+        const orgQuotas = quotas[plan] || quotas.hobby;
 
         // Create organization
         const { data: org, error: orgError } = await supabase
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
             .insert({
                 name,
                 slug,
-                license_tier,
-                is_active: true,
+                plan,
+                status: 'active',
                 ...orgQuotas,
             })
             .select()
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
         if (orgError) throw orgError;
 
-        let ownerCredentials: { email: string; password: string } | null = null;
+        let ownerCreated = false;
 
         // Create owner user if email provided
         if (owner_email) {
@@ -142,22 +142,9 @@ export async function POST(request: NextRequest) {
                     throw new Error(`Failed to create owner record: ${userError.message}`);
                 }
 
-                // Store credentials for response
-                ownerCredentials = {
-                    email: owner_email,
-                    password: ownerPassword,
-                };
-
                 // TODO: Send welcome email with credentials
                 // await sendWelcomeEmail(owner_email, ownerPassword, org.name);
-
-                console.log('==========================================');
-                console.log('OWNER CREATED - SHARE THESE CREDENTIALS:');
-                console.log('==========================================');
-                console.log(`Email: ${owner_email}`);
-                console.log(`Password: ${ownerPassword}`);
-                console.log(`Organization: ${org.name}`);
-                console.log('==========================================');
+                ownerCreated = true;
             } catch (error) {
                 console.error('Error creating owner user:', error);
                 // Don't fail org creation if owner creation fails
@@ -169,17 +156,18 @@ export async function POST(request: NextRequest) {
         // Log transaction
         await supabase.from('license_transactions').insert({
             org_id: org.id,
+            admin_id: null,
             transaction_type: 'created',
-            from_tier: null,
-            to_tier: license_tier,
+            from_plan: null,
+            to_plan: plan,
             quota_changes: orgQuotas,
         });
 
         return NextResponse.json({
             organization: org,
-            owner_credentials: ownerCredentials, // Send credentials in response
-            message: ownerCredentials
-                ? 'Organization and owner created successfully. Owner credentials returned - send them securely!'
+            owner_user_created: ownerCreated,
+            message: ownerCreated
+                ? 'Organization and owner user created successfully. Trigger your secure invite or password reset flow before first login.'
                 : 'Organization created successfully'
         }, { status: 201 });
     } catch (error) {

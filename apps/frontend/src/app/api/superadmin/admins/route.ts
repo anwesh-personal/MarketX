@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import bcrypt from 'bcryptjs';
+import { requireSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const body = await request.json();
         const { email, full_name, password } = body;
 
@@ -76,8 +78,9 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const { data, error } = await supabase
             .from('platform_admins')
             .select('id, email, full_name, is_active, created_at')

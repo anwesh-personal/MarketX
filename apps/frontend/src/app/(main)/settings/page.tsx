@@ -187,9 +187,7 @@ export default function SettingsPage() {
                         disabled={isSaving}
                         className="
                             flex items-center gap-sm
-                            bg-primary text-white font-semibold
-                            px-md py-sm
-                            rounded-[var(--radius-md)]
+                            btn btn-primary font-semibold
                             hover:opacity-90
                             active:scale-[0.98]
                             disabled:opacity-50
@@ -305,9 +303,7 @@ export default function SettingsPage() {
                         onClick={handleLogout}
                         className="
                             flex items-center gap-sm
-                            bg-error text-white font-semibold
-                            px-md py-sm
-                            rounded-[var(--radius-md)]
+                            btn btn-danger font-semibold
                             hover:opacity-90
                             transition-all
                         "

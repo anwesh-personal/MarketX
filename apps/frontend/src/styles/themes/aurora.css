@@ -2,7 +2,7 @@
  * AURORA — Neon Futuristic
  * Cyberpunk command center. Electric, alive, data-dense.
  * Typography: Space Grotesk (display) + DM Sans (body) + Fira Code (code)
- * Interactions: Fast, neon border pulse, glitch-flicker, scan-line, electric ripple
+ * Personality: Fast neon border pulse, glitch-flicker, scan-line, electric ripple
  */
 
 /* ========== DAY MODE ========== */
@@ -12,6 +12,7 @@
     --color-secondary: #64748B;
     --color-accent: #00D4FF;
     --color-accent-hover: #00B8E6;
+    --color-accent-secondary: #FF2D78;
     --color-background: #F0F2F5;
     --color-surface: #FFFFFF;
     --color-surface-hover: #E8EBF0;
@@ -23,6 +24,8 @@
     --color-border: #D1D5DB;
     --color-border-hover: #9CA3AF;
     --color-border-focus: #00D4FF;
+    --color-on-accent: #0F172A;
+    --color-primary-foreground: #0F172A;
     --color-overlay: rgba(15, 23, 42, 0.7);
     --color-shadow: rgba(0, 212, 255, 0.08);
     --color-glow: rgba(0, 212, 255, 0.2);
@@ -36,12 +39,23 @@
     --color-info: #3B82F6;
     --color-info-muted: rgba(59, 130, 246, 0.1);
     --color-accent-rgb: 0, 212, 255;
+    --color-accent-secondary-rgb: 255, 45, 120;
     --color-success-rgb: 16, 185, 129;
     --color-warning-rgb: 245, 158, 11;
     --color-error-rgb: 239, 68, 68;
     --color-info-rgb: 59, 130, 246;
     --color-background-rgb: 240, 242, 245;
     --color-surface-rgb: 255, 255, 255;
+
+    --gradient-primary: linear-gradient(135deg, #00D4FF, #FF2D78);
+    --gradient-subtle: linear-gradient(180deg, #F0F2F5 0%, #E4E8EE 100%);
+    --gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #F4F6F9 100%);
+    --gradient-accent-glow: radial-gradient(circle, rgba(0,212,255,0.2) 0%, rgba(255,45,120,0.05) 50%, transparent 70%);
+    --glass-bg: rgba(240, 242, 245, 0.65);
+    --glass-border: rgba(0, 212, 255, 0.15);
+    --noise-opacity: 0.02;
+    --shine-angle: 45deg;
+    --shine-opacity: 0.06;
 
     --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'Fira Code', 'Consolas', monospace;
@@ -69,19 +83,23 @@
     --spacing-xl: 3.5rem;
     --spacing-2xl: 5rem;
 
-    --radius-sm: 4px;
-    --radius-md: 4px;
-    --radius-lg: 4px;
-    --radius-xl: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 2px;
-    --shadow-sm: 0 1px 3px 0 rgba(0, 212, 255, 0.06), 0 1px 2px 0 rgba(15, 23, 42, 0.08);
-    --shadow-md: 0 4px 8px 0 rgba(0, 212, 255, 0.08), 0 2px 4px 0 rgba(15, 23, 42, 0.1);
-    --shadow-lg: 0 8px 16px 0 rgba(0, 212, 255, 0.1), 0 4px 8px 0 rgba(15, 23, 42, 0.12);
-    --shadow-xl: 0 16px 32px 0 rgba(0, 212, 255, 0.12), 0 8px 16px 0 rgba(15, 23, 42, 0.15);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 212, 255, 0.08), 0 1px 4px -1px rgba(15, 23, 42, 0.1);
+    --shadow-md: 0 8px 24px -4px rgba(0, 212, 255, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.15);
+    --shadow-lg: 0 16px 32px -8px rgba(0, 212, 255, 0.16), 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+    --shadow-xl: 0 24px 48px -12px rgba(0, 212, 255, 0.2), 0 12px 24px -6px rgba(15, 23, 42, 0.25);
     --shadow-glow: 0 0 0 2px rgba(0, 212, 255, 0.3), 0 0 12px rgba(0, 212, 255, 0.2);
     --shadow-glow-lg: 0 0 0 3px rgba(0, 212, 255, 0.4), 0 0 20px rgba(0, 212, 255, 0.3), 0 0 40px rgba(255, 45, 120, 0.1);
+    --shadow-card-hover: 0 24px 48px -12px rgba(0,212,255,0.25), 0 12px 24px rgba(15,23,42,0.15);
+    --shadow-inner: inset 0 2px 4px rgba(15,23,42,0.1);
+    --shadow-float: 0 32px 64px -16px rgba(0,212,255,0.3), 0 16px 32px -8px rgba(15,23,42,0.2);
 
     --duration-fast: 80ms;
     --duration-normal: 150ms;
@@ -91,8 +109,13 @@
     --easing-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
     --hover-scale: 1.04;
     --active-scale: 0.96;
+    --hover-lift: -2px;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
+
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 56px;
+    --header-height: 56px;
 }
 
 /* ========== NIGHT MODE ========== */
@@ -102,6 +125,7 @@
     --color-secondary: #94A3B8;
     --color-accent: #00D4FF;
     --color-accent-hover: #33DEFF;
+    --color-accent-secondary: #FF2D78;
     --color-background: #0B1120;
     --color-surface: #111827;
     --color-surface-hover: #1A2332;
@@ -113,6 +137,8 @@
     --color-border: #1E293B;
     --color-border-hover: #334155;
     --color-border-focus: #00D4FF;
+    --color-on-accent: #0F172A;
+    --color-primary-foreground: #0B1120;
     --color-overlay: rgba(11, 17, 32, 0.9);
     --color-shadow: rgba(0, 212, 255, 0.1);
     --color-glow: rgba(0, 212, 255, 0.25);
@@ -126,12 +152,23 @@
     --color-info: #60A5FA;
     --color-info-muted: rgba(96, 165, 250, 0.12);
     --color-accent-rgb: 0, 212, 255;
+    --color-accent-secondary-rgb: 255, 45, 120;
     --color-success-rgb: 52, 211, 153;
     --color-warning-rgb: 251, 191, 36;
     --color-error-rgb: 248, 113, 113;
     --color-info-rgb: 96, 165, 250;
     --color-background-rgb: 11, 17, 32;
     --color-surface-rgb: 17, 24, 39;
+
+    --gradient-primary: linear-gradient(135deg, #00D4FF, #FF2D78);
+    --gradient-subtle: linear-gradient(180deg, #0B1120 0%, #0F1928 100%);
+    --gradient-surface: linear-gradient(180deg, #111827 0%, #151E30 100%);
+    --gradient-accent-glow: radial-gradient(circle, rgba(0,212,255,0.25) 0%, rgba(255,45,120,0.08) 50%, transparent 70%);
+    --glass-bg: rgba(17, 24, 39, 0.7);
+    --glass-border: rgba(0, 212, 255, 0.12);
+    --noise-opacity: 0.03;
+    --shine-angle: 45deg;
+    --shine-opacity: 0.04;
 
     --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'Fira Code', 'Consolas', monospace;
@@ -159,19 +196,23 @@
     --spacing-xl: 3.5rem;
     --spacing-2xl: 5rem;
 
-    --radius-sm: 4px;
-    --radius-md: 4px;
-    --radius-lg: 4px;
-    --radius-xl: 6px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 2px;
-    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 0 4px rgba(0, 212, 255, 0.06);
-    --shadow-md: 0 4px 8px 0 rgba(0, 0, 0, 0.4), 0 0 8px rgba(0, 212, 255, 0.08);
-    --shadow-lg: 0 8px 16px 0 rgba(0, 0, 0, 0.5), 0 0 16px rgba(0, 212, 255, 0.1);
-    --shadow-xl: 0 16px 32px 0 rgba(0, 0, 0, 0.6), 0 0 32px rgba(0, 212, 255, 0.12);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 1px 4px -1px rgba(0, 212, 255, 0.08);
+    --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 212, 255, 0.12);
+    --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 8px 16px -4px rgba(0, 212, 255, 0.16);
+    --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 12px 24px -6px rgba(0, 212, 255, 0.2);
     --shadow-glow: 0 0 0 2px rgba(0, 212, 255, 0.4), 0 0 16px rgba(0, 212, 255, 0.3);
     --shadow-glow-lg: 0 0 0 3px rgba(0, 212, 255, 0.5), 0 0 24px rgba(0, 212, 255, 0.4), 0 0 48px rgba(255, 45, 120, 0.15);
+    --shadow-card-hover: 0 24px 48px -12px rgba(0,212,255,0.3), 0 12px 24px rgba(0,0,0,0.5);
+    --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-float: 0 32px 64px -16px rgba(0,212,255,0.4), 0 16px 32px -8px rgba(0,0,0,0.6);
 
     --duration-fast: 80ms;
     --duration-normal: 150ms;
@@ -181,6 +222,11 @@
     --easing-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
     --hover-scale: 1.04;
     --active-scale: 0.96;
+    --hover-lift: -2px;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
+
+    --sidebar-width: 240px;
+    --sidebar-collapsed-width: 56px;
+    --header-height: 56px;
 }

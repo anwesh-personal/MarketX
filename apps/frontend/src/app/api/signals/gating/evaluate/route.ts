@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import {
+    GATING_MIN_CONFIDENCE,
+    GATING_MIN_BOOKED_CALL_RATE,
+    GATING_MAX_NEGATIVE_RATE,
+    GATING_MIN_EXPLORATION,
+} from '@/lib/config-defaults'
 
 const schema = z.object({
     belief_id: z.string().uuid('belief_id must be a valid UUID'),
@@ -75,10 +81,10 @@ export async function POST(req: NextRequest) {
 
     const gates = [
         pass('min_sample_size', sends, minSampleSize),
-        pass('confidence_score', Number(belief.confidence_score ?? 0), 0.35),
-        pass('booked_call_rate', bookedCallRate, 0.01),
-        pass('negative_rate_max', 1 - negativeRate, 1 - 0.08),
-        pass('min_exploration_guard', minExploration, 0.1),
+        pass('confidence_score', Number(belief.confidence_score ?? 0), GATING_MIN_CONFIDENCE),
+        pass('booked_call_rate', bookedCallRate, GATING_MIN_BOOKED_CALL_RATE),
+        pass('negative_rate_max', 1 - negativeRate, 1 - GATING_MAX_NEGATIVE_RATE),
+        pass('min_exploration_guard', minExploration, GATING_MIN_EXPLORATION),
     ]
 
     const passed = gates.every((g) => g.passed)

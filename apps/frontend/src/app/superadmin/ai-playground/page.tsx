@@ -14,7 +14,10 @@ import {
     Copy,
     Download,
     Trash2,
-    RefreshCw
+    RefreshCw,
+    Bot,
+    Save,
+    Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { superadminFetch } from '@/lib/superadmin-auth'
@@ -22,7 +25,7 @@ import { superadminFetch } from '@/lib/superadmin-auth'
 // Types
 interface AIProvider {
     id: string
-    provider_type: string
+    provider: string
     name: string
     is_active: boolean
 }
@@ -57,6 +60,24 @@ interface HistoryEntry {
     duration: number
     tokensUsed: number
     cost: string
+}
+
+interface AgentTemplate {
+    id: string
+    slug: string
+    name: string
+    description: string | null
+    system_prompt: string
+    persona_prompt: string | null
+    guardrails_prompt: string | null
+    tools_enabled: string[]
+    tier: string
+    max_turns: number
+}
+
+interface OrgOption {
+    id: string
+    name: string
 }
 
 // Tooltip data
@@ -121,8 +142,11 @@ function TooltipIcon({ param }: { param: string }) {
     )
 }
 
+type TabId = 'playground' | 'agent-chat'
+
 export default function AIPlaygroundPage() {
     // State
+    const [activeTab, setActiveTab] = useState<TabId>('playground')
     const [providers, setProviders] = useState<AIProvider[]>([])
     const [models, setModels] = useState<AIModel[]>([])
     const [selectedProvider, setSelectedProvider] = useState<string>('')
@@ -134,6 +158,18 @@ export default function AIPlaygroundPage() {
     const [showAdvanced, setShowAdvanced] = useState(false)
     const [history, setHistory] = useState<HistoryEntry[]>([])
     const [loading, setLoading] = useState(true)
+
+    // Agent Chat tab state
+    const [agentTemplates, setAgentTemplates] = useState<AgentTemplate[]>([])
+    const [selectedAgentId, setSelectedAgentId] = useState<string>('')
+    const [agentChatMessages, setAgentChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([])
+    const [agentChatInput, setAgentChatInput] = useState('')
+    const [agentChatLoading, setAgentChatLoading] = useState(false)
+    const [organizations, setOrganizations] = useState<OrgOption[]>([])
+    const [selectedOrgId, setSelectedOrgId] = useState<string>('')
+    const [saveInstructionContent, setSaveInstructionContent] = useState('')
+    const [saveInstructionSeverity, setSaveInstructionSeverity] = useState<'low' | 'medium' | 'high' | 'critical'>('medium')
+    const [savingInstruction, setSavingInstruction] = useState(false)
 
     const [parameters, setParameters] = useState<Parameters>({
         temperature: 0.7,
@@ -160,7 +196,7 @@ export default function AIPlaygroundPage() {
                 setProviders(activeProviders)
 
                 if (activeProviders.length > 0 && !selectedProvider) {
-                    setSelectedProvider(activeProviders[0].provider_type)
+                    setSelectedProvider(activeProviders[0].provider)
                 }
             }
 
@@ -169,6 +205,24 @@ export default function AIPlaygroundPage() {
             if (modelsRes.ok) {
                 const data = await modelsRes.json()
                 setModels(data.models || [])
+            }
+
+            // Load agent templates (for Agent Chat tab)
+            const templatesRes = await superadminFetch('/api/superadmin/agent-templates?active=true')
+            if (templatesRes.ok) {
+                const data = await templatesRes.json()
+                const list = data.agents ?? data.templates ?? (Array.isArray(data) ? data : [])
+                setAgentTemplates(list)
+                if (list.length > 0 && !selectedAgentId) setSelectedAgentId(list[0].id)
+            }
+
+            // Load organizations (for constitution + save instruction)
+            const orgsRes = await superadminFetch('/api/superadmin/organizations')
+            if (orgsRes.ok) {
+                const data = await orgsRes.json()
+                const list = data.organizations ?? data ?? []
+                setOrganizations(list)
+                if (list.length > 0 && !selectedOrgId) setSelectedOrgId(list[0].id)
             }
         } catch (error) {
             console.error('Failed to load data:', error)
@@ -278,6 +332,72 @@ export default function AIPlaygroundPage() {
         toast('Generation stopped')
     }
 
+    // Agent Chat: send message
+    const handleAgentChatSend = async () => {
+        if (!agentChatInput.trim() || !selectedAgentId) return
+        if (!selectedOrgId) {
+            toast.error('Select an organization — agents need org context for tools and constitution')
+            return
+        }
+        setAgentChatLoading(true)
+        const userMessage = agentChatInput.trim()
+        setAgentChatInput('')
+        setAgentChatMessages(prev => [...prev, { role: 'user', content: userMessage }])
+
+        try {
+            const res = await superadminFetch('/api/superadmin/agent-chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    agentTemplateId: selectedAgentId,
+                    message: userMessage,
+                    history: agentChatMessages,
+                    orgId: selectedOrgId,
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Agent chat failed')
+            setAgentChatMessages(prev => [...prev, { role: 'assistant', content: data.response ?? '' }])
+            toast.success('Response received')
+        } catch (e: any) {
+            toast.error(e.message || 'Agent chat failed')
+            setAgentChatMessages(prev => prev.slice(0, -1))
+        } finally {
+            setAgentChatLoading(false)
+        }
+    }
+
+    // Save last assistant message as instruction (brain_memories)
+    const handleSaveAsInstruction = async () => {
+        const content = saveInstructionContent.trim()
+        if (!content || !selectedOrgId) {
+            toast.error('Enter instruction text and select an organization')
+            return
+        }
+        setSavingInstruction(true)
+        try {
+            const res = await superadminFetch('/api/superadmin/agent-memories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orgId: selectedOrgId,
+                    content,
+                    severity: saveInstructionSeverity,
+                    memoryType: 'correction',
+                    scope: 'org',
+                }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Save failed')
+            toast.success('Instruction saved to brain memory')
+            setSaveInstructionContent('')
+        } catch (e: any) {
+            toast.error(e.message || 'Save failed')
+        } finally {
+            setSavingInstruction(false)
+        }
+    }
+
     const handleClear = () => {
         setPrompt('')
         setResponse('')
@@ -339,6 +459,163 @@ export default function AIPlaygroundPage() {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-border">
+                <button
+                    onClick={() => setActiveTab('playground')}
+                    className={`px-4 py-2 rounded-t-lg font-medium flex items-center gap-2 transition-colors ${
+                        activeTab === 'playground'
+                            ? 'bg-surface border border-border border-b-0 -mb-px text-info'
+                            : 'text-textTertiary hover:text-textPrimary hover:bg-surfaceHover'
+                    }`}
+                >
+                    <Sparkles className="w-4 h-4" />
+                    Playground
+                </button>
+                <button
+                    onClick={() => setActiveTab('agent-chat')}
+                    className={`px-4 py-2 rounded-t-lg font-medium flex items-center gap-2 transition-colors ${
+                        activeTab === 'agent-chat'
+                            ? 'bg-surface border border-border border-b-0 -mb-px text-info'
+                            : 'text-textTertiary hover:text-textPrimary hover:bg-surfaceHover'
+                    }`}
+                >
+                    <Bot className="w-4 h-4" />
+                    Agent Chat
+                </button>
+            </div>
+
+            {activeTab === 'agent-chat' ? (
+                /* Agent Chat tab */
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-1 space-y-4">
+                        <div className="bg-surface border border-border rounded-xl p-4">
+                            <h3 className="text-lg font-semibold text-textPrimary mb-3">Agent</h3>
+                            <select
+                                value={selectedAgentId}
+                                onChange={(e) => setSelectedAgentId(e.target.value)}
+                                className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary"
+                            >
+                                {agentTemplates.map((t) => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
+                            {selectedAgentId && (() => {
+                                const t = agentTemplates.find((a) => a.id === selectedAgentId)
+                                if (!t) return null
+                                return (
+                                    <div className="mt-3 text-sm text-textTertiary space-y-1">
+                                        <p><span className="text-textSecondary">Tier:</span> {t.tier}</p>
+                                        <p><span className="text-textSecondary">Max turns:</span> {t.max_turns}</p>
+                                        {(t.tools_enabled?.length ?? 0) > 0 && (
+                                            <p><span className="text-textSecondary">Tools:</span> {(t.tools_enabled as string[]).join(', ')}</p>
+                                        )}
+                                    </div>
+                                )
+                            })()}
+                        </div>
+                        <div className="bg-surface border border-border rounded-xl p-4">
+                            <h3 className="text-lg font-semibold text-textPrimary mb-3">Organization</h3>
+                            <p className="text-xs text-textTertiary mb-2">Required. Agents need org context for tool execution and constitution enforcement.</p>
+                            <select
+                                value={selectedOrgId}
+                                onChange={(e) => setSelectedOrgId(e.target.value)}
+                                className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary"
+                            >
+                                <option value="" disabled>Select organization...</option>
+                                {organizations.map((o) => (
+                                    <option key={o.id} value={o.id}>{o.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="bg-surface border border-border rounded-xl p-4">
+                            <h3 className="text-lg font-semibold text-textPrimary mb-2">Save as instruction</h3>
+                            <textarea
+                                value={saveInstructionContent}
+                                onChange={(e) => setSaveInstructionContent(e.target.value)}
+                                placeholder="Instruction or correction to persist..."
+                                className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary text-sm h-20 resize-none mb-2"
+                            />
+                            <select
+                                value={saveInstructionSeverity}
+                                onChange={(e) => setSaveInstructionSeverity(e.target.value as typeof saveInstructionSeverity)}
+                                className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary text-sm mb-2"
+                            >
+                                <option value="low">Low (0.3)</option>
+                                <option value="medium">Medium (0.6)</option>
+                                <option value="high">High (0.9)</option>
+                                <option value="critical">Critical (1.0)</option>
+                            </select>
+                            <button
+                                onClick={handleSaveAsInstruction}
+                                disabled={savingInstruction || !saveInstructionContent.trim() || !selectedOrgId}
+                                className="flex items-center gap-2 w-full justify-center px-3 py-2 bg-info hover:bg-info/80 disabled:opacity-50 text-textInverse rounded-lg text-sm"
+                            >
+                                {savingInstruction ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Save to brain memory
+                            </button>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-2 space-y-4">
+                        <div className="bg-surface border border-border rounded-xl p-6 flex flex-col min-h-[400px]">
+                            <h3 className="text-lg font-semibold text-textPrimary mb-4">Chat</h3>
+                            <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[240px]">
+                                {agentChatMessages.length === 0 && (
+                                    <div className="flex items-center justify-center h-48 text-textTertiary">
+                                        <div className="text-center">
+                                            <Bot className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                                            <p>Select an agent and send a message</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {agentChatMessages.map((m, i) => (
+                                    <div
+                                        key={i}
+                                        className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div
+                                            className={`max-w-[85%] rounded-lg px-4 py-2 ${
+                                                m.role === 'user'
+                                                    ? 'bg-info/20 text-textPrimary'
+                                                    : 'bg-surfaceHover text-textPrimary'
+                                            }`}
+                                        >
+                                            <div className="text-xs text-textTertiary mb-1">{m.role === 'user' ? 'You' : 'Agent'}</div>
+                                            <div className="whitespace-pre-wrap text-sm">{m.content}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {agentChatLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-surfaceHover rounded-lg px-4 py-2 flex items-center gap-2 text-textTertiary">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span className="text-sm">Thinking...</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={agentChatInput}
+                                    onChange={(e) => setAgentChatInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAgentChatSend()}
+                                    placeholder="Type a message..."
+                                    className="flex-1 bg-surfaceHover border border-border rounded-lg px-4 py-2 text-textPrimary placeholder-textTertiary"
+                                />
+                                <button
+                                    onClick={handleAgentChatSend}
+                                    disabled={agentChatLoading || !agentChatInput.trim() || !selectedAgentId || !selectedOrgId}
+                                    className="px-4 py-2 bg-info hover:bg-info/80 disabled:opacity-50 text-textInverse rounded-lg flex items-center gap-2"
+                                >
+                                    <Send className="w-4 h-4" />
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Configuration Panel */}
                 <div className="lg:col-span-1 space-y-6">
@@ -356,8 +633,8 @@ export default function AIPlaygroundPage() {
                                     className="w-full bg-surfaceHover border border-border rounded-lg px-3 py-2 text-textPrimary"
                                 >
                                     {providers.map(p => (
-                                        <option key={p.id} value={p.provider_type}>
-                                            {p.provider_type.charAt(0).toUpperCase() + p.provider_type.slice(1)}
+                                        <option key={p.id} value={p.provider}>
+                                            {p.provider.charAt(0).toUpperCase() + p.provider.slice(1)}
                                         </option>
                                     ))}
                                 </select>
@@ -664,6 +941,7 @@ export default function AIPlaygroundPage() {
                     )}
                 </div>
             </div>
+            )}
         </div>
     )
 }

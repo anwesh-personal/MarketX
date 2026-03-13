@@ -244,6 +244,10 @@ export class VectorStore {
         )
 
         // Perform hybrid search using SQL function
+        // minSimilarity: use caller-specified value, or fall back to 0.5 floor (never 0.0 — returns noise)
+        const minSim = options.minSimilarity != null && options.minSimilarity > 0
+            ? options.minSimilarity
+            : 0.5
         const { data, error } = await this.getSupabase().rpc('hybrid_search', {
             query_embedding: JSON.stringify(queryEmbedding),
             query_text: query,
@@ -252,7 +256,7 @@ export class VectorStore {
             top_k: options.topK || 5,
             vector_weight: options.vectorWeight || 0.7,
             fts_weight: options.ftsWeight || 0.3,
-            min_similarity: options.minSimilarity || 0.0
+            min_similarity: minSim,
         })
 
         if (error) {
@@ -296,12 +300,15 @@ export class VectorStore {
         )
 
         // Perform vector search using SQL function
+        const minSimV = options.minSimilarity != null && options.minSimilarity > 0
+            ? options.minSimilarity
+            : 0.5
         const { data, error } = await this.getSupabase().rpc('vector_search', {
             query_embedding: JSON.stringify(queryEmbedding),
             org_uuid: options.orgId,
             source_types: options.sourceTypes || null,
             top_k: options.topK || 5,
-            min_similarity: options.minSimilarity || 0.0
+            min_similarity: minSimV,
         })
 
         if (error) {

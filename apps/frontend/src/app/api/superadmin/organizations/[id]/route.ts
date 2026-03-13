@@ -82,8 +82,8 @@ export async function PATCH(
         // Allowed fields to update
         const allowedFields = [
             'name',
-            'license_tier',
-            'is_active',
+            'plan',
+            'status',
             'max_kbs',
             'max_runs_per_month',
             'max_team_members',
@@ -104,6 +104,14 @@ export async function PATCH(
             );
         }
 
+        const { data: existingOrg, error: existingOrgError } = await supabase
+            .from('organizations')
+            .select('plan, status')
+            .eq('id', id)
+            .single();
+
+        if (existingOrgError) throw existingOrgError;
+
         // Update organization
         const { data: org, error } = await supabase
             .from('organizations')
@@ -117,20 +125,14 @@ export async function PATCH(
 
         if (error) throw error;
 
-        // Log license change if tier was updated
-        if (filteredUpdates.license_tier) {
-            const { data: oldOrg } = await supabase
-                .from('organizations')
-                .select('license_tier')
-                .eq('id', id)
-                .single();
-
+        // Log license change if plan was updated
+        if (filteredUpdates.plan) {
             await supabase.from('license_transactions').insert({
                 org_id: id,
-                transaction_type: 'tier_change',
-                from_tier: oldOrg?.license_tier || null,
-                to_tier: filteredUpdates.license_tier,
-                changed_by_admin_id: null, // TODO: Add superadmin ID when auth is implemented
+                admin_id: null, // TODO: Add superadmin ID when auth is implemented
+                transaction_type: 'plan_changed',
+                from_plan: existingOrg?.plan || null,
+                to_plan: filteredUpdates.plan,
             });
         }
 
@@ -149,7 +151,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/superadmin/organizations/[id]
- * Soft delete organization (set is_active = false)
+ * Soft delete organization (set status = suspended)
  */
 export async function DELETE(
     request: NextRequest,
@@ -158,11 +160,11 @@ export async function DELETE(
     try {
         const { id } = await context.params;
 
-        // Soft delete - set is_active to false
+        // Soft delete - set status to suspended
         const { data: org, error } = await supabase
             .from('organizations')
             .update({
-                is_active: false,
+                status: 'suspended',
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
@@ -174,10 +176,10 @@ export async function DELETE(
         // Log deletion
         await supabase.from('license_transactions').insert({
             org_id: id,
-            transaction_type: 'deleted',
-            from_tier: org.license_tier,
-            to_tier: null,
-            changed_by_admin_id: null, // TODO: Add superadmin ID when auth is implemented
+            admin_id: null, // TODO: Add superadmin ID when auth is implemented
+            transaction_type: 'suspended',
+            from_plan: org.plan || null,
+            to_plan: org.plan || null,
         });
 
         return NextResponse.json({

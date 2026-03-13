@@ -7,6 +7,8 @@ import {
     Plus, Trash2, Check, X, Globe,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 interface ConfigRow {
     key: string;
@@ -93,6 +95,7 @@ function buildValuePayload(existing: any, newDisplayVal: string): any {
 }
 
 export default function PlatformConfigPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [grouped, setGrouped] = useState<Record<string, ConfigRow[]>>({});
     const [categories, setCategories] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
@@ -102,10 +105,11 @@ export default function PlatformConfigPage() {
     const [newKey, setNewKey] = useState('');
     const [newValue, setNewValue] = useState('');
     const [newDesc, setNewDesc] = useState('');
+    const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         try {
-            const res = await fetch('/api/superadmin/platform-config');
+            const res = await fetchWithAuth('/api/superadmin/platform-config');
             const data = await res.json();
             if (data.grouped) setGrouped(data.grouped);
             if (data.categories) setCategories(data.categories);
@@ -127,7 +131,7 @@ export default function PlatformConfigPage() {
         setSaving(true);
         try {
             const payload = buildValuePayload(cfg.value, displayVal);
-            const res = await fetch('/api/superadmin/platform-config', {
+            const res = await fetchWithAuth('/api/superadmin/platform-config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: cfg.key, value: payload, description: cfg.description }),
@@ -156,7 +160,7 @@ export default function PlatformConfigPage() {
                 };
             });
 
-            const res = await fetch('/api/superadmin/platform-config', {
+            const res = await fetchWithAuth('/api/superadmin/platform-config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ configs }),
@@ -175,7 +179,7 @@ export default function PlatformConfigPage() {
         try {
             const num = Number(newValue);
             const val = isNaN(num) ? { value: newValue } : { value: num };
-            const res = await fetch('/api/superadmin/platform-config', {
+            const res = await fetchWithAuth('/api/superadmin/platform-config', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ key: newKey, value: val, description: newDesc || newKey }),
@@ -189,9 +193,8 @@ export default function PlatformConfigPage() {
     };
 
     const handleDelete = async (key: string) => {
-        if (!confirm(`Delete config "${key}"?`)) return;
         try {
-            const res = await fetch(`/api/superadmin/platform-config?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+            const res = await fetchWithAuth(`/api/superadmin/platform-config?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Delete failed');
             toast.success(`${key} deleted`);
@@ -230,7 +233,7 @@ export default function PlatformConfigPage() {
                     </button>
                     {dirtyCount > 0 && (
                         <button onClick={handleSaveAll} disabled={saving}
-                            className="flex items-center gap-xs bg-primary text-white px-md py-sm rounded-[var(--radius-md)] font-medium hover:opacity-90 disabled:opacity-50 transition-all">
+                            className="btn btn-primary gap-xs px-md py-sm rounded-[var(--radius-md)] font-medium disabled:opacity-50">
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             Save All ({dirtyCount})
                         </button>
@@ -339,7 +342,7 @@ export default function PlatformConfigPage() {
                                                                         <X className="w-3.5 h-3.5" />
                                                                     </button>
                                                                 )}
-                                                                <button onClick={() => handleDelete(cfg.key)}
+                                                                <button onClick={() => setPendingDeleteKey(cfg.key)}
                                                                     className="p-xs text-danger/50 hover:text-danger hover:bg-danger/10 rounded transition-all" title="Delete">
                                                                     <Trash2 className="w-3.5 h-3.5" />
                                                                 </button>
@@ -383,11 +386,23 @@ export default function PlatformConfigPage() {
                     </div>
                 </div>
                 <button onClick={handleAddCustom} disabled={saving || !newKey}
-                    className="flex items-center gap-xs bg-primary text-white px-md py-sm rounded-[var(--radius-md)] font-medium hover:opacity-90 disabled:opacity-50 transition-all">
+                    className="btn btn-primary gap-xs px-md py-sm rounded-[var(--radius-md)] font-medium disabled:opacity-50">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     Add Config
                 </button>
             </div>
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingDeleteKey)}
+                title="Delete config key"
+                description={`This will permanently remove "${pendingDeleteKey}" from platform configuration. This cannot be undone.`}
+                confirmLabel="Delete"
+                onCancel={() => setPendingDeleteKey(null)}
+                onConfirm={() => {
+                    if (pendingDeleteKey) void handleDelete(pendingDeleteKey);
+                    setPendingDeleteKey(null);
+                }}
+            />
         </div>
     );
 }

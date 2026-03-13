@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings, ChevronDown, Upload, History, Save } from 'lucide-react'
+import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings, Upload, History, Save } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useTheme } from '@/contexts/ThemeContext'
+import { BrainBackground } from '@/components/BrainBackground'
 
 // ============================================================
 // TYPES
@@ -25,12 +26,10 @@ interface Message {
     isStreaming?: boolean
 }
 
-interface BrainTemplate {
-    id: string
+interface ActiveRuntime {
     name: string
-    description: string
-    pricing_tier: string
-    is_default: boolean
+    templateVersion?: string
+    toolsGranted?: string[]
 }
 
 // ============================================================
@@ -46,34 +45,47 @@ export default function BrainChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLTextAreaElement>(null)
 
-    // Brain selection
-    const [brains, setBrains] = useState<BrainTemplate[]>([])
-    const [selectedBrain, setSelectedBrain] = useState<BrainTemplate | null>(null)
-    const [showBrainDropdown, setShowBrainDropdown] = useState(false)
-    const [loadingBrains, setLoadingBrains] = useState(true)
+    // Active brain runtime (single source of truth — no selector)
+    const [activeRuntime, setActiveRuntime] = useState<ActiveRuntime | null>(null)
+    const [runtimeError, setRuntimeError] = useState<string | null>(null)
 
     // Push to brain
     const [showPushModal, setShowPushModal] = useState(false)
     const [pushing, setPushing] = useState(false)
     const [pushSuccess, setPushSuccess] = useState(false)
+    const [brainsForPush, setBrainsForPush] = useState<Array<{ id: string; name: string; pricing_tier?: string }>>([])
 
-    // Load available brains
+    // Load active brain runtime for this org (governs entire account)
     useEffect(() => {
-        const fetchBrains = async () => {
+        const fetchRuntime = async () => {
             try {
-                const res = await fetch('/api/brain/templates')
+                const res = await fetch('/api/brain/runtime')
+                if (res.status === 404) {
+                    setRuntimeError('No brain deployed for your organization. Ask your admin to deploy one.')
+                    setActiveRuntime(null)
+                    return
+                }
+                if (!res.ok) throw new Error('Failed to load brain')
                 const data = await res.json()
-                setBrains(data.brains || [])
-                const defaultBrain = data.brains?.find((b: BrainTemplate) => b.is_default)
-                setSelectedBrain(defaultBrain || data.brains?.[0])
+                setActiveRuntime(data.runtime ? { name: data.runtime.name, templateVersion: data.runtime.templateVersion, toolsGranted: data.runtime.toolsGranted } : null)
+                setRuntimeError(null)
             } catch (err) {
-                console.error('Failed to fetch brains:', err)
-            } finally {
-                setLoadingBrains(false)
+                console.error('Failed to fetch brain runtime:', err)
+                setRuntimeError('Could not load brain. Sign in and try again.')
+                setActiveRuntime(null)
             }
         }
-        fetchBrains()
+        fetchRuntime()
     }, [])
+
+    // Load templates only when opening Push-to-Brain modal
+    useEffect(() => {
+        if (!showPushModal) return
+        fetch('/api/brain/templates')
+            .then(r => r.json())
+            .then(data => setBrainsForPush(data.templates || []))
+            .catch(() => setBrainsForPush([]))
+    }, [showPushModal])
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -114,7 +126,6 @@ export default function BrainChatPage() {
                 body: JSON.stringify({
                     message: input,
                     conversationId: conversationId || undefined,
-                    brainTemplateId: selectedBrain?.id,
                     stream: true
                 })
             })
@@ -232,9 +243,10 @@ export default function BrainChatPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="relative flex flex-col h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
+            <BrainBackground opacity={0.22} animation="float" className="z-0" />
             {/* Header */}
-            <header className="border-b border-border/40 backdrop-blur-xl bg-background/80 sticky top-0 z-10">
+            <header className="relative z-10 border-b border-border/40 backdrop-blur-xl bg-background/80 sticky top-0">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="relative">
@@ -242,51 +254,16 @@ export default function BrainChatPage() {
                             <Sparkles className="w-4 h-4 text-primary absolute -top-1 -right-1 animate-pulse" />
                         </div>
 
-                        {/* Brain Selector Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowBrainDropdown(!showBrainDropdown)}
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-all duration-200"
-                                disabled={loadingBrains}
-                            >
-                                <div>
-                                    <h1 className="text-lg font-bold text-foreground">
-                                        {selectedBrain?.name || 'Select Brain'}
-                                    </h1>
-                                    <p className="text-xs text-muted-foreground text-left">
-                                        {selectedBrain?.pricing_tier || 'Loading...'}
-                                    </p>
-                                </div>
-                                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showBrainDropdown ? 'rotate-180' : ''}`} />
-                            </button>
-
-                            {showBrainDropdown && (
-                                <div className="absolute top-full left-0 mt-2 w-72 bg-background border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
-                                    <div className="p-2 border-b border-border/50">
-                                        <p className="text-xs text-muted-foreground px-2">Select a Brain</p>
-                                    </div>
-                                    <div className="max-h-64 overflow-y-auto">
-                                        {brains.map((brain) => (
-                                            <button
-                                                key={brain.id}
-                                                onClick={() => {
-                                                    setSelectedBrain(brain)
-                                                    setShowBrainDropdown(false)
-                                                }}
-                                                className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center justify-between ${selectedBrain?.id === brain.id ? 'bg-primary/10' : ''}`}
-                                            >
-                                                <div>
-                                                    <p className="font-medium text-sm">{brain.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{brain.description?.slice(0, 50)}...</p>
-                                                </div>
-                                                {brain.is_default && (
-                                                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Default</span>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                        {/* Active brain (read-only — governed by org deployment) */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50">
+                            <div>
+                                <h1 className="text-lg font-bold text-foreground">
+                                    {activeRuntime?.name ?? (runtimeError ? 'No brain deployed' : 'Loading...')}
+                                </h1>
+                                <p className="text-xs text-muted-foreground text-left">
+                                    {activeRuntime?.templateVersion ? `v${activeRuntime.templateVersion}` : runtimeError ?? 'Your organization’s active brain'}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -295,7 +272,7 @@ export default function BrainChatPage() {
                         {conversationId && messages.length > 0 && (
                             <button
                                 onClick={() => setShowPushModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-200 hover:scale-105 active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(var(--color-accent-rgb),0.1)] hover:bg-[rgba(var(--color-accent-rgb),0.2)] text-accent transition-all duration-200 hover:scale-105 active:scale-95"
                             >
                                 <Upload className="w-4 h-4" />
                                 <span className="text-sm font-medium">Push to Brain</span>
@@ -314,13 +291,13 @@ export default function BrainChatPage() {
 
             {/* Push to Brain Modal */}
             {showPushModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
                     <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
                         <h2 className="text-xl font-bold mb-4">Push Conversation to Brain</h2>
 
                         {pushSuccess ? (
                             <div className="text-center py-8">
-                                <Check className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                <Check className="w-16 h-16 text-success mx-auto mb-4" />
                                 <p className="text-lg font-medium">Successfully Pushed!</p>
                                 <p className="text-sm text-muted-foreground">The brain will learn from this conversation.</p>
                             </div>
@@ -331,7 +308,7 @@ export default function BrainChatPage() {
                                 </p>
 
                                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {brains.map((brain) => (
+                                    {brainsForPush.map((brain) => (
                                         <button
                                             key={brain.id}
                                             onClick={() => pushToBrain(brain.id)}
@@ -340,7 +317,7 @@ export default function BrainChatPage() {
                                         >
                                             <div>
                                                 <p className="font-medium">{brain.name}</p>
-                                                <p className="text-xs text-muted-foreground">{brain.pricing_tier}</p>
+                                                <p className="text-xs text-muted-foreground">{brain.pricing_tier ?? ''}</p>
                                             </div>
                                             {pushing ? (
                                                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -386,7 +363,7 @@ export default function BrainChatPage() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder={`Ask ${selectedBrain?.name || 'the brain'}... (Shift + Enter for new line)`}
+                            placeholder={`Ask ${activeRuntime?.name ?? 'the brain'}... (Shift + Enter for new line)`}
                             rows={1}
                             className="w-full resize-none rounded-2xl border border-border/60 bg-background/50 px-6 py-4 pr-14 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all duration-200 max-h-32 overflow-y-auto hover:bg-background/80"
                             disabled={isLoading}
@@ -394,7 +371,7 @@ export default function BrainChatPage() {
                         <button
                             onClick={sendMessage}
                             disabled={!input.trim() || isLoading}
-                            className="absolute right-3 bottom-3 p-2.5 rounded-xl bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
+                            className="absolute right-3 bottom-3 p-2.5 rounded-xl bg-accent text-onAccent disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 transition-all duration-200 hover:shadow-lg hover:shadow-primary/20"
                         >
                             {isLoading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -404,7 +381,7 @@ export default function BrainChatPage() {
                         </button>
                     </div>
                     <p className="text-xs text-muted-foreground text-center mt-3">
-                        {selectedBrain?.name} • {conversationId ? 'Conversation saved' : 'New conversation'}
+                        {activeRuntime?.name ?? 'Brain'} • {conversationId ? 'Conversation saved' : 'New conversation'}
                     </p>
                 </div>
             </div>
@@ -427,30 +404,30 @@ function MessageBubble({ message }: { message: Message }) {
     }
 
     return (
-        <div className={`flex gap-4 group ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className="flex gap-4 group">
             {/* Avatar */}
-            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${isUser
-                ? 'bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20'
-                : 'bg-gradient-to-br from-muted to-muted/50 border border-border/40'
+            <div className={`flex-shrink-0 w-10 h-10 rounded-[var(--radius-md)] flex items-center justify-center ${isUser
+                ? 'bg-accent/10 border border-accent/20'
+                : 'bg-surface border border-border shadow-sm'
                 }`}>
                 {isUser ? (
-                    <span className="text-sm font-semibold text-primary">You</span>
+                    <span className="text-sm font-semibold text-accent">You</span>
                 ) : (
-                    <Brain className="w-5 h-5 text-primary" />
+                    <Brain className="w-5 h-5 text-textSecondary" />
                 )}
             </div>
 
             {/* Content */}
-            <div className={`flex-1 max-w-3xl space-y-2 ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
+            <div className={`flex-1 max-w-3xl space-y-2 flex flex-col`}>
                 {/* Message */}
-                <div className={`rounded-2xl px-5 py-3.5 ${isUser
-                    ? 'bg-primary text-primary-foreground ml-auto'
-                    : 'bg-muted/50 border border-border/40 backdrop-blur-sm'
-                    } transition-all duration-200 hover:shadow-md`}>
+                <div className={`rounded-[var(--radius-lg)] px-5 py-4 ${isUser
+                    ? 'bg-gradient-to-br from-accent to-accent-secondary text-onAccent shadow-md'
+                    : 'bg-surface border border-border shadow-sm'
+                    } transition-all duration-200`}>
                     {message.isStreaming && !message.content.trim() ? (
                         <div className="flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                            <span className="text-sm text-muted-foreground">Thinking...</span>
+                            <Loader2 className={`w-4 h-4 animate-spin ${isUser ? 'text-onAccent' : 'text-accent'}`} />
+                            <span className="text-sm opacity-80">Thinking...</span>
                         </div>
                     ) : isUser ? (
                         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -466,12 +443,12 @@ function MessageBubble({ message }: { message: Message }) {
                                                 style={oneDark}
                                                 language={match[1]}
                                                 PreTag="div"
-                                                className="rounded-lg !bg-background/50 !mt-2 !mb-2"
+                                                className="rounded-[var(--radius-md)] !bg-background/50 !mt-2 !mb-2 border border-border"
                                             >
                                                 {String(children).replace(/\n$/, '')}
                                             </SyntaxHighlighter>
                                         ) : (
-                                            <code className="bg-muted px-1.5 py-0.5 rounded text-xs" {...rest}>
+                                            <code className="bg-surfaceHover px-1.5 py-0.5 rounded-[var(--radius-sm)] text-xs border border-border" {...rest}>
                                                 {children}
                                             </code>
                                         )
@@ -481,18 +458,18 @@ function MessageBubble({ message }: { message: Message }) {
                                 {message.content}
                             </ReactMarkdown>
                             {message.isStreaming && (
-                                <span className="inline-block w-2 h-4 ml-1 align-middle bg-primary/70 animate-pulse rounded-sm" />
+                                <span className="inline-block w-2 h-4 ml-1 align-middle bg-accent animate-pulse rounded-sm" />
                             )}
                         </div>
                     )}
                 </div>
 
                 {/* Actions & Metadata */}
-                <div className={`flex items-center gap-2 text-xs text-muted-foreground ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+                <div className="flex items-center gap-3 text-xs text-textTertiary pl-1">
+                    <span>{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
 
                     {message.metadata?.agentType && (
-                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        <span className="badge badge-accent">
                             {message.metadata.agentType}
                         </span>
                     )}
@@ -501,17 +478,17 @@ function MessageBubble({ message }: { message: Message }) {
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                                 onClick={copyToClipboard}
-                                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                className="p-1 hover:text-textPrimary transition-colors"
                                 title="Copy"
                             >
                                 {copied ? (
-                                    <Check className="w-3.5 h-3.5 text-green-500" />
+                                    <Check className="w-3.5 h-3.5 text-success" />
                                 ) : (
                                     <Copy className="w-3.5 h-3.5" />
                                 )}
                             </button>
                             <button
-                                className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                className="p-1 hover:text-textPrimary transition-colors"
                                 title="Regenerate"
                             >
                                 <RotateCcw className="w-3.5 h-3.5" />
@@ -520,7 +497,7 @@ function MessageBubble({ message }: { message: Message }) {
                     )}
 
                     {message.metadata?.responseTime && (
-                        <span className="text-xs opacity-70">
+                        <span className="text-xs opacity-70 ml-auto">
                             {message.metadata.responseTime}ms
                         </span>
                     )}
@@ -536,10 +513,10 @@ function MessageBubble({ message }: { message: Message }) {
 
 function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) => void }) {
     const suggestions = [
-        { icon: '✍️', text: 'Write a blog post about AI trends', color: 'from-blue-500/20 to-purple-500/20' },
-        { icon: '📊', text: 'Analyze my recent data', color: 'from-green-500/20 to-emerald-500/20' },
-        { icon: '🎯', text: 'Help me set productivity goals', color: 'from-orange-500/20 to-red-500/20' },
-        { icon: '💡', text: 'Explain quantum computing', color: 'from-pink-500/20 to-purple-500/20' }
+        { icon: '✍️', text: 'Write a blog post about AI trends', color: 'from-[rgba(var(--color-accent-rgb),0.1)] to-[rgba(var(--color-accent-secondary-rgb),0.1)]' },
+        { icon: '📊', text: 'Analyze my recent data', color: 'from-[rgba(var(--color-success-rgb),0.1)] to-[rgba(var(--color-success-rgb),0.05)]' },
+        { icon: '🎯', text: 'Help me set productivity goals', color: 'from-[rgba(var(--color-warning-rgb),0.1)] to-[rgba(var(--color-error-rgb),0.1)]' },
+        { icon: '💡', text: 'Explain quantum computing', color: 'from-[rgba(var(--color-accent-rgb),0.05)] to-[rgba(var(--color-accent-secondary-rgb),0.1)]' }
     ]
 
     return (
@@ -550,7 +527,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) 
             </div>
 
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground/80 to-foreground/60 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold font-display text-textPrimary">
                     Hello! I'm your Market Writer Brain
                 </h2>
                 <p className="text-muted-foreground max-w-md">
@@ -563,7 +540,7 @@ function EmptyState({ onSuggestionClick }: { onSuggestionClick?: (text: string) 
                     <button
                         key={i}
                         onClick={() => onSuggestionClick?.(suggestion.text)}
-                        className={`group p-4 rounded-xl border border-border/40 bg-gradient-to-br ${suggestion.color} hover:border-primary/40 transition-all duration-300 hover:scale-105 hover:shadow-lg text-left`}
+                        className={`group p-4 rounded-xl border border-border/40 bg-gradient-to-br ${suggestion.color} hover:border-accent/40 transition-all duration-300 hover:scale-105 hover:shadow-lg text-left`}
                     >
                         <div className="flex items-start gap-3">
                             <span className="text-2xl">{suggestion.icon}</span>

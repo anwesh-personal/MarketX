@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 
 // Provider-specific model discovery methods
 const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<DiscoveredModel[]>> = {
@@ -18,7 +19,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 15000)
 
-            const response = await fetch('https://api.openai.com/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -70,7 +71,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
     anthropic: async (apiKey: string) => {
         console.log('🔍 Anthropic Model Discovery Started')
         try {
-            const response = await fetch('https://api.anthropic.com/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/models`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -112,7 +113,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
     google: async (apiKey: string) => {
         console.log('🔍 Google Gemini Model Discovery Started')
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+            const response = await fetch(`${PROVIDER_BASE_URLS.google}/models?key=${apiKey}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' }
             })
@@ -155,7 +156,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
     mistral: async (apiKey: string) => {
         console.log('🔍 Mistral Model Discovery Started')
         try {
-            const response = await fetch('https://api.mistral.ai/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/models`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -195,7 +196,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
     perplexity: async (apiKey: string) => {
         console.log('🔍 Perplexity Model Discovery Started')
         try {
-            const response = await fetch('https://api.perplexity.ai/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.perplexity}/models`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -235,7 +236,7 @@ const PROVIDER_DISCOVERY_METHODS: Record<string, (apiKey: string) => Promise<Dis
     xai: async (apiKey: string) => {
         console.log('🔍 xAI (Grok) Model Discovery Started')
         try {
-            const response = await fetch('https://api.x.ai/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.xai}/models`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

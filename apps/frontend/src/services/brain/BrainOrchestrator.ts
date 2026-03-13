@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ragOrchestrator, RAGResult, RAGContext, RetrievedDocument } from './RAGOrchestrator';
 import { vectorStore } from './VectorStore';
 import { BrainConfig, brainConfigService } from './BrainConfigService';
+import { getActiveBrainRuntime } from './BrainRuntimeResolver';
 import { intentClassifier, Intent, IntentClassificationResult } from './agents/IntentClassifier';
 import { Agent, AgentContext, AgentResponse } from './agents/Agent';
 import { writerAgent } from './agents/WriterAgent';
@@ -1247,12 +1248,12 @@ class BrainOrchestrator {
     }
 
     /**
-     * Load brain config for org
-     * Returns the org's BrainConfig (extracted from BrainTemplate)
+     * Load brain config for org (single source of truth: deployed brain_agents)
+     * Returns the org's BrainConfig from active runtime, or null if none deployed.
      */
     async loadBrainConfig(orgId: string): Promise<BrainConfig | null> {
-        const template = await brainConfigService.getOrgBrain(orgId);
-        return template?.config ?? null;
+        const runtime = await getActiveBrainRuntime(orgId);
+        return runtime?.brainConfigForRAG ?? null;
     }
 
     // ============================================================================

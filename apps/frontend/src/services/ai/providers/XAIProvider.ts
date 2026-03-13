@@ -8,6 +8,7 @@
  */
 
 import { AbstractProvider } from '../BaseProvider'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 import {
     AIModel,
     GenerationOptions,
@@ -39,7 +40,7 @@ export class XAIProvider extends AbstractProvider {
         messages.push({ role: 'user', content: prompt })
 
         try {
-            const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

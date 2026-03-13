@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Shield, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { saveSession, isAuthenticated } from '@/lib/superadmin-auth';
+import { MailWriterLogo } from '@/components/MailWriterLogo';
 
 export default function SuperadminLogin() {
     const router = useRouter();
@@ -57,8 +58,8 @@ export default function SuperadminLogin() {
             <div className="w-full max-w-md">
                 {/* Logo/Header */}
                 <div className="text-center mb-lg">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-[var(--radius-xl)] mb-md">
-                        <Shield className="w-8 h-8 text-white" />
+                    <div className="flex justify-center mb-md">
+                        <MailWriterLogo size="lg" showText={false} />
                     </div>
                     <h1 className="text-3xl font-bold text-textPrimary mb-sm">
                         Superadmin Portal
@@ -142,7 +143,7 @@ export default function SuperadminLogin() {
                             disabled={isLoading}
                             className="
                 w-full
-                bg-primary text-white
+                btn btn-primary
                 font-medium
                 px-md py-sm
                 rounded-[var(--radius-md)]

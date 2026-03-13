@@ -8,7 +8,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'axiom-jwt-secret-change-in-production';
+if (!process.env.JWT_SECRET) {
+    throw new Error('FATAL: JWT_SECRET environment variable is not set. Refusing to start with insecure defaults.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

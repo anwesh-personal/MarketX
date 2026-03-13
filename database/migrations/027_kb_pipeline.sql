@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS kb_sections (
   UNIQUE (agent_id, name)
 );
 
-CREATE INDEX kb_sections_agent_idx ON kb_sections(agent_id, is_active);
-CREATE INDEX kb_sections_org_idx   ON kb_sections(org_id);
+CREATE INDEX IF NOT EXISTS kb_sections_agent_idx ON kb_sections(agent_id, is_active);
+CREATE INDEX IF NOT EXISTS kb_sections_org_idx   ON kb_sections(org_id);
 
 -- ============================================================
 -- KB DOCUMENTS
@@ -76,10 +76,11 @@ CREATE TABLE IF NOT EXISTS kb_documents (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX kb_documents_section_idx ON kb_documents(section_id, is_active);
-CREATE INDEX kb_documents_agent_idx   ON kb_documents(agent_id, status);
-CREATE INDEX kb_documents_hash_idx    ON kb_documents(content_hash);
+CREATE INDEX IF NOT EXISTS kb_documents_section_idx ON kb_documents(section_id, is_active);
+CREATE INDEX IF NOT EXISTS kb_documents_agent_idx   ON kb_documents(agent_id, status);
+CREATE INDEX IF NOT EXISTS kb_documents_hash_idx    ON kb_documents(content_hash);
 
+DROP TRIGGER IF EXISTS kb_documents_updated_at ON kb_documents;
 CREATE TRIGGER kb_documents_updated_at
   BEFORE UPDATE ON kb_documents
   FOR EACH ROW EXECUTE FUNCTION brain_agents_set_updated_at();
@@ -106,6 +107,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS kb_documents_count_sync ON kb_documents;
 CREATE TRIGGER kb_documents_count_sync
   AFTER INSERT OR UPDATE OR DELETE ON kb_documents
   FOR EACH ROW EXECUTE FUNCTION kb_sections_sync_counts();
@@ -116,30 +118,31 @@ CREATE TRIGGER kb_documents_count_sync
 ALTER TABLE kb_sections  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kb_documents ENABLE ROW LEVEL SECURITY;
 
--- Members can read their org's KB
+DROP POLICY IF EXISTS kb_sections_select ON kb_sections;
 CREATE POLICY kb_sections_select ON kb_sections FOR SELECT
   USING (
-    org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+    org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
     OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
--- Write access is enforced in application layer (lock_level check)
--- DB enforces org boundary only
+DROP POLICY IF EXISTS kb_sections_write ON kb_sections;
 CREATE POLICY kb_sections_write ON kb_sections FOR ALL
   USING (
-    org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+    org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
     OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
+DROP POLICY IF EXISTS kb_documents_select ON kb_documents;
 CREATE POLICY kb_documents_select ON kb_documents FOR SELECT
   USING (
-    org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+    org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
     OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
+DROP POLICY IF EXISTS kb_documents_write ON kb_documents;
 CREATE POLICY kb_documents_write ON kb_documents FOR ALL
   USING (
-    org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+    org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
     OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 

@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { MailWriterLogo } from '@/components/MailWriterLogo';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -49,14 +50,14 @@ export default function LoginPage() {
                 <div className="card glass backdrop-blur-xl bg-surface/80 border-border/50 shadow-xl">
                     {/* Header */}
                     <div className="text-center mb-xl">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-[var(--radius-xl)] bg-gradient-to-br from-primary to-accent mb-md shadow-glow">
-                            <Sparkles className="w-8 h-8 text-white" />
+                        <div className="flex justify-center mb-md">
+                            <MailWriterLogo size="lg" showText={false} />
                         </div>
                         <h1 className="text-3xl font-bold text-textPrimary mb-xs">
                             Welcome Back
                         </h1>
                         <p className="text-textSecondary">
-                            Sign in to continue to Market Writer
+                            Sign in to continue to MarketX
                         </p>
                     </div>
 
@@ -133,7 +134,7 @@ export default function LoginPage() {
                                 w-full
                                 flex items-center justify-center gap-sm
                                 bg-gradient-to-r from-primary to-accent
-                                text-white font-semibold
+                                text-onAccent font-semibold
                                 px-lg py-sm
                                 rounded-[var(--radius-md)]
                                 hover:scale-[var(--hover-scale)]

@@ -9,10 +9,14 @@
 
 export { brainConfigService } from './BrainConfigService'
 export { brainAIConfigService } from './BrainAIConfigService'
+export { getActiveBrainRuntime, requireActiveBrainRuntime } from './BrainRuntimeResolver'
 export { vectorStore } from './VectorStore'
 export { TextChunker } from './TextChunker'
 export { ragOrchestrator } from './RAGOrchestrator'
 export { brainOrchestrator } from './BrainOrchestrator'
+export { brainKBService } from './BrainKBService'
+export { campaignMetricsService } from './CampaignMetricsService'
+export { marketingCoachService } from './MarketingCoachService'
 
 // ============================================================
 // AGENTS
@@ -43,6 +47,14 @@ export type {
     BrainRequestLog,
     BrainPerformanceMetrics
 } from './BrainConfigService'
+
+export type {
+    BrainRuntime,
+    BrainRuntimePromptStack,
+    BrainRuntimeRAG,
+    BrainRuntimeEmailDefaults,
+    BrainRuntimeSelfHealing
+} from './BrainRuntimeResolver'
 
 // Vector Store
 export type {
@@ -104,6 +116,9 @@ import { vectorStore } from './VectorStore'
 import { TextChunker } from './TextChunker'
 import { ragOrchestrator } from './RAGOrchestrator'
 import { brainOrchestrator } from './BrainOrchestrator'
+import { brainKBService } from './BrainKBService'
+import { campaignMetricsService } from './CampaignMetricsService'
+import { marketingCoachService } from './MarketingCoachService'
 import { writerAgent } from './agents/WriterAgent'
 import { generalistAgent } from './agents/GeneralistAgent'
 import { analystAgent } from './agents/AnalystAgent'
@@ -130,6 +145,15 @@ export const brain = {
     // RAG orchestration
     rag: ragOrchestrator,
 
+    // Knowledge Base (Brain KB)
+    kb: brainKBService,
+
+    // Campaign Metrics (provider-agnostic)
+    metrics: campaignMetricsService,
+
+    // Marketing Coach (learning loop)
+    coach: marketingCoachService,
+
     // Intent classification
     classify: intentClassifier,
 
@@ -154,7 +178,8 @@ export const brain = {
         streaming: true,
         caching: true,
         toolExecution: true,
-        performanceTracking: true
+        performanceTracking: true,
+        marketingCoach: true,
     }
 }
 

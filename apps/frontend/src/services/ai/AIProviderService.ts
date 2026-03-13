@@ -36,6 +36,7 @@ import {
     BrainChatResponse,
     BrainEmbedResponse,
 } from './types'
+import { decryptSecret } from '@/lib/secrets'
 
 export class AIProviderService {
     private providers: Map<ProviderType, BaseProvider>
@@ -214,7 +215,7 @@ export class AIProviderService {
             id: data.id,
             provider: data.provider as ProviderType,
             name: data.name,
-            apiKey: data.api_key,
+            apiKey: decryptSecret(data.api_key),
             description: data.description,
             isActive: data.is_active,
             priority: data.priority || 0,
@@ -375,6 +376,10 @@ export class AIProviderService {
             .order('failures',  { ascending: true })
 
         const allRows: DbProviderRow[] = [...(orgKeys ?? []), ...(platformKeys ?? [])]
+            .map((row) => ({
+                ...row,
+                api_key: decryptSecret(row.api_key),
+            }))
 
         // Build chain with resolved provider adapters
         const chain: Array<{ config: DbProviderRow; provider: BaseProvider }> = []

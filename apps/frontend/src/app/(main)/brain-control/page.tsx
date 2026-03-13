@@ -21,6 +21,7 @@ import {
     Plus,
     X
 } from 'lucide-react'
+import { BrainBackground } from '@/components/BrainBackground'
 
 // ============================================================
 // TYPES
@@ -33,6 +34,12 @@ interface BrainStats {
     tokensUsed: number
     cacheHitRate: number
     activeAgents: number
+    trends: {
+        requests: number
+        successRate: number
+        responseTime: number
+    }
+    brainName: string
 }
 
 interface AgentPerformance {
@@ -53,20 +60,48 @@ export default function BrainControlPage() {
     const [stats, setStats] = useState<BrainStats | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
-    // Load stats
     useEffect(() => {
-        // TODO: Fetch from API
-        setTimeout(() => {
-            setStats({
-                totalRequests: 1247,
-                avgResponseTime: 342,
-                successRate: 0.968,
-                tokensUsed: 487234,
-                cacheHitRate: 0.73,
-                activeAgents: 2
-            })
-            setIsLoading(false)
-        }, 500)
+        const loadStats = async () => {
+            try {
+                const [analyticsRes, agentsRes, runtimeRes] = await Promise.all([
+                    fetch('/api/brain/analytics?range=7d'),
+                    fetch('/api/brain/agents'),
+                    fetch('/api/brain/runtime')
+                ])
+
+                let totalRequests = 0, avgResponseTime = 0, successRate = 0, tokensUsed = 0, cacheHitRate = 0
+                let trends = { requests: 0, successRate: 0, responseTime: 0 }
+                if (analyticsRes.ok) {
+                    const data = await analyticsRes.json()
+                    totalRequests = data.totalRequests || 0
+                    avgResponseTime = data.avgResponseTime || 0
+                    successRate = data.successRate || 0
+                    tokensUsed = data.tokensUsed || 0
+                    cacheHitRate = data.ragMetrics?.cacheHitRate || 0
+                    trends = data.trends || { requests: 0, successRate: 0, responseTime: 0 }
+                }
+
+                let activeAgents = 0
+                if (agentsRes.ok) {
+                    const data = await agentsRes.json()
+                    activeAgents = (data.agents || []).filter((a: any) => a.is_active).length
+                }
+
+                let brainName = 'Not Deployed'
+                if (runtimeRes.ok) {
+                    const data = await runtimeRes.json()
+                    brainName = data.runtime?.name || 'Active Brain'
+                }
+
+                setStats({ totalRequests, avgResponseTime, successRate, tokensUsed, cacheHitRate, activeAgents, trends, brainName })
+            } catch (error) {
+                console.error('Failed to load brain stats:', error)
+                setStats({ totalRequests: 0, avgResponseTime: 0, successRate: 0, tokensUsed: 0, cacheHitRate: 0, activeAgents: 0, trends: { requests: 0, successRate: 0, responseTime: 0 }, brainName: 'Error' })
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadStats()
     }, [])
 
     const sections = [
@@ -79,23 +114,23 @@ export default function BrainControlPage() {
     ]
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+        <div className="h-full flex flex-col">
             {/* Header */}
-            <header className="border-b border-border/40 backdrop-blur-xl bg-background/80 sticky top-0 z-50">
+            <header className="border-b border-border/40 backdrop-blur-xl bg-background/80 sticky top-0 z-50 flex-shrink-0">
                 <div className="px-8 py-5">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                             <div className="relative">
-                                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10 blur-xl" />
-                                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
-                                    <Brain className="w-8 h-8 text-primary" />
+                                <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-accent-secondary/10 blur-xl" />
+                                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20">
+                                    <Brain className="w-8 h-8 text-accent" />
                                 </div>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent">
+                                <h1 className="text-2xl font-bold font-display text-textPrimary">
                                     Brain Command Center
                                 </h1>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-sm text-textSecondary">
                                     Full control over your AI brain system
                                 </p>
                             </div>
@@ -107,21 +142,21 @@ export default function BrainControlPage() {
                                 label="Requests Today"
                                 value={stats?.totalRequests.toLocaleString() || '---'}
                                 icon={Zap}
-                                trend="+12%"
+                                trend={stats?.trends.requests ? `${stats.trends.requests >= 0 ? '+' : ''}${stats.trends.requests.toFixed(1)}%` : '---'}
                                 color="text-info"
                             />
                             <QuickStat
                                 label="Success Rate"
                                 value={stats ? `${(stats.successRate * 100).toFixed(1)}%` : '---'}
                                 icon={TrendingUp}
-                                trend="+2.3%"
+                                trend={stats?.trends.successRate ? `${stats.trends.successRate >= 0 ? '+' : ''}${stats.trends.successRate.toFixed(1)}%` : '---'}
                                 color="text-success"
                             />
                             <QuickStat
                                 label="Avg Response"
                                 value={stats ? `${stats.avgResponseTime}ms` : '---'}
                                 icon={Activity}
-                                trend="-18ms"
+                                trend={stats?.trends.responseTime ? `${stats.trends.responseTime <= 0 ? '' : '+'}${stats.trends.responseTime}ms` : '---'}
                                 color="text-accent"
                             />
                         </div>
@@ -129,29 +164,29 @@ export default function BrainControlPage() {
                 </div>
             </header>
 
-            <div className="flex h-[calc(100vh-88px)]">
+            <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar Navigation */}
-                <aside className="w-72 border-r border-border/40 bg-background/50 backdrop-blur-sm p-6">
+                <aside className="w-72 border-r border-border/40 bg-surface/30 backdrop-blur-md p-6 overflow-y-auto flex-shrink-0">
                     <div className="space-y-2">
                         {sections.map((section) => (
                             <button
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id)}
                                 className={`w-full group relative overflow-hidden rounded-xl p-4 transition-all duration-300 ${activeSection === section.id
-                                    ? 'bg-primary/10 border-2 border-primary/40'
-                                    : 'hover:bg-muted/50 border-2 border-transparent'
+                                    ? 'bg-[rgba(var(--color-accent-rgb),0.1)] border border-accent/40 shadow-sm'
+                                    : 'hover:bg-surfaceHover border border-transparent'
                                     }`}
                             >
                                 <div className="flex items-center gap-3 relative z-10">
-                                    <div className={`p-2 rounded-lg bg-gradient-to-br ${section.color} bg-opacity-10`}>
-                                        <section.icon className={`w-5 h-5 ${activeSection === section.id ? 'text-primary' : 'text-muted-foreground'
+                                    <div className={`p-2 rounded-lg bg-gradient-to-br ${section.color} bg-opacity-10 transition-transform group-hover:scale-110`}>
+                                        <section.icon className={`w-5 h-5 ${activeSection === section.id ? 'text-accent' : 'text-textSecondary'
                                             }`} />
                                     </div>
-                                    <span className={`font-medium ${activeSection === section.id ? 'text-foreground' : 'text-muted-foreground'
+                                    <span className={`font-medium ${activeSection === section.id ? 'text-textPrimary' : 'text-textSecondary'
                                         }`}>
                                         {section.label}
                                     </span>
-                                    <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${activeSection === section.id ? 'translate-x-1' : ''
+                                    <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${activeSection === section.id ? 'translate-x-1 text-accent' : 'text-textTertiary opacity-0 group-hover:opacity-100'
                                         }`} />
                                 </div>
                                 {activeSection === section.id && (
@@ -162,22 +197,25 @@ export default function BrainControlPage() {
                     </div>
 
                     {/* Brain Status */}
-                    <div className="mt-8 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/40">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                            <span className="text-xs font-medium text-muted-foreground">System Status</span>
+                    <div className="mt-8 p-5 rounded-2xl bg-surface border border-border shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-success"></span>
+                            </div>
+                            <span className="text-xs font-semibold text-textSecondary uppercase tracking-wider">System Status</span>
                         </div>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Brain Template</span>
-                                <span className="font-medium text-primary">Pulz</span>
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between items-center">
+                                <span className="text-textSecondary">Brain Template</span>
+                                <span className="font-medium text-accent bg-[rgba(var(--color-accent-rgb),0.1)] px-2 py-0.5 rounded-md">{stats?.brainName || 'Not Deployed'}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Active Agents</span>
-                                <span className="font-medium">{stats?.activeAgents || 0}/4</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-textSecondary">Active Agents</span>
+                                <span className="font-medium text-textPrimary">{stats?.activeAgents || 0}/4</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Cache Hit Rate</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-textSecondary">Cache Hit Rate</span>
                                 <span className="font-medium text-success">
                                     {stats ? `${(stats.cacheHitRate * 100).toFixed(0)}%` : '---'}
                                 </span>
@@ -187,13 +225,17 @@ export default function BrainControlPage() {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-8">
-                    {activeSection === 'overview' && <OverviewSection stats={stats} />}
-                    {activeSection === 'memory' && <MemoryPalaceSection />}
-                    {activeSection === 'agents' && <AgentControlSection />}
-                    {activeSection === 'training' && <TrainingCenterSection />}
-                    {activeSection === 'analytics' && <AnalyticsSection />}
-                    {activeSection === 'config' && <ConfigurationSection />}
+                <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-background relative">
+                    <BrainBackground opacity={0.2} animation="float" mixBlendMode="soft-light" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-transparent via-surface/30 to-background pointer-events-none" />
+                    <div className="relative z-10 max-w-6xl mx-auto">
+                        {activeSection === 'overview' && <OverviewSection stats={stats} />}
+                        {activeSection === 'memory' && <MemoryPalaceSection />}
+                        {activeSection === 'agents' && <AgentControlSection />}
+                        {activeSection === 'training' && <TrainingCenterSection />}
+                        {activeSection === 'analytics' && <AnalyticsSection />}
+                        {activeSection === 'config' && <ConfigurationSection />}
+                    </div>
                 </main>
             </div>
         </div>
@@ -209,14 +251,11 @@ function QuickStat({ label, value, icon: Icon, trend, color }: any) {
         <div className="group">
             <div className="flex items-center gap-2 mb-1">
                 <Icon className={`w-4 h-4 ${color}`} />
-                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="text-xs text-textSecondary">{label}</span>
             </div>
             <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold">{value}</span>
-                <span className={`text-xs font-medium ${trend.startsWith('+') || trend.startsWith('-') ?
-                    trend.startsWith('+') ? 'text-success' : 'text-error'
-                    : 'text-muted-foreground'
-                    }`}>
+                <span className="text-xl font-bold text-textPrimary">{value}</span>
+                <span className={`text-xs font-medium ${trend.startsWith('+') ? 'text-success' : 'text-error'}`}>
                     {trend}
                 </span>
             </div>
@@ -235,36 +274,40 @@ function OverviewSection({ stats }: { stats: BrainStats | null }) {
             value: stats?.totalRequests.toLocaleString() || '---',
             change: '+12.3%',
             icon: Zap,
-            color: 'from-info to-info/70'
+            color: 'text-info',
+            bg: 'bg-info-muted'
         },
         {
             label: 'Avg Response Time',
             value: stats ? `${stats.avgResponseTime}ms` : '---',
-            change: '-18ms',
+            change: stats?.trends.responseTime ? `${stats.trends.responseTime <= 0 ? '' : '+'}${stats.trends.responseTime}ms` : '---',
             icon: Activity,
-            color: 'from-accent to-accent/70'
+            color: 'text-accent',
+            bg: 'bg-[rgba(var(--color-accent-rgb),0.1)]'
         },
         {
             label: 'Success Rate',
             value: stats ? `${(stats.successRate * 100).toFixed(1)}%` : '---',
             change: '+2.1%',
             icon: TrendingUp,
-            color: 'from-success to-success/70'
+            color: 'text-success',
+            bg: 'bg-success-muted'
         },
         {
             label: 'Tokens Used',
             value: stats ? `${(stats.tokensUsed / 1000).toFixed(1)}K` : '---',
             change: '+5.4%',
             icon: Cpu,
-            color: 'from-warning to-error'
+            color: 'text-warning',
+            bg: 'bg-warning-muted'
         }
     ]
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-fade-in-up">
             <div>
-                <h2 className="text-3xl font-bold mb-2">System Overview</h2>
-                <p className="text-muted-foreground">
+                <h2 className="text-3xl font-display font-bold text-textPrimary mb-2">System Overview</h2>
+                <p className="text-textSecondary">
                     Real-time insights into your AI brain performance
                 </p>
             </div>
@@ -272,7 +315,7 @@ function OverviewSection({ stats }: { stats: BrainStats | null }) {
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {metrics.map((metric, i) => (
-                    <MetricCard key={i} {...metric} />
+                    <MetricCard key={i} {...metric} index={i} />
                 ))}
             </div>
 
@@ -288,23 +331,24 @@ function OverviewSection({ stats }: { stats: BrainStats | null }) {
     )
 }
 
-function MetricCard({ label, value, change, icon: Icon, color }: any) {
+function MetricCard({ label, value, change, icon: Icon, color, bg, index }: any) {
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-background to-muted/20 p-6 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-10 blur-3xl`} />
-            <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${color} bg-opacity-10`}>
-                        <Icon className="w-6 h-6 text-primary" />
+        <div 
+            className="premium-card group"
+            style={{ animationDelay: `${index * 100}ms` }}
+        >
+            <div className="relative z-10">
+                <div className="flex items-center justify-between mb-6">
+                    <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center ${color} group-hover:scale-110 transition-transform duration-500`}>
+                        <Icon className="w-6 h-6" />
                     </div>
-                    <span className={`text-sm font-medium ${change.startsWith('+') ? 'text-success' : 'text-error'
-                        }`}>
+                    <span className={`badge ${change.startsWith('+') ? 'badge-success' : 'badge-error'}`}>
                         {change}
                     </span>
                 </div>
                 <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">{label}</p>
-                    <p className="text-3xl font-bold">{value}</p>
+                    <p className="text-sm font-medium text-textSecondary">{label}</p>
+                    <p className="text-4xl font-display font-bold text-textPrimary tracking-tight">{value}</p>
                 </div>
             </div>
         </div>
@@ -312,97 +356,227 @@ function MetricCard({ label, value, change, icon: Icon, color }: any) {
 }
 
 function ActivityFeed() {
-    const activities = [
-        { type: 'agent', message: 'Writer Agent completed task', time: '2m ago', color: 'text-primary' },
-        { type: 'rag', message: 'RAG cache hit rate improved', time: '5m ago', color: 'text-success' },
-        { type: 'training', message: 'New intent pattern learned', time: '12m ago', color: 'text-accent' },
-        { type: 'system', message: 'Embeddings index updated', time: '23m ago', color: 'text-warning' }
-    ]
+    const [activities, setActivities] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const loadActivities = async () => {
+            try {
+                const res = await fetch('/api/brain/analytics?range=24h')
+                if (res.ok) {
+                    const data = await res.json()
+                    const recentLogs: any[] = []
+                    if (data.agentUsage && data.agentUsage.length > 0) {
+                        data.agentUsage.slice(0, 4).forEach((agent: any, i: number) => {
+                            recentLogs.push({
+                                type: agent.type,
+                                message: `${agent.type} handled ${agent.count} requests`,
+                                time: 'Last 24h',
+                                color: agent.type === 'chat' ? 'bg-primary' : agent.type === 'writer' ? 'bg-info' : 'bg-success'
+                            })
+                        })
+                    }
+                    if (recentLogs.length === 0) {
+                        recentLogs.push({ type: 'system', message: 'No recent activity', time: 'Now', color: 'bg-muted-foreground' })
+                    }
+                    setActivities(recentLogs)
+                }
+            } catch (error) {
+                console.error('Failed to load activities:', error)
+                setActivities([{ type: 'error', message: 'Could not load activity', time: 'Now', color: 'bg-error' }])
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadActivities()
+    }, [])
 
     return (
-        <div className="rounded-2xl border border-border/40 bg-background/50 p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-            <div className="space-y-3">
-                {activities.map((activity, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className={`w-2 h-2 rounded-full mt-2 ${activity.color}`} />
-                        <div className="flex-1">
-                            <p className="text-sm">{activity.message}</p>
-                            <span className="text-xs text-muted-foreground">{activity.time}</span>
-                        </div>
-                    </div>
-                ))}
+        <div className="premium-card">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-textPrimary">Recent Activity</h3>
             </div>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {activities.map((activity, i) => (
+                        <div key={i} className="group flex items-start gap-4 p-3 rounded-xl hover:bg-surfaceHover border border-transparent hover:border-border transition-all">
+                            <div className="relative mt-1.5">
+                                <div className={`w-2.5 h-2.5 rounded-full ${activity.color}`} />
+                                <div className={`absolute inset-0 rounded-full ${activity.color} animate-ping opacity-50`} />
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-textPrimary group-hover:text-accent transition-colors">{activity.message}</p>
+                                <span className="text-xs text-textTertiary">{activity.time}</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
 
 function RecentQueries() {
-    const queries = [
-        { query: 'Write a blog post about AI', agent: 'Writer', time: '342ms' },
-        { query: 'Analyze Q4 data', agent: 'Analyst', time: ' 234ms' },
-        { query: 'Set productivity goals', agent: 'Coach', time: '198ms' }
-    ]
+    const [queries, setQueries] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const loadQueries = async () => {
+            try {
+                const res = await fetch('/api/brain/analytics?range=7d')
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.topQueries && data.topQueries.length > 0) {
+                        setQueries(data.topQueries.slice(0, 5))
+                    } else if (data.agentUsage && data.agentUsage.length > 0) {
+                        setQueries(data.agentUsage.slice(0, 3).map((a: any) => ({
+                            text: `${a.count} ${a.type} requests`,
+                            agent: a.type,
+                            count: a.count
+                        })))
+                    } else {
+                        setQueries([])
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load queries:', error)
+                setQueries([])
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadQueries()
+    }, [])
 
     return (
-        <div className="rounded-2xl border border-border/40 bg-background/50 p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Queries</h3>
-            <div className="space-y-3">
-                {queries.map((q, i) => (
-                    <div key={i} className="p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                        <p className="text-sm font-medium mb-1">{q.query}</p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">{q.agent}</span>
-                            <span>{q.time}</span>
-                        </div>
-                    </div>
-                ))}
+        <div className="premium-card">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-textPrimary">Recent Queries</h3>
             </div>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+            ) : queries.length === 0 ? (
+                <p className="text-sm text-textTertiary text-center py-4">No queries recorded yet</p>
+            ) : (
+                <div className="space-y-2">
+                    {queries.map((q, i) => (
+                        <div key={i} className="group p-4 rounded-xl hover:bg-surfaceHover border border-transparent hover:border-border transition-all flex flex-col justify-between">
+                            <p className="text-sm font-medium text-textPrimary mb-3 group-hover:text-accent transition-colors">"{q.text}"</p>
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="badge badge-accent">{q.agent}</span>
+                                <span className="text-textTertiary flex items-center gap-1">
+                                    <Activity className="w-3 h-3" />
+                                    {q.count} times
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
 
 function AgentStatusGrid() {
-    const agents = [
-        { name: 'Writer Agent', status: 'active', sessions: 234, success: 97.2, color: 'from-info to-info/70' },
-        { name: 'Generalist Agent', status: 'active', sessions: 156, success: 95.8, color: 'from-success to-success/70' },
-        { name: 'Analyst Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-accent to-accent/70' },
-        { name: 'Coach Agent', status: 'inactive', sessions: 0, success: 0, color: 'from-warning to-error' }
-    ]
+    const [agents, setAgents] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+
+    useEffect(() => {
+        const loadAgents = async () => {
+            try {
+                const res = await fetch('/api/brain/agents')
+                if (res.ok) {
+                    const data = await res.json()
+                    setAgents(data.agents || [])
+                }
+            } catch (error) {
+                console.error('Failed to load agents:', error)
+                setAgents([])
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        loadAgents()
+    }, [])
+
+    const getAgentIcon = (type: string) => {
+        switch (type) {
+            case 'writer': return Zap
+            case 'analyst': return BarChart3
+            case 'coach': return Target
+            default: return Brain
+        }
+    }
+
+    const getAgentColor = (type: string, isActive: boolean) => {
+        if (!isActive) return { color: 'text-textTertiary', bg: 'bg-surfaceHover' }
+        switch (type) {
+            case 'writer': return { color: 'text-info', bg: 'bg-info-muted' }
+            case 'analyst': return { color: 'text-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.1)]' }
+            case 'coach': return { color: 'text-warning', bg: 'bg-warning-muted' }
+            default: return { color: 'text-success', bg: 'bg-success-muted' }
+        }
+    }
 
     return (
         <div>
-            <h3 className="text-lg font-semibold mb-4">Agent Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {agents.map((agent, i) => (
-                    <div
-                        key={i}
-                        className="relative overflow-hidden rounded-xl border border-border/40 bg-background/50 p-4 hover:shadow-lg transition-all duration-300"
-                    >
-                        <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${agent.color} opacity-10 blur-2xl`} />
-                        <div className="relative">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-success animate-pulse' : 'bg-muted-foreground'
-                                        }`} />
-                                    <span className="text-xs text-muted-foreground">{agent.status}</span>
+            <h3 className="text-xl font-bold text-textPrimary mb-6">Agent Status</h3>
+            {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                </div>
+            ) : agents.length === 0 ? (
+                <div className="rounded-xl border border-border/40 bg-muted/20 p-12 text-center">
+                    <Brain className="w-12 h-12 text-textTertiary mx-auto mb-4" />
+                    <p className="text-textSecondary">No agents deployed for this organization</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {agents.map((agent, i) => {
+                        const IconComponent = getAgentIcon(agent.agent_type)
+                        const colors = getAgentColor(agent.agent_type, agent.is_active)
+                        return (
+                            <div
+                                key={agent.id || i}
+                                className="premium-card group hover:border-accent transition-colors"
+                            >
+                                <div className="relative z-10">
+                                    <div className="flex items-start justify-between mb-6">
+                                        <div className={`w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center ${colors.color} group-hover:scale-110 transition-transform`}>
+                                            <IconComponent className="w-6 h-6" />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-medium text-textSecondary uppercase tracking-wider">
+                                                {agent.is_active ? 'active' : 'inactive'}
+                                            </span>
+                                            <div className={`w-2 h-2 rounded-full ${agent.is_active ? 'bg-success animate-pulse' : 'bg-textTertiary'}`} />
+                                        </div>
+                                    </div>
+                                    
+                                    <h4 className="font-bold text-lg text-textPrimary mb-4">{agent.name}</h4>
+                                    
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center pb-2 border-b border-border/50">
+                                            <span className="text-sm text-textSecondary">Type</span>
+                                            <span className="font-medium text-textPrimary capitalize">{agent.agent_type}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-textSecondary">Tools</span>
+                                            <span className="font-medium text-textPrimary">{agent.tools?.length || 0}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <h4 className="font-medium mb-2">{agent.name}</h4>
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                                <div className="flex justify-between">
-                                    <span>Sessions</span>
-                                    <span className="font-medium text-foreground">{agent.sessions}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Success</span>
-                                    <span className="font-medium text-success">{agent.success}%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                        )
+                    })}
+                </div>
+            )}
         </div>
     )
 }
@@ -567,10 +741,10 @@ function MemoryPalaceSection() {
                         <div
                             key={embedding.id}
                             onClick={() => setSelectedEmbedding(embedding)}
-                            className="p-4 rounded-xl border border-border/40 bg-background hover:border-primary/40 hover:shadow-lg transition-all cursor-pointer"
+                            className="p-4 rounded-xl border border-border/40 bg-background hover:border-accent/40 hover:shadow-lg transition-all cursor-pointer"
                         >
                             <div className="flex items-start justify-between mb-2">
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-primary/10 text-primary' :
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-[rgba(var(--color-accent-rgb),0.1)] text-accent' :
                                     embedding.source_type === 'conversation' ? 'bg-success/10 text-success' :
                                         'bg-warning/10 text-warning'
                                     }`}>
@@ -762,7 +936,7 @@ function AgentControlSection() {
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h3 className="text-xl font-bold mb-1">{agent.name}</h3>
-                                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                        <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent text-xs font-medium">
                                             {agent.agent_type}
                                         </span>
                                     </div>
@@ -802,7 +976,7 @@ function AgentControlSection() {
                                 <div className="flex gap-2 pt-2">
                                     <button
                                         onClick={() => openEditModal(agent)}
-                                        className="flex-1 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                                        className="flex-1 px-4 py-2 rounded-lg bg-[rgba(var(--color-accent-rgb),0.1)] text-accent hover:bg-[rgba(var(--color-accent-rgb),0.2)] transition-colors font-medium"
                                     >
                                         Configure
                                     </button>
@@ -859,7 +1033,7 @@ function AgentControlSection() {
                                 <label className="block text-sm font-medium mb-2">Tools</label>
                                 <div className="flex flex-wrap gap-2">
                                     {selectedAgent.tools?.map((tool: string, i: number) => (
-                                        <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                                        <span key={i} className="px-3 py-1 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent text-sm">
                                             {tool}
                                         </span>
                                     ))}
@@ -879,7 +1053,7 @@ function AgentControlSection() {
                             </button>
                             <button
                                 onClick={updateAgent}
-                                className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-all shadow-lg"
+                                className="flex-1 px-4 py-2 rounded-lg bg-accent text-onAccent hover:scale-105 transition-all shadow-lg"
                             >
                                 Save Changes
                             </button>
@@ -922,7 +1096,7 @@ function AgentControlSection() {
                                 <label className="text-sm font-medium text-muted-foreground">Tools</label>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {selectedAgent.tools?.map((tool: string, i: number) => (
-                                        <span key={i} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                                        <span key={i} className="px-3 py-1 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent text-sm">
                                             {tool}
                                         </span>
                                     ))}
@@ -1054,7 +1228,7 @@ function TrainingCenterSection() {
                     onClick={() => setActiveTab('feedback')}
                     className={`px-6 py-3 font-medium transition-colors ${activeTab === 'feedback'
                         ? 'border-b-2 border-primary text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-muted-foreground hover:text-textPrimary'
                         }`}
                 >
                     User Feedback
@@ -1063,7 +1237,7 @@ function TrainingCenterSection() {
                     onClick={() => setActiveTab('patterns')}
                     className={`px-6 py-3 font-medium transition-colors ${activeTab === 'patterns'
                         ? 'border-b-2 border-primary text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-muted-foreground hover:text-textPrimary'
                         }`}
                 >
                     Intent Patterns
@@ -1072,7 +1246,7 @@ function TrainingCenterSection() {
                     onClick={() => setActiveTab('expansions')}
                     className={`px-6 py-3 font-medium transition-colors ${activeTab === 'expansions'
                         ? 'border-b-2 border-primary text-primary'
-                        : 'text-muted-foreground hover:text-foreground'
+                        : 'text-muted-foreground hover:text-textPrimary'
                         }`}
                 >
                     Query Expansions
@@ -1153,7 +1327,7 @@ function TrainingCenterSection() {
                                 </p>
                                 <button
                                     onClick={() => setShowAddPattern(true)}
-                                    className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-all shadow-lg flex items-center gap-2"
+                                    className="px-4 py-2 rounded-lg bg-accent text-onAccent hover:scale-105 transition-all shadow-lg flex items-center gap-2"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Pattern
@@ -1173,7 +1347,7 @@ function TrainingCenterSection() {
                                             <div className="flex items-start justify-between mb-3">
                                                 <div>
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                                        <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent text-xs font-medium">
                                                             {pattern.agent_type}
                                                         </span>
                                                         <span className="text-xs text-muted-foreground">
@@ -1256,7 +1430,7 @@ function TrainingCenterSection() {
                                             </button>
                                             <button
                                                 onClick={addIntentPattern}
-                                                className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-all"
+                                                className="flex-1 px-4 py-2 rounded-lg bg-accent text-onAccent hover:scale-105 transition-all"
                                             >
                                                 Add Pattern
                                             </button>
@@ -1299,7 +1473,7 @@ function TrainingCenterSection() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                                <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                                                <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent">
                                                     {expansion.expansion_method}
                                                 </span>
                                                 <span>{new Date(expansion.created_at).toLocaleString()}</span>
@@ -1379,7 +1553,9 @@ function AnalyticsSection() {
                                 <span className="text-sm text-muted-foreground">Total Requests</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.totalRequests?.toLocaleString() || '0'}</p>
-                            <p className="text-xs text-success">+12% from previous period</p>
+                            <p className={`text-xs ${(analyticsData?.trends?.requests ?? 0) >= 0 ? 'text-success' : 'text-error'}`}>
+                                {analyticsData?.trends?.requests !== undefined ? `${analyticsData.trends.requests >= 0 ? '+' : ''}${analyticsData.trends.requests.toFixed(1)}% from previous period` : 'No comparison data'}
+                            </p>
                         </div>
 
                         <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-success/5 to-success/10">
@@ -1388,7 +1564,9 @@ function AnalyticsSection() {
                                 <span className="text-sm text-muted-foreground">Success Rate</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.successRate ? `${(analyticsData.successRate * 100).toFixed(1)}%` : '0%'}</p>
-                            <p className="text-xs text-success">+2.3% from previous period</p>
+                            <p className={`text-xs ${(analyticsData?.trends?.successRate ?? 0) >= 0 ? 'text-success' : 'text-error'}`}>
+                                {analyticsData?.trends?.successRate !== undefined ? `${analyticsData.trends.successRate >= 0 ? '+' : ''}${analyticsData.trends.successRate.toFixed(1)}% from previous period` : 'No comparison data'}
+                            </p>
                         </div>
 
                         <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-accent/5 to-accent/10">
@@ -1397,7 +1575,9 @@ function AnalyticsSection() {
                                 <span className="text-sm text-muted-foreground">Avg Response</span>
                             </div>
                             <p className="text-3xl font-bold mb-1">{analyticsData?.avgResponseTime || '0'}ms</p>
-                            <p className="text-xs text-success">-18ms from previous period</p>
+                            <p className={`text-xs ${(analyticsData?.trends?.responseTime ?? 0) <= 0 ? 'text-success' : 'text-error'}`}>
+                                {analyticsData?.trends?.responseTime !== undefined ? `${analyticsData.trends.responseTime <= 0 ? '' : '+'}${analyticsData.trends.responseTime}ms from previous period` : 'No comparison data'}
+                            </p>
                         </div>
 
                         <div className="p-6 rounded-xl border border-border/40 bg-gradient-to-br from-warning/5 to-error/5">
@@ -1552,7 +1732,7 @@ function AnalyticsSection() {
                                         <p className="text-sm font-medium line-clamp-1">{query.text}</p>
                                         <div className="flex items-center gap-3 mt-1">
                                             <span className="text-xs text-muted-foreground">{query.count} times</span>
-                                            <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
+                                            <span className="px-2 py-0.5 rounded-full bg-[rgba(var(--color-accent-rgb),0.1)] text-accent text-xs">
                                                 {query.agent}
                                             </span>
                                         </div>
@@ -1591,7 +1771,7 @@ function ConfigurationSection() {
             const [brainsRes, configRes, providersRes] = await Promise.all([
                 fetch('/api/brain/templates'),
                 fetch('/api/brain/config'),
-                fetch('/api/superadmin/ai-providers')
+                fetch('/api/brain/providers')
             ])
 
             if (brainsRes.ok) {
@@ -1675,14 +1855,14 @@ function ConfigurationSection() {
                                     key={template.id}
                                     onClick={() => switchBrainTemplate(template.id)}
                                     className={`p-4 rounded-xl border-2 text-left transition-all ${activeBrain?.id === template.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-border/40 hover:border-primary/40'
+                                        ? 'border-accent bg-[rgba(var(--color-accent-rgb),0.05)]'
+                                        : 'border-border/40 hover:border-accent/40'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-2">
                                         <h4 className="font-bold">{template.name}</h4>
                                         {activeBrain?.id === template.id && (
-                                            <span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-xs">
+                                            <span className="px-2 py-0.5 rounded-full bg-accent text-onAccent text-xs">
                                                 Active
                                             </span>
                                         )}
@@ -1800,7 +1980,7 @@ function ConfigurationSection() {
                                 <button
                                     onClick={updateRAGConfig}
                                     disabled={isSaving}
-                                    className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-all shadow-lg disabled:opacity-50"
+                                    className="px-6 py-2 rounded-lg bg-accent text-onAccent hover:scale-105 transition-all shadow-lg disabled:opacity-50"
                                 >
                                     {isSaving ? 'Saving...' : 'Save RAG Configuration'}
                                 </button>
@@ -1820,7 +2000,7 @@ function ConfigurationSection() {
                                 providers.map((provider) => (
                                     <div
                                         key={provider.id}
-                                        className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-primary/40 transition-colors"
+                                        className="flex items-center justify-between p-4 rounded-lg border border-border/40 hover:border-accent/40 transition-colors"
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-2 h-2 rounded-full ${provider.is_active ? 'bg-success animate-pulse' : 'bg-muted-foreground'}`} />

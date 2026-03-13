@@ -7,6 +7,8 @@ import {
     AlertTriangle, X, RefreshCw, Shield, Zap, Server,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 const PROVIDER_TYPES = [
     { value: 'mailwizz', label: 'Mailwizz', color: 'text-blue-400' },
@@ -99,6 +101,7 @@ const EMPTY_FORM = {
 };
 
 export default function EmailProvidersPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [providers, setProviders] = useState<Provider[]>([]);
     const [orgs, setOrgs] = useState<Org[]>([]);
     const [loading, setLoading] = useState(true);
@@ -109,10 +112,11 @@ export default function EmailProvidersPage() {
     const [saving, setSaving] = useState(false);
     const [testing, setTesting] = useState<string | null>(null);
     const [filterScope, setFilterScope] = useState<string>('all');
+    const [pendingDeleteProvider, setPendingDeleteProvider] = useState<Provider | null>(null);
 
     const loadProviders = useCallback(async () => {
         try {
-            const res = await fetch('/api/superadmin/providers');
+            const res = await fetchWithAuth('/api/superadmin/providers');
             const data = await res.json();
             if (data.providers) setProviders(data.providers);
         } catch { toast.error('Failed to load providers'); }
@@ -121,7 +125,7 @@ export default function EmailProvidersPage() {
 
     const loadOrgs = useCallback(async () => {
         try {
-            const res = await fetch('/api/superadmin/organizations');
+            const res = await fetchWithAuth('/api/superadmin/organizations');
             const data = await res.json();
             if (data.organizations) setOrgs(data.organizations);
         } catch { /* orgs optional */ }
@@ -155,7 +159,7 @@ export default function EmailProvidersPage() {
             const url = editingId ? `/api/superadmin/providers/${editingId}` : '/api/superadmin/providers';
             const method = editingId ? 'PATCH' : 'POST';
 
-            const res = await fetch(url, {
+            const res = await fetchWithAuth(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
@@ -175,7 +179,7 @@ export default function EmailProvidersPage() {
     const handleTest = async (id: string) => {
         setTesting(id);
         try {
-            const res = await fetch(`/api/superadmin/providers/${id}/test`, { method: 'POST' });
+            const res = await fetchWithAuth(`/api/superadmin/providers/${id}/test`, { method: 'POST' });
             const data = await res.json();
             if (data.test_result?.success) {
                 toast.success(`Connection OK (${data.test_result.latency_ms}ms)`);
@@ -189,7 +193,7 @@ export default function EmailProvidersPage() {
 
     const handleToggleActive = async (p: Provider) => {
         try {
-            const res = await fetch(`/api/superadmin/providers/${p.id}`, {
+            const res = await fetchWithAuth(`/api/superadmin/providers/${p.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ is_active: !p.is_active }),
@@ -201,9 +205,8 @@ export default function EmailProvidersPage() {
     };
 
     const handleDelete = async (p: Provider) => {
-        if (!confirm(`Delete provider "${p.display_name}"? This cannot be undone.`)) return;
         try {
-            const res = await fetch(`/api/superadmin/providers/${p.id}`, { method: 'DELETE' });
+            const res = await fetchWithAuth(`/api/superadmin/providers/${p.id}`, { method: 'DELETE' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Delete failed');
             toast.success('Provider deleted');
@@ -275,7 +278,7 @@ export default function EmailProvidersPage() {
                     </button>
                     <button
                         onClick={() => { setForm(EMPTY_FORM); setEditingId(null); setShowForm(true); }}
-                        className="flex items-center gap-xs bg-primary text-white px-md py-sm rounded-[var(--radius-md)] font-medium hover:opacity-90 transition-all"
+                        className="btn btn-primary gap-xs px-md py-sm rounded-[var(--radius-md)] font-medium"
                     >
                         <Plus className="w-4 h-4" /> Add Provider
                     </button>
@@ -288,7 +291,7 @@ export default function EmailProvidersPage() {
                     <button key={s} onClick={() => setFilterScope(s)}
                         className={`px-md py-xs rounded-[var(--radius-md)] text-sm font-medium transition-all ${
                             filterScope === s
-                                ? 'bg-primary text-white'
+                                ? 'btn btn-primary'
                                 : 'bg-surface border border-border text-textSecondary hover:text-textPrimary'
                         }`}
                     >
@@ -381,7 +384,7 @@ export default function EmailProvidersPage() {
                                             <div className="text-xs text-textSecondary mb-xs font-medium">Connection</div>
                                             <div className="text-sm text-textPrimary space-y-xxs">
                                                 {p.api_base_url && <div>API URL: <code className="text-xs bg-black/20 px-xs rounded">{p.api_base_url}</code></div>}
-                                                {p.api_key && <div>API Key: <code className="text-xs bg-black/20 px-xs rounded">{p.api_key}</code></div>}
+                                                {p.api_key && <div>API Key: <code className="text-xs bg-black/20 px-xs rounded">****...{p.api_key.slice(-4)}</code></div>}
                                                 {p.smtp_host && <div>SMTP: <code className="text-xs bg-black/20 px-xs rounded">{p.smtp_host}:{p.smtp_port} ({p.smtp_encryption})</code></div>}
                                                 {p.webhook_url && <div>Webhook: <code className="text-xs bg-black/20 px-xs rounded">{p.webhook_url}</code></div>}
                                                 {p.last_health_check && <div className="text-xs text-textSecondary">Last check: {new Date(p.last_health_check).toLocaleString()}</div>}
@@ -415,7 +418,7 @@ export default function EmailProvidersPage() {
                                             >
                                                 {p.is_active ? <><PowerOff className="w-3.5 h-3.5" /> Deactivate</> : <><Power className="w-3.5 h-3.5" /> Activate</>}
                                             </button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleDelete(p); }}
+                                            <button onClick={(e) => { e.stopPropagation(); setPendingDeleteProvider(p); }}
                                                 className="flex items-center gap-xs bg-danger/20 text-danger px-md py-xs rounded-[var(--radius-md)] text-sm hover:bg-danger/30 transition-all ml-auto"
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -656,7 +659,7 @@ export default function EmailProvidersPage() {
                             <button onClick={() => { setShowForm(false); setEditingId(null); setForm(EMPTY_FORM); }}
                                 className="px-lg py-sm text-textSecondary hover:text-textPrimary transition-all">Cancel</button>
                             <button onClick={handleSubmit} disabled={saving}
-                                className="flex items-center gap-xs bg-primary text-white px-lg py-sm rounded-[var(--radius-md)] font-medium hover:opacity-90 disabled:opacity-50 transition-all">
+                                className="btn btn-primary gap-xs px-lg py-sm rounded-[var(--radius-md)] font-medium disabled:opacity-50">
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                                 {editingId ? 'Update Provider' : 'Create Provider'}
                             </button>
@@ -664,6 +667,18 @@ export default function EmailProvidersPage() {
                     </div>
                 </div>
             )}
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingDeleteProvider)}
+                title="Delete email provider"
+                description={`This will permanently remove "${pendingDeleteProvider?.display_name || 'this provider'}" and its configuration. This cannot be undone.`}
+                confirmLabel="Delete provider"
+                onCancel={() => setPendingDeleteProvider(null)}
+                onConfirm={() => {
+                    if (pendingDeleteProvider) void handleDelete(pendingDeleteProvider);
+                    setPendingDeleteProvider(null);
+                }}
+            />
         </div>
     );
 }

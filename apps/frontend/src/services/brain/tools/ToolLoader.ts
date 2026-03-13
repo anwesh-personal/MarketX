@@ -40,10 +40,10 @@ export class ToolLoader {
             return []
         }
 
-        // Step 2: Fetch tool definitions from brain_tools
+        // Step 2: Fetch tool definitions from brain_tools — include min_tier for enforcement
         const { data: tools, error: toolsError } = await supabase
             .from('brain_tools')
-            .select('name, description, parameters')
+            .select('name, description, parameters, min_tier')
             .in('name', agent.tools_granted)
             .eq('is_enabled', true)
 
@@ -54,6 +54,10 @@ export class ToolLoader {
         if (!tools || tools.length === 0) {
             return []
         }
+
+        // Tier hierarchy for enforcement
+        const tierRank: Record<string, number> = { basic: 1, medium: 2, enterprise: 3 }
+        const agentTierRank = tierRank[agent.tier] ?? 1
 
         // Warn if any granted tools are missing from the registry
         const returnedNames = new Set(tools.map(t => t.name))
@@ -66,8 +70,20 @@ export class ToolLoader {
             }
         }
 
-        // Step 3: Format for LLM (OpenAI / Anthropic / Gemini all accept this shape)
-        return tools.map(tool => ({
+        // Step 3: Filter by min_tier, format for LLM
+        const allowed = tools.filter(tool => {
+            const required = tierRank[tool.min_tier] ?? 1
+            if (required > agentTierRank) {
+                console.warn(
+                    `[ToolLoader] Tool "${tool.name}" requires tier "${tool.min_tier}" ` +
+                    `but agent ${agentId} is on tier "${agent.tier}". Skipping.`
+                )
+                return false
+            }
+            return true
+        })
+
+        return allowed.map(tool => ({
             type: 'function',
             function: {
                 name:        tool.name,

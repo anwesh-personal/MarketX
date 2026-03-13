@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
-/**
- * Public AI Models API
- * 
- * This endpoint is used by workflow nodes to fetch available AI models.
- * It returns only ACTIVE models that have been tested and verified to work.
- * 
- * No superadmin auth required - this is for use in the workflow editor.
- */
-
-const supabase = createClient(
+const serviceSupabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = createClient();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         const { searchParams } = new URL(request.url);
         const provider = searchParams.get('provider');
         const activeOnly = searchParams.get('active_only') !== 'false'; // Default to true
 
-        let query = supabase
+        let query = serviceSupabase
             .from('ai_model_metadata')
             .select('id, provider, model_id, model_name, input_cost_per_million, output_cost_per_million, context_window_tokens, max_output_tokens, supports_vision, supports_function_calling, is_active, test_passed')
             .order('provider', { ascending: true })

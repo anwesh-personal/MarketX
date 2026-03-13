@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import CreateUserModal from '@/components/modals/CreateUserModal';
 import EditUserModal from '@/components/modals/EditUserModal';
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces';
 
 interface User {
     id: string;
@@ -48,6 +49,9 @@ export default function UsersPage() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [resettingPassword, setResettingPassword] = useState<string | null>(null);
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [pendingImpersonate, setPendingImpersonate] = useState<User | null>(null);
+    const [pendingReset, setPendingReset] = useState<User | null>(null);
+    const [pendingCopyLink, setPendingCopyLink] = useState<{ user: User; link: string } | null>(null);
 
     useEffect(() => {
         loadUsers();
@@ -77,11 +81,7 @@ export default function UsersPage() {
         }
     };
 
-    const handleImpersonate = async (user: User) => {
-        if (!confirm(`Login as ${user.email}? This action will be logged.`)) {
-            return;
-        }
-
+    const executeImpersonate = async (user: User) => {
         setImpersonating(user.id);
 
         try {
@@ -103,15 +103,11 @@ export default function UsersPage() {
 
             const data = await response.json();
 
-            // Store impersonation mode
             localStorage.setItem('impersonation_mode', 'true');
             localStorage.setItem('impersonation_id', data.impersonation_id);
             localStorage.setItem('impersonation_admin_id', adminId);
 
-            // Open main app in new tab as that user
             window.open('/', '_blank');
-
-            alert(`Now impersonating ${user.email}. A new tab has been opened.`);
         } catch (error) {
             console.error('Error impersonating user:', error);
             alert('Failed to impersonate user');
@@ -120,11 +116,7 @@ export default function UsersPage() {
         }
     };
 
-    const handleResetPassword = async (user: User) => {
-        if (!confirm(`Send password reset email to ${user.email}?`)) {
-            return;
-        }
-
+    const executeResetPassword = async (user: User) => {
         setResettingPassword(user.id);
 
         try {
@@ -146,16 +138,8 @@ export default function UsersPage() {
 
             const data = await response.json();
 
-            // Show success with option to copy reset link
-            const resetLink = data.reset_link;
-            const shouldCopy = confirm(
-                `✅ Password reset email sent to ${user.email}!\n\n` +
-                `If email doesn't arrive, click OK to copy the reset link manually.`
-            );
-
-            if (shouldCopy && resetLink) {
-                await navigator.clipboard.writeText(resetLink);
-                alert('Reset link copied to clipboard!');
+            if (data.reset_link) {
+                setPendingCopyLink({ user, link: data.reset_link });
             }
         } catch (error) {
             console.error('Error sending reset email:', error);
@@ -213,7 +197,7 @@ export default function UsersPage() {
                     onClick={() => setShowCreateModal(true)}
                     className="
                         flex items-center gap-xs
-                        bg-primary text-white font-semibold
+                        btn btn-primary font-semibold
                         px-md py-sm
                         rounded-[var(--radius-md)]
                         hover:opacity-90
@@ -414,7 +398,7 @@ export default function UsersPage() {
                                     <td className="px-md py-sm">
                                         <div className="flex items-center justify-end gap-xs">
                                             <button
-                                                onClick={() => handleImpersonate(user)}
+                                                onClick={() => setPendingImpersonate(user)}
                                                 disabled={impersonating === user.id || !user.is_active}
                                                 className="
                           flex items-center gap-xs
@@ -439,7 +423,7 @@ export default function UsersPage() {
                                             </button>
 
                                             <button
-                                                onClick={() => handleResetPassword(user)}
+                                                onClick={() => setPendingReset(user)}
                                                 disabled={resettingPassword === user.id}
                                                 className="
                           flex items-center gap-xs
@@ -519,6 +503,48 @@ export default function UsersPage() {
                 user={editingUser}
                 onClose={() => setEditingUser(null)}
                 onSuccess={loadUsers}
+            />
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingImpersonate)}
+                title="Impersonate user"
+                description={`Login as ${pendingImpersonate?.email ?? 'this user'}? This action will be fully logged for security and compliance.`}
+                confirmLabel="Login as user"
+                tone="primary"
+                onCancel={() => setPendingImpersonate(null)}
+                onConfirm={() => {
+                    if (pendingImpersonate) void executeImpersonate(pendingImpersonate);
+                    setPendingImpersonate(null);
+                }}
+            />
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingReset)}
+                title="Reset password"
+                description={`Send password reset email to ${pendingReset?.email ?? 'this user'}?`}
+                confirmLabel="Send reset email"
+                tone="primary"
+                onCancel={() => setPendingReset(null)}
+                onConfirm={() => {
+                    if (pendingReset) void executeResetPassword(pendingReset);
+                    setPendingReset(null);
+                }}
+            />
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingCopyLink)}
+                title="Password reset sent"
+                description={`Reset email sent to ${pendingCopyLink?.user.email ?? ''}. If the email doesn't arrive, click "Copy link" to copy the reset link manually.`}
+                confirmLabel="Copy link"
+                cancelLabel="Done"
+                tone="primary"
+                onCancel={() => setPendingCopyLink(null)}
+                onConfirm={async () => {
+                    if (pendingCopyLink?.link) {
+                        await navigator.clipboard.writeText(pendingCopyLink.link);
+                    }
+                    setPendingCopyLink(null);
+                }}
             />
         </div>
     );

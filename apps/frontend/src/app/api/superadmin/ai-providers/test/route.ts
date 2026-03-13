@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-/**
- * AI Model Testing Service
- * Tests individual models with actual API calls
- */
+import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers';
 
 interface TestRequest {
     provider: string;
@@ -14,9 +11,13 @@ interface TestRequest {
 
 const DEFAULT_TEST_PROMPT = 'Say "Hello! I am working correctly." in exactly those words.';
 
-// POST - Test a model
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 });
+        }
+
         const body: TestRequest = await request.json();
         const { provider, model_id, api_key, prompt = DEFAULT_TEST_PROMPT } = body;
 
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
 
 // OpenAI Model Testing
 async function testOpenAIModel(modelId: string, apiKey: string, prompt: string) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
@@ -113,7 +114,7 @@ async function testOpenAIModel(modelId: string, apiKey: string, prompt: string) 
 
 // Anthropic Model Testing
 async function testAnthropicModel(modelId: string, apiKey: string, prompt: string) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
         method: 'POST',
         headers: {
             'x-api-key': apiKey,
@@ -143,7 +144,7 @@ async function testAnthropicModel(modelId: string, apiKey: string, prompt: strin
 // Google (Gemini) Model Testing
 async function testGoogleModel(modelId: string, apiKey: string, prompt: string) {
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+        `${PROVIDER_BASE_URLS.google}/models/${modelId}:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: {
@@ -172,7 +173,7 @@ async function testGoogleModel(modelId: string, apiKey: string, prompt: string) 
 
 // Mistral Model Testing
 async function testMistralModel(modelId: string, apiKey: string, prompt: string) {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/chat/completions`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
@@ -200,7 +201,7 @@ async function testMistralModel(modelId: string, apiKey: string, prompt: string)
 
 // Perplexity Model Testing
 async function testPerplexityModel(modelId: string, apiKey: string, prompt: string) {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.perplexity}/chat/completions`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
@@ -228,7 +229,7 @@ async function testPerplexityModel(modelId: string, apiKey: string, prompt: stri
 
 // X.AI (Grok) Model Testing
 async function testXAIModel(modelId: string, apiKey: string, prompt: string) {
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,

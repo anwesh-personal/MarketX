@@ -725,33 +725,135 @@ class WorkflowExecutionService {
 
     /**
      * Execute KB Retrieval Node
-     * TODO: Re-implement with Supabase pg_vector extension
+     * Uses Supabase FTS on embeddings table (full-text search, no embedding model needed).
+     * Falls back to kb_documents content search if embeddings table yields nothing.
      */
     private async executeKBNode(node: WorkflowNode, pipelineData: PipelineData): Promise<NodeOutput> {
-        console.warn('[TODO] KB vector search not yet migrated to workers - using passthrough');
-
         const config = node.data.config || {};
         const userInputObj = pipelineData.userInput || {};
-        const query = config.query ||
-            pipelineData.lastNodeOutput?.content ||
-            (typeof userInputObj === 'object' ? (userInputObj as Record<string, any>).query || (userInputObj as Record<string, any>).message : userInputObj) ||
-            '';
 
-        // Return passthrough for now
-        return {
-            nodeId: node.id,
-            nodeName: node.data.label,
-            nodeType: node.data.nodeType,
-            type: 'kb_retrieval',
-            content: {
-                retrieved: false,
-                query: String(query).substring(0, 200),
-                context: '',
-                sources: [],
-                sourceCount: 0,
-                error: 'KB vector search not yet migrated to workers. Use kbResolutionService or wait for migration.'
+        const rawQuery = config.query ||
+            pipelineData.lastNodeOutput?.content ||
+            (typeof userInputObj === 'object'
+                ? (userInputObj as Record<string, any>).query ||
+                  (userInputObj as Record<string, any>).message ||
+                  (userInputObj as Record<string, any>).topic
+                : userInputObj) ||
+            '';
+        const query = String(rawQuery).substring(0, 500).trim();
+
+        const orgId = pipelineData.executionUser?.orgId || null;
+        const topK = config.topK || 5;
+        const sectionFilter = config.section || null;
+
+        if (!query) {
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: { retrieved: false, query: '', context: '', sources: [], sourceCount: 0, error: 'No query provided' }
+            };
+        }
+
+        if (!this.supabase) {
+            console.warn('[KB Node] Supabase not initialized - returning empty');
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: { retrieved: false, query, context: '', sources: [], sourceCount: 0, error: 'Supabase not available' }
+            };
+        }
+
+        try {
+            // Attempt 1: FTS on embeddings table
+            let embeddingQuery = this.supabase
+                .from('embeddings')
+                .select('id, content, metadata, source_type')
+                .textSearch('content', query, { type: 'websearch', config: 'english' })
+                .limit(topK);
+
+            if (orgId) {
+                embeddingQuery = embeddingQuery.eq('org_id', orgId);
             }
-        };
+            if (sectionFilter) {
+                embeddingQuery = embeddingQuery.contains('metadata', { section: sectionFilter });
+            }
+
+            const { data: embResults, error: embError } = await embeddingQuery;
+
+            if (!embError && embResults && embResults.length > 0) {
+                const context = embResults.map((r: any) => r.content).join('\n\n---\n\n');
+                const sources = embResults.map((r: any) => ({
+                    content: r.content.substring(0, 200),
+                    source_type: r.source_type ?? 'kb',
+                    section: (r.metadata as any)?.section ?? null,
+                    title: (r.metadata as any)?.title ?? null,
+                }));
+                console.log(`[KB Node] FTS returned ${embResults.length} results for: "${query.substring(0, 80)}"`);
+                return {
+                    nodeId: node.id,
+                    nodeName: node.data.label,
+                    nodeType: node.data.nodeType,
+                    type: 'kb_retrieval',
+                    content: { retrieved: true, query, context, sources, sourceCount: embResults.length }
+                };
+            }
+
+            // Attempt 2: Fallback — FTS on kb_documents content
+            let docQuery = this.supabase
+                .from('kb_documents')
+                .select('id, title, content, status')
+                .eq('status', 'ready')
+                .eq('is_active', true)
+                .textSearch('content', query, { type: 'websearch', config: 'english' })
+                .limit(topK);
+
+            if (orgId) {
+                docQuery = docQuery.eq('org_id', orgId);
+            }
+
+            const { data: docResults, error: docError } = await docQuery;
+
+            if (!docError && docResults && docResults.length > 0) {
+                const context = docResults.map((d: any) => `[${d.title}]\n${d.content}`).join('\n\n---\n\n');
+                const sources = docResults.map((d: any) => ({
+                    content: d.content.substring(0, 200),
+                    source_type: 'kb_document',
+                    title: d.title,
+                }));
+                console.log(`[KB Node] Doc FTS fallback returned ${docResults.length} results`);
+                return {
+                    nodeId: node.id,
+                    nodeName: node.data.label,
+                    nodeType: node.data.nodeType,
+                    type: 'kb_retrieval',
+                    content: { retrieved: true, query, context, sources, sourceCount: docResults.length }
+                };
+            }
+
+            // Nothing found — return graceful empty
+            console.warn(`[KB Node] No results found for query: "${query.substring(0, 80)}"`);
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: { retrieved: false, query, context: '', sources: [], sourceCount: 0, error: 'No matching KB content found' }
+            };
+
+        } catch (err: any) {
+            console.error(`[KB Node] Search error: ${err.message}`);
+            return {
+                nodeId: node.id,
+                nodeName: node.data.label,
+                nodeType: node.data.nodeType,
+                type: 'kb_retrieval',
+                content: { retrieved: false, query, context: '', sources: [], sourceCount: 0, error: err.message }
+            };
+        }
     }
 
     /**
@@ -3501,8 +3603,19 @@ PROVIDE THE FOLLOWING:
 // Export singleton instance
 export const workflowExecutionService = new WorkflowExecutionService();
 
-// Initialize with Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-workflowExecutionService.initialize(supabase);
+// Initialize with Supabase client — fail hard if env vars are missing
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseServiceKey) {
+    console.error(
+        '❌ [WorkflowExecutionProcessor] FATAL: Missing required env vars.\n' +
+        `  NEXT_PUBLIC_SUPABASE_URL / SUPABASE_URL: ${supabaseUrl ? '✓' : '✗ MISSING'}\n` +
+        `  SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? '✓' : '✗ MISSING'}\n` +
+        'Worker will start but all DB operations will fail. Set env vars and restart.'
+    )
+} else {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    workflowExecutionService.initialize(supabase)
+    console.log('✅ [WorkflowExecutionProcessor] Supabase client initialized')
+}

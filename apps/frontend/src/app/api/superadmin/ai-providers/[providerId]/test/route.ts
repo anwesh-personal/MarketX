@@ -1,291 +1,185 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
+import {
+    PROVIDER_BASE_URLS,
+    getModelCostInfo,
+    formatModelName,
+    ANTHROPIC_KNOWN_MODELS,
+    XAI_KNOWN_MODELS,
+    PERPLEXITY_KNOWN_MODELS,
+} from '@/lib/ai-providers'
+
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 /**
- * Test an AI provider key by making a simple API call
+ * POST /api/superadmin/ai-providers/:providerId/test
+ *
+ * Real validation:
+ *  1. Hits the actual provider API with the supplied key
+ *  2. Fetches real model list from the API response
+ *  3. Upserts every discovered model into ai_model_metadata
+ *  4. Returns { valid, models, message } or { valid:false, error }
+ *
+ * No length checks, no prefix checks, no fake validation.
  */
 export async function POST(
     request: NextRequest,
     { params }: { params: { providerId: string } }
 ) {
     try {
+        const admin = await getSuperadmin(request)
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { provider, api_key } = await request.json()
-
         if (!provider || !api_key) {
-            return NextResponse.json({ error: 'Provider and API key required' }, { status: 400 })
+            return NextResponse.json({ error: 'provider and api_key required' }, { status: 400 })
         }
 
-        // Test based on provider type
-        let testResult
-
-        switch (provider) {
-            case 'openai':
-                testResult = await testOpenAI(api_key)
-                break
-            case 'anthropic':
-                testResult = await testAnthropic(api_key)
-                break
-            case 'google':
-                testResult = await testGoogle(api_key)
-                break
-            case 'mistral':
-                testResult = await testMistral(api_key)
-                break
-            case 'perplexity':
-                testResult = await testPerplexity(api_key)
-                break
-            case 'xai':
-                testResult = await testXAI(api_key)
-                break
-            default:
-                return NextResponse.json({ error: 'Unsupported provider' }, { status: 400 })
+        const fetcher = MODEL_FETCHERS[provider]
+        if (!fetcher) {
+            return NextResponse.json({ error: `Unsupported provider: ${provider}` }, { status: 400 })
         }
 
-        return NextResponse.json(testResult)
-    } catch (error: any) {
+        const result = await fetcher(api_key)
+
+        if (!result.valid) {
+            return NextResponse.json(result)
+        }
+
+        // Upsert every discovered model to ai_model_metadata
+        let upserted = 0
+        for (const m of result.models) {
+            const costInfo = getModelCostInfo(m.id)
+            const { error } = await supabase.from('ai_model_metadata').upsert({
+                provider,
+                model_id: m.id,
+                model_name: m.name || formatModelName(m.id),
+                key_model: `${provider}_${m.id}`,
+                input_cost_per_million: costInfo.input,
+                output_cost_per_million: costInfo.output,
+                context_window_tokens: costInfo.context,
+                supports_vision: costInfo.vision,
+                supports_function_calling: costInfo.functions,
+                supports_streaming: true,
+                is_active: true,
+                discovered_at: new Date().toISOString(),
+                last_verified_at: new Date().toISOString(),
+            }, { onConflict: 'provider,model_id' })
+
+            if (!error) upserted++
+        }
+
         return NextResponse.json({
-            valid: false,
-            error: error.message
-        }, { status: 500 })
-    }
-}
-
-async function testOpenAI(apiKey: string) {
-    try {
-        // Test with a simple models list call
-        const response = await fetch('https://api.openai.com/v1/models', {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-            },
+            ...result,
+            models_upserted: upserted,
+            message: `${result.message} — ${upserted} models saved to database`,
         })
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.error?.message || 'Invalid API key',
-            }
-        }
-
-        const data = await response.json()
-        const models = data.data
-            .filter((m: any) => m.id.includes('gpt'))
-            .map((m: any) => ({
-                id: m.id,
-                name: m.id,
-                created: m.created,
-            }))
-
-        return {
-            valid: true,
-            models: models.slice(0, 10), // Return first 10 models
-            message: `Found ${models.length} GPT models`,
-        }
     } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
+        return NextResponse.json({ valid: false, error: error.message }, { status: 500 })
     }
 }
 
-async function testAnthropic(apiKey: string) {
-    try {
-        // Anthropic doesn't have a models endpoint, so test with a minimal message call
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+// ═══════════════════════════════════════════════════════════
+// Provider-specific fetchers — each hits the REAL API
+// ═══════════════════════════════════════════════════════════
+
+interface FetchResult {
+    valid: boolean
+    models: Array<{ id: string; name: string }>
+    message: string
+    error?: string
+}
+
+type Fetcher = (apiKey: string) => Promise<FetchResult>
+
+const MODEL_FETCHERS: Record<string, Fetcher> = {
+    openai: async (apiKey) => {
+        const res = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+        })
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
+        }
+        const data = await res.json()
+        const models = (data.data || [])
+            .filter((m: any) => m.id.includes('gpt') || m.id.startsWith('o1') || m.id.startsWith('o3'))
+            .map((m: any) => ({ id: m.id, name: formatModelName(m.id) }))
+        return { valid: true, models, message: `OpenAI authenticated — ${models.length} chat models found` }
+    },
+
+    anthropic: async (apiKey) => {
+        // Anthropic has no /models endpoint — auth-check via a 1-token message
+        const res = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-            },
-            body: JSON.stringify({
-                model: 'claude-3-haiku-20240307',
-                max_tokens: 1,
-                messages: [{ role: 'user', content: 'test' }],
-            }),
+            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: 'claude-3-haiku-20240307', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
         })
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.error?.message || 'Invalid API key',
-            }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
         }
+        const models = ANTHROPIC_KNOWN_MODELS.map(m => ({ id: m.id, name: m.name }))
+        return { valid: true, models, message: `Anthropic authenticated — ${models.length} known models` }
+    },
 
-        // Hardcoded known models
-        const models = [
-            { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-            { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
-            { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
-            { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet' },
-            { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
-        ]
-
-        return {
-            valid: true,
-            models,
-            message: 'API key validated successfully',
+    google: async (apiKey) => {
+        const res = await fetch(`${PROVIDER_BASE_URLS.google}/models?key=${apiKey}`)
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
         }
-    } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
-    }
-}
+        const data = await res.json()
+        const models = (data.models || [])
+            .filter((m: any) => (m.name || '').includes('gemini'))
+            .map((m: any) => ({ id: m.name.replace('models/', ''), name: m.displayName || m.name.replace('models/', '') }))
+        return { valid: true, models, message: `Google authenticated — ${models.length} Gemini models found` }
+    },
 
-async function testGoogle(apiKey: string) {
-    try {
-        // Google Gemini API test
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`)
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.error?.message || 'Invalid API key',
-            }
-        }
-
-        const data = await response.json()
-        const models = data.models.map((m: any) => ({
-            id: m.name.replace('models/', ''),
-            name: m.displayName || m.name,
-        }))
-
-        return {
-            valid: true,
-            models,
-            message: `Found ${models.length} models`,
-        }
-    } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
-    }
-}
-
-async function testMistral(apiKey: string) {
-    try {
-        const response = await fetch('https://api.mistral.ai/v1/models', {
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-            },
+    mistral: async (apiKey) => {
+        const res = await fetch(`${PROVIDER_BASE_URLS.mistral}/models`, {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
         })
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.message || 'Invalid API key',
-            }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
         }
+        const data = await res.json()
+        const models = (data.data || []).map((m: any) => ({ id: m.id, name: formatModelName(m.id) }))
+        return { valid: true, models, message: `Mistral authenticated — ${models.length} models found` }
+    },
 
-        const data = await response.json()
-        const models = data.data.map((m: any) => ({
-            id: m.id,
-            name: m.id,
-        }))
-
-        return {
-            valid: true,
-            models,
-            message: `Found ${models.length} models`,
-        }
-    } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
-    }
-}
-
-async function testPerplexity(apiKey: string) {
-    try {
-        // Perplexity uses OpenAI-compatible API
-        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    perplexity: async (apiKey) => {
+        const res = await fetch(`${PROVIDER_BASE_URLS.perplexity}/chat/completions`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'llama-3.1-sonar-small-128k-online',
-                messages: [{ role: 'user', content: 'test' }],
-                max_tokens: 1,
-            }),
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'sonar', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
         })
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.error?.message || 'Invalid API key',
-            }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
         }
+        const models = PERPLEXITY_KNOWN_MODELS.map(m => ({ id: m.id, name: m.name }))
+        return { valid: true, models, message: `Perplexity authenticated — ${models.length} known models` }
+    },
 
-        // Hardcoded known models
-        const models = [
-            { id: 'llama-3.1-sonar-large-128k-online', name: 'Sonar Large Online' },
-            { id: 'llama-3.1-sonar-small-128k-online', name: 'Sonar Small Online' },
-            { id: 'llama-3.1-sonar-large-128k-chat', name: 'Sonar Large Chat' },
-            { id: 'llama-3.1-sonar-small-128k-chat', name: 'Sonar Small Chat' },
-        ]
-
-        return {
-            valid: true,
-            models,
-            message: 'API key validated successfully',
-        }
-    } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
-    }
-}
-
-async function testXAI(apiKey: string) {
-    try {
-        // X.AI (Grok) uses OpenAI-compatible API
-        const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    xai: async (apiKey) => {
+        const res = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'grok-beta',
-                messages: [{ role: 'user', content: 'test' }],
-                max_tokens: 1,
-            }),
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'grok-beta', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
         })
-
-        if (!response.ok) {
-            const error = await response.json()
-            return {
-                valid: false,
-                error: error.error?.message || 'Invalid API key',
-            }
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            return { valid: false, models: [], message: '', error: err.error?.message || `Auth failed (${res.status})` }
         }
-
-        // Hardcoded known models
-        const models = [
-            { id: 'grok-beta', name: 'Grok Beta' },
-            { id: 'grok-vision-beta', name: 'Grok Vision Beta' },
-        ]
-
-        return {
-            valid: true,
-            models,
-            message: 'API key validated successfully',
-        }
-    } catch (error: any) {
-        return {
-            valid: false,
-            error: error.message,
-        }
-    }
+        const models = XAI_KNOWN_MODELS.map(m => ({ id: m.id, name: m.name }))
+        return { valid: true, models, message: `xAI authenticated — ${models.length} known models` }
+    },
 }

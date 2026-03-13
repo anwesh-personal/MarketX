@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS brain_memories (
   emotional_valence   FLOAT   NOT NULL DEFAULT 0    CHECK (emotional_valence BETWEEN -1 AND 1),
   emotional_arousal   FLOAT   NOT NULL DEFAULT 0    CHECK (emotional_arousal BETWEEN 0 AND 1),
 
-  -- Belief attribution (MarketX-specific)
-  belief_id           UUID    REFERENCES belief(id) ON DELETE SET NULL,
+  -- Belief attribution (MarketX-specific). Plain UUID so this migration runs without RS:OS; when belief table exists (supabase/migrations/00000000000012_rs_os_core.sql), this stores belief(id).
+  belief_id           UUID    NULL,
   angle_class         TEXT,
 
   -- Resonance
@@ -52,13 +52,14 @@ CREATE TABLE IF NOT EXISTS brain_memories (
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX brain_memories_org_idx      ON brain_memories(org_id, is_active, importance DESC);
-CREATE INDEX brain_memories_agent_idx    ON brain_memories(agent_id, is_active);
-CREATE INDEX brain_memories_type_idx     ON brain_memories(memory_type, scope);
-CREATE INDEX brain_memories_belief_idx   ON brain_memories(belief_id) WHERE belief_id IS NOT NULL;
-CREATE INDEX brain_memories_keywords_idx ON brain_memories USING GIN(keywords);
-CREATE INDEX brain_memories_content_fts  ON brain_memories USING GIN(to_tsvector('english', content));
+CREATE INDEX IF NOT EXISTS brain_memories_org_idx      ON brain_memories(org_id, is_active, importance DESC);
+CREATE INDEX IF NOT EXISTS brain_memories_agent_idx    ON brain_memories(agent_id, is_active);
+CREATE INDEX IF NOT EXISTS brain_memories_type_idx     ON brain_memories(memory_type, scope);
+CREATE INDEX IF NOT EXISTS brain_memories_belief_idx   ON brain_memories(belief_id) WHERE belief_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS brain_memories_keywords_idx ON brain_memories USING GIN(keywords);
+CREATE INDEX IF NOT EXISTS brain_memories_content_fts  ON brain_memories USING GIN(to_tsvector('english', content));
 
+DROP TRIGGER IF EXISTS brain_memories_updated_at ON brain_memories;
 CREATE TRIGGER brain_memories_updated_at
   BEFORE UPDATE ON brain_memories
   FOR EACH ROW EXECUTE FUNCTION brain_agents_set_updated_at();
@@ -91,9 +92,9 @@ CREATE TABLE IF NOT EXISTS knowledge_gaps (
   UNIQUE (org_id, domain, status)   -- dedup active gaps by domain
 );
 
-CREATE INDEX knowledge_gaps_org_idx      ON knowledge_gaps(org_id, status, impact_level DESC);
-CREATE INDEX knowledge_gaps_agent_idx    ON knowledge_gaps(agent_id, status);
-CREATE INDEX knowledge_gaps_impact_idx   ON knowledge_gaps(impact_level, occurrence_count DESC)
+CREATE INDEX IF NOT EXISTS knowledge_gaps_org_idx      ON knowledge_gaps(org_id, status, impact_level DESC);
+CREATE INDEX IF NOT EXISTS knowledge_gaps_agent_idx    ON knowledge_gaps(agent_id, status);
+CREATE INDEX IF NOT EXISTS knowledge_gaps_impact_idx   ON knowledge_gaps(impact_level, occurrence_count DESC)
   WHERE status NOT IN ('resolved', 'dismissed');
 
 -- ============================================================
@@ -122,9 +123,9 @@ CREATE TABLE IF NOT EXISTS brain_reflections (
   created_at                  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX brain_reflections_org_idx     ON brain_reflections(org_id, created_at DESC);
-CREATE INDEX brain_reflections_agent_idx   ON brain_reflections(agent_id, created_at DESC);
-CREATE INDEX brain_reflections_trigger_idx ON brain_reflections(trigger_type, trigger_id);
+CREATE INDEX IF NOT EXISTS brain_reflections_org_idx     ON brain_reflections(org_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS brain_reflections_agent_idx   ON brain_reflections(agent_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS brain_reflections_trigger_idx ON brain_reflections(trigger_type, trigger_id);
 
 -- ============================================================
 -- BRAIN DREAM LOGS
@@ -154,8 +155,8 @@ CREATE TABLE IF NOT EXISTS brain_dream_logs (
   topics              TEXT[]  NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX brain_dream_logs_org_idx    ON brain_dream_logs(org_id, started_at DESC);
-CREATE INDEX brain_dream_logs_status_idx ON brain_dream_logs(status);
+CREATE INDEX IF NOT EXISTS brain_dream_logs_org_idx    ON brain_dream_logs(org_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS brain_dream_logs_status_idx ON brain_dream_logs(status);
 
 -- ============================================================
 -- RLS (all four tables follow the same pattern)
@@ -171,16 +172,18 @@ DECLARE
   tbl  TEXT;
 BEGIN
   FOREACH tbl IN ARRAY tbls LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I_select ON %I', tbl, tbl);
+    EXECUTE format('DROP POLICY IF EXISTS %I_write ON %I', tbl, tbl);
     EXECUTE format(
       'CREATE POLICY %I_select ON %I FOR SELECT USING (
-        org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+        org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
         OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = ''superadmin'')
       )',
       tbl, tbl
     );
     EXECUTE format(
       'CREATE POLICY %I_write ON %I FOR ALL USING (
-        org_id IN (SELECT organization_id FROM organization_members WHERE user_id = auth.uid())
+        org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
         OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = ''superadmin'')
       )',
       tbl, tbl

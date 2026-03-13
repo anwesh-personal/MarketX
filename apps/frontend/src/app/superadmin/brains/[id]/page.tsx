@@ -7,6 +7,7 @@ import {
     Wrench, Database, ChevronDown, ChevronUp, Check, AlertCircle,
     Info, ToggleLeft, ToggleRight, Loader2, Eye, EyeOff
 } from 'lucide-react'
+import { BrainBackground } from '@/components/BrainBackground'
 
 // ============================================================
 // TYPES
@@ -103,6 +104,7 @@ export default function BrainTemplatePage() {
     const [deployOrgId, setDeployOrgId]         = useState('')
     const [isDeploying, setIsDeploying]         = useState(false)
     const [deployResult, setDeployResult]       = useState<string | null>(null)
+    const [deployments, setDeployments]         = useState<Array<{ orgId: string; orgName: string; status: string; deployedAt: string }>>([])
 
     // Load everything in parallel
     const loadAll = useCallback(async () => {
@@ -153,7 +155,20 @@ export default function BrainTemplatePage() {
         }
     }, [id])
 
+    const loadDeployments = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/superadmin/brains/${id}/deployments`)
+            if (res.ok) {
+                const data = await res.json()
+                setDeployments(data.deployments ?? [])
+            }
+        } catch {
+            setDeployments([])
+        }
+    }, [id])
+
     useEffect(() => { loadAll() }, [loadAll])
+    useEffect(() => { if (tab === 'deploy') loadDeployments() }, [tab, loadDeployments])
 
     const handleSave = async () => {
         setIsSaving(true)
@@ -211,6 +226,7 @@ export default function BrainTemplatePage() {
             const data = await res.json()
             if (!res.ok) throw new Error(data.error ?? 'Deployment failed')
             setDeployResult(`Agent deployed to "${data.org?.name ?? deployOrgId}". Agent ID: ${data.agent?.id}`)
+            loadDeployments()
         } catch (err: any) {
             setError(err.message)
         } finally {
@@ -266,9 +282,10 @@ export default function BrainTemplatePage() {
     ]
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="relative max-w-5xl mx-auto space-y-6 min-h-[60vh]">
+            <BrainBackground opacity={0.2} animation="pulse" mixBlendMode="soft-light" />
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.push('/superadmin/brains')}
@@ -600,6 +617,22 @@ export default function BrainTemplatePage() {
                         <Rocket className="w-6 h-6 text-primary" />
                         <h2 className="text-lg font-semibold">Deploy to Organisation</h2>
                     </div>
+
+                    {deployments.length > 0 && (
+                        <div className="rounded-xl border border-border/60 bg-muted/30 p-4">
+                            <p className="text-sm font-semibold mb-2">Active deployments ({deployments.length})</p>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                                {deployments.map(d => (
+                                    <li key={d.orgId} className="flex items-center gap-2">
+                                        <Check className="w-4 h-4 text-success flex-shrink-0" />
+                                        <span className="font-medium text-foreground">{d.orgName}</span>
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{d.status}</span>
+                                        <span className="text-xs">{d.deployedAt ? new Date(d.deployedAt).toLocaleDateString() : ''}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-1">
                         <p className="font-semibold">What deployment does:</p>

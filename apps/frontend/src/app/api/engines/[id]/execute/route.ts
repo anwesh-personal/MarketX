@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 
@@ -66,10 +67,34 @@ export async function POST(
         }
         const { input, options = {} } = body;
 
-        // Get auth from headers or session
-        // For now, using a default - TODO: Implement proper auth
-        const userId = request.headers.get('x-user-id') || 'anonymous';
-        const orgId = request.headers.get('x-org-id') || null;
+        // Auth: Supabase session first, then header fallback (for server-to-server / internal calls)
+        let userId: string;
+        let orgId: string | null = null;
+
+        try {
+            const serverSupabase = createServerClient();
+            const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+            if (user && !authError) {
+                userId = user.id;
+                // Fetch org from users table
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('org_id')
+                    .eq('id', user.id)
+                    .single();
+                orgId = profile?.org_id ?? request.headers.get('x-org-id') ?? null;
+            } else {
+                // Server-to-server: accept headers (internal services only)
+                const headerUserId = request.headers.get('x-user-id');
+                if (!headerUserId || headerUserId === 'anonymous') {
+                    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+                }
+                userId = headerUserId;
+                orgId = request.headers.get('x-org-id') ?? null;
+            }
+        } catch {
+            return NextResponse.json({ error: 'Auth check failed' }, { status: 401 });
+        }
 
         // Get engine from database
         const { data: engine, error: engineError } = await supabase

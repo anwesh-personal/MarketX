@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS prompt_layers (
 );
 
 -- Indexes
-CREATE INDEX prompt_layers_type_idx   ON prompt_layers(layer_type, is_active);
-CREATE INDEX prompt_layers_tier_idx   ON prompt_layers(tier, is_active);
+CREATE INDEX IF NOT EXISTS prompt_layers_type_idx   ON prompt_layers(layer_type, is_active);
+CREATE INDEX IF NOT EXISTS prompt_layers_tier_idx   ON prompt_layers(tier, is_active);
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION prompt_layers_set_updated_at()
@@ -45,6 +45,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS prompt_layers_updated_at ON prompt_layers;
 CREATE TRIGGER prompt_layers_updated_at
   BEFORE UPDATE ON prompt_layers
   FOR EACH ROW EXECUTE FUNCTION prompt_layers_set_updated_at();
@@ -53,12 +54,14 @@ CREATE TRIGGER prompt_layers_updated_at
 -- (agents need to read prompts at runtime)
 ALTER TABLE prompt_layers ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS prompt_layers_read ON prompt_layers;
 CREATE POLICY prompt_layers_read ON prompt_layers FOR SELECT
   USING (
     is_active = true
     OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
+DROP POLICY IF EXISTS prompt_layers_write ON prompt_layers;
 CREATE POLICY prompt_layers_write ON prompt_layers FOR ALL
   USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')

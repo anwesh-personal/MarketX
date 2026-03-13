@@ -1,17 +1,16 @@
 /**
- * Superadmin Authentication Utility
- * 
+ * Superadmin Authentication Utility (client-safe)
+ *
  * Provides:
- * - JWT token validation (client-side decode, server-side verify)
- * - Secure session management
- * - Authenticated fetch wrapper
- * - Token refresh handling
+ * - JWT token decode (client-side, no secret needed)
+ * - Secure session management via localStorage
+ * - Authenticated fetch wrapper with auto-401 redirect
+ * - Token expiry checks
+ *
+ * Server-side verification lives in superadmin-middleware.ts
  */
 
-import jwt from 'jsonwebtoken';
-
 const STORAGE_KEY = 'superadmin_session';
-const JWT_SECRET = process.env.JWT_SECRET || 'axiom-jwt-secret-change-in-production';
 
 export interface SuperadminSession {
     adminId: string;
@@ -29,8 +28,8 @@ export interface JWTPayload {
 }
 
 /**
- * Decode JWT without verification (client-side)
- * Used to check expiry before making requests
+ * Decode JWT without verification (client-side only).
+ * Never exposes the secret — the server validates on every request.
  */
 export function decodeToken(token: string): JWTPayload | null {
     try {
@@ -39,18 +38,6 @@ export function decodeToken(token: string): JWTPayload | null {
 
         const payload = JSON.parse(atob(parts[1]));
         return payload as JWTPayload;
-    } catch {
-        return null;
-    }
-}
-
-/**
- * Verify JWT with secret (server-side only)
- */
-export function verifyToken(token: string): JWTPayload | null {
-    try {
-        const payload = jwt.verify(token, JWT_SECRET) as JWTPayload;
-        return payload;
     } catch {
         return null;
     }

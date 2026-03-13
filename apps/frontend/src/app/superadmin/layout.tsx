@@ -22,6 +22,12 @@ import {
     ChevronRight,
     Cpu,
     Workflow,
+    BookOpen,
+    Mail,
+    Activity,
+    Target,
+    Sparkles,
+    Package,
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { ThemeSelector } from '@/components/ThemeSelector';
@@ -113,26 +119,40 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
     };
 
     const navigation = [
-        // Platform
+        // Platform Overview
         { name: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, group: 'Platform' },
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2, group: 'Platform' },
         { name: 'Users', href: '/superadmin/users', icon: Users, group: 'Platform' },
+        { name: 'Licenses', href: '/superadmin/licenses', icon: FileText, group: 'Platform' },
+
+        // MarketX OS (Briefs, Beliefs, ICP)
+        { name: 'Briefs', href: '/superadmin/briefs', icon: BookOpen, group: 'MarketX OS' },
+        { name: 'Belief Dashboard', href: '/superadmin/belief-dashboard', icon: Activity, group: 'MarketX OS' },
+        { name: 'ICP Manager', href: '/superadmin/icp-manager', icon: Target, group: 'MarketX OS' },
+        { name: 'Mastery Agents', href: '/superadmin/mastery-agents', icon: Bot, group: 'MarketX OS' },
 
         // Workflows & Engines
-        { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow, group: 'Engines' },
-        { name: 'Engine Instances', href: '/superadmin/engines', icon: Cpu, group: 'Engines' },
+        { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow, group: 'Automation' },
+        { name: 'Engine Bundles', href: '/superadmin/engine-bundles', icon: Package, group: 'Automation' },
+        { name: 'Deployed Engines', href: '/superadmin/engines', icon: Cpu, group: 'Automation' },
 
-        // AI & Models
-        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot, group: 'AI & Models' },
-        { name: 'AI Models', href: '/superadmin/ai-management', icon: Cpu, group: 'AI & Models' },
-        { name: 'Brain Management', href: '/superadmin/brains', icon: Brain, group: 'AI & Models' },
+        // AI & Brain
+        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot, group: 'AI & Brain' },
+        { name: 'AI Models', href: '/superadmin/ai-management', icon: Cpu, group: 'AI & Brain' },
+        { name: 'AI Playground', href: '/superadmin/ai-playground', icon: Sparkles, group: 'AI & Brain' },
+        { name: 'Brain Templates', href: '/superadmin/brains', icon: Brain, group: 'AI & Brain' },
+        { name: 'Agent Templates', href: '/superadmin/agents', icon: Sparkles, group: 'AI & Brain' },
+        { name: 'Prompt Library', href: '/superadmin/prompt-library', icon: BookOpen, group: 'AI & Brain' },
+        { name: 'Tool Registry', href: '/superadmin/tool-registry', icon: Settings, group: 'AI & Brain' },
 
-        // System
-        { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'System' },
-        { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'System' },
-        { name: 'Licenses', href: '/superadmin/licenses', icon: FileText, group: 'System' },
-        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'System' },
-        { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'System' },
+        // Infrastructure
+        { name: 'Infrastructure', href: '/superadmin/infrastructure', icon: Cpu, group: 'Infrastructure' },
+        { name: 'Email Providers', href: '/superadmin/email-providers', icon: Mail, group: 'Infrastructure' },
+        { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'Infrastructure' },
+        { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'Infrastructure' },
+        { name: 'Platform Config', href: '/superadmin/platform-config', icon: Settings, group: 'Infrastructure' },
+        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'Infrastructure' },
+        { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'Infrastructure' },
     ];
 
     return (
@@ -247,73 +267,46 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                         overflow-hidden
                     `}
                 >
-                    {/* Navigation */}
-                    <nav className="flex-1 p-md space-y-1 overflow-y-auto">
+                    <nav className="flex-1 py-sm overflow-y-auto hide-scrollbar">
                         {(() => {
-                            const groups = ['Platform', 'Engines', 'AI & Models', 'System'];
+                            const groups = ['Platform', 'MarketX OS', 'Automation', 'AI & Brain', 'Infrastructure'];
                             return groups.map((group) => {
                                 const items = navigation.filter(item => item.group === group);
                                 if (items.length === 0) return null;
 
                                 return (
-                                    <div key={group} className="mb-md">
-                                        <p className="px-md mb-xs text-xs font-semibold text-textTertiary uppercase tracking-wider">
-                                            {group}
-                                        </p>
+                                    <div key={group} className="sidebar-group">
+                                        <div className="sidebar-group-label">{group}</div>
                                         {items.map((item) => {
                                             const Icon = item.icon;
-                                            const isActive = pathname === item.href;
+                                            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
                                             return (
                                                 <Link
                                                     key={item.name}
                                                     href={item.href}
                                                     className={`
-                                                        nav-item
-                                                        group relative
-                                                        flex items-center gap-sm
-                                                        px-sm py-xs
-                                                        rounded-[var(--radius-md)]
-                                                        font-medium text-sm
-                                                        transition-all duration-[var(--duration-fast)]
-                                                        ${isActive
-                                                            ? 'bg-primary/10 text-primary'
-                                                            : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
-                                                        }
-                                                        active:scale-[0.98]
+                                                        nav-item sidebar-item
+                                                        ${isActive ? 'sidebar-item-active' : ''}
                                                     `}
                                                 >
-                                                    {/* Active Indicator */}
-                                                    {isActive && (
-                                                        <div className="
-                                                            absolute left-0 top-1/2 -translate-y-1/2
-                                                            w-0.5 h-5
-                                                            bg-primary rounded-r-full
-                                                        " />
-                                                    )}
-
-                                                    {/* Icon */}
                                                     <div className={`
                                                         flex items-center justify-center
                                                         w-7 h-7
                                                         rounded-[var(--radius-sm)]
                                                         transition-all duration-[var(--duration-fast)]
                                                         ${isActive
-                                                            ? 'bg-primary/20 text-primary'
+                                                            ? 'bg-[rgba(var(--color-accent-rgb),0.15)] text-accent'
                                                             : 'bg-transparent'
                                                         }
                                                     `}>
                                                         <Icon className="w-4 h-4" />
                                                     </div>
-
-                                                    {/* Label */}
-                                                    <span className="flex-1 text-sm">{item.name}</span>
-
-                                                    {/* Chevron */}
+                                                    <span className="flex-1">{item.name}</span>
                                                     <ChevronRight className={`
                                                         w-3 h-3
-                                                        transition-opacity
-                                                        ${isActive ? 'opacity-60' : 'opacity-0 group-hover:opacity-30'}
+                                                        transition-all duration-[var(--duration-fast)]
+                                                        ${isActive ? 'opacity-50 translate-x-0' : 'opacity-0 -translate-x-1 group-hover:opacity-25 group-hover:translate-x-0'}
                                                     `} />
                                                 </Link>
                                             );

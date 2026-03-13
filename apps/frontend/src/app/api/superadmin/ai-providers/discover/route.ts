@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-/**
- * AI Model Discovery Service
- * Discovers available models from different AI providers
- * Based on Lekhika's aiModelDiscoveryService
- */
+import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers';
 
 interface ModelInfo {
     id: string;
@@ -17,9 +13,13 @@ interface ModelInfo {
     supports_function_calling?: boolean;
 }
 
-// POST - Discover models from a provider
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { provider, api_key } = body;
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
 // OpenAI Model Discovery
 async function discoverOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
-    const response = await fetch('https://api.openai.com/v1/models', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
         headers: {
             'Authorization': `Bearer ${apiKey}`,
         },

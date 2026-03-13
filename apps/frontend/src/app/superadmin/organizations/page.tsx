@@ -1,18 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Building2,
     Plus,
     Edit,
     Search,
-    Filter,
     Users,
     Database,
     Activity,
     Loader2,
 } from 'lucide-react';
 import CreateOrgModal from '@/components/modals/CreateOrgModal';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 interface Organization {
     id: string;
@@ -30,6 +31,8 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
+    const router = useRouter();
+    const { fetchWithAuth } = useSuperadminAuth();
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -42,16 +45,7 @@ export default function OrganizationsPage() {
 
     const loadOrganizations = async () => {
         try {
-            const session = localStorage.getItem('superadmin_session');
-            if (!session) return;
-
-            const { token } = JSON.parse(session);
-
-            const response = await fetch('/api/superadmin/organizations', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const response = await fetchWithAuth('/api/superadmin/organizations');
 
             if (!response.ok) throw new Error('Failed to load organizations');
 
@@ -117,7 +111,7 @@ export default function OrganizationsPage() {
                     onClick={() => setShowCreateModal(true)}
                     className="
             flex items-center gap-xs
-            bg-primary text-white
+            btn btn-primary
             px-md py-sm
             rounded-[var(--radius-md)]
             font-medium
@@ -215,6 +209,7 @@ export default function OrganizationsPage() {
                             </div>
 
                             <button
+                                onClick={() => router.push(`/superadmin/organizations/${org.id}`)}
                                 className="
                   p-xs
                   rounded-[var(--radius-sm)]
@@ -302,7 +297,7 @@ export default function OrganizationsPage() {
                             onClick={() => setShowCreateModal(true)}
                             className="
                 inline-flex items-center gap-xs
-                bg-primary text-white
+                btn btn-primary
                 px-md py-sm
                 rounded-[var(--radius-md)]
                 font-medium
@@ -314,32 +309,6 @@ export default function OrganizationsPage() {
                             <span>Create Organization</span>
                         </button>
                     )}
-                </div>
-            )}
-
-            {/* Create Modal Placeholder */}
-            {showCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-md bg-overlay">
-                    <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-lg max-w-2xl w-full">
-                        <h2 className="text-2xl font-bold text-textPrimary mb-md">
-                            Create Organization
-                        </h2>
-                        <p className="text-textSecondary mb-lg">
-                            Coming soon: Create organization form with custom quotas
-                        </p>
-                        <button
-                            onClick={() => setShowCreateModal(false)}
-                            className="
-                bg-primary text-white
-                px-md py-sm
-                rounded-[var(--radius-md)]
-                hover:opacity-90
-                transition-all
-              "
-                        >
-                            Close
-                        </button>
-                    </div>
                 </div>
             )}
 

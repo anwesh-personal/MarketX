@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { testModel, getModelCostInfo, formatModelName } from '@/lib/ai-providers';
+import { decryptSecret } from '@/lib/secrets';
 
 /**
  * Add and test a single model
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
         }
 
-        const apiKey = provider.api_key;
+        const apiKey = decryptSecret(provider.api_key);
         const providerType = provider.provider;
 
         console.log(`[Add Model] Testing ${providerType}/${model_id}...`);

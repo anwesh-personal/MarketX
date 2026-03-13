@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, Plus, Edit2, Trash2, Save, X, Shield, AlertCircle, Check, Loader2, ChevronDown } from 'lucide-react'
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces'
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth'
 
 interface PromptLayer {
     id: string
@@ -30,6 +32,7 @@ const TIER_OPTIONS = [
 ]
 
 export default function PromptLibraryPage() {
+    const { fetchWithAuth } = useSuperadminAuth()
     const [layers, setLayers]               = useState<PromptLayer[]>([])
     const [isLoading, setIsLoading]         = useState(true)
     const [error, setError]                 = useState<string | null>(null)
@@ -48,6 +51,7 @@ export default function PromptLibraryPage() {
     })
     const [isSaving, setIsSaving] = useState(false)
     const [savedId, setSavedId]   = useState<string | null>(null)
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
     const load = useCallback(async () => {
         setIsLoading(true)
@@ -56,7 +60,7 @@ export default function PromptLibraryPage() {
             const url = filterType === 'all'
                 ? '/api/superadmin/prompt-layers'
                 : `/api/superadmin/prompt-layers?layer_type=${filterType}`
-            const res = await fetch(url)
+            const res = await fetchWithAuth(url)
             if (!res.ok) throw new Error('Failed to load layers')
             const data = await res.json()
             setLayers(data.layers ?? [])
@@ -74,7 +78,7 @@ export default function PromptLibraryPage() {
         setIsSaving(true)
         setError(null)
         try {
-            const res = await fetch('/api/superadmin/prompt-layers', {
+            const res = await fetchWithAuth('/api/superadmin/prompt-layers', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify(form),
@@ -94,7 +98,7 @@ export default function PromptLibraryPage() {
     const handleSaveEdit = async (layer: PromptLayer, newContent: string, newName: string) => {
         setIsSaving(true)
         try {
-            const res = await fetch(`/api/superadmin/prompt-layers/${layer.id}`, {
+            const res = await fetchWithAuth(`/api/superadmin/prompt-layers/${layer.id}`, {
                 method:  'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ name: newName, content: newContent }),
@@ -113,8 +117,7 @@ export default function PromptLibraryPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Archive this prompt layer?')) return
-        const res = await fetch(`/api/superadmin/prompt-layers/${id}`, { method: 'DELETE' })
+        const res = await fetchWithAuth(`/api/superadmin/prompt-layers/${id}`, { method: 'DELETE' })
         if (res.ok) load()
     }
 
@@ -130,17 +133,17 @@ export default function PromptLibraryPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-3">
-                        <Sparkles className="w-8 h-8 text-primary" />
+                    <h1 className="text-3xl font-bold flex items-center gap-3 text-textPrimary">
+                        <Sparkles className="w-8 h-8 text-accent" />
                         Prompt Library
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-sm">
+                    <p className="text-textSecondary mt-1 text-sm">
                         Reusable prompt layers. Assign them to brain templates. Changes here do NOT affect already-deployed agents.
                     </p>
                 </div>
                 <button
                     onClick={() => setShowCreate(true)}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl hover:scale-105 transition-all font-medium"
+                    className="btn btn-primary rounded-xl gap-2 px-5 py-2.5 hover:scale-[var(--hover-scale)] active:scale-[var(--active-scale)] transition-transform duration-[var(--duration-normal)]"
                 >
                     <Plus className="w-4 h-4" />
                     New Layer
@@ -148,7 +151,7 @@ export default function PromptLibraryPage() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-error-muted border border-error/30 text-error text-sm">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
                 </div>
             )}
@@ -157,7 +160,7 @@ export default function PromptLibraryPage() {
             <div className="flex gap-2 flex-wrap">
                 <button
                     onClick={() => setFilterType('all')}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${filterType === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-primary/40'}`}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${filterType === 'all' ? 'bg-accent text-onAccent border-accent' : 'border-border bg-surface text-textPrimary hover:border-borderHover hover:bg-surfaceHover'}`}
                 >
                     All Layers
                 </button>
@@ -165,7 +168,7 @@ export default function PromptLibraryPage() {
                     <button
                         key={t.value}
                         onClick={() => setFilterType(t.value)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${filterType === t.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:border-primary/40'}`}
+                        className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all border ${filterType === t.value ? 'bg-accent text-onAccent border-accent' : 'border-border bg-surface text-textPrimary hover:border-borderHover hover:bg-surfaceHover'}`}
                     >
                         {t.label}
                     </button>
@@ -174,51 +177,51 @@ export default function PromptLibraryPage() {
 
             {/* Create Form */}
             {showCreate && (
-                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 p-6 space-y-4">
+                <div className="rounded-2xl border-2 border-accent/30 bg-accent/5 p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                        <h2 className="font-bold text-lg">New Prompt Layer</h2>
-                        <button onClick={() => setShowCreate(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                        <h2 className="font-bold text-lg text-textPrimary">New Prompt Layer</h2>
+                        <button onClick={() => setShowCreate(false)} className="p-1 rounded-lg hover:bg-surfaceHover transition-colors text-textSecondary">
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Layer Type *</label>
-                            <select value={form.layer_type} onChange={e => setForm({ ...form, layer_type: e.target.value as any })} className="input-base">
+                            <label className="text-sm font-medium text-textPrimary">Layer Type *</label>
+                            <select value={form.layer_type} onChange={e => setForm({ ...form, layer_type: e.target.value as any })} className="input">
                                 {LAYER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Tier Availability</label>
-                            <select value={form.tier} onChange={e => setForm({ ...form, tier: e.target.value })} className="input-base">
+                            <label className="text-sm font-medium text-textPrimary">Tier Availability</label>
+                            <select value={form.tier} onChange={e => setForm({ ...form, tier: e.target.value })} className="input">
                                 {TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Name *</label>
-                        <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g., MarketX Core Foundation v1" className="input-base" />
+                        <label className="text-sm font-medium text-textPrimary">Name *</label>
+                        <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g., MarketX Core Foundation v1" className="input" />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Description</label>
-                        <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What does this layer do?" className="input-base" />
+                        <label className="text-sm font-medium text-textPrimary">Description</label>
+                        <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What does this layer do?" className="input" />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Content *</label>
+                        <label className="text-sm font-medium text-textPrimary">Content *</label>
                         <textarea
                             value={form.content}
                             onChange={e => setForm({ ...form, content: e.target.value })}
                             rows={8}
                             placeholder="Write the prompt content here..."
-                            className="input-base resize-y font-mono text-xs"
+                            className="input resize-y font-mono text-xs"
                         />
                     </div>
                     <div className="flex justify-end gap-3">
-                        <button onClick={() => setShowCreate(false)} className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors text-sm">Cancel</button>
+                        <button onClick={() => setShowCreate(false)} className="btn btn-secondary text-sm">Cancel</button>
                         <button
                             onClick={handleCreate}
                             disabled={isSaving || !form.name.trim() || !form.content.trim()}
-                            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 text-sm font-medium"
+                            className="btn btn-primary gap-2 px-5 py-2 rounded-lg hover:scale-[var(--hover-scale)] active:scale-[var(--active-scale)] transition-transform disabled:opacity-60 disabled:hover:scale-100 text-sm font-medium"
                         >
                             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                             Create Layer
@@ -230,11 +233,11 @@ export default function PromptLibraryPage() {
             {/* Layer list */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-16">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
                 </div>
             ) : layers.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                    <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <div className="text-center py-16 text-textSecondary">
+                    <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30 text-accent" />
                     <p>No prompt layers yet. Create your first one.</p>
                 </div>
             ) : (
@@ -250,24 +253,23 @@ export default function PromptLibraryPage() {
                             onEdit={() => setEditingId(layer.id)}
                             onCancelEdit={() => setEditingId(null)}
                             onSave={handleSaveEdit}
-                            onDelete={handleDelete}
+                            onDelete={(id) => setPendingDeleteId(id)}
                         />
                     ))}
                 </div>
             )}
 
-            <style jsx>{`
-                .input-base {
-                    width: 100%;
-                    padding: 0.5rem 0.75rem;
-                    border-radius: 0.5rem;
-                    border: 1px solid hsl(var(--border));
-                    background: hsl(var(--background));
-                    font-size: 0.875rem;
-                    outline: none;
-                }
-                .input-base:focus { box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2); }
-            `}</style>
+            <SuperadminConfirmDialog
+                open={Boolean(pendingDeleteId)}
+                title="Archive prompt layer"
+                description="This will archive the prompt layer. It will no longer be available for new brain templates."
+                confirmLabel="Archive"
+                onCancel={() => setPendingDeleteId(null)}
+                onConfirm={() => {
+                    if (pendingDeleteId) void handleDelete(pendingDeleteId);
+                    setPendingDeleteId(null);
+                }}
+            />
         </div>
     )
 }
@@ -288,14 +290,14 @@ function LayerCard({ layer, isExpanded, isEditing, isSaved, onToggleExpand, onEd
     const [saving, setSaving]           = useState(false)
 
     const TYPE_COLORS: Record<string, string> = {
-        foundation:  'bg-blue-500/10 text-blue-600 border-blue-500/20',
-        persona:     'bg-purple-500/10 text-purple-600 border-purple-500/20',
-        guardrails:  'bg-amber-500/10 text-amber-600 border-amber-500/20',
-        domain_seed: 'bg-green-500/10 text-green-600 border-green-500/20',
+        foundation:  'bg-info-muted text-info border-info/20',
+        persona:     'bg-accent/10 text-accent border-accent/20',
+        guardrails:  'bg-warning-muted text-warning border-warning/20',
+        domain_seed: 'bg-success-muted text-success border-success/20',
     }
 
     return (
-        <div className="rounded-2xl border border-border/40 bg-background overflow-hidden">
+        <div className="parallax-depth rounded-2xl border border-border/80 bg-surface overflow-hidden">
             <div className="flex items-center gap-4 p-4">
                 <button onClick={onToggleExpand} className="flex-1 flex items-center gap-4 text-left">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${TYPE_COLORS[layer.layer_type] ?? ''}`}>
@@ -304,24 +306,24 @@ function LayerCard({ layer, isExpanded, isEditing, isSaved, onToggleExpand, onEd
                     <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{layer.name}</p>
                         {layer.description && (
-                            <p className="text-xs text-muted-foreground truncate">{layer.description}</p>
+                            <p className="text-xs text-textSecondary truncate">{layer.description}</p>
                         )}
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono">v{layer.version}</span>
-                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    <span className="text-xs text-textSecondary font-mono">v{layer.version}</span>
+                    <ChevronDown className={`w-4 h-4 text-textTertiary transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </button>
                 <div className="flex items-center gap-1">
-                    {isSaved && <Check className="w-4 h-4 text-green-500" />}
+                    {isSaved && <Check className="w-4 h-4 text-success" />}
                     {!isEditing ? (
-                        <button onClick={onEdit} className="p-2 rounded-lg hover:bg-muted transition-colors">
+                        <button onClick={onEdit} className="p-2 rounded-lg hover:bg-surfaceHover transition-colors text-textSecondary">
                             <Edit2 className="w-4 h-4" />
                         </button>
                     ) : (
-                        <button onClick={onCancelEdit} className="p-2 rounded-lg hover:bg-muted transition-colors">
+                        <button onClick={onCancelEdit} className="p-2 rounded-lg hover:bg-surfaceHover transition-colors text-textSecondary">
                             <X className="w-4 h-4" />
                         </button>
                     )}
-                    <button onClick={() => onDelete(layer.id)} className="p-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors">
+                    <button onClick={() => onDelete(layer.id)} className="p-2 rounded-lg hover:bg-error-muted hover:text-error transition-colors text-textSecondary">
                         <Trash2 className="w-4 h-4" />
                     </button>
                 </div>
@@ -334,21 +336,21 @@ function LayerCard({ layer, isExpanded, isEditing, isSaved, onToggleExpand, onEd
                             <input
                                 value={editName}
                                 onChange={e => setEditName(e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20 bg-background font-medium"
+                                className="input text-sm font-medium"
                                 placeholder="Layer name"
                             />
                             <textarea
                                 value={editContent}
                                 onChange={e => setEditContent(e.target.value)}
                                 rows={10}
-                                className="w-full px-3 py-2 rounded-lg border border-border text-xs outline-none focus:ring-2 focus:ring-primary/20 font-mono bg-muted/30 resize-y"
+                                className="input text-xs font-mono bg-surface resize-y"
                             />
                             <div className="flex justify-end gap-2">
-                                <button onClick={onCancelEdit} className="px-4 py-1.5 rounded-lg border border-border hover:bg-muted text-sm transition-colors">Cancel</button>
+                                <button onClick={onCancelEdit} className="btn btn-secondary text-sm">Cancel</button>
                                 <button
                                     onClick={async () => { setSaving(true); await onSave(layer, editContent, editName); setSaving(false) }}
                                     disabled={saving}
-                                    className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:scale-105 transition-all disabled:opacity-60"
+                                    className="btn btn-primary gap-2 px-4 py-1.5 rounded-lg text-sm font-medium hover:scale-[var(--hover-scale)] disabled:opacity-60"
                                 >
                                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                                     Save (creates new version)
@@ -356,7 +358,7 @@ function LayerCard({ layer, isExpanded, isEditing, isSaved, onToggleExpand, onEd
                             </div>
                         </>
                     ) : (
-                        <pre className="text-xs font-mono bg-muted/30 rounded-lg p-4 overflow-auto max-h-64 whitespace-pre-wrap text-muted-foreground">
+                        <pre className="text-xs font-mono bg-surface rounded-lg p-4 overflow-auto max-h-64 whitespace-pre-wrap text-textSecondary border border-border">
                             {layer.content}
                         </pre>
                     )}

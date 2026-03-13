@@ -31,6 +31,40 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ tools: data ?? [], count: (data ?? []).length })
 }
 
+const patchToolSchema = z.object({
+    name: z.string().min(1),
+    is_enabled: z.boolean(),
+})
+
+// PATCH /api/superadmin/brain-tools — toggle is_enabled for a tool
+export async function PATCH(req: NextRequest) {
+    const admin = await getSuperadmin(req)
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    let body: unknown
+    try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+
+    const parsed = patchToolSchema.safeParse(body)
+    if (!parsed.success) {
+        return NextResponse.json({ error: 'Validation failed', details: parsed.error.errors }, { status: 400 })
+    }
+
+    const supabase = createClient()
+    const { data, error } = await supabase
+        .from('brain_tools')
+        .update({ is_enabled: parsed.data.is_enabled })
+        .eq('name', parsed.data.name)
+        .select()
+        .single()
+
+    if (error) {
+        if (error.code === 'PGRST116') return NextResponse.json({ error: 'Tool not found' }, { status: 404 })
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ tool: data })
+}
+
 // POST /api/superadmin/brain-tools
 export async function POST(req: NextRequest) {
     const admin = await getSuperadmin(req)

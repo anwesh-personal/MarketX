@@ -8,6 +8,7 @@
  */
 
 import { AbstractProvider } from '../BaseProvider'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 import {
     AIModel,
     GenerationOptions,
@@ -47,7 +48,7 @@ export class OpenAIProvider extends AbstractProvider {
         messages.push({ role: 'user', content: prompt })
 
         try {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ export class OpenAIProvider extends AbstractProvider {
 
     async getModels(apiKey: string): Promise<AIModel[]> {
         try {
-            const response = await fetch('https://api.openai.com/v1/models', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
                 headers: {
                     'Authorization': `Bearer ${apiKey}`
                 }
@@ -194,7 +195,7 @@ export class OpenAIProvider extends AbstractProvider {
             body.response_format = options.responseFormat
         }
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify(body),
@@ -232,7 +233,7 @@ export class OpenAIProvider extends AbstractProvider {
     async embed(texts: string[], apiKey: string): Promise<BrainEmbedResponse> {
         const model = 'text-embedding-3-large'
 
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
+        const response = await fetch(`${PROVIDER_BASE_URLS.openai}/embeddings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
             body: JSON.stringify({ model, input: texts }),

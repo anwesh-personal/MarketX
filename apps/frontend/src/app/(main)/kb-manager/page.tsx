@@ -241,7 +241,7 @@ export default function KBManagerPage() {
                         </div>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="p-2 bg-primary rounded-lg hover:opacity-90 transition text-white"
+                            className="p-2 btn btn-primary rounded-lg hover:opacity-90 transition"
                             title="Create new KB"
                         >
                             <Plus className="w-4 h-4" />
@@ -351,7 +351,7 @@ export default function KBManagerPage() {
                             <p className="text-sm mt-2">or create a new one</p>
                             <button
                                 onClick={() => setShowCreateModal(true)}
-                                className="mt-4 px-4 py-2 bg-primary rounded-lg hover:opacity-90 transition text-white"
+                                className="mt-4 btn btn-primary rounded-lg hover:opacity-90 transition"
                             >
                                 <Plus className="w-4 h-4 inline mr-2" />
                                 Create KB
@@ -414,7 +414,7 @@ export default function KBManagerPage() {
                             <button
                                 onClick={createKb}
                                 disabled={creating || !newKbName.trim()}
-                                className="px-4 py-2 bg-primary rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                                className="btn btn-primary rounded-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {creating ? (
                                     <>

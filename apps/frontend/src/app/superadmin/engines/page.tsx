@@ -23,9 +23,10 @@ import { EngineInstance, ExecutionState, WorkflowTemplate, Organization } from '
 import { EngineCard } from '@/components/engines/EngineCard';
 import { CloneEngineModal } from '@/components/engines/CloneEngineModal';
 import { ExecutionModal } from '@/components/engines/ExecutionModal';
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces';
 
 export default function EnginesPage() {
-    const { admin, isLoading: authLoading } = useSuperadminAuth();
+    const { admin, isLoading: authLoading, fetchWithAuth } = useSuperadminAuth();
     const token = admin?.token;
     const router = useRouter();
 
@@ -44,6 +45,7 @@ export default function EnginesPage() {
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
     const [selectedEngine, setSelectedEngine] = useState<EngineInstance | null>(null);
     const [cloning, setCloning] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
     // Execution State
     const [executionState, setExecutionState] = useState<ExecutionState>({
@@ -150,7 +152,7 @@ export default function EnginesPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!token || !confirm('Are you sure you want to delete this engine instance?')) return;
+        if (!token) return;
         try {
             const res = await fetch(`/api/superadmin/engines?id=${id}`, {
                 method: 'DELETE',
@@ -220,12 +222,12 @@ export default function EnginesPage() {
         }));
 
         try {
-            const response = await fetch(`/api/engines/${selectedEngine.id}/execute`, {
+            const tier = selectedEngine?.tier || selectedEngine?.config?.tier || 'pro';
+            const response = await fetchWithAuth(`/api/engines/${selectedEngine.id}/execute`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     input: parsedInput,
-                    options: { tier: 'pro' }
+                    options: { tier }
                 }),
             });
 
@@ -236,7 +238,7 @@ export default function EnginesPage() {
             setExecutionState(prev => ({ ...prev, executionId, currentNode: 'Queued...' }));
 
             pollingRef.current = setInterval(async () => {
-                const statusRes = await fetch(`/api/engines/executions/${executionId}`);
+                const statusRes = await fetchWithAuth(`/api/engines/executions/${executionId}`);
                 const statusData = await statusRes.json();
 
                 if (statusData.status === 'completed' || statusData.status === 'failed') {
@@ -293,38 +295,37 @@ export default function EnginesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <a
+                            href="/superadmin/engine-bundles"
+                            className="text-sm text-accent hover:underline flex items-center gap-1"
+                        >
+                            ← Engine Bundles
+                        </a>
+                    </div>
                     <h1 className="text-3xl font-bold text-textPrimary mb-xs">
-                        Engine Instances
+                        Deployed Engines
                     </h1>
                     <p className="text-textSecondary">
-                        Deploy and manage cloned workflow engines per organization
+                        Live engine instances deployed from bundles — one per org/user with full isolation
                     </p>
                 </div>
 
                 <div className="flex items-center gap-sm">
                     <button
                         onClick={() => fetchEngines()}
-                        className="p-sm hover:bg-surfaceHover rounded-[var(--radius-md)] text-textTertiary hover:text-textPrimary"
+                        className="p-sm hover:bg-surfaceHover rounded-[var(--radius-md)] text-textPrimary border border-border hover:border-borderHover transition-colors"
                         title="Refresh"
                     >
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <button
-                        onClick={() => setIsCloneModalOpen(true)}
-                        className="
-                            flex items-center gap-xs
-                            px-md py-sm
-                            bg-primary text-white
-                            rounded-[var(--radius-md)]
-                            hover:bg-primary/90
-                            shadow-[0_0_20px_var(--color-primary)/30]
-                            hover:shadow-[0_0_30px_var(--color-primary)/50]
-                            transition-all duration-[var(--duration-fast)]
-                        "
+                    <a
+                        href="/superadmin/engine-bundles"
+                        className="btn btn-primary gap-xs px-md py-sm rounded-[var(--radius-md)] hover:scale-[var(--hover-scale)] active:scale-[var(--active-scale)]"
                     >
                         <Plus className="w-4 h-4" />
-                        <span className="text-sm font-medium">Clone New Engine</span>
-                    </button>
+                        <span className="text-sm font-medium">Deploy New Bundle</span>
+                    </a>
                 </div>
             </div>
 
@@ -333,7 +334,7 @@ export default function EnginesPage() {
                 <div className="flex items-center gap-sm p-md bg-error/10 border border-error/30 rounded-[var(--radius-lg)] text-error">
                     <AlertCircle className="w-5 h-5" />
                     <span>{error}</span>
-                    <button onClick={() => setError(null)} className="ml-auto">
+                    <button onClick={() => setError(null)} className="ml-auto p-1 rounded hover:bg-error/20 text-error">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -342,8 +343,8 @@ export default function EnginesPage() {
             {/* Stats Overview */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-md">
                 <div className="card flex items-center gap-md">
-                    <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
-                        <Server className="w-5 h-5 text-primary" />
+                    <div className="p-sm rounded-[var(--radius-md)] bg-accent/10">
+                        <Server className="w-5 h-5 text-accent" />
                     </div>
                     <div>
                         <p className="text-2xl font-bold text-textPrimary">{stats.total}</p>
@@ -396,7 +397,7 @@ export default function EnginesPage() {
                             rounded-t-[var(--radius-md)]
                             transition-colors duration-[var(--duration-fast)]
                             ${filter === tab.id
-                                ? 'bg-primary/10 text-primary border-b-2 border-primary'
+                                ? 'bg-accent/10 text-accent border-b-2 border-accent'
                                 : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'}
                         `}
                     >
@@ -408,7 +409,7 @@ export default function EnginesPage() {
             {/* Loading State */}
             {loading && (
                 <div className="flex items-center justify-center py-xl">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
                 </div>
             )}
 
@@ -419,12 +420,12 @@ export default function EnginesPage() {
                         <EngineCard
                             key={engine.id}
                             engine={engine}
-                            onClone={() => setIsCloneModalOpen(true)} // Can clone existing? Logic was handleCloneExisting
+                            onClone={() => setIsCloneModalOpen(true)}
                             onConfigure={handleConfigure}
-                            onDelete={handleDelete}
+                            onDelete={(id) => setPendingDeleteId(id)}
                             onToggleStatus={handleToggleStatus}
                             onExecute={handleOpenExecuteModal}
-                            onAssign={() => console.log('Assign TODO')}
+                            onAssign={() => alert('Engine assignment is managed from the Organizations page.')}
                             onViewApiKey={handleConfigure} // Navigate to keys
                         />
                     ))}
@@ -464,6 +465,18 @@ export default function EnginesPage() {
                 onStop={handleStopExecution}
                 testInput={testInput}
                 setTestInput={setTestInput}
+            />
+
+            <SuperadminConfirmDialog
+                open={Boolean(pendingDeleteId)}
+                title="Delete engine instance"
+                description="This will permanently remove this engine instance and its configuration. Any queued or running jobs will be lost. This cannot be undone."
+                confirmLabel="Delete engine"
+                onCancel={() => setPendingDeleteId(null)}
+                onConfirm={() => {
+                    if (pendingDeleteId) void handleDelete(pendingDeleteId);
+                    setPendingDeleteId(null);
+                }}
             />
         </div>
     );

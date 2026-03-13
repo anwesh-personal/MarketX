@@ -4,9 +4,10 @@ import { useTheme } from '@/contexts/ThemeContext';
 interface MailWriterLogoProps {
     className?: string;
     size?: 'sm' | 'md' | 'lg';
+    showText?: boolean;
 }
 
-export function MailWriterLogo({ className = '', size = 'md' }: MailWriterLogoProps) {
+export function MailWriterLogo({ className = '', size = 'md', showText = true }: MailWriterLogoProps) {
     const { theme } = useTheme();
 
     const heights = {
@@ -28,7 +29,7 @@ export function MailWriterLogo({ className = '', size = 'md' }: MailWriterLogoPr
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <img
-                src={isNight ? '/mw-logo-dark.png' : '/mw-logo-light.png'}
+                src={isNight ? '/1.png' : '/2.png'}
                 alt="MarketX"
                 style={{
                     height: `${height}px`,
@@ -36,9 +37,11 @@ export function MailWriterLogo({ className = '', size = 'md' }: MailWriterLogoPr
                 }}
                 className="transition-all duration-300"
             />
-            <span className={`${textSize} font-semibold tracking-tight text-textPrimary`}>
-                MarketX
-            </span>
+            {showText && (
+                <span className={`${textSize} font-semibold tracking-tight text-textPrimary`}>
+                    MarketX
+                </span>
+            )}
         </div>
     );
 }

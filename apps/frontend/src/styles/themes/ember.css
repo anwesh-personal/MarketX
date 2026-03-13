@@ -2,7 +2,7 @@
  * EMBER — Warm Earthy
  * Artisanal, grounded, tactile. Like holding a warm coffee mug.
  * Typography: Bricolage Grotesque (display) + Instrument Sans (body) + IBM Plex Mono (code)
- * Interactions: Medium, warm glow spread, soft bounce, ember glow
+ * Personality: Medium, warm glow spread, soft bounce, ember glow, organic curves
  */
 
 /* ========== DAY MODE ========== */
@@ -12,6 +12,7 @@
     --color-secondary: #7A6652;
     --color-accent: #C75C2E;
     --color-accent-hover: #B04D22;
+    --color-accent-secondary: #E8A838;
     --color-background: #FDF8F0;
     --color-surface: #FFFFFF;
     --color-surface-hover: #F7F0E4;
@@ -23,6 +24,8 @@
     --color-border: #E8DBC8;
     --color-border-hover: #D4C4A8;
     --color-border-focus: #C75C2E;
+    --color-on-accent: #FFFFFF;
+    --color-primary-foreground: #2A1F14;
     --color-overlay: rgba(42, 31, 20, 0.6);
     --color-shadow: rgba(42, 31, 20, 0.08);
     --color-glow: rgba(199, 92, 46, 0.15);
@@ -36,12 +39,23 @@
     --color-info: #4A7FB5;
     --color-info-muted: rgba(74, 127, 181, 0.12);
     --color-accent-rgb: 199, 92, 46;
+    --color-accent-secondary-rgb: 232, 168, 56;
     --color-success-rgb: 58, 125, 68;
     --color-warning-rgb: 232, 168, 56;
     --color-error-rgb: 192, 57, 43;
     --color-info-rgb: 74, 127, 181;
     --color-background-rgb: 253, 248, 240;
     --color-surface-rgb: 255, 255, 255;
+
+    --gradient-primary: linear-gradient(135deg, #C75C2E, #E8A838);
+    --gradient-subtle: linear-gradient(180deg, #FDF8F0 0%, #F5EBD8 100%);
+    --gradient-surface: linear-gradient(180deg, #FFFFFF 0%, #FBF5EA 100%);
+    --gradient-accent-glow: radial-gradient(ellipse at 50% 120%, rgba(199,92,46,0.15) 0%, rgba(232,168,56,0.05) 50%, transparent 70%);
+    --glass-bg: rgba(253, 248, 240, 0.72);
+    --glass-border: rgba(199, 92, 46, 0.1);
+    --noise-opacity: 0.04;
+    --shine-angle: 160deg;
+    --shine-opacity: 0.05;
 
     --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
@@ -70,18 +84,22 @@
     --spacing-2xl: 6.5rem;
 
     --radius-sm: 8px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 18px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 1.5px;
-    --shadow-sm: 0 2px 6px 0 rgba(42, 31, 20, 0.06), 0 1px 3px 0 rgba(199, 92, 46, 0.03);
-    --shadow-md: 0 6px 14px 0 rgba(42, 31, 20, 0.08), 0 3px 6px 0 rgba(199, 92, 46, 0.04);
-    --shadow-lg: 0 12px 28px 0 rgba(42, 31, 20, 0.1), 0 6px 14px 0 rgba(199, 92, 46, 0.06);
-    --shadow-xl: 0 22px 44px 0 rgba(42, 31, 20, 0.12), 0 10px 22px 0 rgba(199, 92, 46, 0.08);
+    --shadow-sm: 0 2px 8px -2px rgba(42, 31, 20, 0.08), 0 1px 4px -1px rgba(199, 92, 46, 0.04);
+    --shadow-md: 0 8px 24px -4px rgba(42, 31, 20, 0.12), 0 4px 12px -2px rgba(199, 92, 46, 0.06);
+    --shadow-lg: 0 16px 32px -8px rgba(42, 31, 20, 0.16), 0 8px 16px -4px rgba(199, 92, 46, 0.08);
+    --shadow-xl: 0 24px 48px -12px rgba(42, 31, 20, 0.2), 0 12px 24px -6px rgba(199, 92, 46, 0.1);
     --shadow-glow: 0 0 0 3px rgba(199, 92, 46, 0.15), 0 0 16px rgba(199, 92, 46, 0.1);
     --shadow-glow-lg: 0 0 0 4px rgba(199, 92, 46, 0.2), 0 0 28px rgba(199, 92, 46, 0.15), 0 0 48px rgba(232, 168, 56, 0.08);
+    --shadow-card-hover: 0 24px 48px -12px rgba(42,31,20,0.15), 0 12px 24px -6px rgba(199,92,46,0.1);
+    --shadow-inner: inset 0 2px 4px rgba(42,31,20,0.04);
+    --shadow-float: 0 32px 64px -16px rgba(42,31,20,0.2), 0 16px 32px -8px rgba(199,92,46,0.12);
 
     --duration-fast: 200ms;
     --duration-normal: 300ms;
@@ -91,8 +109,13 @@
     --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     --hover-scale: 1.025;
     --active-scale: 0.975;
+    --hover-lift: -4px;
     --focus-ring-width: 2.5px;
     --focus-ring-offset: 3px;
+
+    --sidebar-width: 270px;
+    --sidebar-collapsed-width: 68px;
+    --header-height: 68px;
 }
 
 /* ========== NIGHT MODE ========== */
@@ -102,6 +125,7 @@
     --color-secondary: #8A7A68;
     --color-accent: #E06030;
     --color-accent-hover: #EE7744;
+    --color-accent-secondary: #FBBF24;
     --color-background: #1A1210;
     --color-surface: #221A16;
     --color-surface-hover: #2E241E;
@@ -113,6 +137,8 @@
     --color-border: #3A2E24;
     --color-border-hover: #4D3E30;
     --color-border-focus: #E06030;
+    --color-on-accent: #1A0F0C;
+    --color-primary-foreground: #1A1210;
     --color-overlay: rgba(26, 18, 16, 0.85);
     --color-shadow: rgba(0, 0, 0, 0.3);
     --color-glow: rgba(224, 96, 48, 0.2);
@@ -126,12 +152,23 @@
     --color-info: #60A5FA;
     --color-info-muted: rgba(96, 165, 250, 0.12);
     --color-accent-rgb: 224, 96, 48;
+    --color-accent-secondary-rgb: 251, 191, 36;
     --color-success-rgb: 74, 222, 128;
     --color-warning-rgb: 251, 191, 36;
     --color-error-rgb: 248, 113, 113;
     --color-info-rgb: 96, 165, 250;
     --color-background-rgb: 26, 18, 16;
     --color-surface-rgb: 34, 26, 22;
+
+    --gradient-primary: linear-gradient(135deg, #E06030, #FBBF24);
+    --gradient-subtle: linear-gradient(180deg, #1A1210 0%, #201810 100%);
+    --gradient-surface: linear-gradient(180deg, #221A16 0%, #281E16 100%);
+    --gradient-accent-glow: radial-gradient(ellipse at 50% 120%, rgba(224,96,48,0.2) 0%, rgba(251,191,36,0.06) 50%, transparent 70%);
+    --glass-bg: rgba(34, 26, 22, 0.75);
+    --glass-border: rgba(224, 96, 48, 0.1);
+    --noise-opacity: 0.05;
+    --shine-angle: 160deg;
+    --shine-opacity: 0.03;
 
     --font-sans: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
@@ -160,18 +197,22 @@
     --spacing-2xl: 6.5rem;
 
     --radius-sm: 8px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 18px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 1.5px;
-    --shadow-sm: 0 2px 6px 0 rgba(0, 0, 0, 0.2), 0 1px 3px 0 rgba(224, 96, 48, 0.04);
-    --shadow-md: 0 6px 14px 0 rgba(0, 0, 0, 0.3), 0 3px 6px 0 rgba(224, 96, 48, 0.06);
-    --shadow-lg: 0 12px 28px 0 rgba(0, 0, 0, 0.4), 0 6px 14px 0 rgba(224, 96, 48, 0.08);
-    --shadow-xl: 0 22px 44px 0 rgba(0, 0, 0, 0.5), 0 10px 22px 0 rgba(224, 96, 48, 0.1);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 1px 4px -1px rgba(224, 96, 48, 0.06);
+    --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(224, 96, 48, 0.08);
+    --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.5), 0 8px 16px -4px rgba(224, 96, 48, 0.12);
+    --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.6), 0 12px 24px -6px rgba(224, 96, 48, 0.16);
     --shadow-glow: 0 0 0 3px rgba(224, 96, 48, 0.2), 0 0 16px rgba(224, 96, 48, 0.12);
     --shadow-glow-lg: 0 0 0 4px rgba(224, 96, 48, 0.25), 0 0 28px rgba(224, 96, 48, 0.18), 0 0 48px rgba(251, 191, 36, 0.08);
+    --shadow-card-hover: 0 24px 48px -12px rgba(0,0,0,0.6), 0 12px 24px -6px rgba(224,96,48,0.15);
+    --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-float: 0 32px 64px -16px rgba(0,0,0,0.7), 0 16px 32px -8px rgba(224,96,48,0.2);
 
     --duration-fast: 200ms;
     --duration-normal: 300ms;
@@ -181,6 +222,11 @@
     --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
     --hover-scale: 1.025;
     --active-scale: 0.975;
+    --hover-lift: -4px;
     --focus-ring-width: 2.5px;
     --focus-ring-offset: 3px;
+
+    --sidebar-width: 270px;
+    --sidebar-collapsed-width: 68px;
+    --header-height: 68px;
 }

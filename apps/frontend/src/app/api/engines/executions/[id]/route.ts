@@ -41,22 +41,21 @@ export async function GET(
             );
         }
 
-        // Parse execution data
-        const executionData = execution.execution_data || {};
+        const outputData = (execution as any).output_data || {};
+        const executionData = (execution as any).execution_data || {};
 
-        // Return status
         return NextResponse.json({
             executionId: execution.id,
             status: execution.status,
             engine_id: execution.engine_id,
             input: execution.input_data,
-            output: executionData.result || executionData.lastNodeOutput?.content,
-            tokensUsed: executionData.tokensUsed || executionData.tokenUsage?.totalTokens,
-            cost: executionData.cost || executionData.tokenUsage?.totalCost,
-            durationMs: executionData.durationMs,
+            output: outputData.finalOutput ?? executionData.result ?? executionData.lastNodeOutput?.content,
+            tokensUsed: (execution as any).tokens_used ?? executionData.tokensUsed ?? executionData.tokenUsage?.totalTokens,
+            cost: (execution as any).cost_usd ?? executionData.cost ?? executionData.tokenUsage?.totalCost,
+            durationMs: (execution as any).duration_ms ?? executionData.durationMs,
             error: execution.error_message,
-            createdAt: execution.created_at,
-            updatedAt: execution.updated_at,
+            createdAt: execution.started_at ?? execution.created_at,
+            updatedAt: execution.completed_at ?? execution.updated_at,
         });
 
     } catch (error: any) {

@@ -118,18 +118,57 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
             }
 
             case 'submit': {
-                // Submit fine-tuning job to provider
-                // In production, this would call the actual API
                 const formatted = job.data.config?.formatted || []
-
                 if (formatted.length < (config?.minExamples || 10)) {
                     throw new Error(`Insufficient examples: ${formatted.length} < ${config?.minExamples || 10}`)
                 }
 
-                // Simulate job submission
-                const newJobId = `ft-${Date.now()}-${orgId.slice(0, 8)}`
+                let newJobId: string
 
-                // Record in database
+                if (provider === 'openai') {
+                    const openaiKey = process.env.OPENAI_API_KEY
+                    if (!openaiKey) throw new Error('OPENAI_API_KEY not set — cannot submit fine-tune job')
+
+                    // Upload training file to OpenAI Files API
+                    const jsonl = formatted
+                        .map((ex: any) => JSON.stringify({
+                            messages: [
+                                { role: 'user',      content: ex.input  },
+                                { role: 'assistant', content: ex.output },
+                            ]
+                        }))
+                        .join('\n')
+
+                    const fileRes = await fetch('https://api.openai.com/v1/files', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${openaiKey}` },
+                        body: (() => {
+                            const fd = new FormData()
+                            fd.append('purpose', 'fine-tune')
+                            fd.append('file', new Blob([jsonl], { type: 'text/plain' }), 'training.jsonl')
+                            return fd
+                        })(),
+                    })
+                    const fileData = await fileRes.json()
+                    if (!fileData.id) throw new Error(`OpenAI file upload failed: ${JSON.stringify(fileData)}`)
+
+                    // Create fine-tuning job
+                    const ftRes = await fetch('https://api.openai.com/v1/fine_tuning/jobs', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            training_file: fileData.id,
+                            model: config?.baseModel || 'gpt-4o-mini-2024-07-18',
+                            suffix: `marketx-${orgId.slice(0, 8)}`,
+                        }),
+                    })
+                    const ftData = await ftRes.json()
+                    if (!ftData.id) throw new Error(`OpenAI fine-tune submit failed: ${JSON.stringify(ftData)}`)
+                    newJobId = ftData.id
+                } else {
+                    throw new Error(`Fine-tuning for provider "${provider}" not yet implemented. Only "openai" is supported.`)
+                }
+
                 await pool.query(`
                     INSERT INTO brain_version_history (brain_template_id, version, config, change_summary)
                     VALUES ($1, $2, $3, $4)
@@ -137,43 +176,74 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
                     brainTemplateId,
                     `fine-tune-${newJobId}`,
                     { provider, exampleCount: formatted.length, jobId: newJobId },
-                    `Fine-tuning job submitted with ${formatted.length} examples`
+                    `Fine-tuning job submitted to ${provider} with ${formatted.length} examples`,
                 ])
 
-                console.log(`🎯 Submitted fine-tuning job: ${newJobId}`)
-
+                console.log(`🎯 Fine-tune job submitted to ${provider}: ${newJobId}`)
                 return { type, jobId: newJobId, status: 'submitted', exampleCount: formatted.length }
             }
 
             case 'monitor': {
-                // Check fine-tuning job status
                 if (!jobId) throw new Error('jobId required for monitor')
 
-                // In production, poll the actual API
-                // For now, simulate progress
-                const statuses = ['validating', 'running', 'running', 'succeeded']
-                const status = statuses[Math.floor(Math.random() * statuses.length)]
+                if (provider === 'openai') {
+                    const openaiKey = process.env.OPENAI_API_KEY
+                    if (!openaiKey) throw new Error('OPENAI_API_KEY not set')
 
-                console.log(`🎯 Job ${jobId} status: ${status}`)
+                    const res = await fetch(`https://api.openai.com/v1/fine_tuning/jobs/${jobId}`, {
+                        headers: { Authorization: `Bearer ${openaiKey}` },
+                    })
+                    const data = await res.json()
+                    // OpenAI statuses: validating_files | queued | running | succeeded | failed | cancelled
+                    const status = data.status || 'unknown'
+                    const fineTunedModel = data.fine_tuned_model || null
 
-                return { type, jobId, status }
+                    console.log(`🎯 Fine-tune job ${jobId} status: ${status}${fineTunedModel ? ` → model: ${fineTunedModel}` : ''}`)
+                    return { type, jobId, status, fineTunedModel }
+                }
+
+                throw new Error(`Monitor for provider "${provider}" not yet implemented.`)
             }
 
             case 'deploy': {
-                // Deploy the fine-tuned model
                 if (!jobId) throw new Error('jobId required for deploy')
 
-                // Update brain template with new model
+                // Fetch actual fine-tuned model ID from provider before deploying
+                let fineTunedModel: string | null = job.data.config?.fineTunedModel || null
+
+                if (!fineTunedModel && provider === 'openai') {
+                    const openaiKey = process.env.OPENAI_API_KEY
+                    if (!openaiKey) throw new Error('OPENAI_API_KEY not set')
+                    const res = await fetch(`https://api.openai.com/v1/fine_tuning/jobs/${jobId}`, {
+                        headers: { Authorization: `Bearer ${openaiKey}` },
+                    })
+                    const data = await res.json()
+                    if (data.status !== 'succeeded') {
+                        throw new Error(`Cannot deploy: fine-tune job ${jobId} status is "${data.status}", not "succeeded"`)
+                    }
+                    fineTunedModel = data.fine_tuned_model
+                }
+
+                if (!fineTunedModel) throw new Error(`No fine-tuned model ID found for job ${jobId}`)
+
+                // Write the actual model ID into brain_templates.config so BrainOrchestrator uses it
                 await pool.query(`
                     UPDATE brain_templates
-                    SET config = jsonb_set(config, '{fineTunedModel}', $1::jsonb),
-                        updated_at = NOW()
-                    WHERE id = $2
-                `, [JSON.stringify({ jobId, deployedAt: new Date().toISOString() }), brainTemplateId])
+                    SET config = jsonb_set(
+                        jsonb_set(config, '{model}', $1::jsonb),
+                        '{fineTunedModel}',
+                        $2::jsonb
+                    ),
+                    updated_at = NOW()
+                    WHERE id = $3
+                `, [
+                    JSON.stringify(fineTunedModel),
+                    JSON.stringify({ jobId, modelId: fineTunedModel, deployedAt: new Date().toISOString(), provider }),
+                    brainTemplateId,
+                ])
 
-                console.log(`🎯 Deployed fine-tuned model from job ${jobId}`)
-
-                return { type, jobId, status: 'deployed' }
+                console.log(`🎯 Deployed fine-tuned model ${fineTunedModel} from job ${jobId}`)
+                return { type, jobId, fineTunedModel, status: 'deployed' }
             }
 
             case 'full_pipeline': {

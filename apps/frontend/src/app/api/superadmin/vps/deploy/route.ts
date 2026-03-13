@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBootstrapClient } from '@/lib/vps/bootstrapClient';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
-/**
- * POST /api/superadmin/vps/deploy
- * Deploy code to VPS
- * NOTE: Simplified - just restarts all workers
- */
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized - Superadmin access required' },
+                { status: 401 }
+            );
+        }
+
         const { server_id } = await request.json();
 
         const bootstrap = await getBootstrapClient(server_id || undefined);

@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
+import { decryptSecret } from '@/lib/secrets'
+import { PROVIDER_BASE_URLS, getModelCostInfo } from '@/lib/ai-providers'
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-/**
- * POST /api/superadmin/ai-chat
- * Test AI chat with any configured provider/model
- * 
- * Accepts either:
- * - { message, provider, model, history } - simple format
- * - { messages, provider, model, temperature, max_tokens } - full format from Playground
- */
+async function getDefaultModelForProvider(providerType: string): Promise<string | null> {
+    const { data } = await supabase
+        .from('ai_model_metadata')
+        .select('model_id')
+        .eq('provider', providerType)
+        .eq('is_active', true)
+        .order('model_id', { ascending: true })
+        .limit(1)
+        .single()
+    return data?.model_id ?? null
+}
+
 export async function POST(req: NextRequest) {
     try {
+        const admin = await getSuperadmin(req)
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 })
+        }
+
         const body = await req.json()
 
         // Support both formats: simple message or full messages array
@@ -67,12 +79,16 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const apiKey = providerData.api_key
+        const apiKey = decryptSecret(providerData.api_key)
         const providerType = providerData.provider
+
+        if (!model) {
+            const dbDefault = await getDefaultModelForProvider(providerType)
+            if (dbDefault) model = dbDefault
+        }
 
         let response, usage, responseModel
 
-        // Route to appropriate provider
         switch (providerType) {
             case 'openai':
                 const openaiResult = await callOpenAI(apiKey, messages, model, temperature, maxTokens)
@@ -156,9 +172,9 @@ export async function POST(req: NextRequest) {
 
 // OpenAI API Call
 async function callOpenAI(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'gpt-4-turbo-preview'
+    const selectedModel = model || 'gpt-4o-mini' // DB-resolved upstream; static fallback only if DB is empty
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -191,13 +207,13 @@ async function callOpenAI(apiKey: string, messages: any[], model?: string, tempe
 
 // Anthropic API Call
 async function callAnthropic(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'claude-3-sonnet-20240229'
+    const selectedModel = model || 'claude-3-5-sonnet-20241022' // DB-resolved upstream
 
     // Convert to Anthropic format (system message separate)
     const systemMessage = messages.find(m => m.role === 'system')?.content || ''
     const chatMessages = messages.filter(m => m.role !== 'system')
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -232,7 +248,7 @@ async function callAnthropic(apiKey: string, messages: any[], model?: string, te
 
 // Google Gemini API Call
 async function callGoogle(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'gemini-1.5-flash'
+    const selectedModel = model || 'gemini-2.0-flash' // DB-resolved upstream
 
     // Convert to Gemini format
     const contents = messages
@@ -245,7 +261,7 @@ async function callGoogle(apiKey: string, messages: any[], model?: string, tempe
     const systemInstruction = messages.find(m => m.role === 'system')?.content
 
     const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`,
+        `${PROVIDER_BASE_URLS.google}/models/${selectedModel}:generateContent?key=${apiKey}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -279,9 +295,9 @@ async function callGoogle(apiKey: string, messages: any[], model?: string, tempe
 
 // Mistral API Call
 async function callMistral(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'mistral-small-latest'
+    const selectedModel = model || 'mistral-small-latest' // DB-resolved upstream
 
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -312,46 +328,19 @@ async function callMistral(apiKey: string, messages: any[], model?: string, temp
     }
 }
 
-// Calculate cost based on usage
+// Calculate cost based on usage using centralized cost lookup
 function calculateCost(provider: string, model: string, usage: { input: number; output: number }): number {
-    // Cost per million tokens
-    const costs: Record<string, { input: number; output: number }> = {
-        'gpt-4': { input: 30, output: 60 },
-        'gpt-4-turbo': { input: 10, output: 30 },
-        'gpt-3.5-turbo': { input: 0.5, output: 1.5 },
-        'claude-3-opus': { input: 15, output: 75 },
-        'claude-3-sonnet': { input: 3, output: 15 },
-        'claude-3-haiku': { input: 0.25, output: 1.25 },
-        'gemini-1.5-pro': { input: 3.5, output: 10.5 },
-        'gemini-1.5-flash': { input: 0.35, output: 1.05 },
-        'mistral-large': { input: 4, output: 12 },
-        'mistral-small': { input: 1, output: 3 },
-        'grok-2': { input: 5, output: 15 },
-        'grok-beta': { input: 5, output: 15 },
-        'sonar': { input: 1, output: 1 },
-        'llama-3.1': { input: 1, output: 1 }
-    }
-
-    // Find matching cost
-    let rate = { input: 1, output: 3 } // Default
-    for (const [key, value] of Object.entries(costs)) {
-        if (model.includes(key)) {
-            rate = value
-            break
-        }
-    }
-
-    const inputCost = (usage.input / 1000000) * rate.input
-    const outputCost = (usage.output / 1000000) * rate.output
-
+    const costInfo = getModelCostInfo(model)
+    const inputCost = (usage.input / 1000000) * costInfo.input
+    const outputCost = (usage.output / 1000000) * costInfo.output
     return inputCost + outputCost
 }
 
 // xAI (Grok) API Call
 async function callXAI(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'grok-2-1212'
+    const selectedModel = model || 'grok-2-1212' // DB-resolved upstream
 
-    const response = await fetch('https://api.x.ai/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -384,9 +373,9 @@ async function callXAI(apiKey: string, messages: any[], model?: string, temperat
 
 // Perplexity API Call
 async function callPerplexity(apiKey: string, messages: any[], model?: string, temperature = 0.7, maxTokens = 1000) {
-    const selectedModel = model || 'llama-3.1-sonar-large-128k-online'
+    const selectedModel = model || 'llama-3.1-sonar-large-128k-online' // DB-resolved upstream
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.perplexity}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

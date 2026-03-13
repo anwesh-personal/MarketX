@@ -8,6 +8,7 @@
  */
 
 import { AbstractProvider } from '../BaseProvider'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 import {
     AIModel,
     GenerationOptions,
@@ -43,7 +44,7 @@ export class AnthropicProvider extends AbstractProvider {
         ]
 
         try {
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -207,7 +208,7 @@ export class AnthropicProvider extends AbstractProvider {
             }))
         }
 
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

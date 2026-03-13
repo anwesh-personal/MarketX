@@ -12,6 +12,21 @@
 
 BEGIN;
 
+-- Ensure organization_members exists (same schema as 010 / supabase 09). Safe if 010 already ran.
+CREATE TABLE IF NOT EXISTS organization_members (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id     UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role       VARCHAR(20) DEFAULT 'member',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(org_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_org_members_user ON organization_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_org_members_org ON organization_members(org_id);
+INSERT INTO organization_members (org_id, user_id, role)
+  SELECT org_id, id, COALESCE(role, 'member') FROM users
+  ON CONFLICT (org_id, user_id) DO UPDATE SET role = EXCLUDED.role;
+
 CREATE TABLE IF NOT EXISTS brain_agents (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   
@@ -71,9 +86,9 @@ CREATE TABLE IF NOT EXISTS brain_agents (
   UNIQUE (org_id, user_id)
 );
 
--- Indexes
-CREATE INDEX brain_agents_org_idx    ON brain_agents(org_id, status);
-CREATE INDEX brain_agents_status_idx ON brain_agents(status);
+-- Indexes (IF NOT EXISTS for idempotent re-runs)
+CREATE INDEX IF NOT EXISTS brain_agents_org_idx    ON brain_agents(org_id, status);
+CREATE INDEX IF NOT EXISTS brain_agents_status_idx ON brain_agents(status);
 
 -- Auto-update updated_at
 CREATE OR REPLACE FUNCTION brain_agents_set_updated_at()
@@ -84,34 +99,31 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER brain_agents_updated_at
-  BEFORE UPDATE ON brain_agents
-  FOR EACH ROW EXECUTE FUNCTION brain_agents_set_updated_at();
+-- Drop then create in one block so re-runs never hit "trigger already exists"
+DO $$
+BEGIN
+  DROP TRIGGER IF EXISTS brain_agents_updated_at ON brain_agents;
+  EXECUTE 'CREATE TRIGGER brain_agents_updated_at BEFORE UPDATE ON brain_agents FOR EACH ROW EXECUTE FUNCTION brain_agents_set_updated_at()';
+END $$;
 
 -- RLS
 ALTER TABLE brain_agents ENABLE ROW LEVEL SECURITY;
 
--- Org members can read their own org's agent
+DROP POLICY IF EXISTS brain_agents_select ON brain_agents;
 CREATE POLICY brain_agents_select ON brain_agents FOR SELECT
   USING (
-    org_id IN (
-      SELECT organization_id FROM organization_members WHERE user_id = auth.uid()
-    )
-    OR
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
+    org_id IN (SELECT org_id FROM organization_members WHERE user_id = auth.uid())
+    OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
--- Only org admins + superadmin can insert/update
+DROP POLICY IF EXISTS brain_agents_write ON brain_agents;
 CREATE POLICY brain_agents_write ON brain_agents FOR ALL
   USING (
     EXISTS (
       SELECT 1 FROM organization_members
-      WHERE user_id = auth.uid()
-        AND organization_id = org_id
-        AND role IN ('admin', 'owner')
+      WHERE user_id = auth.uid() AND org_id = brain_agents.org_id AND role IN ('admin', 'owner')
     )
-    OR
-    EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
+    OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')
   );
 
 -- ============================================================

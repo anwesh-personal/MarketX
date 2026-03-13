@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
+import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces'
 
 // =============================================================================
 // TYPES
@@ -103,6 +104,7 @@ export default function RedisManagementPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [filterState, setFilterState] = useState<string>('all')
     const [searchQuery, setSearchQuery] = useState('')
+    const [pendingAction, setPendingAction] = useState<{ queue: string; action: string; message: string } | null>(null)
 
     // Load status
     const loadStatus = useCallback(async (showRefreshing = true) => {
@@ -137,7 +139,7 @@ export default function RedisManagementPage() {
     }, [autoRefresh, refreshInterval, loadStatus])
 
     // Queue actions
-    const performAction = async (queueName: string, action: string) => {
+    const requestAction = (queueName: string, action: string) => {
         const actionLabels: Record<string, string> = {
             'pause': 'pause',
             'resume': 'resume',
@@ -147,12 +149,14 @@ export default function RedisManagementPage() {
         }
 
         const isDestructive = ['clean-failed', 'obliterate'].includes(action)
-        const confirmMessage = isDestructive
+        const message = isDestructive
             ? `Are you sure you want to ${actionLabels[action]} the "${queueName}" queue? This cannot be undone.`
             : `${actionLabels[action].charAt(0).toUpperCase() + actionLabels[action].slice(1)} the "${queueName}" queue?`
 
-        if (!confirm(confirmMessage)) return
+        setPendingAction({ queue: queueName, action, message })
+    }
 
+    const executeAction = async (queueName: string, action: string) => {
         setActionLoading(`${queueName}-${action}`)
         try {
             const response = await fetch('/api/superadmin/redis/action', {
@@ -164,7 +168,6 @@ export default function RedisManagementPage() {
             const data = await response.json()
             if (response.ok) {
                 await loadStatus(false)
-                // Show success notification
             } else {
                 alert(`Action failed: ${data.error}`)
             }
@@ -275,7 +278,7 @@ export default function RedisManagementPage() {
                     <p className="text-textSecondary mb-6">Could not connect to Redis. Check your configuration.</p>
                     <button
                         onClick={() => loadStatus(true)}
-                        className="px-6 py-3 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
+                        className="btn btn-primary px-6 py-3 rounded-lg font-semibold"
                     >
                         Retry Connection
                     </button>
@@ -422,7 +425,7 @@ export default function RedisManagementPage() {
                                 <QueueCard
                                     key={queue.name}
                                     queue={queue}
-                                    onAction={performAction}
+                                    onAction={requestAction}
                                     onRetryJob={retryJob}
                                     onViewDetails={() => setSelectedQueue(queue.name)}
                                     isLoading={actionLoading?.startsWith(queue.name) || false}
@@ -447,6 +450,19 @@ export default function RedisManagementPage() {
                             onRetryJob={retryJob}
                         />
                     )}
+
+                    <SuperadminConfirmDialog
+                        open={Boolean(pendingAction)}
+                        title="Confirm queue action"
+                        description={pendingAction?.message ?? ''}
+                        confirmLabel="Confirm"
+                        onCancel={() => setPendingAction(null)}
+                        onConfirm={() => {
+                            if (pendingAction) void executeAction(pendingAction.queue, pendingAction.action);
+                            setPendingAction(null);
+                        }}
+                        tone={pendingAction?.action === 'obliterate' || pendingAction?.action === 'clean-failed' ? 'danger' : 'primary'}
+                    />
                 </>
             )}
         </div>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ragOrchestrator } from '../RAGOrchestrator'
 import { BrainConfig } from '../BrainConfigService'
 import { aiProviderService } from '../../ai/AIProviderService'
+import { decryptSecret } from '@/lib/secrets'
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -333,7 +334,10 @@ export abstract class Agent {
             throw new Error('AI provider not found')
         }
 
-        return provider
+        return {
+            ...provider,
+            api_key: decryptSecret(provider.api_key),
+        }
     }
 
     /**

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireSuperadmin } from '@/lib/superadmin-middleware';
+import { encryptSecret, maskSecret, shouldPersistSecret } from '@/lib/secrets';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,14 +11,21 @@ const supabase = createClient(
 // GET - List all AI providers
 export async function GET(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const { data: providers, error } = await supabase
             .from('ai_providers')
-            .select('*')
+            .select('id, provider, name, api_key, description, is_active, failures, usage_count, created_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        return NextResponse.json({ providers });
+        return NextResponse.json({
+            providers: (providers || []).map((provider) => ({
+                ...provider,
+                api_key: maskSecret(provider.api_key),
+                has_api_key: Boolean(provider.api_key),
+            })),
+        });
     } catch (error: any) {
         console.error('Error fetching AI providers:', error);
         return NextResponse.json(
@@ -34,6 +43,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const body = await request.json();
         const { provider, name, api_key, description } = body;
 
@@ -75,7 +85,7 @@ export async function POST(request: NextRequest) {
             .insert({
                 provider,
                 name,
-                api_key,
+                api_key: encryptSecret(api_key),
                 description: description || null,
                 is_active: true,
                 models_discovered: validation.models || [],
@@ -107,6 +117,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Update AI provider
 export async function PATCH(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const body = await request.json();
         const { id, ...updates } = body;
 
@@ -115,6 +126,14 @@ export async function PATCH(request: NextRequest) {
                 { error: 'Provider ID required' },
                 { status: 400 }
             );
+        }
+
+        if (typeof updates.api_key === 'string') {
+            if (shouldPersistSecret(updates.api_key)) {
+                updates.api_key = encryptSecret(updates.api_key)
+            } else {
+                delete updates.api_key
+            }
         }
 
         const { data, error } = await supabase
@@ -126,7 +145,9 @@ export async function PATCH(request: NextRequest) {
 
         if (error) throw error;
 
-        return NextResponse.json({ provider: data });
+        return NextResponse.json({
+            provider: data ? { ...data, api_key: maskSecret(data.api_key), has_api_key: Boolean(data.api_key) } : null,
+        });
     } catch (error: any) {
         console.error('Error updating AI provider:', error);
         return NextResponse.json(
@@ -139,6 +160,7 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete AI provider
 export async function DELETE(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

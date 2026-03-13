@@ -2,48 +2,42 @@ import { Worker, Job } from 'bullmq'
 import { QueueName } from '../config/queues'
 import { redisConfig } from '../config/redis'
 import { Pool } from 'pg'
+import { MarketingCoachProcessor } from '../processors/brain/marketing-coach-processor'
 
 /**
  * LEARNING LOOP WORKER
  * ====================
- * Handles the daily learning optimization from Document 07-Ops:
- * - analyze: Analyze yesterday's performance data
- * - promote: Promote winning variants
- * - demote: Demote poor performers
+ * Handles the daily learning optimization:
+ * - coach_analysis: Run Marketing Coach analysis (signal_event based, provider-agnostic)
+ * - analyze: Legacy variant analysis (deprecated, use coach_analysis)
+ * - promote: Legacy promote (deprecated, handled by coach_analysis)
+ * - demote: Legacy demote (deprecated, handled by coach_analysis)
  * - update_kb: Update knowledge base preferences
- * - full_loop: Run complete learning loop
+ * - full_loop: Run complete learning loop including coach analysis
+ * - conversation-memory-extraction: Extract memory from conversations
  * 
- * NO INTERNAL SCHEDULER - Jobs queued by MailWiz/external triggers
+ * NO INTERNAL SCHEDULER - Jobs queued by:
+ *   - Email provider webhooks (any MTA: Mailwizz, Mailgun, SES, SendGrid, etc.)
+ *   - API endpoints
+ *   - Scheduled tasks from external scheduler
+ *   - Manual trigger from Superadmin
  */
 
 interface LearningLoopJob {
-    type: 'analyze' | 'promote' | 'demote' | 'update_kb' | 'full_loop'
-    orgId?: string // Optional - runs for all orgs if not specified
-    config?: Record<string, any> // Dynamic config for pipeline steps
-}
-
-interface VariantPerformance {
-    variantId: string
-    bookedCalls: number
-    replies: number
-    clicks: number
-    bounces: number
-    score: number
+    type: 'analyze' | 'promote' | 'demote' | 'update_kb' | 'full_loop' | 'conversation-memory-extraction' | 'coach_analysis'
+    orgId?: string
+    conversationId?: string
+    userId?: string
+    brainTemplateId?: string | null
+    config?: Record<string, any>
 }
 
 interface LearningLoopResult {
     type: string
-    variantCount?: number
-    variants?: VariantPerformance[]
-    promotedCount?: number
-    promoted?: string[]
-    demotedCount?: number
-    demoted?: string[]
-    patternsUpdated?: number | null
     status?: string
     message?: string
-    analyzed?: number
     duration?: number
+    [key: string]: any
 }
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -53,272 +47,211 @@ const pool = new Pool({
     ssl: isProduction ? { rejectUnauthorized: false } : undefined,
 })
 
+const marketingCoach = new MarketingCoachProcessor(pool)
+
 async function processLearningLoopJob(job: Job<LearningLoopJob>): Promise<LearningLoopResult> {
     const { type, orgId, config } = job.data
-    const minSamples = config?.minSampleSize || 50
-    const promoteThreshold = config?.promotionThreshold || 0.7
-    const demoteThreshold = config?.demotionThreshold || 0.3
+    const startTime = Date.now()
 
     console.log(`📊 [Learning] Processing ${type}${orgId ? ` for org ${orgId}` : ' for all orgs'}`)
 
-    const startTime = Date.now()
-
     try {
         switch (type) {
-            case 'analyze': {
-                // Get variant performance from yesterday
-                const performance = await pool.query(`
-                    SELECT 
-                        variant_id,
-                        COUNT(*) FILTER (WHERE event_type = 'BOOKED_CALL') as booked_calls,
-                        COUNT(*) FILTER (WHERE event_type = 'REPLY') as replies,
-                        COUNT(*) FILTER (WHERE event_type = 'CLICK') as clicks,
-                        COUNT(*) FILTER (WHERE event_type = 'BOUNCE') as bounces,
-                        COUNT(*) as total_events
-                    FROM analytics_events
-                    WHERE occurred_at >= NOW() - INTERVAL '24 hours'
-                    ${orgId ? 'AND org_id = $1' : ''}
-                    GROUP BY variant_id
-                    HAVING COUNT(*) >= $${orgId ? '2' : '1'}
-                `, orgId ? [orgId, minSamples] : [minSamples])
+            case 'coach_analysis': {
+                if (orgId) {
+                    const result = await marketingCoach.runAnalysis(orgId, {
+                        days: config?.days ?? 30,
+                        minSends: config?.minSends ?? 10,
+                        updateBeliefs: config?.updateBeliefs ?? true,
+                        saveLearnings: config?.saveLearnings ?? true,
+                    })
 
-                const variants: VariantPerformance[] = performance.rows.map(row => ({
-                    variantId: row.variant_id,
-                    bookedCalls: parseInt(row.booked_calls) || 0,
-                    replies: parseInt(row.replies) || 0,
-                    clicks: parseInt(row.clicks) || 0,
-                    bounces: parseInt(row.bounces) || 0,
-                    score: calculateScore(row)
-                }))
+                    return {
+                        type: 'coach_analysis',
+                        status: 'completed',
+                        org_id: result.org_id,
+                        beliefs_analyzed: result.beliefs_analyzed,
+                        top_performers: result.top_performers.length,
+                        underperformers: result.underperformers.length,
+                        belief_updates: result.belief_updates.length,
+                        learnings_saved: result.learnings_saved,
+                        duration: Date.now() - startTime,
+                    }
+                } else {
+                    const results = await marketingCoach.runAnalysisForAllOrgs({
+                        days: config?.days ?? 30,
+                        minSends: config?.minSends ?? 10,
+                    })
 
-                console.log(`📊 Analyzed ${variants.length} variants`)
-
-                return { type, variantCount: variants.length, variants }
-            }
-
-            case 'promote': {
-                // Promote high-performing variants
-                const variants = (job.data.config as any)?.variants || []
-                const promoted: string[] = []
-
-                for (const v of variants as VariantPerformance[]) {
-                    if (v.score >= promoteThreshold) {
-                        await pool.query(`
-                            UPDATE knowledge_bases
-                            SET metadata = jsonb_set(
-                                COALESCE(metadata, '{}'),
-                                '{promotedVariants}',
-                                COALESCE(metadata->'promotedVariants', '[]') || $1::jsonb
-                            )
-                            WHERE is_active = true
-                        `, [JSON.stringify([v.variantId])])
-
-                        promoted.push(v.variantId)
+                    return {
+                        type: 'coach_analysis',
+                        status: 'completed',
+                        orgs_processed: results.length,
+                        total_beliefs_analyzed: results.reduce((sum, r) => sum + r.beliefs_analyzed, 0),
+                        total_updates: results.reduce((sum, r) => sum + r.belief_updates.length, 0),
+                        duration: Date.now() - startTime,
                     }
                 }
-
-                console.log(`📊 Promoted ${promoted.length} variants`)
-
-                return { type, promotedCount: promoted.length, promoted }
-            }
-
-            case 'demote': {
-                // Demote poorly-performing variants
-                const variants = (job.data.config as any)?.variants || []
-                const demoted: string[] = []
-
-                for (const v of variants as VariantPerformance[]) {
-                    if (v.score <= demoteThreshold && v.bounces > v.clicks) {
-                        await pool.query(`
-                            UPDATE knowledge_bases
-                            SET metadata = jsonb_set(
-                                COALESCE(metadata, '{}'),
-                                '{demotedVariants}',
-                                COALESCE(metadata->'demotedVariants', '[]') || $1::jsonb
-                            )
-                            WHERE is_active = true
-                        `, [JSON.stringify([v.variantId])])
-
-                        demoted.push(v.variantId)
-                    }
-                }
-
-                console.log(`📊 Demoted ${demoted.length} variants`)
-
-                return { type, demotedCount: demoted.length, demoted }
-            }
-
-            case 'update_kb': {
-                // Update KB with learned preferences
-                const topPatterns = await pool.query(`
-                    SELECT 
-                        keyword,
-                        COUNT(*) as usage_count,
-                        AVG(CASE WHEN event_type = 'BOOKED_CALL' THEN 1 ELSE 0 END) as success_rate
-                    FROM analytics_events ae
-                    CROSS JOIN LATERAL unnest(string_to_array(ae.payload->>'keywords', ',')) as keyword
-                    WHERE occurred_at >= NOW() - INTERVAL '7 days'
-                    GROUP BY keyword
-                    HAVING COUNT(*) >= 10
-                    ORDER BY success_rate DESC
-                    LIMIT 20
-                `)
-
-                // Store patterns for future use
-                await pool.query(`
-                    UPDATE knowledge_bases
-                    SET metadata = jsonb_set(
-                        COALESCE(metadata, '{}'),
-                        '{learnedPatterns}',
-                        $1::jsonb
-                    )
-                    WHERE is_active = true
-                `, [JSON.stringify(topPatterns.rows)])
-
-                console.log(`📊 Updated KB with ${topPatterns.rowCount} patterns`)
-
-                return { type, patternsUpdated: topPatterns.rowCount }
             }
 
             case 'full_loop': {
-                // Run the complete learning loop (Document 07-Ops)
-                console.log('📊 Running full learning loop...')
+                console.log('📊 Running full learning loop with Marketing Coach...')
 
-                // Step 1: Analyze - Get variant performance from yesterday
-                const performance = await pool.query(`
-                    SELECT 
-                        variant_id,
-                        COUNT(*) FILTER (WHERE event_type = 'BOOKED_CALL') as booked_calls,
-                        COUNT(*) FILTER (WHERE event_type = 'REPLY') as replies,
-                        COUNT(*) FILTER (WHERE event_type = 'CLICK') as clicks,
-                        COUNT(*) FILTER (WHERE event_type = 'BOUNCE') as bounces,
-                        COUNT(*) as total_events
-                    FROM analytics_events
-                    WHERE occurred_at >= NOW() - INTERVAL '24 hours'
-                    ${orgId ? 'AND org_id = $1' : ''}
-                    GROUP BY variant_id
-                    HAVING COUNT(*) >= $${orgId ? '2' : '1'}
-                `, orgId ? [orgId, minSamples] : [minSamples])
-
-                const variants: VariantPerformance[] = performance.rows.map((row: any) => ({
-                    variantId: row.variant_id,
-                    bookedCalls: parseInt(row.booked_calls) || 0,
-                    replies: parseInt(row.replies) || 0,
-                    clicks: parseInt(row.clicks) || 0,
-                    bounces: parseInt(row.bounces) || 0,
-                    score: calculateScore(row)
-                }))
-
-                console.log(`📊 Analyzed ${variants.length} variants`)
-
-                if (!variants.length) {
-                    console.log('📊 No variants to process')
-                    return { type: 'full_loop', status: 'no_data', message: 'Insufficient data for learning' }
-                }
-
-                // Step 2: Promote winners
-                const promoted: string[] = []
-                for (const v of variants) {
-                    if (v.score >= promoteThreshold) {
-                        await pool.query(`
-                            UPDATE knowledge_bases
-                            SET metadata = jsonb_set(
-                                COALESCE(metadata, '{}'),
-                                '{promotedVariants}',
-                                COALESCE(metadata->'promotedVariants', '[]') || $1::jsonb
-                            )
-                            WHERE is_active = true
-                        `, [JSON.stringify([v.variantId])])
-                        promoted.push(v.variantId)
+                let coachResult
+                if (orgId) {
+                    coachResult = await marketingCoach.runAnalysis(orgId, {
+                        days: config?.days ?? 30,
+                        minSends: config?.minSends ?? 10,
+                        updateBeliefs: true,
+                        saveLearnings: true,
+                    })
+                } else {
+                    const results = await marketingCoach.runAnalysisForAllOrgs({
+                        days: config?.days ?? 30,
+                        minSends: config?.minSends ?? 10,
+                    })
+                    coachResult = {
+                        orgs_processed: results.length,
+                        total_beliefs: results.reduce((sum, r) => sum + r.beliefs_analyzed, 0),
+                        total_updates: results.reduce((sum, r) => sum + r.belief_updates.length, 0),
                     }
                 }
-                console.log(`📊 Promoted ${promoted.length} variants`)
 
-                // Step 3: Demote losers
-                const demoted: string[] = []
-                for (const v of variants) {
-                    if (v.score <= demoteThreshold && v.bounces > v.clicks) {
-                        await pool.query(`
-                            UPDATE knowledge_bases
-                            SET metadata = jsonb_set(
-                                COALESCE(metadata, '{}'),
-                                '{demotedVariants}',
-                                COALESCE(metadata->'demotedVariants', '[]') || $1::jsonb
-                            )
-                            WHERE is_active = true
-                        `, [JSON.stringify([v.variantId])])
-                        demoted.push(v.variantId)
-                    }
-                }
-                console.log(`📊 Demoted ${demoted.length} variants`)
-
-                // Step 4: Update KB with learned patterns
                 const topPatterns = await pool.query(`
                     SELECT 
-                        keyword,
-                        COUNT(*) as usage_count,
-                        AVG(CASE WHEN event_type = 'BOOKED_CALL' THEN 1 ELSE 0 END) as success_rate
-                    FROM analytics_events ae
-                    CROSS JOIN LATERAL unnest(string_to_array(ae.payload->>'keywords', ',')) as keyword
-                    WHERE occurred_at >= NOW() - INTERVAL '7 days'
-                    GROUP BY keyword
-                    HAVING COUNT(*) >= 10
-                    ORDER BY success_rate DESC
-                    LIMIT 20
-                `)
+                        b.angle,
+                        COUNT(*) as belief_count,
+                        AVG(b.confidence_score) as avg_confidence
+                    FROM belief b
+                    WHERE b.status IN ('TEST', 'SW', 'IW', 'RW', 'GW')
+                    ${orgId ? 'AND b.partner_id = $1' : ''}
+                    GROUP BY b.angle
+                    HAVING COUNT(*) >= 2
+                    ORDER BY avg_confidence DESC
+                    LIMIT 10
+                `, orgId ? [orgId] : [])
 
-                await pool.query(`
-                    UPDATE knowledge_bases
-                    SET metadata = jsonb_set(
-                        COALESCE(metadata, '{}'),
-                        '{learnedPatterns}',
-                        $1::jsonb
-                    )
-                    WHERE is_active = true
-                `, [JSON.stringify(topPatterns.rows)])
-
-                console.log(`📊 Updated KB with ${topPatterns.rowCount} patterns`)
+                console.log(`📊 Found ${topPatterns.rowCount} angle patterns`)
 
                 const duration = Date.now() - startTime
-
                 console.log(`📊 Learning loop complete in ${duration}ms`)
 
                 return {
                     type: 'full_loop',
                     status: 'completed',
-                    analyzed: variants.length,
-                    promotedCount: promoted.length,
-                    demotedCount: demoted.length,
-                    patternsUpdated: topPatterns.rowCount,
-                    duration
+                    coach_analysis: coachResult,
+                    patterns_found: topPatterns.rowCount,
+                    duration,
                 }
             }
+
+            case 'analyze': {
+                console.log('📊 [Legacy] analyze - redirecting to coach_analysis')
+                const result = await marketingCoach.runAnalysis(orgId!, {
+                    days: config?.days ?? 7,
+                    updateBeliefs: false,
+                    saveLearnings: false,
+                })
+
+                return {
+                    type: 'analyze',
+                    status: 'completed',
+                    beliefs_analyzed: result.beliefs_analyzed,
+                    top_performers: result.top_performers,
+                    underperformers: result.underperformers,
+                }
+            }
+
+            case 'promote': {
+                console.log('📊 [Legacy] promote - handled by coach_analysis')
+                return { 
+                    type: 'promote', 
+                    status: 'deprecated', 
+                    message: 'Use coach_analysis instead - it handles both promote and demote' 
+                }
+            }
+
+            case 'demote': {
+                console.log('📊 [Legacy] demote - handled by coach_analysis')
+                return { 
+                    type: 'demote', 
+                    status: 'deprecated', 
+                    message: 'Use coach_analysis instead - it handles both promote and demote' 
+                }
+            }
+
+            case 'update_kb': {
+                const topAngles = await pool.query(`
+                    SELECT 
+                        b.angle,
+                        COUNT(*) as usage_count,
+                        AVG(b.confidence_score) as avg_confidence
+                    FROM belief b
+                    WHERE b.status IN ('SW', 'IW', 'RW', 'GW')
+                    ${orgId ? 'AND b.partner_id = $1' : ''}
+                    GROUP BY b.angle
+                    HAVING COUNT(*) >= 3
+                    ORDER BY avg_confidence DESC
+                    LIMIT 20
+                `, orgId ? [orgId] : [])
+
+                console.log(`📊 Updated KB with ${topAngles.rowCount} angle patterns`)
+
+                return { type: 'update_kb', patternsUpdated: topAngles.rowCount }
+            }
+
+            case 'conversation-memory-extraction': {
+                const { conversationId, userId } = job.data
+                if (!conversationId || !orgId || !userId) {
+                    console.warn('[Learning] conversation-memory-extraction: missing required fields')
+                    return { type: 'conversation-memory-extraction', status: 'skipped', message: 'Missing required fields' }
+                }
+
+                const messagesResult = await pool.query(
+                    `SELECT role, content FROM messages WHERE conversation_id = $1 AND org_id = $2 ORDER BY created_at ASC`,
+                    [conversationId, orgId]
+                )
+                const messages = messagesResult.rows || []
+
+                if (messages.length === 0) {
+                    return { type: 'conversation-memory-extraction', status: 'no_messages', message: 'No messages to extract' }
+                }
+
+                const summary = messages.map((m: any) => `${m.role}: ${(m.content || '').slice(0, 200)}`).join('\n')
+                const memoryKey = `push:${conversationId}`
+
+                try {
+                    await pool.query(
+                        `INSERT INTO user_memory (org_id, user_id, memory_type, key, value, source, is_active)
+                         VALUES ($1, $2, 'context', $3, $4, 'conversation', true)
+                         ON CONFLICT (user_id, org_id, memory_type, key)
+                         DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
+                        [orgId, userId, memoryKey, summary.slice(0, 4000)]
+                    )
+                } catch (insertErr: any) {
+                    if (insertErr.code !== '42P01') console.error('[Learning] user_memory insert failed:', insertErr.message)
+                }
+
+                console.log(`[Learning] conversation-memory-extraction: stored context for conversation ${conversationId}`)
+                return { type: 'conversation-memory-extraction', status: 'completed', message: `${messages.length} messages processed` }
+            }
+
+            default:
+                return { type, status: 'unknown', message: `Unknown job type: ${type}` }
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(`❌ [Learning] ${type} failed:`, error)
         throw error
     }
 }
 
-function calculateScore(row: any): number {
-    const bookedCalls = parseInt(row.booked_calls) || 0
-    const replies = parseInt(row.replies) || 0
-    const clicks = parseInt(row.clicks) || 0
-    const bounces = parseInt(row.bounces) || 0
-    const total = parseInt(row.total_events) || 1
-
-    // Weighted scoring: booked calls are most valuable
-    const score = (bookedCalls * 10 + replies * 5 + clicks * 2 - bounces * 3) / total
-    return Math.max(0, Math.min(1, (score + 5) / 10)) // Normalize to 0-1
-}
-
 const worker = new Worker(QueueName.LEARNING_LOOP, processLearningLoopJob, {
     connection: redisConfig,
-    concurrency: 1, // Learning loop should run serially
+    concurrency: 1,
     limiter: {
         max: 1,
-        duration: 60000, // Max 1 per minute
+        duration: 60000,
     },
 })
 
@@ -338,6 +271,6 @@ worker.on('error', (err) => {
     console.error('Learning Loop Worker error:', err)
 })
 
-console.log('📊 Learning Loop Worker started')
+console.log('📊 Learning Loop Worker started (with Marketing Coach)')
 
 export default worker

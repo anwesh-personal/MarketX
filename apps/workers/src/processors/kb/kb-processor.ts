@@ -1,12 +1,16 @@
 import { Job } from 'bullmq'
 import { createClient } from '@supabase/supabase-js'
-import { simpleChunk } from '../../utils/chunker'
+import { semanticChunk } from '../../utils/chunker'
 import { generateEmbedding } from '../../utils/embeddings'
 
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error('❌ [KB Processor] Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY — DB operations will fail')
+}
+
+const supabase = createClient(supabaseUrl!, supabaseKey!)
 
 export interface KBProcessingJob {
     kbId: string
@@ -25,15 +29,19 @@ export async function processKBDocument(job: Job<KBProcessingJob>) {
         throw new Error('orgId is required to fetch AI provider')
     }
 
+    // Mark as chunking in kb_documents (schema: pending→chunking→embedding→ready)
+    await supabase.from('kb_documents').update({ status: 'chunking' }).eq('id', documentId)
     await updateProcessingStatus(kbId, documentId, 'processing')
 
     try {
-        // 1. Chunk the document
+        // 1. Semantic chunk — respects paragraph + sentence boundaries
         job.updateProgress(10)
-        const chunks = simpleChunk(content, 512, 50)
+        const chunks = semanticChunk(content, 400, 40)
 
-        console.log(`📦 Created ${chunks.length} chunks`)
+        console.log(`📦 Created ${chunks.length} semantic chunks`)
 
+        // Mark as embedding phase
+        await supabase.from('kb_documents').update({ status: 'embedding', chunk_count: chunks.length }).eq('id', documentId)
         await updateProcessingStatus(kbId, documentId, 'processing', {
             totalChunks: chunks.length,
             processedChunks: 0,
@@ -50,18 +58,21 @@ export async function processKBDocument(job: Job<KBProcessingJob>) {
             const embedding = await generateEmbedding(chunk.text, orgId)
 
             embeddings.push({
-                kb_id: kbId,
+                kb_id:       kbId,
                 document_id: documentId,
+                org_id:      orgId,
                 chunk_index: i,
-                content: chunk.text,
-                embedding: embedding,
+                content:     chunk.text,
+                embedding,
+                source_type: 'kb',
                 metadata: {
                     ...metadata,
-                    tokens: chunk.tokens,
+                    tokens:     chunk.tokens,
                     startIndex: chunk.startIndex,
-                    endIndex: chunk.endIndex,
+                    endIndex:   chunk.endIndex,
+                    chunkIndex: i,
+                    totalChunks: chunks.length,
                 },
-                type: 'kb',
                 created_at: new Date().toISOString(),
             })
 
@@ -87,14 +98,15 @@ export async function processKBDocument(job: Job<KBProcessingJob>) {
             throw insertError
         }
 
-        // 4. Update KB document status (if kb_documents table exists)
+        // 4. Mark kb_documents as ready (schema: ready = fully embedded and searchable)
         job.updateProgress(95)
         const { error: updateError } = await supabase
             .from('kb_documents')
             .update({
-                status: 'processed',
+                status:      'ready',
                 chunk_count: chunks.length,
-                processed_at: new Date().toISOString(),
+                embed_model: 'text-embedding-3-large',
+                updated_at:  new Date().toISOString(),
             })
             .eq('id', documentId)
 
@@ -120,7 +132,10 @@ export async function processKBDocument(job: Job<KBProcessingJob>) {
     } catch (error: any) {
         console.error(`❌ Failed to process document ${documentId}:`, error)
 
-        // Mark as failed
+        // Mark kb_documents as error + record message
+        await supabase.from('kb_documents')
+            .update({ status: 'error', error_message: error.message })
+            .eq('id', documentId)
         await updateProcessingStatus(kbId, documentId, 'failed', {
             error: error.message,
         })

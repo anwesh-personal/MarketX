@@ -22,6 +22,7 @@ import { TemplateManager } from '@/components/workers/TemplateManager';
 import { DeploymentCreator } from '@/components/workers/DeploymentCreator';
 import { DeploymentConfig } from '@/components/workers/DeploymentConfig';
 import { LogsViewer } from '@/components/workers/LogsViewer';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 type Tab = 'grid' | 'templates' | 'deploy' | 'logs' | 'settings';
 type Provider = 'vps' | 'railway';
@@ -34,6 +35,7 @@ interface RailwayStatus {
 }
 
 export default function WorkerControlDashboard() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [provider, setProvider] = useState<Provider>('vps');
     const [activeTab, setActiveTab] = useState<Tab>('grid');
     const [autoRefresh, setAutoRefresh] = useState(true);
@@ -60,7 +62,7 @@ export default function WorkerControlDashboard() {
         setLoading(true);
         try {
             // Check active provider from config first
-            const configRes = await fetch('/api/superadmin/workers/config');
+            const configRes = await fetchWithAuth('/api/superadmin/workers/config');
             if (configRes.ok) {
                 const configData = await configRes.json();
                 const activeTarget = configData.config?.active_target || 'vps';
@@ -87,7 +89,7 @@ export default function WorkerControlDashboard() {
 
     const loadVPSServers = async () => {
         try {
-            const response = await fetch('/api/superadmin/vps/servers');
+            const response = await fetchWithAuth('/api/superadmin/vps/servers');
             if (response.ok) {
                 const data = await response.json();
                 setVpsServers(data.servers || []);
@@ -103,7 +105,7 @@ export default function WorkerControlDashboard() {
     const loadRailwayStatus = async () => {
         setRailwayLoading(true);
         try {
-            const response = await fetch('/api/superadmin/workers/config');
+            const response = await fetchWithAuth('/api/superadmin/workers/config');
             if (response.ok) {
                 const data = await response.json();
                 const config = data.config;
@@ -111,7 +113,7 @@ export default function WorkerControlDashboard() {
 
                 if (config?.railway_token && config?.railway_project_id) {
                     // Fetch Railway status
-                    const statusRes = await fetch('/api/superadmin/workers/status?provider=railway');
+                    const statusRes = await fetchWithAuth('/api/superadmin/workers/status?provider=railway');
                     if (statusRes.ok) {
                         const statusData = await statusRes.json();
                         setRailwayStatus(statusData.workers || []);
@@ -132,7 +134,7 @@ export default function WorkerControlDashboard() {
 
     const handleRedeploy = async () => {
         try {
-            const res = await fetch('/api/superadmin/workers/action', {
+            const res = await fetchWithAuth('/api/superadmin/workers/action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'redeploy', provider: 'railway' })
@@ -199,7 +201,7 @@ export default function WorkerControlDashboard() {
                                     flex items-center gap-sm px-md py-sm rounded-[var(--radius-md)]
                                     font-medium text-sm transition-all
                                     ${provider === 'vps'
-                                        ? 'bg-primary text-white shadow-md'
+                                        ? 'bg-accent text-onAccent shadow-md'
                                         : 'text-textSecondary hover:text-textPrimary'
                                     }
                                 `}
@@ -213,7 +215,7 @@ export default function WorkerControlDashboard() {
                                     flex items-center gap-sm px-md py-sm rounded-[var(--radius-md)]
                                     font-medium text-sm transition-all
                                     ${provider === 'railway'
-                                        ? 'bg-primary text-white shadow-md'
+                                        ? 'bg-accent text-onAccent shadow-md'
                                         : 'text-textSecondary hover:text-textPrimary'
                                     }
                                 `}
@@ -316,7 +318,7 @@ export default function WorkerControlDashboard() {
                     <h2 className="text-2xl font-bold text-textPrimary mb-sm">No VPS Servers Configured</h2>
                     <p className="text-textSecondary mb-lg">Add a VPS server or switch to Railway</p>
                     <div className="flex gap-md">
-                        <button className="btn btn-secondary">Add VPS Server</button>
+                        <button className="btn btn-secondary" onClick={() => alert('Coming soon — VPS server registration modal is under development.')}>Add VPS Server</button>
                         <button
                             onClick={() => setProvider('railway')}
                             className="btn btn-primary flex items-center gap-sm"

@@ -1,12 +1,6 @@
-/**
- * Worker API Proxy
- * 
- * Proxies requests to the Worker Management API.
- * Dynamically determines worker URL based on deployment config (Railway or VPS).
- */
-
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
 
 // Use service role to read config
 function createClient() {
@@ -26,6 +20,11 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 });
+        }
+
         const supabase = createClient();
 
         // Get deployment config to determine worker URL

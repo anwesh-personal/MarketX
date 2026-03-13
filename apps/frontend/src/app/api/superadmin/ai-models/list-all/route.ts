@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 import {
+    PROVIDER_BASE_URLS,
     ANTHROPIC_KNOWN_MODELS,
     XAI_KNOWN_MODELS,
     PERPLEXITY_KNOWN_MODELS,
     formatModelName
 } from '@/lib/ai-providers';
+import { decryptSecret } from '@/lib/secrets';
 
 /**
  * Fetch ALL models from a provider API (unfiltered)
@@ -24,7 +27,7 @@ interface ProviderModel {
 // ===========================================
 
 async function fetchAllOpenAIModels(apiKey: string): Promise<ProviderModel[]> {
-    const response = await fetch('https://api.openai.com/v1/models', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
         headers: { 'Authorization': `Bearer ${apiKey}` },
     });
     if (!response.ok) {
@@ -53,7 +56,7 @@ async function fetchAllAnthropicModels(): Promise<ProviderModel[]> {
 }
 
 async function fetchAllGoogleModels(apiKey: string): Promise<ProviderModel[]> {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    const response = await fetch(`${PROVIDER_BASE_URLS.google}/models?key=${apiKey}`);
     if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         throw new Error(err.error?.message || 'Failed to fetch Google models');
@@ -70,7 +73,7 @@ async function fetchAllGoogleModels(apiKey: string): Promise<ProviderModel[]> {
 }
 
 async function fetchAllMistralModels(apiKey: string): Promise<ProviderModel[]> {
-    const response = await fetch('https://api.mistral.ai/v1/models', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/models`, {
         headers: { 'Authorization': `Bearer ${apiKey}` },
     });
     if (!response.ok) {
@@ -110,6 +113,11 @@ async function fetchAllPerplexityModels(): Promise<ProviderModel[]> {
 
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 });
+        }
+
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -132,7 +140,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
         }
 
-        const apiKey = provider.api_key;
+        const apiKey = decryptSecret(provider.api_key);
         const providerType = provider.provider;
 
         let models: ProviderModel[] = [];

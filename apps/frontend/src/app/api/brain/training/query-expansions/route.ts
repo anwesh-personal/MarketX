@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+async function getAuthContext(supabase: any) {
+    const { data: { user }, error } = await supabase.auth.getUser()
+    if (error || !user) return null
+    const { data: userRecord } = await supabase
+        .from('users')
+        .select('org_id')
+        .eq('id', user.id)
+        .single()
+    if (!userRecord?.org_id) return null
+    return { userId: user.id, orgId: userRecord.org_id }
+}
+
 export async function GET(request: NextRequest) {
     try {
         const supabase = createClient()
+        const ctx = await getAuthContext(supabase)
+        if (!ctx) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
 
         const { data: expansions, error } = await supabase
             .from('query_expansions')
             .select('*')
+            .eq('org_id', ctx.orgId)
             .order('created_at', { ascending: false })
             .limit(50)
 

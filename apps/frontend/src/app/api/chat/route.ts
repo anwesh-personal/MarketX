@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { estimateMessagesTokens, estimateTokens } from '@/lib/ai/costCalculator';
+import { decryptSecret } from '@/lib/secrets';
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers';
 
 /**
- * AI Chat API with Streaming
- * Supports multiple providers with failover
+ * LEGACY: AI Chat API (brain_id + organization_id)
+ * For org-wide brain chat use /api/brain/chat instead (single source of truth: deployed brain_agents).
+ * This route uses brain_ai_assignments and brain_templates.system_prompt and is not part of the
+ * go-live brain governance flow.
  */
 
 interface ChatMessage {
@@ -24,7 +28,7 @@ interface ChatRequest {
  * Call OpenAI API
  */
 async function callOpenAI(apiKey: string, model: string, messages: ChatMessage[], stream: boolean = false) {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${apiKey}`,
@@ -59,7 +63,7 @@ async function callAnthropic(apiKey: string, model: string, messages: ChatMessag
 
     const systemPrompt = messages.find(m => m.role === 'system')?.content || '';
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
         method: 'POST',
         headers: {
             'x-api-key': apiKey,
@@ -136,7 +140,18 @@ export async function POST(request: NextRequest) {
         }
 
         const provider = assignment.ai_providers;
-        const model = assignment.preferred_model || 'gpt-4o-mini';
+        let model = assignment.preferred_model;
+        if (!model) {
+            const { data: defaultModel } = await supabase
+                .from('ai_model_metadata')
+                .select('model_id')
+                .eq('provider', provider.provider)
+                .eq('is_active', true)
+                .order('model_id', { ascending: true })
+                .limit(1)
+                .single();
+            model = defaultModel?.model_id || 'gpt-4o-mini'; // last-resort static fallback
+        }
 
         // Prepend system prompt
         const fullMessages: ChatMessage[] = [
@@ -154,10 +169,12 @@ export async function POST(request: NextRequest) {
 
         try {
             // Call appropriate provider
+            const providerApiKey = decryptSecret(provider.api_key);
+
             if (provider.provider === 'openai') {
-                response = await callOpenAI(provider.api_key, model, fullMessages, stream);
+                response = await callOpenAI(providerApiKey, model, fullMessages, stream);
             } else if (provider.provider === 'anthropic') {
-                response = await callAnthropic(provider.api_key, model, fullMessages, stream);
+                response = await callAnthropic(providerApiKey, model, fullMessages, stream);
             } else {
                 throw new Error('Provider not supported');
             }

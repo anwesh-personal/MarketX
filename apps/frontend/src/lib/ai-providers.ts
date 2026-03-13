@@ -1,10 +1,24 @@
 /**
  * Shared AI Provider Utilities
  * Single source of truth for:
+ * - Provider base URLs
  * - Model cost lookup
  * - Model testing functions
  * - Provider configurations
  */
+
+// ===========================================
+// PROVIDER BASE URLs (Single Source of Truth)
+// ===========================================
+
+export const PROVIDER_BASE_URLS: Record<string, string> = {
+    openai: 'https://api.openai.com/v1',
+    anthropic: 'https://api.anthropic.com/v1',
+    google: 'https://generativelanguage.googleapis.com/v1beta',
+    mistral: 'https://api.mistral.ai/v1',
+    xai: 'https://api.x.ai/v1',
+    perplexity: 'https://api.perplexity.ai',
+};
 
 // ===========================================
 // COST LOOKUP (Single Source of Truth)
@@ -98,7 +112,7 @@ export async function testModel(
         const testMessage = 'Say "OK" only.';
 
         if (provider === 'openai') {
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.openai}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
@@ -119,7 +133,7 @@ export async function testModel(
         }
 
         if (provider === 'anthropic') {
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.anthropic}/messages`, {
                 method: 'POST',
                 headers: {
                     'x-api-key': apiKey,
@@ -142,7 +156,7 @@ export async function testModel(
 
         if (provider === 'google') {
             const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+                `${PROVIDER_BASE_URLS.google}/models/${modelId}:generateContent?key=${apiKey}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -161,7 +175,7 @@ export async function testModel(
         }
 
         if (provider === 'mistral') {
-            const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
@@ -182,7 +196,7 @@ export async function testModel(
         }
 
         if (provider === 'xai') {
-            const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,
@@ -203,7 +217,7 @@ export async function testModel(
         }
 
         if (provider === 'perplexity') {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.perplexity}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${apiKey}`,

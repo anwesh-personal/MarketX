@@ -120,11 +120,11 @@ export default function MemberPortalPage() {
             {/* Feature Tiles */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-sm">
                 <FeatureTile icon={Brain} label="Chat with Brain" enabled={features.can_chat_brain} href="/brain-chat" />
-                <FeatureTile icon={BookOpen} label="Train Brain" enabled={features.can_train_brain} href="/brain-training" />
-                <FeatureTile icon={FileText} label="Write Emails" enabled={features.can_write_emails} href="/email-writer" />
-                <FeatureTile icon={Brain} label="Feed Brain" enabled={features.can_feed_brain} href="/brain-feed" />
-                <FeatureTile icon={Target} label="Flow Builder" enabled={features.can_access_flow_builder} href="/flow-builder" />
-                <FeatureTile icon={BookOpen} label="Knowledge Base" enabled={features.can_view_kb} href="/knowledge" />
+                <FeatureTile icon={BookOpen} label="Train Brain" enabled={features.can_train_brain} href="/brain-control" />
+                <FeatureTile icon={FileText} label="Write Emails" enabled={features.can_write_emails} href="/writer/new" />
+                <FeatureTile icon={Brain} label="Feed Brain" enabled={features.can_feed_brain} href="/brain-chat" />
+                <FeatureTile icon={Target} label="Flow Builder" enabled={features.can_access_flow_builder} href="/superadmin/workflow-manager" />
+                <FeatureTile icon={BookOpen} label="Knowledge Base" enabled={features.can_view_kb} href="/kb-manager" />
             </div>
 
             {!features.can_view_metrics && (

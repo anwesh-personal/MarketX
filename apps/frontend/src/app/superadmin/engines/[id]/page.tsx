@@ -270,7 +270,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
                             onClick={handleOpenExecuteModal}
                             className="
                                 flex items-center gap-xs px-md py-sm 
-                                bg-primary text-white rounded-[var(--radius-md)] 
+                                btn btn-primary rounded-[var(--radius-md)] 
                                 hover:bg-primary/90 hover:shadow-[0_0_20px_var(--color-primary)/30]
                                 transition-all
                             "

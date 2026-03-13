@@ -6,6 +6,7 @@ import fineTuningWorker from './workers/fine-tuning-worker'
 import learningLoopWorker from './workers/learning-loop-worker'
 import workflowExecutionWorker from './workers/workflow-execution-worker'
 import engineExecutionWorker from './workers/engine-execution-worker'
+import scheduledTaskWorker from './workers/scheduled-task-worker'
 import { startApiServer } from './api/server'
 
 // Start the API server for queue management
@@ -29,6 +30,7 @@ console.log('')
 console.log('⚡ Execution Workers:')
 console.log('   - Workflow Execution (10 concurrent) - Template runs')
 console.log('   - Engine Execution (2 concurrent) - Deployed engine runs')
+console.log('   - Scheduled Task (5 concurrent) - Cron / event-triggered jobs')
 console.log('')
 console.log('🌐 Management API:')
 console.log(`   - Running on port ${API_PORT}`)
@@ -36,9 +38,9 @@ console.log('   - Endpoints: /api/health, /api/stats, /api/action')
 console.log('')
 console.log('═══════════════════════════════════════════════════════════')
 console.log('No internal scheduler. Jobs triggered by:')
-console.log('   - MailWiz / Email triggers')
+console.log('   - Email provider webhooks (any MTA: Mailwizz, Mailgun, SES, etc.)')
 console.log('   - API endpoints')
-console.log('   - External systems')
+console.log('   - External systems / Scheduled tasks')
 console.log('═══════════════════════════════════════════════════════════')
 console.log('')
 console.log('✅ All workers started. Waiting for jobs...')
@@ -56,6 +58,7 @@ const shutdown = async (signal: string) => {
         learningLoopWorker.close(),
         workflowExecutionWorker.close(),
         engineExecutionWorker.close(),
+        scheduledTaskWorker.close(),
     ])
 
     console.log('✅ All workers shut down successfully')

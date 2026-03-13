@@ -92,30 +92,24 @@ export default function NewRunPage() {
         setIsSubmitting(true);
 
         try {
-            // Get user's org first
-            const { data: userData } = await supabase
-                .from('users')
-                .select('org_id')
-                .eq('id', userId)
-                .single();
-
-            const { data: run, error } = await supabase
-                .from('runs')
-                .insert({
-                    org_id: userData?.org_id,
-                    triggered_by: userId,
+            const res = await fetch('/api/writer/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                     kb_id: formData.kb_id,
-                    status: 'pending',
-                    writer_input: formData.settings,
-                })
-                .select()
-                .single();
+                    prompt: formData.prompt,
+                    settings: formData.settings,
+                }),
+            });
 
-            if (error) throw error;
+            const data = await res.json().catch(() => ({}));
 
-            toast.success('Run created successfully!');
-            router.push('/writer');
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to start run');
+            }
 
+            toast.success('Writer job queued. You can track it on the Writer Studio.');
+            router.push(data.executionId ? `/writer?execution=${data.executionId}` : '/writer');
         } catch (error: any) {
             console.error('Failed to create run:', error);
             toast.error(error.message || 'Failed to create run');
@@ -322,9 +316,7 @@ export default function NewRunPage() {
                         disabled={isSubmitting || !formData.kb_id}
                         className="
                             flex items-center gap-sm
-                            bg-primary text-white font-semibold
-                            px-lg py-sm
-                            rounded-[var(--radius-md)]
+                            btn btn-primary font-semibold
                             hover:opacity-90
                             active:scale-[0.98]
                             disabled:opacity-50 disabled:cursor-not-allowed

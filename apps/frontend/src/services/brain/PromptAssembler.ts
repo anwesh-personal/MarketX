@@ -15,6 +15,8 @@
  * Rules:
  *  - Guardrails are always injected AFTER domain, so they can never be
  *    overridden by user-supplied domain content.
+ *  - Optional constitution rules are injected after guardrails, before context,
+ *    so org rules apply before RAG/domain knowledge.
  *  - If gap_detected = true in the RAG result, a strict-grounding note
  *    is injected into the context layer so the agent does not hallucinate.
  *  - Empty layers are silently omitted — no blank sections.
@@ -39,6 +41,17 @@ export interface MemoryItem {
     importance:    number
 }
 
+/**
+ * Constitution rule for injection into system prompt.
+ * Carries rule_type and enforcement_level so PromptAssembler
+ * can group them semantically (forbidden ≠ style advisory).
+ */
+export interface ConstitutionRuleItem {
+    content: string
+    ruleType?: 'brand_voice' | 'compliance' | 'forbidden' | 'required' | 'style' | 'format'
+    enforcementLevel?: 'strict' | 'soft' | 'advisory'
+}
+
 export interface PromptLayerDebug {
     name:     string
     chars:    number
@@ -56,16 +69,18 @@ export class PromptAssembler {
     /**
      * Assemble the full system prompt from all layers.
      *
-     * @param agent    — brain_agents row data
-     * @param rag      — RAG retrieval result for this query
-     * @param memories — relevant long-term memories for this query
-     * @param task     — explicit task instruction (optional)
+     * @param agent             — brain_agents row data
+     * @param rag               — RAG retrieval result for this query
+     * @param memories          — relevant long-term memories for this query
+     * @param task              — explicit task instruction (optional)
+     * @param constitutionRules — org constitution rules (optional), injected after guardrails
      */
     static assemble(
-        agent:    BrainAgentPromptData,
-        rag:      RAGResult | null,
-        memories: MemoryItem[],
-        task?:    string,
+        agent:             BrainAgentPromptData,
+        rag:               RAGResult | null,
+        memories:          MemoryItem[],
+        task?:             string,
+        constitutionRules?: ConstitutionRuleItem[],
     ): AssembledPrompt {
         const sections: Array<{ name: string; content: string; editable: boolean }> = []
 
@@ -101,6 +116,16 @@ export class PromptAssembler {
             sections.push({
                 name:     'guardrails',
                 content:  `## GUARDRAILS — THESE RULES OVERRIDE EVERYTHING ABOVE\n${agent.guardrails_prompt.trim()}`,
+                editable: false,
+            })
+        }
+
+        // ── Layer 4b: Constitution (org rules, after guardrails, before context) ─
+        if (constitutionRules && constitutionRules.length > 0) {
+            const constitutionText = PromptAssembler.formatConstitutionRules(constitutionRules)
+            sections.push({
+                name:     'constitution',
+                content:  `## ORGANIZATION CONSTITUTION RULES\n${constitutionText}`,
                 editable: false,
             })
         }
@@ -166,13 +191,15 @@ export class PromptAssembler {
 
         const systemPrompt = sections.map(s => s.content).join('\n\n')
 
+        const constitutionChars = (constitutionRules ?? []).reduce((sum, r) => sum + r.content.length, 0)
         const layers: PromptLayerDebug[] = [
-            { name: 'foundation',  chars: agent.foundation_prompt.length,       editable: false, included: !!agent.foundation_prompt.trim() },
-            { name: 'persona',     chars: agent.persona_prompt.length,           editable: false, included: !!agent.persona_prompt.trim() },
-            { name: 'domain',      chars: agent.domain_prompt?.length ?? 0,     editable: true,  included: !!(agent.domain_prompt?.trim()) },
-            { name: 'guardrails',  chars: agent.guardrails_prompt.length,        editable: false, included: !!agent.guardrails_prompt.trim() },
-            { name: 'context',     chars: contextParts.join('').length,          editable: false, included: contextParts.length > 0 },
-            { name: 'task',        chars: task?.length ?? 0,                    editable: false, included: !!(task?.trim()) },
+            { name: 'foundation',     chars: agent.foundation_prompt.length,       editable: false, included: !!agent.foundation_prompt.trim() },
+            { name: 'persona',        chars: agent.persona_prompt.length,           editable: false, included: !!agent.persona_prompt.trim() },
+            { name: 'domain',         chars: agent.domain_prompt?.length ?? 0,     editable: true,  included: !!(agent.domain_prompt?.trim()) },
+            { name: 'guardrails',     chars: agent.guardrails_prompt.length,        editable: false, included: !!agent.guardrails_prompt.trim() },
+            { name: 'constitution',   chars: constitutionChars,                     editable: false, included: (constitutionRules?.length ?? 0) > 0 },
+            { name: 'context',        chars: contextParts.join('').length,          editable: false, included: contextParts.length > 0 },
+            { name: 'task',           chars: task?.length ?? 0,                    editable: false, included: !!(task?.trim()) },
         ]
 
         return {
@@ -180,5 +207,48 @@ export class PromptAssembler {
             layers,
             totalChars: systemPrompt.length,
         }
+    }
+
+    /**
+     * Groups constitution rules by enforcement level and rule type
+     * so the LLM receives clear semantic hierarchy:
+     *  - STRICT rules are non-negotiable (forbidden, compliance, required)
+     *  - SOFT rules are strong preferences (brand_voice, style)
+     *  - ADVISORY rules are suggestions (format, etc.)
+     */
+    private static formatConstitutionRules(rules: ConstitutionRuleItem[]): string {
+        const strict  = rules.filter(r => r.enforcementLevel === 'strict' || r.ruleType === 'forbidden' || r.ruleType === 'compliance')
+        const soft    = rules.filter(r => r.enforcementLevel === 'soft' && r.ruleType !== 'forbidden' && r.ruleType !== 'compliance')
+        const advisory = rules.filter(r => r.enforcementLevel === 'advisory' && r.ruleType !== 'forbidden' && r.ruleType !== 'compliance')
+        const ungrouped = rules.filter(r => !r.enforcementLevel && !r.ruleType)
+
+        const parts: string[] = []
+
+        if (strict.length > 0) {
+            parts.push(
+                `### MANDATORY (violation = blocked output)\n` +
+                strict.map(r => `- [${(r.ruleType ?? 'required').toUpperCase()}] ${r.content}`).join('\n')
+            )
+        }
+
+        if (soft.length > 0) {
+            parts.push(
+                `### STRONGLY PREFERRED\n` +
+                soft.map(r => `- [${(r.ruleType ?? 'style').toUpperCase()}] ${r.content}`).join('\n')
+            )
+        }
+
+        if (advisory.length > 0) {
+            parts.push(
+                `### ADVISORY (follow when possible)\n` +
+                advisory.map(r => `- [${(r.ruleType ?? 'format').toUpperCase()}] ${r.content}`).join('\n')
+            )
+        }
+
+        if (ungrouped.length > 0) {
+            parts.push(ungrouped.map(r => `- ${r.content}`).join('\n'))
+        }
+
+        return parts.join('\n\n')
     }
 }

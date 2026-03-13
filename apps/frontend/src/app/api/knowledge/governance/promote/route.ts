@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import {
+    PROMOTION_MIN_CROSS_PARTNER,
+    PROMOTION_MIN_SAMPLE_SIZE,
+    PROMOTION_MIN_STABILITY,
+    PROMOTION_REVALIDATION_WINDOW_MS,
+} from '@/lib/config-defaults'
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
     active:       ['candidate'],
@@ -66,19 +72,19 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Only local or candidate_global objects can be promoted to global' }, { status: 409 })
         }
 
-        if (ko.cross_partner_count < 2) {
+        if (ko.cross_partner_count < PROMOTION_MIN_CROSS_PARTNER) {
             return NextResponse.json({
-                error: `Promotion to global requires cross_partner_count >= 2 (current: ${ko.cross_partner_count})`,
+                error: `Promotion to global requires cross_partner_count >= ${PROMOTION_MIN_CROSS_PARTNER} (current: ${ko.cross_partner_count})`,
             }, { status: 409 })
         }
-        if (ko.sample_size < 100) {
+        if (ko.sample_size < PROMOTION_MIN_SAMPLE_SIZE) {
             return NextResponse.json({
-                error: `Promotion to global requires sample_size >= 100 (current: ${ko.sample_size})`,
+                error: `Promotion to global requires sample_size >= ${PROMOTION_MIN_SAMPLE_SIZE} (current: ${ko.sample_size})`,
             }, { status: 409 })
         }
-        if (Number(ko.stability_score) < 0.6) {
+        if (Number(ko.stability_score) < PROMOTION_MIN_STABILITY) {
             return NextResponse.json({
-                error: `Promotion to global requires stability_score >= 0.6 (current: ${ko.stability_score})`,
+                error: `Promotion to global requires stability_score >= ${PROMOTION_MIN_STABILITY} (current: ${ko.stability_score})`,
             }, { status: 409 })
         }
         if (ko.harmful_side_effects) {
@@ -124,7 +130,7 @@ export async function POST(req: NextRequest) {
                 promotion_status: 'active',
                 cross_partner_count: ko.cross_partner_count,
                 revalidation_cycle: ko.revalidation_cycle,
-                next_revalidation_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                next_revalidation_at: new Date(Date.now() + PROMOTION_REVALIDATION_WINDOW_MS).toISOString(),
             })
             .select('id')
             .single()

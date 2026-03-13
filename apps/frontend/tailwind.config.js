@@ -10,9 +10,16 @@ module.exports = {
         extend: {
             colors: {
                 primary: 'var(--color-primary)',
+                'primary-foreground': 'var(--color-primary-foreground)',
                 'primary-hover': 'var(--color-primary-hover)',
                 secondary: 'var(--color-secondary)',
                 accent: 'var(--color-accent)',
+                'accent-secondary': 'var(--color-accent-secondary)',
+                onAccent: 'var(--color-on-accent)',
+                destructive: 'var(--color-error)',
+                foreground: 'var(--color-text-primary)',
+                muted: 'var(--color-surface-hover)',
+                'muted-foreground': 'var(--color-text-tertiary)',
                 'accent-hover': 'var(--color-accent-hover)',
                 background: 'var(--color-background)',
                 surface: 'var(--color-surface)',
@@ -36,6 +43,8 @@ module.exports = {
                 info: 'var(--color-info)',
                 'info-muted': 'var(--color-info-muted)',
                 glow: 'var(--color-glow)',
+                glass: 'var(--glass-bg)',
+                'glass-border': 'var(--glass-border)',
             },
             spacing: {
                 xs: 'var(--spacing-xs)',
@@ -65,6 +74,7 @@ module.exports = {
                 md: 'var(--radius-md)',
                 lg: 'var(--radius-lg)',
                 xl: 'var(--radius-xl)',
+                '2xl': 'var(--radius-2xl)',
                 full: 'var(--radius-full)',
             },
             boxShadow: {
@@ -74,6 +84,8 @@ module.exports = {
                 xl: 'var(--shadow-xl)',
                 glow: 'var(--shadow-glow)',
                 'glow-lg': 'var(--shadow-glow-lg)',
+                inner: 'var(--shadow-inner)',
+                float: 'var(--shadow-float)',
             },
             transitionDuration: {
                 fast: 'var(--duration-fast)',
@@ -84,6 +96,20 @@ module.exports = {
                 theme: 'var(--easing)',
                 smooth: 'var(--easing-smooth)',
                 bounce: 'var(--easing-bounce)',
+            },
+            keyframes: {
+                'brain-float': {
+                    '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+                    '50%': { transform: 'translate(2%, 1.5%) scale(1.02)' },
+                },
+                'brain-pulse': {
+                    '0%, 100%': { opacity: '0.2' },
+                    '50%': { opacity: '0.3' },
+                },
+            },
+            animation: {
+                'brain-float': 'brain-float 18s ease-in-out infinite',
+                'brain-pulse': 'brain-pulse 8s ease-in-out infinite',
             },
         },
     },

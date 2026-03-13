@@ -87,8 +87,8 @@ export const ThemeSelector: React.FC = () => {
                 className="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] transition-all"
                 style={{
                     borderColor: preferenceSource === 'system' ? 'var(--color-accent)' : 'var(--color-border)',
-                    background: preferenceSource === 'system' ? 'var(--color-success-muted)' : 'var(--color-surface)',
-                    color: preferenceSource === 'system' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                    background: preferenceSource === 'system' ? 'var(--color-accent)' : 'var(--color-surface)',
+                    color: preferenceSource === 'system' ? 'var(--color-on-accent)' : 'var(--color-text-primary)',
                     boxShadow: preferenceSource === 'system' ? 'var(--shadow-glow)' : 'none',
                     transitionDuration: 'var(--duration-normal)',
                     transitionTimingFunction: 'var(--easing-smooth)',

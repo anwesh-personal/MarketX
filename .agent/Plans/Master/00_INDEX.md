@@ -27,6 +27,16 @@
 
 ---
 
+## Active / Handover Plans (Plans/Active/)
+
+When joining or getting stuck, read the **active** plan first:
+
+| File | Purpose |
+|------|---------|
+| **`AXIOM_ARCHITECTURE_MAIL_WRITER_MAILWIZ_PLAN.md`** | End-to-end architecture audit, Mail Writer fix list, MTA feedback loop (provider-agnostic), Phase 1 & 2 priorities. **Start here for current execution context.** |
+
+---
+
 ## Reading Order
 
 1. Start with `01_VISION_AND_ARCHITECTURE.md` for the big picture

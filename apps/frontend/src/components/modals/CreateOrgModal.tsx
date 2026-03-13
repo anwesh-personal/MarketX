@@ -1,18 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Building2, Loader2, Copy, CheckCircle } from 'lucide-react';
+import { X, Building2, Loader2, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CreateOrgModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
-}
-
-interface OwnerCredentials {
-    email: string;
-    password: string;
 }
 
 export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrgModalProps) {
@@ -23,8 +18,7 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
         owner_email: '',
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [ownerCredentials, setOwnerCredentials] = useState<OwnerCredentials | null>(null);
-    const [copiedField, setCopiedField] = useState<string | null>(null);
+    const [ownerProvisioned, setOwnerProvisioned] = useState(false);
 
     if (!isOpen) return null;
 
@@ -56,10 +50,9 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
                 throw new Error(data.error || 'Failed to create organization');
             }
 
-            if (data.owner_credentials) {
-                // Show credentials instead of closing
-                setOwnerCredentials(data.owner_credentials);
-                toast.success('Organization and owner created! Save these credentials.');
+            if (data.owner_user_created) {
+                setOwnerProvisioned(true);
+                toast.success('Organization and owner user created. Complete access using your secure reset or invite flow.');
             } else {
                 toast.success('Organization created successfully!');
                 setFormData({ name: '', slug: '', plan: 'free', owner_email: '' });
@@ -75,25 +68,13 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
 
     const handleClose = () => {
         setFormData({ name: '', slug: '', plan: 'free', owner_email: '' });
-        setOwnerCredentials(null);
-        setCopiedField(null);
+        setOwnerProvisioned(false);
         onClose();
     };
 
     const handleFinish = () => {
         onSuccess();
         handleClose();
-    };
-
-    const copyToClipboard = async (text: string, field: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopiedField(field);
-            toast.success(`${field} copied!`);
-            setTimeout(() => setCopiedField(null), 2000);
-        } catch (error) {
-            toast.error('Failed to copy');
-        }
     };
 
     const generateSlug = (name: string) => {
@@ -134,96 +115,20 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
                 </div>
 
                 {/* Credentials Display (shown after owner creation) */}
-                {ownerCredentials ? (
+                {ownerProvisioned ? (
                     <div className="space-y-md">
                         <div className="bg-success/10 border border-success rounded-[var(--radius-lg)] p-md">
                             <div className="flex items-center gap-sm mb-sm">
                                 <CheckCircle className="w-5 h-5 text-success" />
-                                <h3 className="font-bold text-success">Owner Created Successfully!</h3>
+                                <h3 className="font-bold text-success">Owner Created Successfully</h3>
                             </div>
                             <p className="text-sm text-textSecondary">
-                                Save these credentials and share them securely with the owner. They will NOT be shown again.
+                                No plaintext credentials are exposed. Complete first access through your secure password reset, invite, or onboarding flow.
                             </p>
                         </div>
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-semibold text-textPrimary mb-xs">
-                                Email
-                            </label>
-                            <div className="flex gap-sm">
-                                <input
-                                    type="text"
-                                    value={ownerCredentials.email}
-                                    readOnly
-                                    className="
-                                        flex-1 px-md py-sm
-                                        bg-surfaceHover text-textPrimary
-                                        border border-border rounded-[var(--radius-md)]
-                                        font-mono text-sm
-                                    "
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(ownerCredentials.email, 'Email')}
-                                    className="
-                                        px-md py-sm
-                                        bg-surfaceHover text-textSecondary
-                                        rounded-[var(--radius-md)]
-                                        hover:bg-primary hover:text-white
-                                        transition-all
-                                    "
-                                >
-                                    {copiedField === 'Email' ? (
-                                        <CheckCircle className="w-5 h-5 text-success" />
-                                    ) : (
-                                        <Copy className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label className="block text-sm font-semibold text-textPrimary mb-xs">
-                                Password
-                            </label>
-                            <div className="flex gap-sm">
-                                <input
-                                    type="text"
-                                    value={ownerCredentials.password}
-                                    readOnly
-                                    className="
-                                        flex-1 px-md py-sm
-                                        bg-surfaceHover text-textPrimary
-                                        border border-border rounded-[var(--radius-md)]
-                                        font-mono text-sm
-                                    "
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(ownerCredentials.password, 'Password')}
-                                    className="
-                                        px-md py-sm
-                                        bg-surfaceHover text-textSecondary
-                                        rounded-[var(--radius-md)]
-                                        hover:bg-primary hover:text-white
-                                        transition-all
-                                    "
-                                >
-                                    {copiedField === 'Password' ? (
-                                        <CheckCircle className="w-5 h-5 text-success" />
-                                    ) : (
-                                        <Copy className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Warning */}
                         <div className="bg-warning/10 border border-warning rounded-[var(--radius-md)] p-sm">
                             <p className="text-warning text-sm font-medium">
-                                ⚠️ Make sure to copy and securely share these credentials. You won't be able to see the password again!
+                                Use an explicit invite/reset step before the new owner attempts first login.
                             </p>
                         </div>
 

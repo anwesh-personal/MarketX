@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS brain_tools (
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS brain_tools_updated_at ON brain_tools;
 CREATE TRIGGER brain_tools_updated_at
   BEFORE UPDATE ON brain_tools
   FOR EACH ROW EXECUTE FUNCTION brain_agents_set_updated_at();  -- reuse trigger fn from 024
@@ -29,9 +30,11 @@ CREATE TRIGGER brain_tools_updated_at
 -- RLS: anyone authenticated can read; only superadmin can write
 ALTER TABLE brain_tools ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS brain_tools_read ON brain_tools;
 CREATE POLICY brain_tools_read ON brain_tools FOR SELECT
   USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS brain_tools_write ON brain_tools;
 CREATE POLICY brain_tools_write ON brain_tools FOR ALL
   USING (
     EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'superadmin')

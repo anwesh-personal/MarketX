@@ -8,6 +8,7 @@
  */
 
 import { AbstractProvider } from '../BaseProvider'
+import { PROVIDER_BASE_URLS } from '@/lib/ai-providers'
 import {
     AIModel,
     GenerationOptions,
@@ -41,7 +42,7 @@ export class PerplexityProvider extends AbstractProvider {
         messages.push({ role: 'user', content: prompt })
 
         try {
-            const response = await fetch('https://api.perplexity.ai/chat/completions', {
+            const response = await fetch(`${PROVIDER_BASE_URLS.perplexity}/chat/completions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

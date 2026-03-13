@@ -2,7 +2,26 @@
  * THEME-SPECIFIC MICRO-INTERACTIONS
  * Each theme has unique personality in motion, glow, hover, and feedback.
  * Every selector uses only CSS custom properties from the active theme.
+ * NO hardcoded colors — all from theme context.
  */
+
+/* ========================================
+   GLOBAL: Parallax depth (theme-aware)
+   ======================================== */
+.parallax-depth {
+    transform: translateZ(0);
+    transition: transform var(--duration-normal) var(--easing-smooth),
+                box-shadow var(--duration-normal) var(--easing-smooth),
+                border-color var(--duration-normal) var(--easing-smooth);
+}
+.parallax-depth:hover {
+    transform: translateY(-2px) translateZ(4px);
+    box-shadow: var(--shadow-lg), 0 12px 28px -8px var(--color-shadow), 0 0 0 1px var(--color-border-hover);
+}
+.parallax-depth:active {
+    transform: translateY(0) translateZ(0);
+    transition-duration: var(--duration-fast);
+}
 
 /* ========================================
    OBSIDIAN — Slow, Elegant, Weighted

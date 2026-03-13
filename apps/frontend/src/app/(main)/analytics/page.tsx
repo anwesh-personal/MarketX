@@ -92,9 +92,25 @@ export default function AnalyticsPage() {
                 count,
             })).sort((a, b) => a.date.localeCompare(b.date));
 
-            // Calculate success rate trend (mock for now)
             const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
-            const successRateTrend = 5.2; // TODO: Calculate actual trend
+
+            // Calculate actual success rate trend by comparing current period to previous period
+            const previousStartDate = new Date(startDate);
+            previousStartDate.setDate(previousStartDate.getDate() - days);
+            
+            const { data: previousRuns } = await supabase
+                .from('runs')
+                .select('status')
+                .eq('triggered_by', userId)
+                .gte('created_at', previousStartDate.toISOString())
+                .lt('created_at', startDate.toISOString());
+
+            let successRateTrend = 0;
+            if (previousRuns && previousRuns.length > 0) {
+                const previousSuccessful = previousRuns.filter(r => r.status === 'completed').length;
+                const previousSuccessRate = (previousSuccessful / previousRuns.length) * 100;
+                successRateTrend = successRate - previousSuccessRate;
+            }
 
             setAnalytics({
                 total_runs: totalRuns,

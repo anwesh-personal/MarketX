@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 import {
-    testModel,
+    PROVIDER_BASE_URLS,
     getModelCostInfo,
     formatModelName,
     ANTHROPIC_KNOWN_MODELS,
     XAI_KNOWN_MODELS,
     PERPLEXITY_KNOWN_MODELS
 } from '@/lib/ai-providers';
+import { decryptSecret } from '@/lib/secrets';
 
 /**
  * AI Model Discovery API
@@ -26,7 +28,7 @@ import {
 
 async function fetchOpenAIModels(apiKey: string): Promise<string[]> {
     try {
-        const response = await fetch('https://api.openai.com/v1/models', {
+        const response = await fetch(`${PROVIDER_BASE_URLS.openai}/models`, {
             headers: { 'Authorization': `Bearer ${apiKey}` },
         });
         if (!response.ok) throw new Error('Failed to fetch OpenAI models');
@@ -49,21 +51,24 @@ async function fetchAnthropicModels(): Promise<string[]> {
 
 async function fetchGoogleModels(apiKey: string): Promise<string[]> {
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+        const response = await fetch(`${PROVIDER_BASE_URLS.google}/models?key=${apiKey}`);
         if (!response.ok) throw new Error('Failed to fetch Google models');
         const data = await response.json();
-        return data.models
-            .filter((m: any) => m.name.includes('gemini') && m.supportedGenerationMethods?.includes('generateContent'))
+        return (data.models || [])
+            .filter((m: any) => {
+                const id = (m.name || '').toLowerCase();
+                return id.includes('gemini');
+            })
             .map((m: any) => m.name.replace('models/', ''));
     } catch (error) {
         console.error('Google fetch error:', error);
-        return ['gemini-2.0-flash-exp', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+        return ['gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
     }
 }
 
 async function fetchMistralModels(apiKey: string): Promise<string[]> {
     try {
-        const response = await fetch('https://api.mistral.ai/v1/models', {
+        const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/models`, {
             headers: { 'Authorization': `Bearer ${apiKey}` },
         });
         if (!response.ok) throw new Error('Failed to fetch Mistral models');
@@ -91,6 +96,11 @@ async function fetchPerplexityModels(): Promise<string[]> {
 
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json({ error: 'Unauthorized - Superadmin access required' }, { status: 401 });
+        }
+
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -112,7 +122,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
         }
 
-        const apiKey = provider.api_key;
+        const apiKey = decryptSecret(provider.api_key);
         const providerType = provider.provider;
 
         // Fetch model IDs from provider
@@ -143,22 +153,13 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Discover] Found ${modelIds.length} models for ${providerType}:`, modelIds);
 
-        // Test each model and upsert to database
-        const results: Array<{ model_id: string; tested: boolean; is_active: boolean; error?: string }> = [];
+        // Phase 1: Save all models to DB immediately (active by default, untested)
+        const results: Array<{ model_id: string; is_active: boolean; error?: string }> = [];
 
         for (const modelId of modelIds) {
-            console.log(`[Discover] Testing ${providerType}/${modelId}...`);
-
-            // Test the model using shared utility
-            const testResult = await testModel(providerType, modelId, apiKey);
-
-            // Get cost info using shared utility
             const costInfo = getModelCostInfo(modelId);
-
-            // Create friendly name using shared utility
             const modelName = formatModelName(modelId);
 
-            // Upsert to database - is_active based on test result
             const { error: upsertError } = await supabase
                 .from('ai_model_metadata')
                 .upsert({
@@ -166,35 +167,30 @@ export async function POST(request: NextRequest) {
                     model_id: modelId,
                     model_name: modelName,
                     key_name: provider.name,
-                    key_model: `${provider.name}_${modelId}`,
+                    key_model: `${providerType}_${modelId}`,
                     input_cost_per_million: costInfo.input,
                     output_cost_per_million: costInfo.output,
                     context_window_tokens: costInfo.context,
                     supports_vision: costInfo.vision,
                     supports_function_calling: costInfo.functions,
                     supports_streaming: true,
-                    is_active: testResult.success, // ACTIVE ONLY IF TEST PASSES
-                    test_passed: testResult.success,
-                    test_error: testResult.error || null,
-                    last_tested: new Date().toISOString(),
+                    is_active: true,
+                    discovered_at: new Date().toISOString(),
+                    last_verified_at: new Date().toISOString(),
                 }, {
-                    onConflict: 'provider,model_id', // Use proper unique constraint
+                    onConflict: 'provider,model_id',
                 });
-
-            results.push({
-                model_id: modelId,
-                tested: true,
-                is_active: testResult.success,
-                error: testResult.error,
-            });
 
             if (upsertError) {
                 console.error(`[Discover] Upsert error for ${modelId}:`, upsertError);
+                results.push({ model_id: modelId, is_active: false, error: upsertError.message });
+            } else {
+                results.push({ model_id: modelId, is_active: true });
             }
         }
 
         const activeCount = results.filter(r => r.is_active).length;
-        console.log(`[Discover] Completed: ${activeCount}/${modelIds.length} models active`);
+        console.log(`[Discover] Saved: ${activeCount}/${modelIds.length} models. Test individually from the UI.`);
 
         return NextResponse.json({
             success: true,

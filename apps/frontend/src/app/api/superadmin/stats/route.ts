@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * GET /api/superadmin/stats
@@ -8,6 +9,8 @@ import { createClient } from '@supabase/supabase-js';
  */
 export async function GET(request: NextRequest) {
     try {
+        await requireSuperadmin(request);
+
         // Validate environment variables
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -76,6 +79,21 @@ export async function GET(request: NextRequest) {
         if (runs30Error) throw runs30Error;
         const runsLast30Days = runs30Data?.length || 0;
 
+        // Runs in PREVIOUS 30 days (for trend comparison)
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+        const { data: runsPrev30Data } = await supabase
+            .from('engine_run_logs')
+            .select('id')
+            .gte('started_at', sixtyDaysAgo.toISOString())
+            .lt('started_at', thirtyDaysAgo.toISOString());
+
+        const runsPrev30Days = runsPrev30Data?.length || 0;
+        const runsGrowth = runsPrev30Days > 0
+            ? ((runsLast30Days - runsPrev30Days) / runsPrev30Days) * 100
+            : 0;
+
         // Runs this month (current calendar month)
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -87,6 +105,10 @@ export async function GET(request: NextRequest) {
 
         if (runsMonthError) throw runsMonthError;
         const runsThisMonth = runsMonthData?.length || 0;
+
+        // Previous month's MRR for growth comparison
+        const firstDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
         // MRR Calculation (sum of active org plans)
         const { data: activeOrgPlans, error: licenseError } = await supabase
@@ -118,6 +140,9 @@ export async function GET(request: NextRequest) {
             runs_last_30_days: runsLast30Days || 0,
             runs_this_month: runsThisMonth || 0,
             mrr_usd: mrr,
+            trends: {
+                runs_growth: Math.round(runsGrowth * 10) / 10,
+            },
         };
 
         console.log('[STATS API] Final stats to return:', finalStats);

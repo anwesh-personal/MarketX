@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { brainConfigService, type BrainConfig } from '@/services/brain/BrainConfigService'
+import { getActiveBrainRuntime, type BrainRuntime } from '@/services/brain/BrainRuntimeResolver'
+import { brainConfigService } from '@/services/brain/BrainConfigService'
 import { brainOrchestrator } from '@/services/brain/BrainOrchestrator'
 import { ToolLoader } from '@/services/brain/tools/ToolLoader'
 import { PromptAssembler, type MemoryItem } from '@/services/brain/PromptAssembler'
+import { loadConstitutionRules } from '@/services/brain/ConstitutionLoader'
 import { ragOrchestrator, type RAGResult } from '@/services/brain/RAGOrchestrator'
 import type { BrainChatMessage, BrainToolDefinition } from '@/services/ai/types'
 
@@ -73,12 +75,12 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const validated = chatRequestSchema.parse(body)
 
-        // 3. Load brain configuration for this org
-        const brain = await brainConfigService.getOrgBrain(context.orgId)
+        // 3. Resolve active brain runtime (single source of truth: deployed brain_agents)
+        const runtime = await getActiveBrainRuntime(context.orgId)
 
-        if (!brain) {
+        if (!runtime) {
             return NextResponse.json(
-                { error: 'No brain configuration found for your organization' },
+                { error: 'No active brain agent deployed for your organization. Ask your admin to deploy a brain from Superadmin.' },
                 { status: 500 }
             )
         }
@@ -135,12 +137,10 @@ export async function POST(req: NextRequest) {
             console.error('Failed to save user message:', msgError)
         }
 
-        // 6. Resolve deployed org agent, tools, prompt, and chat history
-        const deployedAgent = await getDeployedAgentForOrg(context.orgId)
-        const tools = deployedAgent ? await ToolLoader.getAgentTools(deployedAgent.id) : []
-        const promptContext = await buildSystemPrompt(
-            deployedAgent,
-            brain.config,
+        // 6. Resolve tools, prompt, and chat history from single runtime
+        const tools = await ToolLoader.getAgentTools(runtime.agentId)
+        const promptContext = await buildSystemPromptFromRuntime(
+            runtime,
             context.orgId,
             context.userId,
             validated.message
@@ -148,18 +148,19 @@ export async function POST(req: NextRequest) {
         const messages = await loadConversationMessages(conversationId!, context.orgId)
 
         // 7. Execute bounded agentic loop (streaming or non-streaming response wrapper)
+        const brainIdForLogging = runtime.templateId ?? runtime.agentId
         if (validated.stream) {
             return handleStreamingResponse(
                 {
                     orgId: context.orgId,
                     userId: context.userId,
                     conversationId: conversationId!,
-                    brainId: brain.id,
-                    deployedAgentId: deployedAgent?.id,
-                    maxTurns: deployedAgent?.max_turns ?? 20,
-                    preferredProvider: deployedAgent?.preferred_provider ?? undefined,
-                    preferredModel: deployedAgent?.preferred_model ?? undefined,
-                    strictGrounding: deployedAgent?.strict_grounding ?? false,
+                    brainId: brainIdForLogging,
+                    deployedAgentId: runtime.agentId,
+                    maxTurns: runtime.maxTurns,
+                    preferredProvider: runtime.preferredProvider ?? undefined,
+                    preferredModel: runtime.preferredModel ?? undefined,
+                    strictGrounding: runtime.prompt.strictGrounding,
                     gapDetected: promptContext.gapDetected,
                     gapConfidence: promptContext.gapConfidence,
                     tools,
@@ -175,12 +176,12 @@ export async function POST(req: NextRequest) {
                     orgId: context.orgId,
                     userId: context.userId,
                     conversationId: conversationId!,
-                    brainId: brain.id,
-                    deployedAgentId: deployedAgent?.id,
-                    maxTurns: deployedAgent?.max_turns ?? 20,
-                    preferredProvider: deployedAgent?.preferred_provider ?? undefined,
-                    preferredModel: deployedAgent?.preferred_model ?? undefined,
-                    strictGrounding: deployedAgent?.strict_grounding ?? false,
+                    brainId: brainIdForLogging,
+                    deployedAgentId: runtime.agentId,
+                    maxTurns: runtime.maxTurns,
+                    preferredProvider: runtime.preferredProvider ?? undefined,
+                    preferredModel: runtime.preferredModel ?? undefined,
+                    strictGrounding: runtime.prompt.strictGrounding,
                     gapDetected: promptContext.gapDetected,
                     gapConfidence: promptContext.gapConfidence,
                     tools,
@@ -219,19 +220,6 @@ export async function POST(req: NextRequest) {
 // HELPER FUNCTIONS
 // ============================================================
 
-type DeployedAgent = {
-    id: string
-    name: string
-    foundation_prompt: string
-    persona_prompt: string
-    domain_prompt: string | null
-    guardrails_prompt: string
-    strict_grounding: boolean
-    max_turns: number
-    preferred_provider: string | null
-    preferred_model: string | null
-}
-
 type TurnExecutionContext = {
     orgId: string
     userId: string
@@ -247,36 +235,6 @@ type TurnExecutionContext = {
     tools: BrainToolDefinition[]
     messages: BrainChatMessage[]
     systemPrompt: string
-}
-
-async function getDeployedAgentForOrg(orgId: string): Promise<DeployedAgent | null> {
-    const supabase = createClient()
-    const { data, error } = await supabase
-        .from('brain_agents')
-        .select(`
-            id,
-            name,
-            foundation_prompt,
-            persona_prompt,
-            domain_prompt,
-            guardrails_prompt,
-            strict_grounding,
-            max_turns,
-            preferred_provider,
-            preferred_model
-        `)
-        .eq('org_id', orgId)
-        .is('user_id', null)
-        .in('status', ['active', 'configuring'])
-        .order('deployed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-    if (error) {
-        throw new Error(`Failed to load deployed brain agent: ${error.message}`)
-    }
-
-    return data ?? null
 }
 
 async function loadConversationMessages(conversationId: string, orgId: string): Promise<BrainChatMessage[]> {
@@ -301,50 +259,40 @@ async function loadConversationMessages(conversationId: string, orgId: string): 
         }))
 }
 
-async function buildSystemPrompt(
-    agent: DeployedAgent | null,
-    brainConfig: BrainConfig,
+async function buildSystemPromptFromRuntime(
+    runtime: BrainRuntime,
     orgId: string,
     userId: string,
     query: string
 ): Promise<{ systemPrompt: string; gapDetected: boolean; gapConfidence: number }> {
-    if (agent) {
-        const [rag, memories] = await Promise.all([
-            retrievePromptRag(orgId, userId, brainConfig, query),
-            retrievePromptMemories(orgId, userId)
-        ])
+    const [rag, memories, constitutionRules] = await Promise.all([
+        retrievePromptRag(orgId, userId, runtime.brainConfigForRAG, query),
+        retrievePromptMemories(orgId, userId),
+        loadConstitutionRules(orgId)
+    ])
 
-        if (!rag) {
-            await recordRetrievalGap(orgId, query, 'rag_unavailable')
-        }
-
-        const assembled = PromptAssembler.assemble(
-            {
-                foundation_prompt: agent.foundation_prompt,
-                persona_prompt: agent.persona_prompt,
-                domain_prompt: agent.domain_prompt,
-                guardrails_prompt: agent.guardrails_prompt,
-                strict_grounding: agent.strict_grounding,
-                name: agent.name
-            },
-            rag,
-            memories
-        )
-        return {
-            systemPrompt: assembled.systemPrompt,
-            gapDetected: rag?.gapDetected ?? true,
-            gapConfidence: rag?.gapConfidence ?? 0
-        }
+    if (!rag) {
+        await recordRetrievalGap(orgId, query, 'rag_unavailable')
     }
 
-    const fallbackPrompt =
-        Object.values(brainConfig.agents || {})[0]?.systemPrompt ||
-        'You are a helpful AI assistant. Be concise, accurate, and transparent.'
-
+    const assembled = PromptAssembler.assemble(
+        {
+            foundation_prompt: runtime.prompt.foundation,
+            persona_prompt: runtime.prompt.persona,
+            domain_prompt: runtime.prompt.domain,
+            guardrails_prompt: runtime.prompt.guardrails,
+            strict_grounding: runtime.prompt.strictGrounding,
+            name: runtime.prompt.agentName
+        },
+        rag,
+        memories,
+        undefined,
+        constitutionRules
+    )
     return {
-        systemPrompt: fallbackPrompt,
-        gapDetected: false,
-        gapConfidence: 1
+        systemPrompt: assembled.systemPrompt,
+        gapDetected: rag?.gapDetected ?? true,
+        gapConfidence: rag?.gapConfidence ?? 0
     }
 }
 

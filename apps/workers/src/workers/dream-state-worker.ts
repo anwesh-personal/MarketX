@@ -2,6 +2,7 @@ import { Worker, Job } from 'bullmq'
 import { QueueName } from '../config/queues'
 import { redisConfig } from '../config/redis'
 import { Pool } from 'pg'
+import { aiService } from '../utils/ai-service'
 
 /**
  * DREAM STATE WORKER
@@ -95,8 +96,25 @@ async function processDreamStateJob(job: Job<DreamStateJob>) {
                         LIMIT 100
                     `, [conv.id])
 
-                    // Simple summary - in production, use LLM
-                    const summary = `Conversation with ${messages.rowCount} messages`
+                    // Build conversation transcript for LLM summarization
+                    const transcript = (messages.rows as Array<{role: string; content: string}>)
+                        .map(m => `${m.role.toUpperCase()}: ${m.content}`)
+                        .join('\n')
+
+                    let summary: string
+                    try {
+                        const result = await aiService.generateText(
+                            orgId,
+                            [{
+                                role: 'user',
+                                content: `Summarize this conversation in 2-3 concise sentences. Capture the main topic, key decisions or outcomes, and any follow-up actions mentioned.\n\n${transcript.substring(0, 8000)}`
+                            }],
+                            { maxTokens: 200, temperature: 0.3 }
+                        )
+                        summary = result.content || `Conversation with ${messages.rowCount} messages`
+                    } catch {
+                        summary = `Conversation with ${messages.rowCount} messages`
+                    }
 
                     await pool.query(
                         'UPDATE conversations SET summary = $1 WHERE id = $2',

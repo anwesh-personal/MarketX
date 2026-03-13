@@ -23,27 +23,36 @@ interface PlatformStats {
     runs_last_30_days: number;
     runs_this_month: number;
     mrr_usd: number;
+    trends?: {
+        runs_growth: number;
+    };
 }
 
 export default function SuperadminDashboard() {
     const { fetchWithAuth } = useSuperadminAuth();
     const [stats, setStats] = useState<PlatformStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadStats();
     }, []);
 
     const loadStats = async () => {
+        setError(null);
         try {
             const response = await fetchWithAuth('/api/superadmin/stats');
-
-            if (!response.ok) throw new Error('Failed to load stats');
-
             const data = await response.json();
-            setStats(data.stats);
-        } catch (error) {
-            console.error('Error loading stats:', error);
+
+            if (!response.ok) {
+                throw new Error(data?.error || `Failed to load stats (${response.status})`);
+            }
+            setStats(data.stats ?? null);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to load stats';
+            console.error('Dashboard loadStats error:', err);
+            setError(message);
+            setStats(null);
         } finally {
             setIsLoading(false);
         }
@@ -61,6 +70,18 @@ export default function SuperadminDashboard() {
 
     return (
         <div className="space-y-lg">
+            {/* Error banner - so you know why everything is empty */}
+            {error && (
+                <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-md text-destructive">
+                    <p className="font-medium">Could not load platform stats</p>
+                    <p className="mt-1 text-sm opacity-90">{error}</p>
+                    <p className="mt-2 text-sm">
+                        If you ran migrations on a different database (e.g. local Postgres), the app reads from Supabase. Use the same DB: set <code className="bg-black/10 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="bg-black/10 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> to the project where you ran migrations, or run migrations in your Supabase project.
+                    </p>
+                    <button type="button" onClick={loadStats} className="mt-2 text-sm underline hover:no-underline">Try again</button>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -233,10 +254,12 @@ export default function SuperadminDashboard() {
                             ">
                                 <TrendingUp className="w-6 h-6 text-warning group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
                             </div>
-                            <div className="flex items-center gap-xs text-sm font-medium text-success">
-                                <ArrowUp className="w-4 h-4" />
-                                <span>+12%</span>
-                            </div>
+                            {stats?.trends?.runs_growth !== undefined && stats.trends.runs_growth !== 0 && (
+                                <div className={`flex items-center gap-xs text-sm font-medium ${stats.trends.runs_growth >= 0 ? 'text-success' : 'text-error'}`}>
+                                    {stats.trends.runs_growth >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+                                    <span>{stats.trends.runs_growth >= 0 ? '+' : ''}{stats.trends.runs_growth}%</span>
+                                </div>
+                            )}
                         </div>
                         <p className="text-sm text-textSecondary mb-xs group-hover:text-warning transition-colors duration-[var(--duration-normal)]">Runs (30 Days)</p>
                         <p className="text-3xl font-bold text-textPrimary group-hover:text-warning transition-colors duration-[var(--duration-normal)]">
@@ -266,10 +289,6 @@ export default function SuperadminDashboard() {
                                 transition-colors duration-[var(--duration-normal)]
                             ">
                                 <DollarSign className="w-6 h-6 text-success group-hover:scale-110 transition-transform duration-[var(--duration-normal)]" />
-                            </div>
-                            <div className="flex items-center gap-xs text-sm font-medium text-success">
-                                <ArrowUp className="w-4 h-4" />
-                                <span>+8%</span>
                             </div>
                         </div>
                         <p className="text-sm text-textSecondary mb-xs group-hover:text-success transition-colors duration-[var(--duration-normal)]">Monthly Recurring Revenue</p>
