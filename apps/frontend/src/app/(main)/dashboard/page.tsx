@@ -14,6 +14,8 @@ import {
     RefreshCw,
     Clock,
     CheckCircle,
+    X,
+    ChevronRight,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 

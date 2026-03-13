@@ -395,6 +395,7 @@ export default function BrainChatPage() {
 
 function MessageBubble({ message }: { message: Message }) {
     const [copied, setCopied] = useState(false)
+    const { mode } = useTheme()
     const isUser = message.role === 'user'
 
     const copyToClipboard = () => {

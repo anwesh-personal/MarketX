@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveBrainRuntime, type BrainRuntime } from '@/services/brain/BrainRuntimeResolver'
-import { brainConfigService } from '@/services/brain/BrainConfigService'
+import { brainConfigService, type BrainConfig } from '@/services/brain/BrainConfigService'
 import { brainOrchestrator } from '@/services/brain/BrainOrchestrator'
 import { ToolLoader } from '@/services/brain/tools/ToolLoader'
 import { PromptAssembler, type MemoryItem } from '@/services/brain/PromptAssembler'
@@ -404,7 +404,7 @@ async function handleRegularResponse(
             .insert({
                 conversation_id: conversationId,
                 role: 'assistant',
-                content: response.content,
+                content: response.response,
                 org_id: execution.orgId,
                 user_id: execution.userId,
                 metadata: {
@@ -454,7 +454,7 @@ async function handleRegularResponse(
         })
 
         return NextResponse.json({
-            response: response.content,
+            response: response.response,
             conversationId,
             metadata: {
                 agentId: execution.deployedAgentId ?? 'none',
