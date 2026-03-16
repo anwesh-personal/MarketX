@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-
-async function getAuthContext(supabase: any) {
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error || !user) return null
-    const { data: userRecord } = await supabase
-        .from('users')
-        .select('org_id')
-        .eq('id', user.id)
-        .single()
-    if (!userRecord?.org_id) return null
-    return { userId: user.id, orgId: userRecord.org_id }
-}
+import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
 
 export async function GET(request: NextRequest) {
     try {
-        const supabase = createClient()
-        const ctx = await getAuthContext(supabase)
-        if (!ctx) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+        const ctx = await getAuthContext()
+        if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-        const { data: agents, error } = await supabase
+        const { data: agents, error } = await supabaseAdmin
             .from('brain_agents')
             .select('*')
             .eq('org_id', ctx.orgId)
@@ -32,26 +17,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ agents })
     } catch (error: any) {
         console.error('Agents API error:', error)
-        return NextResponse.json(
-            { error: error.message || 'Failed to fetch agents' },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: error.message || 'Failed to fetch agents' }, { status: 500 })
     }
 }
 
 export async function PATCH(request: NextRequest) {
     try {
+        const ctx = await getAuthContext()
+        if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
         const body = await request.json()
         const { id, ...updates } = body
 
-        const supabase = createClient()
-        const ctx = await getAuthContext(supabase)
-        if (!ctx) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
         if (id) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseAdmin
                 .from('brain_agents')
                 .update(updates)
                 .eq('id', id)
@@ -63,18 +42,19 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ agent: data })
         }
 
-        const { data: activeAgent, error: findError } = await supabase
+        const { data: activeAgent, error: findError } = await supabaseAdmin
             .from('brain_agents')
             .select('id')
             .eq('org_id', ctx.orgId)
-            .eq('is_active', true)
+            .in('status', ['active', 'configuring'])
+            .limit(1)
             .single()
 
         if (findError || !activeAgent) {
             return NextResponse.json({ error: 'No active agent found for this organization' }, { status: 404 })
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('brain_agents')
             .update(updates)
             .eq('id', activeAgent.id)
@@ -86,9 +66,6 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ agent: data })
     } catch (error: any) {
         console.error('Update agent error:', error)
-        return NextResponse.json(
-            { error: error.message || 'Failed to update agent' },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: error.message || 'Failed to update agent' }, { status: 500 })
     }
 }
