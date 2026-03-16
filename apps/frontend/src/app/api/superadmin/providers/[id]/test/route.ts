@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
 import { createClient } from '@/lib/supabase/server'
 
-async function getSuperadmin(supabase: any) {
-    const token = (await supabase.auth.getSession())?.data?.session?.access_token
-    if (!token) return null
-    const { data } = await supabase.from('superadmins').select('id, email, is_active').eq('is_active', true).limit(1).single()
-    return data
-}
 
 export async function POST(
     req: NextRequest,
     { params }: { params: { id: string } }
 ) {
     const supabase = createClient()
-    const admin = await getSuperadmin(supabase)
+    const admin = await getSuperadmin(request)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const { data: provider, error: provErr } = await supabase

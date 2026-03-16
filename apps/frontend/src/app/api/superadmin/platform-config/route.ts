@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSuperadmin } from '@/lib/superadmin-middleware'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { invalidateConfigCache } from '@/lib/platform-config'
@@ -51,16 +52,10 @@ const bulkUpdateSchema = z.object({
     configs: z.array(updateSchema).min(1).max(100),
 })
 
-async function getSuperadmin(supabase: any) {
-    const token = (await supabase.auth.getSession())?.data?.session?.access_token
-    if (!token) return null
-    const { data } = await supabase.from('superadmins').select('id, email, is_active').eq('is_active', true).limit(1).single()
-    return data
-}
 
 export async function GET(req: NextRequest) {
     const supabase = createClient()
-    const admin = await getSuperadmin(supabase)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const url = new URL(req.url)
@@ -99,7 +94,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
     const supabase = createClient()
-    const admin = await getSuperadmin(supabase)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     let body: unknown
@@ -148,7 +143,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
     const supabase = createClient()
-    const admin = await getSuperadmin(supabase)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const url = new URL(req.url)
