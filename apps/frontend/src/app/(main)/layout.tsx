@@ -36,6 +36,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
     const navigation = [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
+        { name: 'Portal', href: '/portal', icon: BarChart3, group: 'Overview' },
         { name: 'Writer Studio', href: '/writer', icon: Zap, group: 'Content' },
         { name: 'Knowledge Base', href: '/kb-manager', icon: Database, group: 'Content' },
         { name: 'Brain Chat', href: '/brain-chat', icon: Sparkles, group: 'Brain' },

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings, Upload, History, Save } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Send, Sparkles, Brain, Loader2, Copy, Check, RotateCcw, Download, Settings, Upload, Save } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -37,6 +38,7 @@ interface ActiveRuntime {
 // ============================================================
 
 export default function BrainChatPage() {
+    const router = useRouter()
     const { mode } = useTheme()
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
@@ -279,10 +281,11 @@ export default function BrainChatPage() {
                             </button>
                         )}
 
-                        <button className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95">
-                            <History className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                        <button className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95">
+                        <button
+                            onClick={() => router.push('/brain-control')}
+                            className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95"
+                            title="Brain Settings"
+                        >
                             <Settings className="w-5 h-5 text-muted-foreground" />
                         </button>
                     </div>
@@ -346,8 +349,19 @@ export default function BrainChatPage() {
                     {messages.length === 0 ? (
                         <EmptyState onSuggestionClick={(text) => setInput(text)} />
                     ) : (
-                        messages.map((message) => (
-                            <MessageBubble key={message.id} message={message} />
+                        messages.map((message, idx) => (
+                            <MessageBubble key={message.id} message={message} onRegenerate={
+                                message.role === 'assistant' && idx === messages.length - 1 && !isLoading
+                                    ? () => {
+                                        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
+                                        if (lastUserMsg) {
+                                            setMessages(prev => prev.filter(m => m.id !== message.id))
+                                            setInput(lastUserMsg.content)
+                                            setTimeout(() => { const el = document.querySelector('textarea'); if (el) (el as HTMLTextAreaElement).form?.requestSubmit() }, 50)
+                                        }
+                                    }
+                                    : undefined
+                            } />
                         ))
                     )}
                     <div ref={messagesEndRef} />
@@ -393,7 +407,7 @@ export default function BrainChatPage() {
 // MESSAGE BUBBLE COMPONENT
 // ============================================================
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, onRegenerate }: { message: Message; onRegenerate?: () => void }) {
     const [copied, setCopied] = useState(false)
     const { mode } = useTheme()
     const isUser = message.role === 'user'
@@ -488,12 +502,15 @@ function MessageBubble({ message }: { message: Message }) {
                                     <Copy className="w-3.5 h-3.5" />
                                 )}
                             </button>
-                            <button
-                                className="p-1 hover:text-textPrimary transition-colors"
-                                title="Regenerate"
-                            >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                            </button>
+                            {onRegenerate && (
+                                <button
+                                    onClick={onRegenerate}
+                                    className="p-1 hover:text-textPrimary transition-colors"
+                                    title="Regenerate"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
                     )}
 

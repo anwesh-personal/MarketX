@@ -33,16 +33,16 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Build Knowledge Base from company data
-        const kbContent = buildKBContent(company, icps, offer, voice)
+        const kbData = buildKBData(company, icps, offer, voice)
 
         const { data: kb, error: kbError } = await supabase
             .from('knowledge_bases')
             .insert({
                 org_id: orgId,
                 name: `${company.name} — Core Knowledge`,
-                content: kbContent,
-                status: 'active',
-                is_primary: true,
+                data: kbData,
+                version: 1,
+                is_active: true,
             })
             .select('id')
             .single()
@@ -211,78 +211,83 @@ export async function POST(req: NextRequest) {
 // HELPERS
 // ============================================================
 
-function buildKBContent(company: any, icps: any[], offer: any, voice: any): string {
-    const sections: string[] = []
+function buildKBData(company: any, icps: any[], offer: any, voice: any): Record<string, any> {
+    const clean = (arr: string[]) => (arr || []).filter((s: string) => s?.trim())
 
-    sections.push(`# ${company.name} — Knowledge Base`)
-    sections.push(`\n## Company Overview\n${company.description}`)
-
-    if (company.industry) sections.push(`**Industry:** ${company.industry}`)
-    if (company.website) sections.push(`**Website:** ${company.website}`)
-    if (company.size) sections.push(`**Company Size:** ${company.size} employees`)
-
-    if (offer?.name) {
-        sections.push(`\n## Primary Offer: ${offer.name}`)
-        if (offer.primary_promise) sections.push(`**Promise:** ${offer.primary_promise}`)
-        if (offer.pricing_model) sections.push(`**Pricing:** ${offer.pricing_model}`)
-
-        const diffs = (offer.key_differentiators || []).filter((d: string) => d.trim())
-        if (diffs.length > 0) {
-            sections.push(`\n### Key Differentiators`)
-            diffs.forEach((d: string) => sections.push(`- ${d}`))
-        }
-
-        const proofs = (offer.proof_points || []).filter((p: string) => p.trim())
-        if (proofs.length > 0) {
-            sections.push(`\n### Proof Points`)
-            proofs.forEach((p: string) => sections.push(`- ${p}`))
-        }
+    return {
+        schema_version: '1.0.0',
+        kb_version: '1.0.0',
+        stage: 'pre-embeddings',
+        brand: {
+            brand_name_exact: company.name,
+            industry: company.industry || '',
+            website: company.website || '',
+            company_size: company.size || '',
+            description: company.description,
+            voice_rules: voice?.tone ? [`Write in a ${voice.tone} tone`] : [],
+            personality: voice?.personality || [],
+            phrases_to_use: clean(voice?.phrases_to_use),
+            phrases_to_avoid: clean(voice?.phrases_to_avoid),
+            email_sign_off: voice?.email_sign_off || '',
+            compliance: {
+                forbidden_claims: clean(voice?.phrases_to_avoid),
+                required_disclosures: [],
+            },
+        },
+        icp_library: {
+            segments: (icps || []).filter((i: any) => i.title).map((icp: any, idx: number) => ({
+                icp_id: `onboarding_icp_${idx + 1}`,
+                segment_name: `${icp.title} (${icp.seniority || 'Any'})`,
+                industry_group_norm: icp.industry || company.industry || '',
+                seniority_norm: (icp.seniority || 'MANAGER').toUpperCase().replace(/[- ]/g, '_'),
+                company_size: icp.company_size || '',
+                pain_points: clean(icp.pain_points),
+                goals: clean(icp.goals),
+                objections: clean(icp.objections),
+                job_titles: [icp.title],
+                buying_triggers: [],
+                decision_criteria: [],
+            })),
+        },
+        offer_library: {
+            offers: offer?.name ? [{
+                offer_id: 'onboarding_offer_1',
+                offer_name: offer.name,
+                category: offer.category || 'General',
+                value_proposition: offer.primary_promise || '',
+                differentiators: clean(offer.key_differentiators),
+                pricing_model: offer.pricing_model || '',
+                proof_points: clean(offer.proof_points),
+                delivery_timeline: '',
+            }] : [],
+        },
+        angles_library: { angles: [] },
+        ctas_library: { ctas: [{ cta_id: 'default_cta', cta_type: 'REPLY', label: 'Reply', destination_type: 'reply', destination_slug: '' }] },
+        email_library: {
+            flow_blueprints: [{
+                flow_blueprint_id: 'intro_flow',
+                flow_name: 'Introduction Flow',
+                goal: 'MEANINGFUL_REPLY',
+                length_range: { min: 3, max: 5 },
+                sequence_structure: ['intro', 'value', 'ask'],
+                default_cta_type: 'REPLY',
+            }],
+            subject_firstline_variants: [],
+            reply_playbooks: [],
+            reply_strategies: [],
+        },
+        website_library: { page_blueprints: [], layouts: [] },
+        social_library: { pillars: [], post_blueprints: [] },
+        routing: { defaults: [], rules: [] },
+        testing: {
+            pages: { enabled: false, max_variants: 3, evaluation_window_days: 7, min_sample_size: 100 },
+            email_flows: { enabled: true, max_variants: 3, evaluation_window_days: 7, min_sample_size: 100 },
+            email_replies: { enabled: false, max_variants: 3, evaluation_window_days: 7, min_sample_size: 100 },
+            subject_firstline: { enabled: true, max_variants: 5, evaluation_window_days: 7, min_sample_size: 100 },
+        },
+        guardrails: { paused_patterns: [] },
+        learning: { history: [], preferences: [] },
     }
-
-    for (const icp of (icps || [])) {
-        if (!icp.title) continue
-        sections.push(`\n## Target Customer: ${icp.title} (${icp.seniority || 'Any Level'})`)
-        if (icp.company_size) sections.push(`**Company Size:** ${icp.company_size}`)
-
-        const pains = (icp.pain_points || []).filter((p: string) => p.trim())
-        if (pains.length > 0) {
-            sections.push(`\n### Pain Points`)
-            pains.forEach((p: string) => sections.push(`- ${p}`))
-        }
-
-        const goals = (icp.goals || []).filter((g: string) => g.trim())
-        if (goals.length > 0) {
-            sections.push(`\n### Goals`)
-            goals.forEach((g: string) => sections.push(`- ${g}`))
-        }
-
-        const objections = (icp.objections || []).filter((o: string) => o.trim())
-        if (objections.length > 0) {
-            sections.push(`\n### Common Objections`)
-            objections.forEach((o: string) => sections.push(`- ${o}`))
-        }
-    }
-
-    if (voice?.tone || voice?.personality?.length) {
-        sections.push(`\n## Brand Voice`)
-        if (voice.tone) sections.push(`**Tone:** ${voice.tone}`)
-        if (voice.personality?.length) sections.push(`**Personality:** ${voice.personality.join(', ')}`)
-        if (voice.email_sign_off) sections.push(`**Sign-off:** ${voice.email_sign_off}`)
-
-        const use = (voice.phrases_to_use || []).filter((p: string) => p.trim())
-        if (use.length) {
-            sections.push(`\n### Phrases to Use`)
-            use.forEach((p: string) => sections.push(`- "${p}"`))
-        }
-
-        const avoid = (voice.phrases_to_avoid || []).filter((p: string) => p.trim())
-        if (avoid.length) {
-            sections.push(`\n### Phrases to AVOID`)
-            avoid.forEach((p: string) => sections.push(`- "${p}"`))
-        }
-    }
-
-    return sections.join('\n')
 }
 
 function buildDomainPrompt(company: any, icps: any[], offer: any, voice: any): string {

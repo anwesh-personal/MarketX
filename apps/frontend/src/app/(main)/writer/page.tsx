@@ -202,15 +202,55 @@ export default function WriterPage() {
                                     </span>
                                     
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="btn btn-ghost btn-icon" title="View output">
+                                        <button
+                                            className="btn btn-ghost btn-icon"
+                                            title="View in execution log"
+                                            onClick={async () => {
+                                                const { data } = await supabase
+                                                    .from('engine_run_logs')
+                                                    .select('id, output_data')
+                                                    .eq('id', run.id)
+                                                    .maybeSingle()
+                                                if (data?.output_data) {
+                                                    const blob = new Blob([JSON.stringify(data.output_data, null, 2)], { type: 'application/json' })
+                                                    const url = URL.createObjectURL(blob)
+                                                    window.open(url, '_blank')
+                                                }
+                                            }}
+                                        >
                                             <Eye className="w-5 h-5" />
                                         </button>
                                         {run.status === 'completed' && (
-                                            <button className="btn btn-ghost btn-icon" title="Download output">
+                                            <button
+                                                className="btn btn-ghost btn-icon"
+                                                title="Download output"
+                                                onClick={async () => {
+                                                    const { data } = await supabase
+                                                        .from('engine_run_logs')
+                                                        .select('output_data')
+                                                        .eq('id', run.id)
+                                                        .maybeSingle()
+                                                    if (data?.output_data) {
+                                                        const blob = new Blob([JSON.stringify(data.output_data, null, 2)], { type: 'application/json' })
+                                                        const a = document.createElement('a')
+                                                        a.href = URL.createObjectURL(blob)
+                                                        a.download = `run-${run.id.slice(0, 8)}.json`
+                                                        a.click()
+                                                    }
+                                                }}
+                                            >
                                                 <Download className="w-5 h-5" />
                                             </button>
                                         )}
-                                        <button className="btn btn-ghost btn-icon text-error hover:bg-error-muted" title="Delete run">
+                                        <button
+                                            className="btn btn-ghost btn-icon text-error hover:bg-error-muted"
+                                            title="Delete run"
+                                            onClick={async () => {
+                                                if (!confirm('Delete this run?')) return
+                                                await supabase.from('runs').delete().eq('id', run.id)
+                                                setRuns(prev => prev.filter(r => r.id !== run.id))
+                                            }}
+                                        >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                     </div>
