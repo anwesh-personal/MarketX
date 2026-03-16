@@ -278,220 +278,173 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Bento Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                
-                {/* Main Stat: Total Runs (Spans 2 columns) */}
-                <div className="premium-card md:col-span-2 bg-gradient-to-br from-accent to-accent-secondary text-onAccent border-none group">
-                    <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-40 transition-opacity duration-500">
-                        <Zap className="w-32 h-32 transform rotate-12" />
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card lg:col-span-2 group">
+                    <div className="flex items-start justify-between mb-6">
+                        <div>
+                            <div className="stat-card-label mb-2">Total Runs</div>
+                            <div className="stat-card-value text-5xl">{stats?.total_runs || 0}</div>
+                        </div>
+                        <div className="stat-card-icon group-hover:shadow-glow transition-shadow">
+                            <Zap className="w-5 h-5" />
+                        </div>
                     </div>
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div className="flex items-start justify-between mb-8">
-                            <div>
-                                <p className="text-onAccent/80 font-medium mb-1">Total Runs</p>
-                                <h2 className="text-6xl font-display font-bold tracking-tight">
-                                    {stats?.total_runs || 0}
-                                </h2>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1.5 rounded-full text-sm font-medium">
-                                <TrendingUp className="w-4 h-4" />
-                                <span>{stats?.runs_this_week || 0} this week</span>
-                            </div>
+                    <div className="flex items-center gap-4 text-sm text-textSecondary border-t border-border pt-4">
+                        <span className="flex items-center gap-1.5 text-accent">
+                            <TrendingUp className="w-3.5 h-3.5" />
+                            {stats?.runs_this_week || 0} this week
+                        </span>
+                        <div className="flex-1 h-1.5 bg-surfaceHover rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-accent/60 rounded-full transition-all duration-700"
+                                style={{ width: `${Math.min(((stats?.total_runs || 0) / (stats?.quota_runs || 1)) * 100, 100)}%` }}
+                            />
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-onAccent/70 border-t border-white/20 pt-4">
-                            <span>{stats?.quota_runs || 0} runs per month limit</span>
-                            <div className="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-white rounded-full" 
-                                    style={{ width: `${Math.min(((stats?.total_runs || 0) / (stats?.quota_runs || 1)) * 100, 100)}%` }}
-                                />
-                            </div>
-                        </div>
+                        <span className="text-xs text-textTertiary font-mono">{stats?.quota_runs || 0}/mo</span>
                     </div>
                 </div>
 
-                {/* Success Rate */}
-                <div className="premium-card flex flex-col justify-between group">
+                <div className="stat-card group">
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-textSecondary font-medium">Success Rate</p>
-                        <div className="w-10 h-10 rounded-full bg-success-muted flex items-center justify-center text-success group-hover:scale-110 transition-transform">
+                        <div className="stat-card-label">Success Rate</div>
+                        <div className="stat-card-icon group-hover:shadow-glow transition-shadow">
                             <CheckCircle className="w-5 h-5" />
                         </div>
                     </div>
-                    <div>
-                        <h3 className="text-4xl font-display font-bold text-textPrimary mb-1">
-                            {successRate}%
-                        </h3>
-                        <p className="text-sm text-success flex items-center gap-1">
-                            <TrendingUp className="w-3 h-3" />
-                            {stats?.successful_runs || 0} successful runs
-                        </p>
-                    </div>
+                    <div className="stat-card-value">{successRate}%</div>
+                    <p className="text-sm text-textSecondary mt-1">
+                        {stats?.successful_runs || 0} of {stats?.total_runs || 0} runs
+                    </p>
                 </div>
 
-                {/* Knowledge Bases */}
-                <div className="premium-card flex flex-col justify-between group">
+                <div className="stat-card group">
                     <div className="flex items-center justify-between mb-4">
-                        <p className="text-textSecondary font-medium">Knowledge Bases</p>
-                        <div className="w-10 h-10 rounded-full bg-info-muted flex items-center justify-center text-info group-hover:scale-110 transition-transform">
+                        <div className="stat-card-label">Knowledge Bases</div>
+                        <div className="stat-card-icon group-hover:shadow-glow transition-shadow">
                             <Database className="w-5 h-5" />
                         </div>
                     </div>
-                    <div>
-                        <h3 className="text-4xl font-display font-bold text-textPrimary mb-1">
-                            {stats?.total_kbs || 0}
-                            <span className="text-lg text-textTertiary font-normal ml-1">/ {stats?.quota_kbs || 0}</span>
-                        </h3>
-                        <p className="text-sm text-textSecondary">
-                            Active bases
-                        </p>
+                    <div className="stat-card-value">
+                        {stats?.total_kbs || 0}
+                        <span className="text-lg text-textTertiary font-normal ml-1">/ {stats?.quota_kbs || 0}</span>
                     </div>
+                    <p className="text-sm text-textSecondary mt-1">Active bases</p>
                 </div>
+            </div>
 
-                {/* Quick Actions (Spans full width) */}
-                <div className="premium-card md:col-span-3 lg:col-span-4 !p-0 overflow-hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
-                        <Link href="/writer/new" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center text-accent group-hover:bg-accent group-hover:text-onAccent transition-colors">
-                                    <Plus className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-textPrimary group-hover:text-accent transition-colors">New Run</h4>
-                                    <p className="text-sm text-textSecondary">Generate new content</p>
-                                </div>
+            {/* Quick Actions */}
+            <div className="card !p-0 overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
+                    <Link href="/writer/new" className="p-5 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="stat-card-icon">
+                                <Plus className="w-5 h-5" />
                             </div>
-                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-accent group-hover:translate-x-1 transition-all" />
-                        </Link>
-
-                        <Link href="/kb-manager" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center text-info group-hover:bg-info group-hover:text-white transition-colors">
-                                    <Database className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-textPrimary group-hover:text-info transition-colors">Manage KBs</h4>
-                                    <p className="text-sm text-textSecondary">Update knowledge</p>
-                                </div>
+                            <div>
+                                <h4 className="font-semibold text-textPrimary text-sm group-hover:text-accent transition-colors">New Campaign</h4>
+                                <p className="text-xs text-textSecondary">Generate emails</p>
                             </div>
-                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-info group-hover:translate-x-1 transition-all" />
-                        </Link>
-
-                        <Link href="/analytics" className="p-6 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                                    <Activity className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-semibold text-textPrimary group-hover:text-primary transition-colors">Analytics</h4>
-                                    <p className="text-sm text-textSecondary">View performance</p>
-                                </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-textTertiary group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    </Link>
+                    <Link href="/kb-manager" className="p-5 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="stat-card-icon">
+                                <Database className="w-5 h-5" />
                             </div>
-                            <ArrowRight className="w-5 h-5 text-textTertiary group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                        </Link>
-                    </div>
+                            <div>
+                                <h4 className="font-semibold text-textPrimary text-sm group-hover:text-accent transition-colors">Knowledge</h4>
+                                <p className="text-xs text-textSecondary">Manage KBs</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-textTertiary group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    </Link>
+                    <Link href="/brain-chat" className="p-5 flex items-center justify-between group hover:bg-surfaceHover transition-colors">
+                        <div className="flex items-center gap-3">
+                            <div className="stat-card-icon">
+                                <Brain className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-textPrimary text-sm group-hover:text-accent transition-colors">Brain Chat</h4>
+                                <p className="text-xs text-textSecondary">Talk to your Brain</p>
+                            </div>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-textTertiary group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                    </Link>
                 </div>
+            </div>
 
-                {/* Recent Runs (Spans 2 columns) */}
-                <div className="premium-card md:col-span-2 lg:col-span-3 flex flex-col">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-textPrimary">Recent Activity</h2>
-                        <Link href="/writer" className="btn btn-ghost btn-sm">
-                            View All
-                        </Link>
+            {/* Bottom Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Recent Activity */}
+                <div className="card lg:col-span-3">
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-bold text-textPrimary">Recent Activity</h2>
+                        <Link href="/writer" className="btn btn-ghost btn-sm text-xs">View All</Link>
                     </div>
-
-                    <div className="flex-1">
-                        {recentRuns.length > 0 ? (
-                            <div className="space-y-2">
-                                {recentRuns.map((run, i) => (
-                                    <div
-                                        key={run.id}
-                                        className="group flex items-center justify-between p-4 rounded-xl hover:bg-surfaceHover border border-transparent hover:border-border transition-all animate-fade-in-up"
-                                        style={{ animationDelay: `${i * 50}ms` }}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`
-                                                w-10 h-10 rounded-full flex items-center justify-center
-                                                ${run.status === 'completed' ? 'bg-success-muted text-success' :
-                                                    run.status === 'failed' ? 'bg-error-muted text-error' :
-                                                        run.status === 'running' ? 'bg-warning-muted text-warning' :
-                                                            'bg-surface text-textTertiary border border-border'}
-                                            `}>
-                                                {run.status === 'completed' ? <CheckCircle className="w-5 h-5" /> :
-                                                 run.status === 'failed' ? <X className="w-5 h-5" /> :
-                                                 run.status === 'running' ? <RefreshCw className="w-5 h-5 animate-spin" /> :
-                                                 <Clock className="w-5 h-5" />}
-                                            </div>
-                                            <div>
-                                                <p className="font-medium text-textPrimary group-hover:text-accent transition-colors">
-                                                    {run.kb_name || 'Content Generation Run'}
-                                                </p>
-                                                <p className="text-xs text-textTertiary mt-0.5">
-                                                    {new Date(run.created_at).toLocaleString(undefined, { 
-                                                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                                                    })}
-                                                </p>
-                                            </div>
+                    {recentRuns.length > 0 ? (
+                        <div className="space-y-1">
+                            {recentRuns.map((run, i) => (
+                                <div key={run.id}
+                                    className="group flex items-center justify-between p-3 rounded-[var(--radius-md)] hover:bg-surfaceHover transition-all"
+                                    style={{ animationDelay: `${i * 50}ms` }}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center
+                                            ${run.status === 'completed' ? 'bg-success/10 text-success' :
+                                              run.status === 'failed' ? 'bg-error/10 text-error' :
+                                              run.status === 'running' ? 'bg-warning/10 text-warning' :
+                                              'bg-surfaceHover text-textTertiary'}`}>
+                                            {run.status === 'completed' ? <CheckCircle className="w-4 h-4" /> :
+                                             run.status === 'failed' ? <X className="w-4 h-4" /> :
+                                             run.status === 'running' ? <RefreshCw className="w-4 h-4 animate-spin" /> :
+                                             <Clock className="w-4 h-4" />}
                                         </div>
-                                        <div className="flex items-center gap-4">
-                                            <span className={`
-                                                badge
-                                                ${run.status === 'completed' ? 'badge-success' :
-                                                    run.status === 'failed' ? 'badge-error' :
-                                                        run.status === 'running' ? 'badge-warning' : ''}
-                                            `}>
-                                                {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
-                                            </span>
-                                            <ChevronRight className="w-4 h-4 text-textTertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div>
+                                            <p className="text-sm font-medium text-textPrimary">{run.kb_name || 'Content Generation'}</p>
+                                            <p className="text-xs text-textTertiary">
+                                                {new Date(run.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </p>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="h-full flex flex-col items-center justify-center py-12 text-center">
-                                <div className="w-16 h-16 rounded-full bg-surfaceHover flex items-center justify-center mb-4">
-                                    <FileText className="w-8 h-8 text-textTertiary" />
+                                    <span className={`badge text-xs ${run.status === 'completed' ? 'badge-success' : run.status === 'failed' ? 'badge-error' : run.status === 'running' ? 'badge-warning' : ''}`}>
+                                        {run.status.charAt(0).toUpperCase() + run.status.slice(1)}
+                                    </span>
                                 </div>
-                                <h3 className="text-lg font-medium text-textPrimary mb-1">No runs yet</h3>
-                                <p className="text-sm text-textSecondary mb-6 max-w-sm">
-                                    Start generating content using your knowledge bases and AI brains.
-                                </p>
-                                <Link href="/writer/new" className="btn btn-primary">
-                                    <Plus className="w-4 h-4" />
-                                    Create First Run
-                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <div className="w-14 h-14 rounded-full bg-surfaceHover flex items-center justify-center mb-3">
+                                <FileText className="w-7 h-7 text-textTertiary" />
                             </div>
-                        )}
-                    </div>
+                            <h3 className="font-medium text-textPrimary mb-1">No runs yet</h3>
+                            <p className="text-sm text-textSecondary mb-4 max-w-xs">Generate content using your knowledge bases and Brain.</p>
+                            <Link href="/writer/new" className="btn btn-primary btn-sm"><Plus className="w-4 h-4" /> Create First Run</Link>
+                        </div>
+                    )}
                 </div>
 
-                {/* Failed Runs / Alert (Spans 1 column) */}
-                <div className="premium-card bg-gradient-to-b from-surface to-error-muted/30 border-error/20 flex flex-col justify-between">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-full bg-error-muted flex items-center justify-center text-error">
-                            <Activity className="w-5 h-5" />
-                        </div>
-                        <h3 className="font-semibold text-textPrimary">Failed Runs</h3>
-                    </div>
-                    
+                {/* Failed Runs */}
+                <div className="stat-card flex flex-col justify-between">
                     <div>
-                        <h2 className="text-5xl font-display font-bold text-error mb-2">
-                            {stats?.failed_runs || 0}
-                        </h2>
-                        <p className="text-sm text-textSecondary">
-                            Requires attention
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-[var(--radius-md)] bg-error/10 flex items-center justify-center text-error">
+                                <Activity className="w-4 h-4" />
+                            </div>
+                            <div className="stat-card-label">Failed Runs</div>
+                        </div>
+                        <div className="stat-card-value">{stats?.failed_runs || 0}</div>
+                        <p className="text-sm text-textSecondary mt-1">
+                            {stats?.failed_runs ? 'Needs attention' : 'All clear'}
                         </p>
                     </div>
-                    
                     {stats?.failed_runs ? (
-                        <button className="btn btn-ghost w-full mt-6 border border-error/20 text-error hover:bg-error hover:text-white">
+                        <Link href="/writer?status=failed" className="btn btn-ghost btn-sm w-full mt-4 border border-border text-textSecondary hover:text-error hover:border-error/30 transition-colors">
                             Review Errors
-                        </button>
+                        </Link>
                     ) : null}
                 </div>
-
             </div>
         </div>
     );
