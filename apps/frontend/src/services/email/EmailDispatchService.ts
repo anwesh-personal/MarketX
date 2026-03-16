@@ -42,6 +42,8 @@ export class EmailDispatchService {
 
   /**
    * Send a single transactional email via the org's active provider.
+   * Queues mastery agent decisions (contact, timing, angle, pacing) async
+   * so the learning loop can track what was decided for each send.
    */
   async send(orgId: string, params: SendEmailParams): Promise<DispatchResult> {
     const { adapter, providerId, error: provErr } = await this.loadAdapter(orgId)
@@ -49,7 +51,6 @@ export class EmailDispatchService {
 
     const result = await adapter.sendEmail(params)
 
-    // Log send event to signal_event
     if (result.success) {
       await this.logSignalEvent({
         orgId,
@@ -59,6 +60,8 @@ export class EmailDispatchService {
         messageId:  result.messageId,
         trackingTags: params.trackingTags,
       })
+
+      this.queuePreSendDecisions(orgId, params, result.messageId)
     }
 
     return { success: result.success, messageId: result.messageId, provider: providerId, error: result.error }
@@ -190,6 +193,44 @@ export class EmailDispatchService {
     })
 
     return { adapter, providerId: providerType, error: null }
+  }
+
+  /**
+   * Queue mastery agent decisions after a send for audit + learning.
+   * Non-blocking: fire-and-forget, errors logged but never block send.
+   */
+  private queuePreSendDecisions(orgId: string, params: SendEmailParams, messageId?: string) {
+    try {
+      const { Queue } = require('bullmq')
+      const connectionOptions = process.env.REDIS_URL
+        ? { url: process.env.REDIS_URL }
+        : { host: process.env.REDIS_HOST || 'localhost', port: parseInt(process.env.REDIS_PORT || '6379') }
+
+      const queue = new Queue('mastery-agent', { connection: connectionOptions, prefix: 'axiom:' })
+
+      const tags = params.trackingTags || {}
+      const email = Array.isArray(params.to) ? params.to[0] : params.to
+
+      queue.add('contact_decision', {
+        agentType: 'contact_decision',
+        orgId,
+        input: { email, beliefId: tags.beliefId, icpId: tags.icpId },
+      }, { jobId: `presend-contact-${orgId}-${messageId ?? Date.now()}` }).catch(() => {})
+
+      queue.add('angle_selection', {
+        agentType: 'angle_selection',
+        orgId,
+        input: { beliefId: tags.beliefId, icpId: tags.icpId, offerId: tags.offerId },
+      }, { jobId: `presend-angle-${orgId}-${messageId ?? Date.now()}` }).catch(() => {})
+
+      queue.add('send_pacing', {
+        agentType: 'send_pacing',
+        orgId,
+        input: { email },
+      }, { jobId: `presend-pacing-${orgId}-${messageId ?? Date.now()}` }).catch(() => {})
+    } catch {
+      // Redis unavailable — don't block the send
+    }
   }
 
   private async logSignalEvent(params: {

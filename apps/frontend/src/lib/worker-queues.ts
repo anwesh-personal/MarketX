@@ -15,6 +15,9 @@ export enum QueueName {
     WORKFLOW_EXECUTION = 'workflow-execution',
     ENGINE_EXECUTION = 'engine-execution',
     SCHEDULED_TASK = 'scheduled-task',
+
+    // Mastery Agents (strategic decisions)
+    MASTERY_AGENT = 'mastery-agent',
 }
 
 // Support REDIS_URL (Railway format) or separate host/port/password
@@ -51,6 +54,7 @@ let _queues: {
     workflowExecution: Queue
     engineExecution: Queue
     scheduledTask: Queue
+    masteryAgent: Queue
 } | null = null
 
 function getQueues() {
@@ -132,12 +136,21 @@ function getQueues() {
                 ...defaultOptions,
                 defaultJobOptions: {
                     ...defaultOptions.defaultJobOptions,
-                    priority: 2, // Medium priority - scheduled tasks
+                    priority: 2,
                     attempts: 5,
                     backoff: {
                         type: 'exponential',
-                        delay: 60000, // Longer backoff for scheduled tasks
+                        delay: 60000,
                     },
+                },
+            }),
+
+            masteryAgent: new Queue(QueueName.MASTERY_AGENT, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1,
+                    attempts: 3,
                 },
             }),
         }
@@ -156,13 +169,14 @@ export const queues = new Proxy({} as {
     workflowExecution: Queue
     engineExecution: Queue
     scheduledTask: Queue
+    masteryAgent: Queue
 }, {
     get(target, prop: string) {
         const actualQueues = getQueues()
         return actualQueues[prop as keyof typeof actualQueues]
     },
     ownKeys() {
-        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning', 'workflowExecution', 'engineExecution', 'scheduledTask']
+        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning', 'workflowExecution', 'engineExecution', 'scheduledTask', 'masteryAgent']
     },
     getOwnPropertyDescriptor(target, prop) {
         return {

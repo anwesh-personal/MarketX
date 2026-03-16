@@ -45,6 +45,14 @@ function getLearningQueue(): Queue | null {
   }
 }
 
+function getMasteryQueue(): Queue | null {
+  try {
+    return new Queue('mastery-agent', { connection: getRedisConfig(), prefix: 'axiom:' })
+  } catch {
+    return null
+  }
+}
+
 // Postgres unique_violation
 const PG_UNIQUE_VIOLATION = '23505'
 
@@ -181,6 +189,31 @@ export async function POST(
             eventTypes: [...new Set(highValue.map((e) => e.type))],
           },
           { jobId: `webhook-${orgId}-${Date.now()}` }
+        )
+      }
+    }
+  }
+
+  // Queue mastery agent jobs for reply classification (reply_meaning agent)
+  const replyEvents = eventsWithOrg.filter((e) => e.type === 'reply')
+  if (replyEvents.length > 0) {
+    const masteryQueue = getMasteryQueue()
+    if (masteryQueue) {
+      for (const evt of replyEvents) {
+        await masteryQueue.add(
+          'reply_meaning',
+          {
+            agentType: 'reply_meaning' as const,
+            orgId: evt.orgId!,
+            input: {
+              replyBody: evt.replyBody ?? '',
+              senderEmail: evt.email,
+              beliefId: evt.beliefId,
+              messageId: evt.messageId,
+              campaignId: evt.campaignId,
+            },
+          },
+          { jobId: `reply-classify-${evt.orgId}-${evt.messageId ?? Date.now()}` }
         )
       }
     }

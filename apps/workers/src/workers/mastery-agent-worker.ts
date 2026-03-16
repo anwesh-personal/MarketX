@@ -157,15 +157,30 @@ async function processMasteryAgentJob(job: Job<MasteryAgentJob>): Promise<Master
 
 async function loadAgentConfig(agentType: MasteryAgentType, orgId: string) {
     if (!supabase) return null
-    const { data } = await supabase
+
+    // mastery_agent_configs uses agent_key (not agent_type) and partner_id (not org_id)
+    // Try org-level first, then global fallback
+    const { data: orgConfig } = await supabase
         .from('mastery_agent_configs')
         .select('*')
-        .eq('agent_type', agentType)
-        .eq('org_id', orgId)
+        .eq('agent_key', agentType)
+        .eq('partner_id', orgId)
         .eq('is_active', true)
         .limit(1)
-        .single()
-    return data
+        .maybeSingle()
+
+    if (orgConfig) return orgConfig
+
+    const { data: globalConfig } = await supabase
+        .from('mastery_agent_configs')
+        .select('*')
+        .eq('agent_key', agentType)
+        .eq('scope', 'global')
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle()
+
+    return globalConfig
 }
 
 async function runAgentDecision(
