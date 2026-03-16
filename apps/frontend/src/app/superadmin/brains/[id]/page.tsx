@@ -8,6 +8,7 @@ import {
     Info, ToggleLeft, ToggleRight, Loader2, Eye, EyeOff
 } from 'lucide-react'
 import { BrainBackground } from '@/components/BrainBackground'
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 // ============================================================
 // TYPES
@@ -64,6 +65,7 @@ const TIER_LABEL: Record<string, string> = { echii: 'Basic', pulz: 'Medium', qua
 // ============================================================
 
 export default function BrainTemplatePage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const params  = useParams()
     const router  = useRouter()
     const id      = params.id as string
@@ -112,10 +114,10 @@ export default function BrainTemplatePage() {
         setError(null)
         try {
             const [tmplRes, layersRes, toolsRes, orgsRes] = await Promise.all([
-                fetch(`/api/superadmin/brains/${id}`),
-                fetch('/api/superadmin/prompt-layers'),
-                fetch('/api/superadmin/brain-tools'),
-                fetch('/api/superadmin/organizations'),
+                fetchWithAuth(`/api/superadmin/brains/${id}`),
+                fetchWithAuth('/api/superadmin/prompt-layers'),
+                fetchWithAuth('/api/superadmin/brain-tools'),
+                fetchWithAuth('/api/superadmin/organizations'),
             ])
 
             if (!tmplRes.ok) throw new Error('Failed to load template')
@@ -157,7 +159,7 @@ export default function BrainTemplatePage() {
 
     const loadDeployments = useCallback(async () => {
         try {
-            const res = await fetch(`/api/superadmin/brains/${id}/deployments`)
+            const res = await fetchWithAuth(`/api/superadmin/brains/${id}/deployments`)
             if (res.ok) {
                 const data = await res.json()
                 setDeployments(data.deployments ?? [])
@@ -174,7 +176,7 @@ export default function BrainTemplatePage() {
         setIsSaving(true)
         setError(null)
         try {
-            const res = await fetch(`/api/superadmin/brains/${id}`, {
+            const res = await fetchWithAuth(`/api/superadmin/brains/${id}`, {
                 method:  'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -215,7 +217,7 @@ export default function BrainTemplatePage() {
         setDeployResult(null)
         setError(null)
         try {
-            const res = await fetch('/api/superadmin/agents/deploy', {
+            const res = await fetchWithAuth('/api/superadmin/agents/deploy', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

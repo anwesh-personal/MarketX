@@ -11,6 +11,7 @@ import {
 import { useTheme } from '@/contexts/ThemeContext'
 import { cn } from '@/lib/utils'
 import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces'
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 // =============================================================================
 // TYPES
@@ -93,6 +94,7 @@ function formatTimeAgo(ts: number): string {
 // =============================================================================
 
 export default function RedisManagementPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const { mode } = useTheme()
     const [status, setStatus] = useState<RedisStatus | null>(null)
     const [isLoading, setIsLoading] = useState(true)
@@ -110,7 +112,7 @@ export default function RedisManagementPage() {
     const loadStatus = useCallback(async (showRefreshing = true) => {
         if (showRefreshing) setIsRefreshing(true)
         try {
-            const response = await fetch('/api/superadmin/redis/status')
+            const response = await fetchWithAuth('/api/superadmin/redis/status')
             if (response.ok) {
                 const data = await response.json()
                 setStatus(data)
@@ -159,7 +161,7 @@ export default function RedisManagementPage() {
     const executeAction = async (queueName: string, action: string) => {
         setActionLoading(`${queueName}-${action}`)
         try {
-            const response = await fetch('/api/superadmin/redis/action', {
+            const response = await fetchWithAuth('/api/superadmin/redis/action', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ queueName, action })
@@ -181,7 +183,7 @@ export default function RedisManagementPage() {
     // Retry failed job
     const retryJob = async (jobId: string, queueName: string) => {
         try {
-            const response = await fetch(`/api/superadmin/redis/jobs/${jobId}/retry`, {
+            const response = await fetchWithAuth(`/api/superadmin/redis/jobs/${jobId}/retry`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ queueName })

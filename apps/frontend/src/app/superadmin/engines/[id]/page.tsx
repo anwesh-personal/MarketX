@@ -43,7 +43,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
     const fetchEngine = async () => {
         if (!token) return;
         try {
-            const res = await fetch(`/api/superadmin/engines/${params.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            const res = await fetchWithAuth(`/api/superadmin/engines/${params.id}`, { headers: { Authorization: `Bearer ${token}` } });
             const data = await res.json();
             if (res.ok) {
                 setEngine(data.engine);
@@ -107,7 +107,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
 
         try {
             // Queue execution
-            const response = await fetch(`/api/engines/${engine.id}/execute`, {
+            const response = await fetchWithAuth(`/api/engines/${engine.id}/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -134,7 +134,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
 
             pollingRef.current = setInterval(async () => {
                 try {
-                    const statusRes = await fetch(`/api/engines/executions/${executionId}`);
+                    const statusRes = await fetchWithAuth(`/api/engines/executions/${executionId}`);
                     const statusData = await statusRes.json();
 
                     if (statusData.status === 'completed') {

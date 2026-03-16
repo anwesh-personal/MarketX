@@ -22,6 +22,7 @@ import {
     X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 // Types
 interface AIModel {
@@ -61,6 +62,7 @@ const PROVIDER_CONFIG: Record<string, { name: string; color: string; bgColor: st
 };
 
 export default function AIModelsPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [models, setModels] = useState<AIModel[]>([]);
     const [providers, setProviders] = useState<AIProvider[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -112,12 +114,12 @@ export default function AIModelsPage() {
         setIsLoading(true);
         try {
             // Load ALL models (not just active)
-            const modelsRes = await fetch('/api/superadmin/ai-models');
+            const modelsRes = await fetchWithAuth('/api/superadmin/ai-models');
             const modelsData = await modelsRes.json();
             setModels(modelsData.models || []);
 
             // Load providers for discovery
-            const providersRes = await fetch('/api/superadmin/ai-providers');
+            const providersRes = await fetchWithAuth('/api/superadmin/ai-providers');
             const providersData = await providersRes.json();
             setProviders(providersData.providers || []);
         } catch (error) {
@@ -130,7 +132,7 @@ export default function AIModelsPage() {
     const handleDiscoverModels = async (providerId: string, providerName: string) => {
         setIsDiscovering(providerId);
         try {
-            const res = await fetch('/api/superadmin/ai-models/discover', {
+            const res = await fetchWithAuth('/api/superadmin/ai-models/discover', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ provider_id: providerId }),
@@ -162,7 +164,7 @@ export default function AIModelsPage() {
         setShowAllModelsFor(providerId);
 
         try {
-            const res = await fetch('/api/superadmin/ai-models/list-all', {
+            const res = await fetchWithAuth('/api/superadmin/ai-models/list-all', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ provider_id: providerId }),
@@ -189,7 +191,7 @@ export default function AIModelsPage() {
         setAddingModelId(modelId);
 
         try {
-            const res = await fetch('/api/superadmin/ai-models/add-model', {
+            const res = await fetchWithAuth('/api/superadmin/ai-models/add-model', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -233,7 +235,7 @@ export default function AIModelsPage() {
                 return;
             }
 
-            const res = await fetch('/api/superadmin/ai-chat', {
+            const res = await fetchWithAuth('/api/superadmin/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -248,7 +250,7 @@ export default function AIModelsPage() {
             const passed = res.ok && data.content;
 
             // Update model test status
-            await fetch('/api/superadmin/ai-models', {
+            await fetchWithAuth('/api/superadmin/ai-models', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -270,7 +272,7 @@ export default function AIModelsPage() {
 
     const handleToggleActive = async (model: AIModel) => {
         try {
-            await fetch('/api/superadmin/ai-models', {
+            await fetchWithAuth('/api/superadmin/ai-models', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -312,7 +314,7 @@ export default function AIModelsPage() {
         setPlaygroundLoading(true);
 
         try {
-            const res = await fetch('/api/superadmin/ai-chat', {
+            const res = await fetchWithAuth('/api/superadmin/ai-chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

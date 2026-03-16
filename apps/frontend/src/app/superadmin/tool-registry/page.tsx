@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Wrench, AlertCircle, ToggleLeft, ToggleRight, Loader2, ChevronDown, Code2, Tag } from 'lucide-react'
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 interface BrainTool {
     name: string
@@ -29,6 +30,7 @@ const TIER_COLORS: Record<string, string> = {
 }
 
 export default function ToolRegistryPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [tools, setTools]         = useState<BrainTool[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError]         = useState<string | null>(null)
@@ -39,7 +41,7 @@ export default function ToolRegistryPage() {
         setIsLoading(true)
         setError(null)
         try {
-            const res = await fetch('/api/superadmin/brain-tools')
+            const res = await fetchWithAuth('/api/superadmin/brain-tools')
             if (!res.ok) throw new Error('Failed to load tools')
             const data = await res.json()
             setTools(data.tools ?? [])
@@ -55,7 +57,7 @@ export default function ToolRegistryPage() {
     const toggleEnabled = async (tool: BrainTool) => {
         setToggling(tool.name)
         try {
-            const res = await fetch(`/api/superadmin/brain-tools/${tool.name}`, {
+            const res = await fetchWithAuth(`/api/superadmin/brain-tools/${tool.name}`, {
                 method:  'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ is_enabled: !tool.is_enabled }),

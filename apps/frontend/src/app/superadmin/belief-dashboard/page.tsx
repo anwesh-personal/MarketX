@@ -7,6 +7,7 @@ import {
     BarChart3, Zap, Target, Clock, AlertTriangle, CheckCircle, X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 const LADDER = ['HYP', 'TEST', 'SW', 'IW', 'RW', 'GW'] as const;
 const LADDER_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ interface BeliefDetail {
 }
 
 export default function BeliefDashboardPage() {
+    const { fetchWithAuth } = useSuperadminAuth();
     const [beliefs, setBeliefs] = useState<Belief[]>([]);
     const [statusDist, setStatusDist] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(true);
@@ -51,7 +53,7 @@ export default function BeliefDashboardPage() {
             const params = new URLSearchParams();
             if (filterStatus !== 'all') params.set('status', filterStatus);
             if (filterOrg) params.set('org_id', filterOrg);
-            const res = await fetch(`/api/superadmin/beliefs?${params}`);
+            const res = await fetchWithAuth(`/api/superadmin/beliefs?${params}`);
             const data = await res.json();
             setBeliefs(data.beliefs ?? []);
             setStatusDist(data.status_distribution ?? {});
@@ -64,7 +66,7 @@ export default function BeliefDashboardPage() {
     const loadDetail = async (id: string) => {
         setDetailLoading(true);
         try {
-            const res = await fetch(`/api/superadmin/beliefs?belief_id=${id}`);
+            const res = await fetchWithAuth(`/api/superadmin/beliefs?belief_id=${id}`);
             const data = await res.json();
             setSelectedBelief(data);
         } catch { toast.error('Failed to load belief detail'); }
@@ -74,7 +76,7 @@ export default function BeliefDashboardPage() {
     const handlePromote = async (beliefId: string, target?: string, force?: boolean) => {
         setPromoting(true);
         try {
-            const res = await fetch('/api/beliefs/promote', {
+            const res = await fetchWithAuth('/api/beliefs/promote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ belief_id: beliefId, target_status: target, force }),
@@ -93,7 +95,7 @@ export default function BeliefDashboardPage() {
 
     const handleBatchPromotion = async () => {
         try {
-            const res = await fetch('/api/beliefs/promote/batch', {
+            const res = await fetchWithAuth('/api/beliefs/promote/batch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ org_id: filterOrg || undefined }),
