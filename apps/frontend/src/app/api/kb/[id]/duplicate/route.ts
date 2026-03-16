@@ -4,26 +4,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
 
-const supabaseAdmin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-interface RouteParams {
-    params: { id: string }
-}
+interface RouteParams { params: { id: string } }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
-        const supabase = createClient()
-        const { data: { user }, error: authErr } = await supabase.auth.getUser()
-        if (authErr || !user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-
-        const { data: userData } = await supabaseAdmin.from('users').select('org_id').eq('id', user.id).single()
-        if (!userData?.org_id) return NextResponse.json({ success: false, error: 'No org' }, { status: 403 })
+        const ctx = await getAuthContext()
+        if (!ctx) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
         const body = await request.json()
         const { newName } = body
@@ -32,7 +20,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             .from('knowledge_bases')
             .select('*')
             .eq('id', params.id)
-            .eq('org_id', userData.org_id)
+            .eq('org_id', ctx.orgId)
             .single()
 
         if (fetchError) {
@@ -40,18 +28,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             throw fetchError
         }
 
-        const duplicatedData = { ...original.data }
-        duplicatedData.kb_version = '1.0.0'
+        const duplicatedData = { ...original.data, kb_version: '1.0.0' }
 
         const { data, error } = await supabaseAdmin
             .from('knowledge_bases')
             .insert({
                 name: newName || `${original.name} (Copy)`,
-                org_id: userData.org_id,
+                org_id: ctx.orgId,
                 data: duplicatedData,
                 version: 1,
                 is_active: true,
-                created_by: user.id,
+                created_by: ctx.userId,
             })
             .select()
             .single()

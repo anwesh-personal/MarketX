@@ -35,6 +35,7 @@ export default function WriterPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [viewingRun, setViewingRun] = useState<any>(null);
 
     useEffect(() => {
         checkAuth();
@@ -204,17 +205,16 @@ export default function WriterPage() {
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             className="btn btn-ghost btn-icon"
-                                            title="View in execution log"
+                                            title="View output"
                                             onClick={async () => {
-                                                const { data } = await supabase
-                                                    .from('engine_run_logs')
-                                                    .select('id, output_data')
-                                                    .eq('id', run.id)
-                                                    .maybeSingle()
-                                                if (data?.output_data) {
-                                                    const blob = new Blob([JSON.stringify(data.output_data, null, 2)], { type: 'application/json' })
-                                                    const url = URL.createObjectURL(blob)
-                                                    window.open(url, '_blank')
+                                                try {
+                                                    const res = await fetch(`/api/runs/${run.id}`)
+                                                    const data = await res.json()
+                                                    if (data.execution?.output_data) {
+                                                        setViewingRun(data)
+                                                    }
+                                                } catch (e) {
+                                                    console.error('Failed to load run:', e)
                                                 }
                                             }}
                                         >
@@ -225,17 +225,18 @@ export default function WriterPage() {
                                                 className="btn btn-ghost btn-icon"
                                                 title="Download output"
                                                 onClick={async () => {
-                                                    const { data } = await supabase
-                                                        .from('engine_run_logs')
-                                                        .select('output_data')
-                                                        .eq('id', run.id)
-                                                        .maybeSingle()
-                                                    if (data?.output_data) {
-                                                        const blob = new Blob([JSON.stringify(data.output_data, null, 2)], { type: 'application/json' })
-                                                        const a = document.createElement('a')
-                                                        a.href = URL.createObjectURL(blob)
-                                                        a.download = `run-${run.id.slice(0, 8)}.json`
-                                                        a.click()
+                                                    try {
+                                                        const res = await fetch(`/api/runs/${run.id}`)
+                                                        const data = await res.json()
+                                                        if (data.execution?.output_data) {
+                                                            const blob = new Blob([JSON.stringify(data.execution.output_data, null, 2)], { type: 'application/json' })
+                                                            const a = document.createElement('a')
+                                                            a.href = URL.createObjectURL(blob)
+                                                            a.download = `run-${run.id.slice(0, 8)}.json`
+                                                            a.click()
+                                                        }
+                                                    } catch (e) {
+                                                        console.error('Failed to download:', e)
                                                     }
                                                 }}
                                             >
@@ -247,8 +248,12 @@ export default function WriterPage() {
                                             title="Delete run"
                                             onClick={async () => {
                                                 if (!confirm('Delete this run?')) return
-                                                await supabase.from('runs').delete().eq('id', run.id)
-                                                setRuns(prev => prev.filter(r => r.id !== run.id))
+                                                try {
+                                                    const res = await fetch(`/api/runs/${run.id}`, { method: 'DELETE' })
+                                                    if (res.ok) setRuns(prev => prev.filter(r => r.id !== run.id))
+                                                } catch (e) {
+                                                    console.error('Failed to delete:', e)
+                                                }
                                             }}
                                         >
                                             <Trash2 className="w-5 h-5" />
@@ -278,6 +283,40 @@ export default function WriterPage() {
                             <span>Create First Run</span>
                         </Link>
                     )}
+                </div>
+            )}
+            {/* Run Detail Modal */}
+            {viewingRun && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={() => setViewingRun(null)} />
+                    <div className="relative z-10 w-full max-w-2xl max-h-[80vh] bg-surface border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+                            <div>
+                                <h2 className="font-bold text-textPrimary text-lg">Execution Output</h2>
+                                <p className="text-xs text-textTertiary">
+                                    Status: {viewingRun.execution?.status || viewingRun.run?.status || 'unknown'}
+                                    {viewingRun.execution?.completed_at && ` · Completed ${new Date(viewingRun.execution.completed_at).toLocaleString()}`}
+                                </p>
+                            </div>
+                            <button onClick={() => setViewingRun(null)} className="p-2 hover:bg-surfaceHover rounded-lg transition-colors">
+                                <XCircle className="w-5 h-5 text-textTertiary" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6">
+                            {viewingRun.execution?.error_message && (
+                                <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm">
+                                    {viewingRun.execution.error_message}
+                                </div>
+                            )}
+                            {viewingRun.execution?.output_data ? (
+                                <pre className="text-sm text-textSecondary whitespace-pre-wrap font-mono bg-background rounded-xl p-4 border border-border overflow-x-auto">
+                                    {JSON.stringify(viewingRun.execution.output_data, null, 2)}
+                                </pre>
+                            ) : (
+                                <p className="text-sm text-textTertiary text-center py-8">No output data available yet.</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

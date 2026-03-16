@@ -106,14 +106,13 @@ export default function BrainChatPage() {
         }
     }, [input])
 
-    // Send message
-    const sendMessage = async () => {
-        if (!input.trim() || isLoading) return
+    const sendMessageWithContent = async (content: string) => {
+        if (!content.trim() || isLoading) return
 
         const userMessage: Message = {
             id: crypto.randomUUID(),
             role: 'user',
-            content: input,
+            content,
             timestamp: new Date()
         }
 
@@ -126,7 +125,7 @@ export default function BrainChatPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    message: input,
+                    message: content,
                     conversationId: conversationId || undefined,
                     stream: true
                 })
@@ -208,6 +207,19 @@ export default function BrainChatPage() {
         } finally {
             setIsLoading(false)
         }
+    }
+
+    const sendMessage = () => sendMessageWithContent(input)
+
+    const handleRegenerate = () => {
+        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
+        if (!lastUserMsg || isLoading) return
+        setMessages(prev => {
+            const lastAssistantIdx = prev.map(m => m.role).lastIndexOf('assistant')
+            if (lastAssistantIdx >= 0) return prev.filter((_, i) => i !== lastAssistantIdx)
+            return prev
+        })
+        sendMessageWithContent(lastUserMsg.content)
     }
 
     // Push conversation to selected brain
@@ -352,14 +364,7 @@ export default function BrainChatPage() {
                         messages.map((message, idx) => (
                             <MessageBubble key={message.id} message={message} onRegenerate={
                                 message.role === 'assistant' && idx === messages.length - 1 && !isLoading
-                                    ? () => {
-                                        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')
-                                        if (lastUserMsg) {
-                                            setMessages(prev => prev.filter(m => m.id !== message.id))
-                                            setInput(lastUserMsg.content)
-                                            setTimeout(() => { const el = document.querySelector('textarea'); if (el) (el as HTMLTextAreaElement).form?.requestSubmit() }, 50)
-                                        }
-                                    }
+                                    ? handleRegenerate
                                     : undefined
                             } />
                         ))

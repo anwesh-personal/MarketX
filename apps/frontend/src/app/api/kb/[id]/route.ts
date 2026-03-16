@@ -1,36 +1,13 @@
 /**
- * KB Detail API Routes - Individual KB operations
+ * KB Detail API Routes
  * Auth: cookie-based Supabase auth + ownership verification
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
 import { KnowledgeBaseSchema } from '@/lib/kb'
 
-const supabaseAdmin = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-async function getAuthContext() {
-    const supabase = createClient()
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error || !user) return null
-
-    const { data: userData } = await supabaseAdmin
-        .from('users')
-        .select('org_id')
-        .eq('id', user.id)
-        .single()
-
-    if (!userData?.org_id) return null
-    return { userId: user.id, orgId: userData.org_id }
-}
-
-interface RouteParams {
-    params: { id: string }
-}
+interface RouteParams { params: { id: string } }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
@@ -45,9 +22,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             .single()
 
         if (error) {
-            if (error.code === 'PGRST116') {
-                return NextResponse.json({ success: false, error: 'KB not found' }, { status: 404 })
-            }
+            if (error.code === 'PGRST116') return NextResponse.json({ success: false, error: 'KB not found' }, { status: 404 })
             throw error
         }
 
@@ -69,10 +44,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (kbData) {
             const result = KnowledgeBaseSchema.safeParse(kbData)
             if (!result.success) {
-                return NextResponse.json(
-                    { success: false, error: 'Invalid KB data', details: result.error.issues },
-                    { status: 400 }
-                )
+                return NextResponse.json({ success: false, error: 'Invalid KB data', details: result.error.issues }, { status: 400 })
             }
         }
 
@@ -84,9 +56,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             .single()
 
         if (fetchError) {
-            if (fetchError.code === 'PGRST116') {
-                return NextResponse.json({ success: false, error: 'KB not found or access denied' }, { status: 404 })
-            }
+            if (fetchError.code === 'PGRST116') return NextResponse.json({ success: false, error: 'KB not found or access denied' }, { status: 404 })
             throw fetchError
         }
 
@@ -108,16 +78,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (error) throw error
 
         if (kbData) {
-            try {
-                await supabaseAdmin.from('kb_versions').insert({
-                    kb_id: params.id,
-                    version: data.version,
-                    data: current.data,
-                    created_at: new Date().toISOString(),
-                })
-            } catch (err: any) {
-                console.warn('Version history not saved:', err.message)
-            }
+            await supabaseAdmin.from('kb_versions').insert({
+                kb_id: params.id, version: data.version, data: current.data, created_at: new Date().toISOString(),
+            }).then(() => {}).catch((err: any) => console.warn('Version history not saved:', err.message))
         }
 
         return NextResponse.json({ success: true, kb: data })
