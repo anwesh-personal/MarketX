@@ -116,6 +116,35 @@ function serializeNodeForDB(node: Node<V2NodeData>): SerializedNode {
     };
 }
 
+/** Detect if the workflow graph has a directed cycle (invalid for execution). */
+function graphHasCycle(nodes: Node<V2NodeData>[], edges: Edge[]): boolean {
+    const idSet = new Set(nodes.map(n => n.id));
+    const adj = new Map<string, string[]>();
+    for (const n of nodes) adj.set(n.id, []);
+    for (const e of edges) {
+        if (idSet.has(e.source) && idSet.has(e.target)) {
+            adj.get(e.source)!.push(e.target);
+        }
+    }
+    const visiting = new Set<string>();
+    const visited = new Set<string>();
+    function dfs(id: string): boolean {
+        if (visited.has(id)) return false;
+        if (visiting.has(id)) return true;
+        visiting.add(id);
+        for (const to of adj.get(id)!) {
+            if (dfs(to)) return true;
+        }
+        visiting.delete(id);
+        visited.add(id);
+        return false;
+    }
+    for (const id of nodes.map(n => n.id)) {
+        if (!visited.has(id) && dfs(id)) return true;
+    }
+    return false;
+}
+
 // ============================================================================
 // NODE CONFIGURATION MODAL (Inline V2 Version)
 // ============================================================================
@@ -596,6 +625,17 @@ function WorkflowManagerInner() {
     const [isExecuting, setIsExecuting] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
+    // Execution result modal: show status/output after run
+    const [executionModal, setExecutionModal] = useState<{ executionId: string } | null>(null);
+    const [executionResult, setExecutionResult] = useState<{
+        status: string;
+        output?: unknown;
+        error?: string;
+        durationMs?: number;
+        tokensUsed?: number;
+        cost?: number;
+    } | null>(null);
+
     // Node Configuration state
     const [configuringNode, setConfiguringNode] = useState<{
         id: string;
@@ -805,6 +845,45 @@ function WorkflowManagerInner() {
         }
     }, [currentFlowId, currentFlowName, nodes, edges, isSaving, fetchWorkflows]);
 
+    // Poll execution status when modal is open
+    const executionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    useEffect(() => {
+        if (!executionModal?.executionId) return;
+
+        const poll = async () => {
+            try {
+                const res = await superadminFetch(`/api/superadmin/workflows/executions/${executionModal.executionId}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                setExecutionResult({
+                    status: data.status,
+                    output: data.output,
+                    error: data.error,
+                    durationMs: data.durationMs,
+                    tokensUsed: data.tokensUsed,
+                    cost: data.cost,
+                });
+                if (data.status === 'completed' || data.status === 'failed') {
+                    if (executionPollRef.current) {
+                        clearInterval(executionPollRef.current);
+                        executionPollRef.current = null;
+                    }
+                }
+            } catch {
+                // ignore poll errors
+            }
+        };
+
+        poll();
+        executionPollRef.current = setInterval(poll, 2000);
+        return () => {
+            if (executionPollRef.current) {
+                clearInterval(executionPollRef.current);
+                executionPollRef.current = null;
+            }
+        };
+    }, [executionModal?.executionId]);
+
     // Execute workflow
     const handleExecuteFlow = useCallback(async () => {
         if (!currentFlowId || isExecuting) return;
@@ -815,7 +894,15 @@ function WorkflowManagerInner() {
             return;
         }
 
+        // Block execution if graph has a cycle
+        if (graphHasCycle(nodes, edges)) {
+            toast.error('Workflow contains a cycle. Remove cycles before executing.');
+            return;
+        }
+
         setIsExecuting(true);
+        setExecutionModal(null);
+        setExecutionResult(null);
         const loadingToast = toast.loading('Executing workflow...');
 
         try {
@@ -826,17 +913,15 @@ function WorkflowManagerInner() {
 
             const result = await response.json();
 
-            if (response.ok && result.success) {
-                const msg = result.status === 'queued'
-                    ? `Execution queued successfully! ID: ${result.executionId}`
-                    : `Workflow executed successfully!\n` +
-                      (result.durationMs ? `Duration: ${(result.durationMs / 1000).toFixed(2)}s` : '') +
-                      (result.tokenUsage?.totalTokens ? ` | Tokens: ${result.tokenUsage.totalTokens}` : '');
-                toast.success(msg, { id: loadingToast, duration: 5000 });
+            if (response.ok && result.success && result.executionId) {
+                toast.success('Execution queued. Watch status below.', { id: loadingToast, duration: 3000 });
+                setExecutionModal({ executionId: result.executionId });
+                setExecutionResult({ status: 'started' });
+            } else if (response.ok && result.success) {
+                toast.success('Workflow executed successfully.', { id: loadingToast, duration: 5000 });
             } else if (response.status === 503) {
-                // Backend not running
                 toast.error(
-                    'Backend server not running. Start it with: npm run dev:backend',
+                    'Execution service unavailable. Ensure Redis and workers are running.',
                     { id: loadingToast, duration: 8000 }
                 );
             } else if (response.status === 404) {
@@ -852,7 +937,7 @@ function WorkflowManagerInner() {
         } finally {
             setIsExecuting(false);
         }
-    }, [currentFlowId, isExecuting, hasUnsavedChanges]);
+    }, [currentFlowId, isExecuting, hasUnsavedChanges, nodes, edges]);
 
     // Delete workflow
     const handleDeleteWorkflow = useCallback(async (workflowId: string) => {
@@ -1162,6 +1247,54 @@ function WorkflowManagerInner() {
                     onClose={() => setConfiguringNode(null)}
                     onSave={handleSaveNodeConfig}
                 />
+            )}
+
+            {/* Execution Result Modal */}
+            {executionModal && (
+                <div className="wm-execution-modal-overlay" onClick={() => setExecutionModal(null)} role="dialog" aria-modal="true" aria-labelledby="execution-modal-title">
+                    <div className="wm-execution-modal" onClick={e => e.stopPropagation()}>
+                        <div className="wm-execution-modal-header">
+                            <h3 id="execution-modal-title">Execution status</h3>
+                            <button type="button" className="wm-execution-modal-close" onClick={() => setExecutionModal(null)} aria-label="Close execution status">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="wm-execution-modal-body">
+                            <div className="wm-execution-id">
+                                ID: <code>{executionModal.executionId}</code>
+                            </div>
+                            {executionResult && (
+                                <>
+                                    <div className="wm-execution-status-row" aria-live="polite" aria-atomic="true">
+                                        <span className="wm-execution-status-label">Status</span>
+                                        <span className={`wm-execution-status-badge wm-execution-status-${executionResult.status}`} title={`Execution ${executionResult.status}`}>
+                                            {executionResult.status}
+                                        </span>
+                                    </div>
+                                    {(executionResult.durationMs != null || executionResult.tokensUsed != null || executionResult.cost != null) && (
+                                        <div className="wm-execution-meta">
+                                            {executionResult.durationMs != null && <span>Duration: {(executionResult.durationMs / 1000).toFixed(2)}s</span>}
+                                            {executionResult.tokensUsed != null && <span>Tokens: {executionResult.tokensUsed}</span>}
+                                            {executionResult.cost != null && <span>Cost: ${Number(executionResult.cost).toFixed(4)}</span>}
+                                        </div>
+                                    )}
+                                    {executionResult.error && (
+                                        <div className="wm-execution-error">
+                                            <strong>Error</strong>
+                                            <pre>{executionResult.error}</pre>
+                                        </div>
+                                    )}
+                                    {executionResult.output !== undefined && executionResult.output !== null && executionResult.status === 'completed' && (
+                                        <div className="wm-execution-output">
+                                            <strong>Output</strong>
+                                            <pre>{typeof executionResult.output === 'string' ? executionResult.output : JSON.stringify(executionResult.output, null, 2)}</pre>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -38,6 +38,8 @@ export interface V2NodeDefinition {
     inputSchema?: string;
     /** Reference to Zod output schema name in workers/src/schemas/nodes/ */
     outputSchema?: string;
+    /** If true, node is not yet implemented in runtime; show as "Coming soon" and do not allow add */
+    comingSoon?: boolean;
 }
 
 export interface ConfigField {
@@ -425,7 +427,8 @@ const enricherNodes: V2NodeDefinition[] = [
         color: '#EC4899',
         features: ['Profile Data', 'Company Info', 'Job History'],
         capabilities: ['Fetches LinkedIn profiles', 'Gets company data', 'Extracts experience'],
-        defaultConfig: { enrichProfile: true, enrichCompany: false }
+        defaultConfig: { enrichProfile: true, enrichCompany: false },
+        comingSoon: true
     },
     {
         id: 'nd-enrich-crm',
@@ -437,7 +440,8 @@ const enricherNodes: V2NodeDefinition[] = [
         color: '#EC4899',
         features: ['HubSpot', 'Salesforce', 'Pipedrive'],
         capabilities: ['Looks up contacts', 'Fetches deal data', 'Gets company info'],
-        defaultConfig: { crmProvider: 'hubspot', crmObject: 'contact' }
+        defaultConfig: { crmProvider: 'hubspot', crmObject: 'contact' },
+        comingSoon: true
     },
     {
         id: 'nd-enrich-email',
@@ -449,7 +453,8 @@ const enricherNodes: V2NodeDefinition[] = [
         color: '#EC4899',
         features: ['MX Check', 'Deliverability', 'Disposable Detection'],
         capabilities: ['Validates emails', 'Checks deliverability', 'Detects disposable'],
-        defaultConfig: { checkMxRecords: true, rejectInvalid: true }
+        defaultConfig: { checkMxRecords: true, rejectInvalid: true },
+        comingSoon: true
     }
 ];
 

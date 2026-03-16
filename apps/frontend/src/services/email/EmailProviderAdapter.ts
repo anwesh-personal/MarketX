@@ -149,7 +149,7 @@ export type ProviderCategory =
   | 'smtp_relay'     // SMTP delivery: SES, Mailgun, SendGrid — actually sends bytes
 
 export interface EmailProviderAdapter {
-  /** Unique slug: 'mailwizz' | 'mailgun' | 'ses' | 'sendgrid' */
+  /** Unique slug matching email_provider_configs.provider_type */
   readonly id: string
   /** Human-readable name */
   readonly name: string
@@ -198,16 +198,22 @@ export interface EmailProviderAdapter {
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
-import { MailWizzAdapter }  from './providers/MailWizzAdapter'
-import { MailgunAdapter }   from './providers/MailgunAdapter'
-import { SESAdapter }       from './providers/SESAdapter'
-import { SendGridAdapter }  from './providers/SendGridAdapter'
+import { MailWizzAdapter }      from './providers/MailWizzAdapter'
+import { MailgunAdapter }       from './providers/MailgunAdapter'
+import { SESAdapter }           from './providers/SESAdapter'
+import { SendGridAdapter }      from './providers/SendGridAdapter'
+import { GenericSMTPAdapter }   from './providers/GenericSMTPAdapter'
+import { PostmarkAdapter }      from './providers/PostmarkAdapter'
+import { SparkPostAdapter }     from './providers/SparkPostAdapter'
 
 const REGISTRY: Record<string, new () => EmailProviderAdapter> = {
   mailwizz:  MailWizzAdapter,
   mailgun:   MailgunAdapter,
   ses:       SESAdapter,
   sendgrid:  SendGridAdapter,
+  smtp:      GenericSMTPAdapter,
+  postmark:  PostmarkAdapter,
+  sparkpost: SparkPostAdapter,
 }
 
 export function getEmailProviderAdapter(providerId: string): EmailProviderAdapter | null {

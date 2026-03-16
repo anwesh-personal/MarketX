@@ -56,8 +56,9 @@ export function AddNodeModal({ isOpen, onClose, onAddNode }: AddNodeModalProps) 
         return nodes;
     }, [selectedCategory, searchQuery]);
 
-    // Handle node selection
+    // Handle node selection (no-op for coming-soon nodes)
     const handleSelectNode = useCallback((node: V2NodeDefinition) => {
+        if (node.comingSoon) return;
         onAddNode(node);
         onClose();
     }, [onAddNode, onClose]);
@@ -90,6 +91,10 @@ export function AddNodeModal({ isOpen, onClose, onAddNode }: AddNodeModalProps) 
                     transition={{ duration: 0.2 }}
                     className="add-node-modal-backdrop"
                     onClick={handleBackdropClick}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="add-node-modal-title"
+                    aria-describedby="add-node-modal-desc"
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -101,13 +106,13 @@ export function AddNodeModal({ isOpen, onClose, onAddNode }: AddNodeModalProps) 
                         {/* Header */}
                         <div className="add-node-modal-header">
                             <div className="add-node-modal-title">
-                                <Sparkles className="add-node-modal-icon" />
+                                <Sparkles className="add-node-modal-icon" aria-hidden />
                                 <div>
-                                    <h2>Node Palette</h2>
-                                    <p>Choose from {V2_ALL_NODES.length} specialized nodes</p>
+                                    <h2 id="add-node-modal-title">Node Palette</h2>
+                                    <p id="add-node-modal-desc">Choose from {V2_ALL_NODES.length} specialized nodes. Click a card to add it to the canvas.</p>
                                 </div>
                             </div>
-                            <button className="add-node-modal-close" onClick={onClose}>
+                            <button type="button" className="add-node-modal-close" onClick={onClose} aria-label="Close node palette">
                                 <X size={20} />
                             </button>
                         </div>
@@ -182,7 +187,7 @@ export function AddNodeModal({ isOpen, onClose, onAddNode }: AddNodeModalProps) 
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.02, duration: 0.2 }}
-                                            className="add-node-card"
+                                            className={`add-node-card${node.comingSoon ? ' add-node-card--coming-soon' : ''}`}
                                             onClick={() => handleSelectNode(node)}
                                             style={{
                                                 '--node-color': node.color
@@ -195,9 +200,13 @@ export function AddNodeModal({ isOpen, onClose, onAddNode }: AddNodeModalProps) 
                                                 >
                                                     <node.icon size={20} color="white" />
                                                 </div>
-                                                <button className="add-node-card-add">
-                                                    <Plus size={16} />
-                                                </button>
+                                                {node.comingSoon ? (
+                                                    <span className="add-node-card-coming-soon">Coming soon</span>
+                                                ) : (
+                                                    <button className="add-node-card-add">
+                                                        <Plus size={16} />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             <h4 className="add-node-card-name">{node.name}</h4>

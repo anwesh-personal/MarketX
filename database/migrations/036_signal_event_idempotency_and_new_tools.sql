@@ -5,12 +5,18 @@
 BEGIN;
 
 -- ============================================================
--- 1. signal_event — add UNIQUE constraint for webhook idempotency
+-- 1. signal_event — webhook columns + idempotency
 -- ============================================================
--- The unified webhook handler upserts with onConflict on this composite.
--- Without this constraint the upsert throws a Supabase runtime error.
+-- Webhook and EmailDispatchService write source + metadata.
+-- Original table (012) has meta only; we add metadata for provider payload
+-- and source for provider id. Idempotency via unique index on generated key.
 
--- Create a stable idempotency_key column if it doesn't exist
+ALTER TABLE signal_event
+    ADD COLUMN IF NOT EXISTS source TEXT;
+
+ALTER TABLE signal_event
+    ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb;
+
 ALTER TABLE signal_event
     ADD COLUMN IF NOT EXISTS idempotency_key TEXT GENERATED ALWAYS AS (
         COALESCE(partner_id::text, 'global') || ':' ||
@@ -27,10 +33,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS signal_event_idempotency_idx
 -- These are used by brain chat when user asks about performance,
 -- learning, knowledge gaps, or brain health.
 
-INSERT INTO brain_tools (name, description, parameters, is_enabled, min_tier, category) VALUES
+INSERT INTO brain_tools (name, category, description, parameters, handler_function, min_tier, is_enabled) VALUES
 
 (
     'get_campaign_insights',
+    'analysis',
     'Retrieve aggregated email campaign performance metrics for this organization. Returns open rate, click rate, reply rate, bounce rate, total sends, and top-performing beliefs. Use when user asks about campaign performance, email stats, or "how are my emails doing".',
     '{
         "type": "object",
@@ -43,13 +50,14 @@ INSERT INTO brain_tools (name, description, parameters, is_enabled, min_tier, ca
         },
         "required": []
     }'::jsonb,
-    true,
+    'executeGetCampaignInsights',
     'basic',
-    'analytics'
+    true
 ),
 
 (
     'get_self_reflection',
+    'analysis',
     'Retrieve the brain''s recent self-reflection logs and dream cycle narratives. Use when user asks what the brain has been learning, how it is improving, or what insights it has gained recently.',
     '{
         "type": "object",
@@ -62,42 +70,45 @@ INSERT INTO brain_tools (name, description, parameters, is_enabled, min_tier, ca
         },
         "required": []
     }'::jsonb,
-    true,
+    'executeGetSelfReflection',
     'basic',
-    'learning'
+    true
 ),
 
 (
     'get_knowledge_gaps',
+    'retrieval',
     'Retrieve open knowledge gaps that the brain has identified — areas where it lacks information to answer queries well. Use when user asks what they should add to the knowledge base, or what the brain doesn''t know.',
     '{
         "type": "object",
         "properties": {},
         "required": []
     }'::jsonb,
-    true,
+    'executeGetKnowledgeGaps',
     'basic',
-    'learning'
+    true
 ),
 
 (
     'get_brain_health',
+    'analysis',
     'Get an overall health summary of the brain: memory count, belief count, average belief confidence score, open knowledge gaps, and a computed health score 0-100. Use for status reports or when user asks "how healthy is my brain?".',
     '{
         "type": "object",
         "properties": {},
         "required": []
     }'::jsonb,
-    true,
+    'executeGetBrainHealth',
     'basic',
-    'diagnostics'
+    true
 )
 
 ON CONFLICT (name) DO UPDATE SET
-    description = EXCLUDED.description,
-    parameters  = EXCLUDED.parameters,
-    is_enabled  = EXCLUDED.is_enabled,
-    min_tier    = EXCLUDED.min_tier,
-    category    = EXCLUDED.category;
+    category         = EXCLUDED.category,
+    description      = EXCLUDED.description,
+    parameters       = EXCLUDED.parameters,
+    handler_function = EXCLUDED.handler_function,
+    min_tier         = EXCLUDED.min_tier,
+    is_enabled       = EXCLUDED.is_enabled;
 
 COMMIT;

@@ -56,9 +56,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--color-accent) 0%, #7C3AED 100%);
-    border-radius: 8px;
-    color: white;
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%);
+    border-radius: var(--radius-sm, 8px);
+    color: var(--color-on-accent);
 }
 
 .wm-toolbar-divider {
@@ -90,14 +90,14 @@
 
 .wm-btn-primary {
     background: var(--color-accent);
-    color: white;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    color: var(--color-on-accent);
+    box-shadow: 0 2px 8px var(--color-glow);
 }
 
 .wm-btn-primary:hover {
-    background: #7C3AED;
+    background: var(--color-accent-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 12px var(--color-glow);
 }
 
 .wm-btn-secondary {
@@ -419,12 +419,14 @@
     position: fixed;
     inset: 0;
     background: var(--color-overlay);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1040;
     padding: 20px;
+    transition: opacity 0.2s ease;
 }
 
 .add-node-modal {
@@ -432,12 +434,13 @@
     max-width: 900px;
     max-height: 85vh;
     background: var(--color-surface);
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 16px);
     border: 1px solid var(--color-border);
-    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-xl, 0 25px 60px -12px rgba(0, 0, 0, 0.25));
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 /* Modal Header */
@@ -585,7 +588,7 @@
 .add-node-category-tab.active {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
 }
 
 .add-node-category-tab .category-dot {
@@ -601,7 +604,7 @@
 .add-node-category-tab .category-count {
     padding: 2px 6px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--color-on-accent) 20%, transparent);
     font-size: 11px;
 }
 
@@ -744,6 +747,27 @@
     border-radius: 6px;
     text-transform: uppercase;
     letter-spacing: 0.025em;
+}
+
+.add-node-card--coming-soon {
+    opacity: 0.75;
+    cursor: not-allowed;
+    pointer-events: auto;
+}
+
+.add-node-card--coming-soon:hover {
+    transform: none;
+}
+
+.add-node-card-coming-soon {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--color-surface-hover);
 }
 
 /* ============================================================================
@@ -1619,6 +1643,152 @@
 .wm-error-button:hover {
     background: var(--color-primary-hover);
     transform: translateY(-1px);
+}
+
+/* ============================================================================
+   EXECUTION RESULT MODAL
+   ============================================================================ */
+
+.wm-execution-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: var(--color-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    transition: opacity 0.2s ease;
+}
+
+.wm-execution-modal {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 12px);
+    max-width: 560px;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-xl, 0 24px 48px rgba(0, 0, 0, 0.2));
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.wm-execution-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.wm-execution-modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.wm-execution-modal-close {
+    padding: 6px;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.wm-execution-modal-close:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.wm-execution-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.wm-execution-id {
+    font-size: 0.8125rem;
+    color: var(--color-text-tertiary);
+}
+
+.wm-execution-id code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    word-break: break-all;
+}
+
+.wm-execution-status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wm-execution-status-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.wm-execution-status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.wm-execution-status-started,
+.wm-execution-status-running {
+    background: color-mix(in srgb, var(--color-info, #3b82f6) 20%, transparent);
+    color: var(--color-info, #3b82f6);
+}
+
+.wm-execution-status-completed {
+    background: color-mix(in srgb, var(--color-success, #10b981) 20%, transparent);
+    color: var(--color-success, #10b981);
+}
+
+.wm-execution-status-failed {
+    background: color-mix(in srgb, var(--color-error, #ef4444) 20%, transparent);
+    color: var(--color-error, #ef4444);
+}
+
+.wm-execution-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+}
+
+.wm-execution-error,
+.wm-execution-output {
+    font-size: 0.8125rem;
+}
+
+.wm-execution-error pre,
+.wm-execution-output pre {
+    margin: 8px 0 0;
+    padding: 12px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 200px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.75rem;
+}
+
+.wm-execution-error pre {
+    color: var(--color-error, #ef4444);
 }
 
 /* ============================================================================
@@ -5543,9 +5713,9 @@
 }
 
 .utility-config-tag.approver {
-    background: rgba(99, 102, 241, 0.1);
-    color: #6366f1;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    color: var(--color-accent);
+    border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
 }
 
 .utility-config-tag button {
@@ -5578,10 +5748,10 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #6366f1;
+    background: var(--color-accent);
     border: none;
     border-radius: 6px;
-    color: white;
+    color: var(--color-on-accent);
     font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
@@ -5589,7 +5759,7 @@
 }
 
 .utility-config-add-btn:hover {
-    background: #4f46e5;
+    background: var(--color-accent-hover);
 }
 
 /* Remove Button */
@@ -5604,14 +5774,14 @@
 }
 
 .utility-config-remove-btn:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: color-mix(in srgb, var(--color-error) 12%, transparent);
     color: var(--color-error);
 }
 
 /* Hint */
 .utility-config-hint {
     font-size: 0.75rem;
-    color: var(--color-text-muted);
+    color: var(--color-text-tertiary);
     margin-top: 4px;
 }
 

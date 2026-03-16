@@ -108,6 +108,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         if (bundle.status === 'archived') {
             return NextResponse.json({ error: 'Cannot deploy an archived bundle' }, { status: 409 })
         }
+        if (!bundle.workflow_template_id) {
+            return NextResponse.json(
+                { error: 'Bundle must have a workflow template to deploy. Add a workflow in the bundle basics.' },
+                { status: 400 }
+            )
+        }
+
+        const workflowTemplate = (bundle as any).workflow_templates
+        if (!workflowTemplate || !workflowTemplate.id) {
+            return NextResponse.json(
+                { error: 'Workflow template not found. It may have been deleted. Update the bundle to use a valid workflow.' },
+                { status: 400 }
+            )
+        }
+        const nodes = Array.isArray(workflowTemplate.nodes) ? workflowTemplate.nodes : []
+        const edges = Array.isArray(workflowTemplate.edges) ? workflowTemplate.edges : []
 
         // ── 2. Validate org ──────────────────────────────────────
         const { data: org, error: orgErr } = await supabase
@@ -144,7 +160,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         // ── 4. Build full snapshot ───────────────────────────────
         const brainTemplate = (bundle as any).brain_templates || {}
-        const workflowTemplate = (bundle as any).workflow_templates || {}
         const agentsConfig: any[] = bundle.agents_config || []
         const defaultLlm: Record<string, any> = bundle.default_llm || {
             provider: 'anthropic',
@@ -200,10 +215,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 version: brainTemplate.version || null,
             },
             workflow_template: {
-                id: workflowTemplate.id || null,
+                id: workflowTemplate.id,
                 name: workflowTemplate.name || null,
-                nodes: workflowTemplate.nodes || [],
-                edges: workflowTemplate.edges || [],
+                nodes,
+                edges,
             },
             default_llm: defaultLlm,
             agents: resolvedAgents,
@@ -291,7 +306,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             .from('engine_instances')
             .insert({
                 name: engineName,
-                template_id: bundle.workflow_template_id || '00000000-0000-0000-0000-000000000000',
+                template_id: bundle.workflow_template_id,
                 bundle_id: bundleId,
                 org_id,
                 assigned_user_id: assigned_user_id || null,
@@ -309,10 +324,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 overrides: {},
                 config: {
                     bundle_snapshot: enrichedSnapshot,
-                    flowConfig: {
-                        nodes: workflowTemplate.nodes || [],
-                        edges: workflowTemplate.edges || [],
-                    },
+                    flowConfig: { nodes, edges },
                     brain_agent_id: primaryBrainAgentId,
                 },
             })
@@ -348,7 +360,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             org_id,
             org_name: org.name,
             agents_deployed: resolvedAgents.length,
-            message: `Engine "${bundle.name}" deployed to "${org.name}" with ${resolvedAgents.length} agent(s).`,
+            workflow_template_id: workflowTemplate.id,
+            workflow_name: workflowTemplate.name ?? null,
+            message: `Engine "${bundle.name}" deployed to "${org.name}" with ${resolvedAgents.length} agent(s). Workflow "${workflowTemplate.name ?? workflowTemplate.id}" snapshotted.`,
         }, { status: 201 })
 
     } catch (error: any) {
@@ -368,12 +382,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
             .from('engine_instances')
             .select(`
                 id, name, org_id, assigned_user_id, brain_agent_id,
+                template_id,
                 api_key_mode, status, runs_today, runs_total,
                 last_run_at, deployed_at, created_at,
                 api_key,
                 overrides,
                 organizations ( name ),
-                users!engine_instances_assigned_user_id_fkey ( email )
+                users!engine_instances_assigned_user_id_fkey ( email ),
+                workflow_templates ( id, name )
             `)
             .eq('bundle_id', params.id)
             .order('created_at', { ascending: false })
@@ -389,6 +405,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
                 assigned_user_id: d.assigned_user_id,
                 assigned_user_email: d.users?.email ?? null,
                 brain_agent_id: d.brain_agent_id,
+                workflow_template_id: d.template_id ?? null,
+                workflow_name: d.workflow_templates?.name ?? null,
                 api_key_mode: d.api_key_mode,
                 api_key_preview: d.api_key ? `${d.api_key.substring(0, 12)}...` : null,
                 status: d.status,

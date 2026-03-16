@@ -106,41 +106,90 @@ export class EmailDispatchService {
   private async loadAdapter(orgId: string) {
     const db = this.supabase()
 
-    // Email provider config lives on engine_instances.email_provider_config (JSONB)
-    // for the active engine instance of this org.
-    // Schema (033_engine_bundles.sql): email_provider_id TEXT + email_provider_config JSONB
-    const { data: instance } = await db
-      .from('engine_instances')
-      .select('email_provider_id, email_provider_config')
-      .eq('org_id', orgId)
-      .eq('status', 'active')
-      .not('email_provider_id', 'is', null)
-      .order('deployed_at', { ascending: false })
-      .limit(1)
-      .single()
+    // Resolution order:
+    // 1) Org-level provider from email_provider_configs (highest priority, active)
+    // 2) Global provider from email_provider_configs (highest priority, active)
+    // 3) Legacy: engine_instances.email_provider_id (backward compat)
+    // No env fallbacks. No hardcoded providers.
 
-    if (!instance?.email_provider_id) {
-      return { adapter: null, providerId: null, error: 'No active email provider configured on engine instance. Set email_provider_id on the deployed engine.' }
+    let providerType: string | null = null
+    let cfg: Record<string, any> = {}
+
+    // Try org-level config
+    const { data: orgConfig } = await db
+      .from('email_provider_configs')
+      .select('*')
+      .eq('partner_id', orgId)
+      .eq('is_active', true)
+      .order('priority', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (orgConfig) {
+      providerType = orgConfig.provider_type
+      cfg = orgConfig
     }
 
-    const providerId: string = instance.email_provider_id
-    const cfg: Record<string, any> = instance.email_provider_config || {}
+    // Fallback to global config
+    if (!providerType) {
+      const { data: globalConfig } = await db
+        .from('email_provider_configs')
+        .select('*')
+        .eq('scope', 'global')
+        .eq('is_active', true)
+        .order('priority', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    const adapter = getEmailProviderAdapter(providerId)
-    if (!adapter) return { adapter: null, providerId, error: `Unknown email provider: ${providerId}` }
+      if (globalConfig) {
+        providerType = globalConfig.provider_type
+        cfg = globalConfig
+      }
+    }
+
+    // Legacy fallback: engine_instances.email_provider_id
+    if (!providerType) {
+      const { data: instance } = await db
+        .from('engine_instances')
+        .select('email_provider_id, email_provider_config')
+        .eq('org_id', orgId)
+        .eq('status', 'active')
+        .not('email_provider_id', 'is', null)
+        .order('deployed_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (instance?.email_provider_id) {
+        providerType = instance.email_provider_id
+        cfg = instance.email_provider_config || {}
+      }
+    }
+
+    if (!providerType) {
+      return {
+        adapter: null,
+        providerId: null,
+        error: 'No active email provider configured. Add one in Superadmin → Email Providers.',
+      }
+    }
+
+    const adapter = getEmailProviderAdapter(providerType)
+    if (!adapter) {
+      return { adapter: null, providerId: providerType, error: `Unsupported email provider: ${providerType}` }
+    }
 
     adapter.configure({
       apiKey:        cfg.api_key,
       apiSecret:     cfg.api_secret,
-      baseUrl:       cfg.base_url,
+      baseUrl:       cfg.api_base_url || cfg.base_url,
       region:        cfg.region,
-      fromEmail:     cfg.from_email,
-      fromName:      cfg.from_name,
+      fromEmail:     cfg.from_email || (cfg.provider_settings as Record<string, string>)?.from_email,
+      fromName:      cfg.from_name || (cfg.provider_settings as Record<string, string>)?.from_name,
       webhookSecret: cfg.webhook_secret,
-      extra:         cfg,
+      extra:         { ...cfg, ...(cfg.provider_settings || {}) },
     })
 
-    return { adapter, providerId, error: null }
+    return { adapter, providerId: providerType, error: null }
   }
 
   private async logSignalEvent(params: {

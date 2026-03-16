@@ -104,6 +104,9 @@ export async function POST(req: NextRequest) {
         if (!name?.trim()) {
             return NextResponse.json({ error: 'Bundle name is required' }, { status: 400 })
         }
+        if (!workflow_template_id) {
+            return NextResponse.json({ error: 'Workflow template is required. Bundle = Brain + Workflow + Agents + Config.' }, { status: 400 })
+        }
 
         // Generate slug from name
         const slug = name
@@ -127,7 +130,7 @@ export async function POST(req: NextRequest) {
                 description: description?.trim() || null,
                 slug: finalSlug,
                 brain_template_id: brain_template_id || null,
-                workflow_template_id: workflow_template_id || null,
+                workflow_template_id,
                 email_provider_id: email_provider_id || null,
                 default_api_key_mode,
                 tier,

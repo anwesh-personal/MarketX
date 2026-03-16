@@ -285,17 +285,17 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        // Check if template has active engine instances
-        const { data: engines, error: checkError } = await supabase
+        // Check if any engine instances use this workflow (deployed engines)
+        const { data: engines, error: enginesError } = await supabase
             .from('engine_instances')
             .select('id')
             .eq('template_id', id)
             .limit(1);
 
-        if (checkError) {
-            console.error('Error checking engine instances:', checkError);
+        if (enginesError) {
+            console.error('Error checking engine instances:', enginesError);
             return NextResponse.json(
-                { error: 'Database error', message: checkError.message },
+                { error: 'Database error', message: enginesError.message },
                 { status: 500 }
             );
         }
@@ -304,7 +304,32 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json(
                 {
                     error: 'Constraint error',
-                    message: 'Cannot delete template with active engine instances. Delete or reassign engines first.'
+                    message: 'Cannot delete workflow: it is used by deployed engine instance(s). Remove or update bundle references before deleting this workflow.'
+                },
+                { status: 409 }
+            );
+        }
+
+        // Check if any engine bundles reference this workflow
+        const { data: bundles, error: bundlesError } = await supabase
+            .from('engine_bundles')
+            .select('id, name')
+            .eq('workflow_template_id', id)
+            .limit(1);
+
+        if (bundlesError) {
+            console.error('Error checking engine bundles:', bundlesError);
+            return NextResponse.json(
+                { error: 'Database error', message: bundlesError.message },
+                { status: 500 }
+            );
+        }
+
+        if (bundles && bundles.length > 0) {
+            return NextResponse.json(
+                {
+                    error: 'Constraint error',
+                    message: 'Cannot delete workflow: it is referenced by engine bundle(s). Remove or update bundle references before deleting this workflow.'
                 },
                 { status: 409 }
             );

@@ -73,13 +73,16 @@ async function processScheduledTask(job: Job<ScheduledTaskJob>) {
 
         case 'learning_loop': {
             await learningLoopQueue.add('scheduled_learning_loop', {
-                jobType: 'daily_optimization',
+                type: orgId ? 'coach_analysis' : 'full_loop',
                 orgId,
-                agentId,
-                triggeredBy: 'scheduler',
-                ...payload,
+                config: {
+                    days: payload.days ?? 30,
+                    minSends: payload.minSends ?? 10,
+                    updateBeliefs: true,
+                    saveLearnings: true,
+                },
             });
-            console.log(`✅ [ScheduledTask] learning_loop dispatched for org=${orgId}`);
+            console.log(`✅ [ScheduledTask] learning_loop (coach_analysis) dispatched for org=${orgId || 'all'}`);
             break;
         }
 

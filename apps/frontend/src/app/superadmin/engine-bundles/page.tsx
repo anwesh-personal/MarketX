@@ -84,7 +84,8 @@ interface Organization { id: string; name: string; plan?: string }
 interface DeployedInstance {
     id: string; name: string; org_id: string; org_name: string | null
     assigned_user_id: string | null; assigned_user_email: string | null
-    brain_agent_id: string | null; api_key_mode: string; status: string
+    brain_agent_id: string | null; workflow_template_id: string | null; workflow_name: string | null
+    api_key_mode: string; status: string
     runs_today: number; runs_total: number; last_run_at: string | null
     deployed_at: string | null; api_key_preview: string | null; has_overrides: boolean
 }
@@ -313,9 +314,9 @@ function BundleCard({ bundle, isExpanded, instances, loadingInstances, onToggle,
                     </div>
                     <p className="text-sm text-textSecondary truncate mb-2">{bundle.description || 'No description'}</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                        {bundle.brain_template_name && <Pill icon={Brain} label={bundle.brain_template_name} color="text-purple-400" />}
-                        {bundle.workflow_template_name && <Pill icon={Workflow} label={bundle.workflow_template_name} color="text-blue-400" />}
-                        <Pill icon={Key} label={bundle.default_api_key_mode === 'byok' ? 'BYOK' : bundle.default_api_key_mode === 'hybrid' ? 'Hybrid' : 'Platform Keys'} color="text-amber-400" />
+                        {bundle.brain_template_name && <Pill icon={Brain} label={bundle.brain_template_name} color="text-accent-secondary" />}
+                        {bundle.workflow_template_name && <Pill icon={Workflow} label={bundle.workflow_template_name} color="text-accent" />}
+                        <Pill icon={Key} label={bundle.default_api_key_mode === 'byok' ? 'BYOK' : bundle.default_api_key_mode === 'hybrid' ? 'Hybrid' : 'Platform Keys'} color="text-warning" />
                     </div>
                 </div>
                 <div className="flex items-center gap-6 text-center flex-shrink-0">
@@ -358,6 +359,11 @@ function BundleCard({ bundle, isExpanded, instances, loadingInstances, onToggle,
                                     <Building2 className="w-5 h-5 text-textSecondary flex-shrink-0" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-textPrimary truncate">{inst.org_name ?? inst.org_id}</p>
+                                        {(inst.workflow_name || inst.workflow_template_id) && (
+                                            <p className="text-xs text-textSecondary flex items-center gap-1">
+                                                <Workflow className="w-3 h-3" /> {inst.workflow_name ?? inst.workflow_template_id}
+                                            </p>
+                                        )}
                                         {inst.assigned_user_email && (
                                             <p className="text-xs text-textSecondary flex items-center gap-1">
                                                 <User className="w-3 h-3" /> {inst.assigned_user_email}
@@ -453,6 +459,7 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
 
     const handleSubmit = async () => {
         if (!basics.name.trim()) { setError('Name required'); return }
+        if (!basics.workflow_template_id?.trim()) { setError('Workflow template is required. Bundle = Brain + Workflow + Agents + Config.'); return }
         setSaving(true); setError(null)
         try {
             const res = await fetchWithAuth('/api/superadmin/engine-bundles', {
@@ -460,7 +467,7 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
                 body: JSON.stringify({
                     ...basics,
                     brain_template_id: basics.brain_template_id || null,
-                    workflow_template_id: basics.workflow_template_id || null,
+                    workflow_template_id: basics.workflow_template_id,
                     default_llm: defaultLlm,
                     agents_config: agents,
                 }),
@@ -479,14 +486,14 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
     ] as const
 
     return (
-        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="create-bundle-title">
+            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-accent/10"><Package className="w-5 h-5 text-accent" /></div>
                         <div>
-                            <h2 className="text-xl font-bold text-textPrimary">Create Engine Bundle</h2>
+                            <h2 id="create-bundle-title" className="text-xl font-bold text-textPrimary">Create Engine Bundle</h2>
                             <p className="text-sm text-textSecondary">Package Brain + Agents + Workflow together</p>
                         </div>
                     </div>
@@ -522,21 +529,22 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="label-sm flex items-center gap-2"><Brain className="w-4 h-4 text-purple-400" /> Brain Template</label>
+                                    <label className="label-sm flex items-center gap-2"><Brain className="w-4 h-4 text-accent-secondary" /> Brain Template</label>
                                     <select value={basics.brain_template_id} onChange={e => setBasics(b => ({ ...b, brain_template_id: e.target.value }))} className="input w-full">
                                         <option value="">— Select —</option>
                                         {brainTemplates.map(bt => <option key={bt.id} value={bt.id}>{bt.name} ({bt.pricing_tier})</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="label-sm flex items-center gap-2"><Workflow className="w-4 h-4 text-blue-400" /> Workflow</label>
-                                    <select value={basics.workflow_template_id} onChange={e => setBasics(b => ({ ...b, workflow_template_id: e.target.value }))} className="input w-full">
-                                        <option value="">— Select —</option>
+                                    <label className="label-sm flex items-center gap-2"><Workflow className="w-4 h-4 text-accent" /> Workflow *</label>
+                                    <select value={basics.workflow_template_id} onChange={e => setBasics(b => ({ ...b, workflow_template_id: e.target.value }))} className="input w-full" required aria-describedby="workflow-helper">
+                                        <option value="">— Select workflow (required) —</option>
                                         {workflowTemplates.map(wt => <option key={wt.id} value={wt.id}>{wt.name}</option>)}
                                     </select>
+                                    <p id="workflow-helper" className="text-xs text-textTertiary mt-1">Required. The pipeline that runs when this engine is invoked.</p>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="label-sm flex items-center gap-2"><Zap className="w-4 h-4 text-amber-400" /> Tier</label>
+                                    <label className="label-sm flex items-center gap-2"><Zap className="w-4 h-4 text-warning" /> Tier</label>
                                     <select value={basics.tier} onChange={e => setBasics(b => ({ ...b, tier: e.target.value as any }))} className="input w-full">
                                         <option value="echii">Echii (Starter)</option>
                                         <option value="pulz">Pulz (Growth)</option>
@@ -544,7 +552,7 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="label-sm flex items-center gap-2"><Key className="w-4 h-4 text-amber-400" /> API Key Strategy</label>
+                                    <label className="label-sm flex items-center gap-2"><Key className="w-4 h-4 text-warning" /> API Key Strategy</label>
                                     <select value={basics.default_api_key_mode} onChange={e => setBasics(b => ({ ...b, default_api_key_mode: e.target.value as any }))} className="input w-full">
                                         <option value="platform">Platform (Axiom pays)</option>
                                         <option value="byok">BYOK (client keys)</option>
@@ -681,7 +689,7 @@ function AgentEditor({ agent, index, isExpanded, onToggle, onUpdate, onUpdateLlm
 
                     {/* Prompts */}
                     <div>
-                        <p className="label-sm mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4 text-purple-400" /> Prompts</p>
+                        <p className="label-sm mb-3 flex items-center gap-2"><BookOpen className="w-4 h-4 text-accent-secondary" /> Prompts</p>
                         <div className="flex gap-2 mb-3">
                             {(['foundation','persona','domain','guardrails'] as const).map(pt => (
                                 <button key={pt} onClick={() => setPromptTab(pt)}
@@ -720,7 +728,7 @@ function AgentEditor({ agent, index, isExpanded, onToggle, onUpdate, onUpdateLlm
 
                     {/* RAG */}
                     <div>
-                        <p className="label-sm mb-3 flex items-center gap-2"><Terminal className="w-4 h-4 text-blue-400" /> RAG Config</p>
+                        <p className="label-sm mb-3 flex items-center gap-2"><Terminal className="w-4 h-4 text-accent" /> RAG Config</p>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-xs text-textSecondary">Top K Results</label>
@@ -815,7 +823,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
     const [loadingUsers, setLoadingUsers] = useState(false)
     const [deploying, setDeploying] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [result, setResult] = useState<{ api_key: string; engine_instance_id: string; agents_deployed: number } | null>(null)
+    const [result, setResult] = useState<{ api_key: string; engine_instance_id: string; agents_deployed: number; workflow_template_id?: string; workflow_name?: string | null } | null>(null)
     const [apiKeyCopied, setApiKeyCopied] = useState(false)
     const [showKey, setShowKey] = useState(false)
 
@@ -862,13 +870,13 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
     }
 
     return (
-        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="deploy-bundle-title">
+            <div className="bg-background border border-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out">
                 <div className="flex items-center justify-between p-6 border-b border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-success/10"><Rocket className="w-5 h-5 text-success" /></div>
+                        <div className="p-2 rounded-xl bg-success/10"><Rocket className="w-5 h-5 text-success" aria-hidden /></div>
                         <div>
-                            <h2 className="text-xl font-bold text-textPrimary">Deploy Bundle</h2>
+                            <h2 id="deploy-bundle-title" className="text-xl font-bold text-textPrimary">Deploy Bundle</h2>
                             <p className="text-sm text-textSecondary">{bundle.name}</p>
                         </div>
                     </div>
@@ -884,6 +892,9 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                             </div>
                             <h3 className="text-lg font-bold text-textPrimary">Deployed Successfully!</h3>
                             <p className="text-sm text-textSecondary mt-1">{result.agents_deployed} agent(s) cloned · Full snapshot stored · Isolation guaranteed</p>
+                            {(result.workflow_name ?? result.workflow_template_id) && (
+                                <p className="text-xs text-textTertiary">Workflow: <span className="font-medium text-textSecondary">{result.workflow_name ?? result.workflow_template_id}</span> (snapshotted at deploy — updates to the workflow do not affect this instance)</p>
+                            )}
                         </div>
 
                         {/* API Key — shown ONCE */}
@@ -904,6 +915,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                                 </button>
                             </div>
                             <p className="text-xs text-textTertiary">Instance ID: <code className="font-mono">{result.engine_instance_id}</code></p>
+                            <p className="text-xs text-textTertiary mt-1">Copy the API key above — it&apos;s shown only once.</p>
                         </div>
 
                         <div className="flex gap-3">
@@ -915,9 +927,9 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                     <div className="p-6 space-y-4">
                         {/* Bundle summary pills */}
                         <div className="flex flex-wrap gap-2 p-3 rounded-xl bg-surfaceHover border border-border">
-                            {bundle.brain_template_name && <Pill icon={Brain} label={bundle.brain_template_name} color="text-purple-400" />}
-                            {bundle.workflow_template_name && <Pill icon={Workflow} label={bundle.workflow_template_name} color="text-blue-400" />}
-                            <Pill icon={Key} label={bundle.default_api_key_mode} color="text-amber-400" />
+                            {bundle.brain_template_name && <Pill icon={Brain} label={bundle.brain_template_name} color="text-accent-secondary" />}
+                            {bundle.workflow_template_name && <Pill icon={Workflow} label={bundle.workflow_template_name} color="text-accent" />}
+                            <Pill icon={Key} label={bundle.default_api_key_mode} color="text-warning" />
                         </div>
 
                         <div className="space-y-1.5">
@@ -939,7 +951,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                         )}
 
                         <div className="space-y-1.5">
-                            <label className="label-sm flex items-center gap-2"><Key className="w-4 h-4 text-amber-400" /> API Key Strategy</label>
+                            <label className="label-sm flex items-center gap-2"><Key className="w-4 h-4 text-warning" /> API Key Strategy</label>
                             <div className="grid grid-cols-3 gap-2">
                                 {(['platform','byok','hybrid'] as const).map(mode => (
                                     <button key={mode} onClick={() => setForm(f => ({ ...f, api_key_mode: mode }))}
@@ -1056,13 +1068,13 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
     const eff = agents.length ? getEffectiveAgent(activeAgentIdx) : null
 
     return (
-        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="customize-instance-title">
+            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-warning/10"><Sliders className="w-5 h-5 text-warning" /></div>
+                        <div className="p-2 rounded-xl bg-warning/10"><Sliders className="w-5 h-5 text-warning" aria-hidden /></div>
                         <div>
-                            <h2 className="text-xl font-bold text-textPrimary">Customize Instance</h2>
+                            <h2 id="customize-instance-title" className="text-xl font-bold text-textPrimary">Customize Instance</h2>
                             <p className="text-sm text-textSecondary">{instance.org_name || instance.org_id}{instance.assigned_user_email ? ` · ${instance.assigned_user_email}` : ''}</p>
                         </div>
                     </div>
@@ -1222,11 +1234,18 @@ function ErrorBar({ message, inline }: { message: string; inline?: boolean }) {
 
 function EmptyState({ onNew }: { onNew: () => void }) {
     return (
-        <div className="premium-card flex flex-col items-center justify-center py-24 text-center border-dashed">
-            <Package className="w-16 h-16 text-textTertiary mb-4" />
-            <h3 className="text-xl font-bold text-textPrimary mb-2">No Engine Bundles yet</h3>
-            <p className="text-textSecondary mb-6 max-w-sm">Create your first bundle to package Brain + Agents (with LLM) + Workflow.</p>
-            <button onClick={onNew} className="btn btn-primary"><Plus className="w-4 h-4" /> Create First Bundle</button>
+        <div className="premium-card flex flex-col items-center justify-center py-24 px-6 text-center border-dashed">
+            <Package className="w-16 h-16 text-textTertiary mb-4" aria-hidden />
+            <h3 className="text-xl font-bold text-textPrimary mb-2">No engine bundles yet</h3>
+            <p className="text-textSecondary mb-4 max-w-sm">A bundle is the product you deploy: Brain + Workflow + Agents + Config.</p>
+            <ol className="text-sm text-textTertiary mb-6 space-y-1.5 max-w-xs text-left list-decimal list-inside">
+                <li>Create a workflow in Workflow Manager</li>
+                <li>Create a bundle and attach that workflow (required)</li>
+                <li>Deploy the bundle to an org</li>
+            </ol>
+            <button onClick={onNew} className="btn btn-primary" aria-label="Create your first bundle">
+                <Plus className="w-4 h-4" /> Create first bundle
+            </button>
         </div>
     )
 }
