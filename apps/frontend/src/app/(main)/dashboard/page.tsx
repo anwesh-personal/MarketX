@@ -16,8 +16,11 @@ import {
     CheckCircle,
     X,
     ChevronRight,
+    Sparkles,
+    Brain,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import OnboardingModal, { computeOnboardingPercentage } from '@/components/onboarding/OnboardingModal';
 
 interface DashboardStats {
     total_runs: number;
@@ -45,6 +48,12 @@ export default function DashboardPage() {
     const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [userName, setUserName] = useState('');
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [onboardingComplete, setOnboardingComplete] = useState(true);
+    const [onboardingPct, setOnboardingPct] = useState(0);
+    const [userId, setUserId] = useState('');
+    const [orgId, setOrgId] = useState('');
+    const [orgName, setOrgName] = useState('');
 
     useEffect(() => {
         checkAuth();
@@ -58,7 +67,43 @@ export default function DashboardPage() {
             return;
         }
 
+        setUserId(user.id);
         await loadDashboard(user.id);
+        await checkOnboardingStatus(user.id);
+    };
+
+    const checkOnboardingStatus = async (uid: string) => {
+        const { data: userData } = await supabase
+            .from('users')
+            .select('onboarding_completed')
+            .eq('id', uid)
+            .single();
+
+        const isComplete = userData?.onboarding_completed === true;
+        setOnboardingComplete(isComplete);
+
+        if (!isComplete) {
+            const { data: session } = await supabase
+                .from('onboarding_sessions')
+                .select('company_data, icp_data, offer_data, voice_data')
+                .eq('user_id', uid)
+                .eq('status', 'in_progress')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (session) {
+                const pct = computeOnboardingPercentage(
+                    session.company_data as any || {},
+                    session.icp_data as any[] || [],
+                    session.offer_data as any || {},
+                    session.voice_data as any || {}
+                );
+                setOnboardingPct(pct);
+            }
+
+            setShowOnboarding(true);
+        }
     };
 
     const loadDashboard = async (userId: string) => {
@@ -83,6 +128,9 @@ export default function DashboardPage() {
 
             if (userData) {
                 setUserName(userData.full_name || 'User');
+                setOrgId(userData.org_id || '');
+                const org = Array.isArray(userData.organization) ? userData.organization[0] : userData.organization;
+                setOrgName((org as any)?.name || '');
             }
 
             // Get run stats
@@ -159,8 +207,52 @@ export default function DashboardPage() {
 
     const successRate = stats?.total_runs ? Math.round((stats.successful_runs / stats.total_runs) * 100) : 0;
 
+    const handleOnboardingComplete = () => {
+        setShowOnboarding(false);
+        setOnboardingComplete(true);
+        setOnboardingPct(100);
+        if (userId) loadDashboard(userId);
+    };
+
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
+            {/* Onboarding Modal */}
+            <OnboardingModal
+                isOpen={showOnboarding}
+                onClose={() => setShowOnboarding(false)}
+                onComplete={handleOnboardingComplete}
+                userId={userId}
+                orgId={orgId}
+                orgName={orgName}
+            />
+
+            {/* Onboarding Banner (if incomplete) */}
+            {!onboardingComplete && !showOnboarding && (
+                <div className="card p-4 border-accent/30 bg-gradient-to-r from-accent/5 via-primary/5 to-transparent flex items-center justify-between gap-4 animate-fade-in">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                            <Brain className="w-5 h-5 text-accent" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-textPrimary text-sm">Finish Setting Up Your Brain</p>
+                            <p className="text-xs text-textSecondary">Complete onboarding so your Brain can write better emails for you.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                        <div className="hidden sm:flex items-center gap-2">
+                            <div className="w-24 h-2 bg-surface rounded-full overflow-hidden border border-border">
+                                <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${onboardingPct}%` }} />
+                            </div>
+                            <span className="text-xs font-mono text-textTertiary">{onboardingPct}%</span>
+                        </div>
+                        <button onClick={() => setShowOnboarding(true)}
+                            className="btn btn-sm px-4 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition-colors flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3" /> Continue Setup
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
@@ -172,6 +264,11 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
+                    {onboardingComplete && (
+                        <button onClick={() => setShowOnboarding(true)} className="btn btn-ghost btn-sm text-xs text-textTertiary hover:text-accent flex items-center gap-1.5" title="Revisit onboarding">
+                            <Sparkles className="w-3 h-3" /> Setup
+                        </button>
+                    )}
                     <div className="badge badge-accent">
                         {stats?.org_name}
                     </div>

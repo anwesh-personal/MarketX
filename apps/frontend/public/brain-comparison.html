@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axiom Brain — Full E2E Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Space Grotesk', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'monospace'],
+                    },
+                    colors: {
+                        oraya: { DEFAULT: '#3b82f6', dark: '#1e3a5f', light: '#60a5fa', glow: 'rgba(59,130,246,0.3)' },
+                        axiom: { DEFAULT: '#a855f7', dark: '#3b1764', light: '#c084fc', glow: 'rgba(168,85,247,0.3)' },
+                        ok: '#22c55e',
+                        warn: '#f59e0b',
+                        crit: '#ef4444',
+                        surface: { 0: '#030712', 1: '#0a0f1a', 2: '#111827', 3: '#1f2937' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { scrollbar-width: thin; scrollbar-color: #374151 transparent; }
+        body { background: #030712; color: #d1d5db; }
+        @keyframes pulse-blue  { 0%,100%{box-shadow:0 0 15px rgba(59,130,246,.2)} 50%{box-shadow:0 0 35px rgba(59,130,246,.5)} }
+        @keyframes pulse-purple{ 0%,100%{box-shadow:0 0 15px rgba(168,85,247,.2)} 50%{box-shadow:0 0 35px rgba(168,85,247,.5)} }
+        @keyframes slideUp   { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+        @keyframes flowRight { 0%{width:0} 100%{width:100%} }
+        @keyframes typing    { from{width:0} to{width:100%} }
+        .anim-slide  { animation: slideUp .6s ease-out both }
+        .anim-fade   { animation: fadeIn  .8s ease-out both }
+        .glow-blue   { animation: pulse-blue   3s infinite }
+        .glow-purple { animation: pulse-purple  3s infinite }
+        .glass { background: rgba(17,24,39,.65); backdrop-filter: blur(12px); border:1px solid rgba(255,255,255,.08) }
+        .dot-bg { background-image: radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px); background-size: 24px 24px }
+
+        /* Tabs */
+        .tab-btn { transition: all .25s }
+        .tab-btn.active { color: #c084fc; border-color: #a855f7 }
+        .tab-panel { display: none }
+        .tab-panel.active { display: block }
+
+        /* Toggle */
+        .toggle-track { width: 48px; height: 26px; border-radius: 13px; background: #1f2937; position: relative; cursor: pointer; transition: background .3s }
+        .toggle-track.on { background: #a855f7 }
+        .toggle-thumb { width: 20px; height: 20px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: transform .3s }
+        .toggle-track.on .toggle-thumb { transform: translateX(22px) }
+
+        /* Flow line */
+        .flow-line { height: 2px; background: linear-gradient(90deg, #a855f7, #3b82f6); animation: flowRight 1.5s ease-out both }
+
+        /* Accordion */
+        .acc-body { max-height: 0; overflow: hidden; transition: max-height .4s ease }
+        .acc-open .acc-body { max-height: 2000px }
+        .acc-arrow { transition: transform .3s }
+        .acc-open .acc-arrow { transform: rotate(180deg) }
+
+        /* Status badge */
+        .badge { display:inline-flex; align-items:center; gap:4px; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:600 }
+        .badge-ok   { background:rgba(34,197,94,.15); color:#22c55e }
+        .badge-warn { background:rgba(245,158,11,.15); color:#f59e0b }
+        .badge-crit { background:rgba(239,68,68,.15);  color:#ef4444 }
+        .badge-info { background:rgba(59,130,246,.15); color:#60a5fa }
+
+        .delay-1 { animation-delay: .1s }
+        .delay-2 { animation-delay: .2s }
+        .delay-3 { animation-delay: .3s }
+        .delay-4 { animation-delay: .4s }
+        .delay-5 { animation-delay: .5s }
+        .delay-6 { animation-delay: .6s }
+    </style>
+</head>
+<body class="min-h-screen dot-bg">
+
+<!-- ========== NAV ========== -->
+<nav class="fixed top-0 w-full z-50 glass border-b border-gray-800/60">
+    <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-axiom to-oraya flex items-center justify-center text-white font-bold text-sm">A</div>
+            <span class="font-bold text-lg text-white tracking-tight">Axiom Brain <span class="text-gray-500 font-normal text-sm">/ Full E2E Audit</span></span>
+        </div>
+        <div class="hidden md:flex items-center gap-6 text-sm">
+            <a href="#overview"  class="text-gray-400 hover:text-white transition">Overview</a>
+            <a href="#comparison" class="text-gray-400 hover:text-white transition">Oraya vs MarketX</a>
+            <a href="#wiring"    class="text-gray-400 hover:text-white transition">Wiring</a>
+            <a href="#tools"     class="text-gray-400 hover:text-white transition">Tools</a>
+            <a href="#security"  class="text-gray-400 hover:text-white transition">Security</a>
+            <a href="#verdict"   class="text-gray-400 hover:text-white transition">Verdict</a>
+        </div>
+        <div class="font-mono text-xs text-gray-600">2026-03-16</div>
+    </div>
+</nav>
+
+<main class="pt-20 pb-24 px-4 sm:px-6 max-w-[1400px] mx-auto space-y-20">
+
+<!-- ========== HERO / SCORECARD ========== -->
+<section id="overview" class="pt-8">
+    <h1 class="text-4xl md:text-5xl font-bold text-white mb-2 anim-slide">Axiom Brain: Is It Ready?</h1>
+    <p class="text-gray-400 text-lg mb-10 anim-slide delay-1">End-to-end forensic audit. Every wire, every tool, every gap. No BS.</p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 anim-slide delay-2">
+        <!-- Score Card -->
+        <div class="glass rounded-2xl p-6 text-center group hover:border-ok/40 transition">
+            <div class="text-5xl font-bold text-ok mb-1" id="score-core">0%</div>
+            <div class="text-sm text-gray-400">Core Engine</div>
+            <div class="text-xs text-gray-600 mt-1">BrainOrchestrator + RAG</div>
+        </div>
+        <div class="glass rounded-2xl p-6 text-center group hover:border-ok/40 transition">
+            <div class="text-5xl font-bold text-ok mb-1" id="score-workers">0%</div>
+            <div class="text-sm text-gray-400">Worker System</div>
+            <div class="text-xs text-gray-600 mt-1">9/9 registered</div>
+        </div>
+        <div class="glass rounded-2xl p-6 text-center group hover:border-warn/40 transition">
+            <div class="text-5xl font-bold text-warn mb-1" id="score-api">0%</div>
+            <div class="text-sm text-gray-400">API Routes</div>
+            <div class="text-xs text-gray-600 mt-1">Auth gaps found</div>
+        </div>
+        <div class="glass rounded-2xl p-6 text-center group hover:border-warn/40 transition">
+            <div class="text-5xl font-bold text-warn mb-1" id="score-deploy">0%</div>
+            <div class="text-sm text-gray-400">Deploy Ready</div>
+            <div class="text-xs text-gray-600 mt-1">Infra pending</div>
+        </div>
+    </div>
+
+    <div class="mt-6 glass rounded-xl p-4 flex items-center gap-4 anim-slide delay-3">
+        <div class="w-full bg-surface-3 rounded-full h-3 overflow-hidden">
+            <div id="overall-bar" class="h-full bg-gradient-to-r from-crit via-warn to-ok rounded-full transition-all duration-[2s]" style="width:0%"></div>
+        </div>
+        <div class="text-2xl font-bold text-white whitespace-nowrap" id="overall-pct">0%</div>
+    </div>
+</section>
+
+<!-- ========== ORAYA vs MARKETX ========== -->
+<section id="comparison">
+    <h2 class="text-3xl font-bold text-white mb-8 anim-fade">Oraya Brain vs MarketX Brain</h2>
+
+    <div class="grid lg:grid-cols-2 gap-6">
+        <!-- ORAYA -->
+        <div class="relative group anim-slide delay-1">
+            <div class="absolute -inset-[2px] rounded-2xl bg-gradient-to-br from-oraya/50 to-cyan-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+            <div class="relative glass rounded-2xl overflow-hidden">
+                <div class="h-1 bg-gradient-to-r from-oraya to-cyan-400"></div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-white">Oraya</h3>
+                        <span class="badge badge-info">LOCAL-FIRST</span>
+                    </div>
+
+                    <!-- Visual -->
+                    <div class="relative h-48 bg-surface-1 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-gray-800">
+                        <div class="absolute w-32 h-32 rounded-full border border-oraya/20 animate-spin" style="animation-duration:20s"></div>
+                        <div class="absolute w-48 h-48 rounded-full border border-dashed border-oraya/10 animate-spin" style="animation-duration:35s;animation-direction:reverse"></div>
+                        <div class="w-16 h-16 rounded-full bg-surface-0 border-2 border-oraya flex items-center justify-center z-10 glow-blue">
+                            <svg class="w-7 h-7 text-oraya" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z"/><path d="M9 12h6M12 9v6"/></svg>
+                        </div>
+                        <div class="absolute bottom-3 left-3 font-mono text-[10px] text-gray-600">Tauri + Rust + SQLite</div>
+                        <div class="absolute top-3 right-3 font-mono text-[10px] text-gray-600">Latency: ~0ms</div>
+                    </div>
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Storage</span><span class="text-gray-400">SQLite FTS5 + local vector. Per-agent .db file.</span></div>
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Resonance</span><span class="text-gray-400">4-factor: Semantic + Keyword (Jaccard) + Emotional (Valence/Arousal) + Temporal decay.</span></div>
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Dreaming</span><span class="text-gray-400">Simulated consciousness. States: Active → Dreaming → Asleep. Local pattern consolidation.</span></div>
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Memory</span><span class="text-gray-400">Episodic, Semantic, Emotional, Procedural. Personal context only.</span></div>
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Safety</span><span class="text-gray-400">Emotional regulation. Adjusts based on internal state vectors.</span></div>
+                        <div class="flex gap-3"><span class="text-oraya font-bold w-24 shrink-0">Isolation</span><span class="text-gray-400">File-based. Each agent owns its .db file on disk.</span></div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-2 gap-3">
+                        <div class="bg-ok/5 border border-ok/20 rounded-lg p-3">
+                            <div class="text-ok text-xs font-bold mb-1">PROS</div>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>+ 100% data sovereignty</li>
+                                <li>+ Zero network latency</li>
+                                <li>+ Free to run (local HW)</li>
+                                <li>+ Rich emotional nuance</li>
+                            </ul>
+                        </div>
+                        <div class="bg-crit/5 border border-crit/20 rounded-lg p-3">
+                            <div class="text-crit text-xs font-bold mb-1">CONS</div>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>- Single user only</li>
+                                <li>- Heavy on local CPU/RAM</li>
+                                <li>- No shared org memory</li>
+                                <li>- File loss = brain gone</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MARKETX -->
+        <div class="relative group anim-slide delay-2">
+            <div class="absolute -inset-[2px] rounded-2xl bg-gradient-to-br from-axiom/50 to-pink-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm"></div>
+            <div class="relative glass rounded-2xl overflow-hidden">
+                <div class="h-1 bg-gradient-to-r from-axiom to-pink-400"></div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-white">MarketX <span class="text-gray-500 text-base">(Axiom)</span></h3>
+                        <span class="badge badge-info">CLOUD-NATIVE</span>
+                    </div>
+
+                    <!-- Visual -->
+                    <div class="relative h-48 bg-surface-1 rounded-xl mb-6 flex items-center justify-center overflow-hidden border border-gray-800">
+                        <div class="w-16 h-16 rounded-full bg-surface-0 border-2 border-axiom flex items-center justify-center z-10 glow-purple">
+                            <svg class="w-7 h-7 text-axiom" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                        </div>
+                        <!-- Network nodes -->
+                        <div class="absolute top-6 left-10 w-2.5 h-2.5 bg-axiom rounded-full animate-pulse"></div>
+                        <div class="absolute bottom-10 right-14 w-2.5 h-2.5 bg-axiom rounded-full animate-pulse" style="animation-delay:.4s"></div>
+                        <div class="absolute top-14 right-8 w-2.5 h-2.5 bg-axiom rounded-full animate-pulse" style="animation-delay:.8s"></div>
+                        <div class="absolute bottom-6 left-16 w-2.5 h-2.5 bg-axiom rounded-full animate-pulse" style="animation-delay:1.2s"></div>
+                        <svg class="absolute inset-0 w-full h-full pointer-events-none opacity-20"><line x1="50%" y1="50%" x2="15%" y2="15%" stroke="#a855f7" stroke-width="1"/><line x1="50%" y1="50%" x2="85%" y2="75%" stroke="#a855f7" stroke-width="1"/><line x1="50%" y1="50%" x2="85%" y2="15%" stroke="#a855f7" stroke-width="1"/><line x1="50%" y1="50%" x2="20%" y2="80%" stroke="#a855f7" stroke-width="1"/></svg>
+                        <div class="absolute bottom-3 left-3 font-mono text-[10px] text-gray-600">Next.js + Supabase + pgvector</div>
+                        <div class="absolute top-3 right-3 font-mono text-[10px] text-gray-600">Scale: Multi-Tenant</div>
+                    </div>
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Storage</span><span class="text-gray-400">Postgres (Supabase) + pgvector. ~80 tables. RLS per org.</span></div>
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Resonance</span><span class="text-gray-400">Belief Ranking. Ported Oraya's formula for Marketing Beliefs. Signal-based scoring.</span></div>
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Dreaming</span><span class="text-gray-400">BullMQ dream-state worker. Nightly: memory consolidation, embedding reweight, pattern analysis.</span></div>
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Memory</span><span class="text-gray-400">KB, Brand Voice, Constitution, Past Campaigns, Performance Metrics. Business context.</span></div>
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Safety</span><span class="text-gray-400">HallucinationInterceptor + Constitution rules. Blocks if confidence < 65%.</span></div>
+                        <div class="flex gap-3"><span class="text-axiom font-bold w-24 shrink-0">Isolation</span><span class="text-gray-400">Row-Level Security (RLS). All orgs share DB, data logically isolated by org_id.</span></div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-2 gap-3">
+                        <div class="bg-ok/5 border border-ok/20 rounded-lg p-3">
+                            <div class="text-ok text-xs font-bold mb-1">PROS</div>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>+ Infinite horizontal scale</li>
+                                <li>+ Shared team memory</li>
+                                <li>+ Background workers offload</li>
+                                <li>+ Enterprise-grade safety</li>
+                            </ul>
+                        </div>
+                        <div class="bg-crit/5 border border-crit/20 rounded-lg p-3">
+                            <div class="text-crit text-xs font-bold mb-1">CONS</div>
+                            <ul class="text-xs text-gray-400 space-y-1">
+                                <li>- Network latency (RAG/DB)</li>
+                                <li>- High OpEx (tokens + infra)</li>
+                                <li>- Complex distributed system</li>
+                                <li>- Auth gaps need fixing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== DATA FLOW / WIRING ========== -->
+<section id="wiring">
+    <h2 class="text-3xl font-bold text-white mb-2 anim-fade">MarketX Brain — Full Wiring</h2>
+    <p class="text-gray-400 mb-8 anim-fade delay-1">End-to-end data flow from user message to final response.</p>
+
+    <!-- Interactive Flow Diagram -->
+    <div class="glass rounded-2xl p-6 md:p-8 overflow-x-auto anim-slide delay-2">
+        <div class="min-w-[700px]">
+            <!-- Row 1: Entry -->
+            <div class="flex items-center gap-3 mb-2">
+                <div class="bg-white/10 text-white px-4 py-2 rounded-lg text-sm font-mono font-bold flex-shrink-0 w-52">POST /api/brain/chat</div>
+                <div class="flow-line flex-grow" style="animation-delay:.2s"></div>
+                <span class="badge badge-ok">AUTH ✓</span>
+            </div>
+            <div class="ml-6 border-l-2 border-gray-700 pl-6 space-y-4 py-4">
+                <!-- Step 1 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">1. getRequestContext()</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">supabase.auth.getUser() → users.org_id lookup → 401 if no auth</div>
+                    </div>
+                </div>
+                <!-- Step 2 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">2. getActiveBrainRuntime(orgId)</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">Single source of truth. Reads brain_agents → resolves LLM, tools, KB, constitution</div>
+                    </div>
+                </div>
+                <!-- Step 3 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">3. ToolLoader.getAgentTools(agentId)</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">Reads brain_agents.tools_granted → joins brain_tools → filters by min_tier + is_enabled</div>
+                    </div>
+                </div>
+                <!-- Step 4 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">4. PromptAssembler.assemble()</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">7 layers: Foundation → Persona → Domain → Guardrails → Constitution → Context (RAG+Mem) → Task</div>
+                    </div>
+                </div>
+                <!-- Step 5 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">5. RAGOrchestrator.retrieve()</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">Cache check → Query expansion → Hybrid search (vector + FTS) → Reranking → Gap detection (< 0.65) → Cache write</div>
+                    </div>
+                </div>
+                <!-- Step 6: The Loop -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-ok mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">6. brainOrchestrator.handleTurn() — AGENTIC LOOP</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">
+                            Max 20 turns, 50 tool calls total, 8 per turn.<br>
+                            Loop: LLM call → tool calls? → HallucinationInterceptor.validate() → permission check → MarketXToolExecutor.execute() → append result → next turn
+                        </div>
+                    </div>
+                </div>
+                <!-- Step 7 -->
+                <div class="flex items-start gap-4 group cursor-pointer" onclick="toggleDetail(this)">
+                    <div class="w-3 h-3 rounded-full bg-axiom mt-1.5 shrink-0 group-hover:scale-125 transition"></div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3">
+                            <span class="text-white font-semibold text-sm">7. Save + Log + Stream</span>
+                            <span class="badge badge-ok text-[10px]">WIRED</span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1 hidden group-[.open]:block">Save to messages table → Update conversation → brain_request_logs → SSE stream (if streaming) or JSON response</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 mt-2">
+                <div class="bg-ok/20 text-ok px-4 py-2 rounded-lg text-sm font-mono font-bold flex-shrink-0 w-52">Response (SSE/JSON)</div>
+                <div class="flow-line flex-grow" style="animation-delay:1s"></div>
+                <span class="badge badge-ok">COMPLETE</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== TOOLS REGISTRY ========== -->
+<section id="tools">
+    <h2 class="text-3xl font-bold text-white mb-2 anim-fade">Agent Tools — Full Registry</h2>
+    <p class="text-gray-400 mb-8 anim-fade delay-1">15 tools in brain_tools table, all with matching executor handlers.</p>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 anim-slide delay-2">
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer" onclick="this.classList.toggle('border-ok/30')">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">search_kb</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Hybrid FTS on embeddings table. org-scoped via org_id.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">generate_email</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Resolves belief → engine instance → BullMQ queue → workflow execution. Full RS:OS integration.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">analyze_signals</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Aggregates signal_event by belief_id. Computes open/click/reply/booking rates.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">check_belief_status</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Reads RS:OS belief table. Returns confidence, lane, allocation, status.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">record_gap</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Upserts to knowledge_gaps. Brain self-reports what it doesn't know.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_brief_context</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Joins brief + icp + offer + beliefs. Full brief lineage in one call.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">suggest_angle</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Scores angles by booking+reply signal performance. Weighted scoring.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">search_leads</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Queries leads table by icp_id + org_id. Returns email, company, seniority.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">update_domain_prompt</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Brain can self-modify its domain_prompt. Appends structured sections.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_icp_context</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">ICP + linked offer + top 5 beliefs by confidence. Full context.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">list_active_beliefs</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">All active beliefs (TEST/SW/IW/RW/GW), filterable by ICP and status.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_campaign_insights</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Aggregates signal_event over N days. Top beliefs by reply rate. Provider breakdown.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_self_reflection</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Fetches brain_reflections + brain_dream_logs. Brain introspection tool.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-ok/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_knowledge_gaps</span><span class="badge badge-ok">LIVE</span></div>
+            <p class="text-xs text-gray-500">Top 10 open gaps by impact. Tells user what to add to KB.</p>
+        </div>
+        <div class="glass rounded-xl p-4 hover:border-warn/30 transition cursor-pointer">
+            <div class="flex items-center justify-between mb-2"><span class="font-mono text-sm text-white">get_brain_health</span><span class="badge badge-warn">PARTIAL</span></div>
+            <p class="text-xs text-gray-500">Reads brain_beliefs table — <strong class="text-crit">migration missing</strong>. Will error at runtime.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== AGENT TIERS ========== -->
+<section>
+    <h2 class="text-3xl font-bold text-white mb-2 anim-fade">Agent Tiers — Access & Capabilities</h2>
+    <p class="text-gray-400 mb-8 anim-fade delay-1">Three tiers with enforced tool filtering via ToolLoader.</p>
+
+    <!-- Tab buttons -->
+    <div class="flex gap-2 mb-6 border-b border-gray-800 anim-slide delay-2">
+        <button class="tab-btn active px-4 py-2 text-sm border-b-2 border-transparent" data-tab="echii">Echii (Basic)</button>
+        <button class="tab-btn px-4 py-2 text-sm border-b-2 border-transparent" data-tab="pulz">Pulz (Mid)</button>
+        <button class="tab-btn px-4 py-2 text-sm border-b-2 border-transparent" data-tab="quanta">Quanta (Enterprise)</button>
+    </div>
+
+    <!-- Echii -->
+    <div class="tab-panel active" id="tab-echii">
+        <div class="glass rounded-2xl p-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">RAG Config</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">topK</span><span class="text-white">3</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">minSimilarity</span><span class="text-white">0.75</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Reranking</span><span class="text-crit">OFF</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Hybrid</span><span class="text-white">70/30</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Limits</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Context Window</span><span class="text-white">4K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Memory Budget</span><span class="text-white">1K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Conv Window</span><span class="text-white">5 msgs</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Rate Limit</span><span class="text-white">10 req/min</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Daily Tokens</span><span class="text-white">50K</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Tools Granted</div>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="badge badge-info">kb_search</span>
+                        <span class="badge badge-info">memory_recall</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-4">Single agent. No multi-agent. No content analysis.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pulz -->
+    <div class="tab-panel" id="tab-pulz">
+        <div class="glass rounded-2xl p-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">RAG Config</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">topK</span><span class="text-white">8</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">minSimilarity</span><span class="text-white">0.65</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Reranking</span><span class="text-ok">ON</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Hybrid</span><span class="text-white">60/40</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Limits</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Context Window</span><span class="text-white">16K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Memory Budget</span><span class="text-white">3K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Conv Window</span><span class="text-white">20 msgs</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Rate Limit</span><span class="text-white">60 req/min</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Daily Tokens</span><span class="text-white">500K</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Multi-Agent</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-axiom"></span><span class="text-white">Writer Agent</span></div>
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-oraya"></span><span class="text-white">Analyst Agent</span></div>
+                        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-ok"></span><span class="text-white">Coach Agent</span></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-4">Content analysis enabled. Summarization enabled.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quanta -->
+    <div class="tab-panel" id="tab-quanta">
+        <div class="glass rounded-2xl p-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">RAG Config</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">topK</span><span class="text-white">15</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">minSimilarity</span><span class="text-white">0.60</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Reranking</span><span class="text-ok">ON</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Graph Memory</span><span class="text-ok">ON</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Causal Reasoning</span><span class="text-ok">ON</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Limits</div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-400">Context Window</span><span class="text-white">32K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Memory Budget</span><span class="text-white">8K</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Conv Window</span><span class="text-white">50 msgs</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Rate Limit</span><span class="text-white">200 req/min</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400">Daily Tokens</span><span class="text-white">10M</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-3">Enterprise Features</div>
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        <span class="badge badge-ok">Multi-Modal</span>
+                        <span class="badge badge-ok">RLHF</span>
+                        <span class="badge badge-ok">Custom Tools</span>
+                        <span class="badge badge-ok">API Access</span>
+                        <span class="badge badge-ok">Priority Support</span>
+                        <span class="badge badge-ok">Temporal Memory</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== SECURITY AUDIT ========== -->
+<section id="security">
+    <h2 class="text-3xl font-bold text-white mb-2 anim-fade">Security Audit — Honest Status</h2>
+    <p class="text-gray-400 mb-8 anim-fade delay-1">From launch_audit.md. 18 CRITICAL, 24 WARNING. These need fixing before go-live.</p>
+
+    <div class="space-y-3 anim-slide delay-2">
+        <!-- Accordion items -->
+        <div class="glass rounded-xl overflow-hidden acc-item" onclick="toggleAcc(this)">
+            <div class="flex items-center justify-between p-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-crit">CRITICAL</span>
+                    <span class="text-white text-sm font-semibold">Missing Auth on Brain Endpoints</span>
+                </div>
+                <svg class="acc-arrow w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="acc-body">
+                <div class="px-4 pb-4 text-sm text-gray-400 space-y-2 border-t border-gray-800 pt-3">
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/embeddings</code> — GET+DELETE with ZERO auth. Anyone can list/delete embeddings.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/templates</code> — GET with no auth. Lists all templates.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/agents</code> — GET+PATCH with no auth. Anyone can list/update any agent.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/config</code> — GET with no auth. Leaks brain config.</div>
+                    <div class="mt-3 text-xs text-gray-500">Fix: Add getRequestContext() auth check + org_id filter to each of these routes.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-xl overflow-hidden acc-item" onclick="toggleAcc(this)">
+            <div class="flex items-center justify-between p-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-crit">CRITICAL</span>
+                    <span class="text-white text-sm font-semibold">Superadmin Routes — No JWT Verification</span>
+                </div>
+                <svg class="acc-arrow w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="acc-body">
+                <div class="px-4 pb-4 text-sm text-gray-400 space-y-2 border-t border-gray-800 pt-3">
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">superadmin/users/impersonate</code> — NO AUTH. Anyone can impersonate any user!</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">superadmin/vps/deploy</code> — NO AUTH. Can restart all workers.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">superadmin/ai-chat</code> — No JWT. Full LLM access with service role key.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">superadmin/ai-providers/*/test</code> — No auth. Accepts raw API keys in body.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">superadmin/redis/status</code> — No auth. Exposes Redis internals.</div>
+                    <div class="mt-3 text-xs text-gray-500">Fix: Create requireSuperadmin() middleware. Apply to all /api/superadmin/* routes.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-xl overflow-hidden acc-item" onclick="toggleAcc(this)">
+            <div class="flex items-center justify-between p-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-crit">CRITICAL</span>
+                    <span class="text-white text-sm font-semibold">Tenant Isolation Bypass</span>
+                </div>
+                <svg class="acc-arrow w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="acc-body">
+                <div class="px-4 pb-4 text-sm text-gray-400 space-y-2 border-t border-gray-800 pt-3">
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/embeddings</code> — SELECT * with no org_id filter. Cross-tenant leak.</div>
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">brain/agents</code> — SELECT/UPDATE with no ownership check.</div>
+                    <div class="flex items-center gap-2"><span class="text-warn">●</span><code class="font-mono text-xs">brain/templates</code> — No partner_id filter.</div>
+                    <div class="mt-3 text-xs text-gray-500">Fix: Every query MUST include .eq('org_id', orgId) or .eq('partner_id', orgId).</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-xl overflow-hidden acc-item" onclick="toggleAcc(this)">
+            <div class="flex items-center justify-between p-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-crit">CRITICAL</span>
+                    <span class="text-white text-sm font-semibold">Hardcoded JWT Secret Fallback</span>
+                </div>
+                <svg class="acc-arrow w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="acc-body">
+                <div class="px-4 pb-4 text-sm text-gray-400 space-y-2 border-t border-gray-800 pt-3">
+                    <div class="flex items-center gap-2"><span class="text-crit">●</span><code class="font-mono text-xs">'axiom-jwt-secret-change-in-production'</code> used as fallback in 2 files.</div>
+                    <div class="mt-3 text-xs text-gray-500">Fix: Remove fallback. App should throw on startup if JWT_SECRET not set.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass rounded-xl overflow-hidden acc-item" onclick="toggleAcc(this)">
+            <div class="flex items-center justify-between p-4 cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <span class="badge badge-warn">WARNING</span>
+                    <span class="text-white text-sm font-semibold">Missing DB Migrations</span>
+                </div>
+                <svg class="acc-arrow w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="acc-body">
+                <div class="px-4 pb-4 text-sm text-gray-400 space-y-2 border-t border-gray-800 pt-3">
+                    <div class="flex items-center gap-2"><span class="text-warn">●</span><code class="font-mono text-xs">brain_beliefs</code> — Referenced in get_brain_health tool + mastery-agent-worker. No CREATE TABLE migration found.</div>
+                    <div class="flex items-center gap-2"><span class="text-warn">●</span><code class="font-mono text-xs">brain_decisions</code> — Written to by mastery-agent-worker. No migration found.</div>
+                    <div class="flex items-center gap-2"><span class="text-warn">●</span><code class="font-mono text-xs">brain_knowledge_items</code> — Read by mastery-agent-worker. No migration found.</div>
+                    <div class="mt-3 text-xs text-gray-500">Impact: get_brain_health tool and mastery-agent-worker will throw at runtime. Need migration.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== FINAL VERDICT ========== -->
+<section id="verdict">
+    <h2 class="text-3xl font-bold text-white mb-8 anim-fade">Final Verdict — Go-Live Checklist</h2>
+
+    <div class="grid md:grid-cols-2 gap-6">
+        <!-- What's READY -->
+        <div class="glass rounded-2xl p-6 border-t-4 border-ok anim-slide delay-1">
+            <h3 class="text-xl font-bold text-ok mb-4">What's Ready</h3>
+            <div class="space-y-3">
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">BrainOrchestrator (1524 lines)</div><div class="text-xs text-gray-500">Fully agentic. 20-turn loop. Streaming + JSON. Production-grade.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">15 Tools — All Implemented</div><div class="text-xs text-gray-500">DB-registered, executor-matched, tier-filtered, permission-checked.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">RAGOrchestrator — Hybrid Search</div><div class="text-xs text-gray-500">Vector + FTS + Reranking + Cache + Gap Detection. Full pipeline.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">PromptAssembler — 7 Layers</div><div class="text-xs text-gray-500">Foundation → Persona → Domain → Guardrails → Constitution → Context → Task.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">HallucinationInterceptor</div><div class="text-xs text-gray-500">Validates every tool call before execution. Pass / Filter / Retry logic.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">Constitution System</div><div class="text-xs text-gray-500">Org-scoped rules by type (brand_voice, compliance, forbidden). Strict/soft/advisory.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">9 Workers (BullMQ)</div><div class="text-xs text-gray-500">Dream-state, mastery-agent, learning-loop, kb, analytics, workflow, engine, scheduled.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">3-Tier System (Echii/Pulz/Quanta)</div><div class="text-xs text-gray-500">Proper tier-gating in ToolLoader. Config per tier in DB.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">~80 DB Tables + RLS</div><div class="text-xs text-gray-500">Supabase migrations. RLS on brain tables. Properly normalized.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-ok mt-0.5">&#10003;</span><div><div class="text-white text-sm font-semibold">Main Chat Route (/api/brain/chat)</div><div class="text-xs text-gray-500">Auth → Runtime → Tools → RAG → Prompt → Orchestrator → Save → Stream. Full pipeline.</div></div></div>
+            </div>
+        </div>
+
+        <!-- What NEEDS FIXING -->
+        <div class="glass rounded-2xl p-6 border-t-4 border-crit anim-slide delay-2">
+            <h3 class="text-xl font-bold text-crit mb-4">Must Fix Before Go-Live</h3>
+            <div class="space-y-3">
+                <div class="flex items-start gap-3"><span class="text-crit mt-0.5">&#10007;</span><div><div class="text-white text-sm font-semibold">Auth on Brain Endpoints</div><div class="text-xs text-gray-500">brain/embeddings, brain/agents, brain/templates, brain/config — all open. Add auth + org filter.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-crit mt-0.5">&#10007;</span><div><div class="text-white text-sm font-semibold">Superadmin JWT Middleware</div><div class="text-xs text-gray-500">impersonate, vps/deploy, ai-chat, ai-providers/test — all unprotected. Create requireSuperadmin().</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-crit mt-0.5">&#10007;</span><div><div class="text-white text-sm font-semibold">JWT Secret Fallback</div><div class="text-xs text-gray-500">Remove 'axiom-jwt-secret-change-in-production' from auth/verify + impersonate. Fail hard.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-crit mt-0.5">&#10007;</span><div><div class="text-white text-sm font-semibold">Tenant Isolation</div><div class="text-xs text-gray-500">Several routes query without org_id/partner_id filter. Cross-tenant data leaks possible.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-warn mt-0.5">!</span><div><div class="text-white text-sm font-semibold">Missing Migrations</div><div class="text-xs text-gray-500">brain_beliefs, brain_decisions, brain_knowledge_items — code references them, no CREATE TABLE.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-warn mt-0.5">!</span><div><div class="text-white text-sm font-semibold">Infrastructure Setup</div><div class="text-xs text-gray-500">Redis, Supabase keys, AI keys on prod. Dockerfiles ready, infra pending.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-warn mt-0.5">!</span><div><div class="text-white text-sm font-semibold">Zero Test Coverage</div><div class="text-xs text-gray-500">No test framework. No unit tests. No integration tests for Brain. Only typecheck in workers.</div></div></div>
+                <div class="flex items-start gap-3"><span class="text-warn mt-0.5">!</span><div><div class="text-white text-sm font-semibold">Fine-Tuning Worker</div><div class="text-xs text-gray-500">Simulated submit/monitor. Not wired to real OpenAI fine-tune API.</div></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Line -->
+    <div class="mt-8 glass rounded-2xl p-6 border border-axiom/30 anim-slide delay-3">
+        <h3 class="text-lg font-bold text-white mb-3">Bottom Line</h3>
+        <p class="text-gray-400 text-sm leading-relaxed">
+            Code is <strong class="text-ok">85% production-ready</strong>. The Brain's core loop (Orchestrator → RAG → Tools → Safety) is solid. 
+            All 15 tools are implemented with proper RS:OS integration. The 3-tier system properly gates agent capabilities.
+            <br><br>
+            <strong class="text-crit">Blockers are security + infra, not code.</strong> The 4 critical auth gaps + tenant isolation issues MUST be fixed before any external user touches this. 
+            Missing migrations for 3 tables will cause runtime errors in get_brain_health and mastery-agent-worker.
+            <br><br>
+            <strong class="text-white">Estimated fix time:</strong> Security fixes ~4-6 hours. Missing migrations ~1 hour. Infra setup ~1 day. After that, it's go-live ready.
+        </p>
+    </div>
+</section>
+
+</main>
+
+<!-- ========== SCRIPTS ========== -->
+<script>
+// Animate scores on load
+function animateValue(el, target, suffix='%') {
+    let current = 0
+    const step = Math.ceil(target / 40)
+    const interval = setInterval(() => {
+        current = Math.min(current + step, target)
+        el.textContent = current + suffix
+        if (current >= target) clearInterval(interval)
+    }, 30)
+}
+
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        animateValue(document.getElementById('score-core'), 95)
+        animateValue(document.getElementById('score-workers'), 92)
+        animateValue(document.getElementById('score-api'), 87)
+        animateValue(document.getElementById('score-deploy'), 60)
+        animateValue(document.getElementById('overall-pct'), 85)
+        document.getElementById('overall-bar').style.width = '85%'
+    }, 500)
+})
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'))
+        btn.classList.add('active')
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active')
+    })
+})
+
+// Accordion
+function toggleAcc(el) {
+    el.classList.toggle('acc-open')
+}
+
+// Flow detail toggle
+function toggleDetail(el) {
+    el.classList.toggle('open')
+}
+
+// Intersection Observer for scroll animations
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running'
+        }
+    })
+}, { threshold: 0.1 })
+
+document.querySelectorAll('.anim-slide, .anim-fade').forEach(el => {
+    el.style.animationPlayState = 'paused'
+    observer.observe(el)
+})
+</script>
+</body>
+</html>

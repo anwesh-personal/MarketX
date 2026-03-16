@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Axiom — Complete System Flows (From Code)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Space Grotesk','sans-serif'],mono:['IBM Plex Mono','monospace']},colors:{s0:'#030712',s1:'#0a0f1a',s2:'#111827',s3:'#1f2937',ok:'#22c55e',warn:'#f59e0b',crit:'#ef4444',acc:'#a855f7',blue:'#3b82f6',cyan:'#06b6d4'}}}}</script>
+<style>
+body{background:#030712;color:#d1d5db;font-family:'Space Grotesk',sans-serif}
+.glass{background:rgba(17,24,39,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.07)}
+.dot-bg{background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:20px 20px}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.anim{animation:slideUp .4s ease-out both}
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}.d4{animation-delay:.2s}.d5{animation-delay:.25s}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600}
+.b-ok{background:rgba(34,197,94,.12);color:#22c55e}.b-warn{background:rgba(245,158,11,.12);color:#f59e0b}
+.b-crit{background:rgba(239,68,68,.12);color:#ef4444}.b-acc{background:rgba(168,85,247,.12);color:#c084fc}
+.b-blue{background:rgba(59,130,246,.12);color:#60a5fa}.b-cyan{background:rgba(6,182,212,.12);color:#22d3ee}
+.tab-btn{cursor:pointer;padding:8px 16px;font-size:13px;border-bottom:2px solid transparent;color:#6b7280;transition:all .2s}
+.tab-btn.active{color:#c084fc;border-color:#a855f7}.tab-btn:hover{color:#e5e7eb}
+.panel{display:none}.panel.active{display:block}
+.node{border-radius:12px;padding:12px 16px;position:relative;transition:all .2s}
+.node:hover{transform:translateY(-1px)}
+.conn{position:relative;margin-left:24px;padding-left:24px;border-left:2px solid rgba(168,85,247,.2)}
+.conn::before{content:'';position:absolute;left:-5px;top:14px;width:8px;height:8px;border-radius:50%;background:#a855f7}
+.hover-lift{transition:transform .2s}.hover-lift:hover{transform:translateY(-2px)}
+</style>
+</head>
+<body class="min-h-screen dot-bg">
+<nav class="fixed top-0 w-full z-50 glass border-b border-gray-800/50">
+<div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-acc to-blue flex items-center justify-center text-white font-bold text-sm">A</div>
+<span class="font-bold text-lg text-white">Axiom System Flows <span class="text-gray-500 font-normal text-sm">/ From Code, Not Assumptions</span></span>
+</div>
+<div class="hidden md:flex items-center gap-5 text-xs">
+<a href="#superadmin" class="text-gray-400 hover:text-white transition">Superadmin</a>
+<a href="#member" class="text-gray-400 hover:text-white transition">Member</a>
+<a href="#gaps" class="text-gray-400 hover:text-white transition">Gaps</a>
+</div>
+</div>
+</nav>
+
+<main class="pt-20 pb-24 px-4 sm:px-6 max-w-[1400px] mx-auto space-y-16">
+
+<!-- ========== SUPERADMIN FLOWS ========== -->
+<section id="superadmin" class="pt-8">
+<h1 class="text-3xl font-bold text-white mb-1 anim">Superadmin Journey</h1>
+<p class="text-gray-400 text-sm mb-8 anim d1">Step-by-step: Create org → Configure AI → Build bundle → Deploy to client</p>
+
+<div class="flex flex-wrap gap-1 mb-6 border-b border-gray-800">
+<button class="tab-btn active" onclick="st(this,'sa-org')">1. Create Org</button>
+<button class="tab-btn" onclick="st(this,'sa-user')">2. Create User</button>
+<button class="tab-btn" onclick="st(this,'sa-ai')">3. AI Providers</button>
+<button class="tab-btn" onclick="st(this,'sa-brain')">4. Brain Template</button>
+<button class="tab-btn" onclick="st(this,'sa-bundle')">5. Engine Bundle</button>
+<button class="tab-btn" onclick="st(this,'sa-deploy')">6. Deploy</button>
+</div>
+
+<!-- SA: Create Org -->
+<div class="panel active" id="p-sa-org">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/organizations</span><span class="badge b-crit">NO AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Create Organization + Owner</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">name</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">slug</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">plan</span>: <span class="text-gray-400">hobby | pro | enterprise</span></div>
+<div><span class="text-acc">owner_email</span>: <span class="text-gray-400">string (creates user + auth)</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What Happens</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white">1.</span> <span class="text-gray-300">Insert <code class="text-acc">organizations</code></span> <span class="text-xs text-gray-500">(quotas by plan)</span></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white">2.</span> <span class="text-gray-300"><code class="text-acc">auth.admin.createUser</code></span> <span class="text-xs text-gray-500">(if owner_email)</span></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white">3.</span> <span class="text-gray-300">Insert <code class="text-acc">users</code></span> <span class="text-xs text-gray-500">(role: owner)</span></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white">4.</span> <span class="text-gray-300">Insert <code class="text-acc">license_transactions</code></span></div></div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-crit/5 border border-crit/20 rounded-lg p-3 text-xs text-crit">Gap: Password generated but never sent to user. No welcome email. Owner must use "Reset Password" from superadmin to get access.</div>
+</div>
+</div>
+
+<!-- SA: Create User -->
+<div class="panel" id="p-sa-user">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/users</span><span class="badge b-crit">NO AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Create User (Standalone)</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">email</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">password</span>: <span class="text-gray-400">string * (min 8)</span></div>
+<div><span class="text-acc">full_name</span>: <span class="text-gray-400">string</span></div>
+<div><span class="text-acc">org_id</span>: <span class="text-gray-400">UUID *</span></div>
+<div><span class="text-acc">role</span>: <span class="text-gray-400">owner|admin|member|viewer</span></div>
+<div><span class="text-acc">can_upload_kb</span>: <span class="text-gray-400">bool</span></div>
+<div><span class="text-acc">can_trigger_runs</span>: <span class="text-gray-400">bool</span></div>
+<div><span class="text-acc">can_view_analytics</span>: <span class="text-gray-400">bool</span></div>
+<div><span class="text-acc">can_manage_team</span>: <span class="text-gray-400">bool</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What Happens</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Validate org exists + team size check</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">auth.admin.createUser</code> (email_confirm: false)</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">generateLink({type:'invite'})</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Insert <code class="text-acc">users</code> with permissions</div></div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-warn/5 border border-warn/20 rounded-lg p-3 text-xs text-warn">Note: password in body is accepted but ignored — invite flow is used instead. Confusing API design.</div>
+</div>
+</div>
+
+<!-- SA: AI Providers -->
+<div class="panel" id="p-sa-ai">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/ai-providers</span><span class="badge b-ok">HAS AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Configure AI Provider</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">provider</span>: <span class="text-gray-400">openai|anthropic|google|mistral|perplexity|xai *</span></div>
+<div><span class="text-acc">name</span>: <span class="text-gray-400">string * (label)</span></div>
+<div><span class="text-acc">api_key</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">description</span>: <span class="text-gray-400">string</span></div>
+</div>
+<div class="mt-4 text-xs text-gray-500">Stored in <code class="text-acc">ai_providers</code> with <code>org_id=NULL</code> (platform-wide). Key is encrypted via <code>encryptSecret()</code>.</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What Happens</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">validateAndDiscover(provider, key)</code> — real API call</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Insert <code class="text-acc">ai_providers</code> (encrypted key)</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Returns discovered models count</div></div>
+</div>
+<div class="mt-4 text-xs text-gray-500">Test route: <code class="text-acc">POST /api/superadmin/ai-providers/{id}/test</code> — upserts models to <code>ai_model_metadata</code>.</div>
+</div>
+</div>
+<div class="mt-4 bg-ok/5 border border-ok/20 rounded-lg p-3 text-xs text-ok">This route has requireSuperadmin auth. One of the few that does.</div>
+</div>
+</div>
+
+<!-- SA: Brain Template -->
+<div class="panel" id="p-sa-brain">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/brains</span><span class="badge b-ok">HAS AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Create Brain Template</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body (Zod validated)</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">name</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">version</span>: <span class="text-gray-400">string (X.Y.Z) *</span></div>
+<div><span class="text-acc">pricingTier</span>: <span class="text-gray-400">echii|pulz|quanta</span></div>
+<div><span class="text-acc">config.rag</span>: <span class="text-gray-400">{topK, minSimilarity, reranking, hybrid, ...}</span></div>
+<div><span class="text-acc">config.memory</span>: <span class="text-gray-400">{maxContextTokens, maxMemoryTokens, ...}</span></div>
+<div><span class="text-acc">config.limits</span>: <span class="text-gray-400">{maxRequestsPerMinute, maxTokensPerDay}</span></div>
+<div><span class="text-acc">config.agents</span>: <span class="text-gray-400">{[key]: {systemPrompt, temperature, tools}}</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What Happens</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Zod validate full config</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">brainConfigService.createTemplate()</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Insert <code class="text-acc">brain_templates</code></div></div>
+</div>
+<div class="mt-4 text-xs text-gray-500">Used as blueprint. Referenced by engine bundles. NOT deployed directly — bundles deploy it.</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SA: Engine Bundle -->
+<div class="panel" id="p-sa-bundle">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/engine-bundles</span><span class="badge b-ok">HAS AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Create Engine Bundle</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">name</span>: <span class="text-gray-400">string *</span></div>
+<div><span class="text-acc">brain_template_id</span>: <span class="text-gray-400">UUID (from step 4)</span></div>
+<div><span class="text-acc">workflow_template_id</span>: <span class="text-gray-400">UUID</span></div>
+<div><span class="text-acc">tier</span>: <span class="text-gray-400">echii|pulz|quanta</span></div>
+<div><span class="text-acc">default_api_key_mode</span>: <span class="text-gray-400">platform|byok|hybrid</span></div>
+<div class="mt-2 text-gray-600">— Then PATCH to add: —</div>
+<div><span class="text-acc">agents_config</span>: <span class="text-gray-400">[{role, name, llm, prompts, tools, rag}]</span></div>
+<div><span class="text-acc">default_llm</span>: <span class="text-gray-400">{provider, model, temperature, max_tokens}</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">UI: 3-Tab Form</div>
+<div class="space-y-3">
+<div class="bg-s2 rounded-lg p-3 border border-gray-700 text-sm"><span class="text-acc font-semibold">Tab 1: Basics</span><br><span class="text-xs text-gray-500">Name, Brain Template, Workflow, Tier, API Key Strategy</span></div>
+<div class="bg-s2 rounded-lg p-3 border border-gray-700 text-sm"><span class="text-blue font-semibold">Tab 2: Default LLM</span><br><span class="text-xs text-gray-500">Provider, Model, Temperature, Max Tokens</span></div>
+<div class="bg-s2 rounded-lg p-3 border border-gray-700 text-sm"><span class="text-cyan font-semibold">Tab 3: Agents</span><br><span class="text-xs text-gray-500">Add agents with role, LLM, prompts, tools, RAG, memory config</span></div>
+</div>
+<div class="mt-3 text-xs text-gray-500">Bundle = Brain + Workflow + Agents + Config. This is the "product" you sell to clients.</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- SA: Deploy -->
+<div class="panel" id="p-sa-deploy">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/superadmin/engine-bundles/{id}/deploy</span><span class="badge b-ok">HAS AUTH</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Deploy Bundle to Organization</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Request Body</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">org_id</span>: <span class="text-gray-400">UUID *</span></div>
+<div><span class="text-acc">assigned_user_id</span>: <span class="text-gray-400">UUID (null = org-wide)</span></div>
+<div><span class="text-acc">api_key_mode</span>: <span class="text-gray-400">platform|byok|hybrid</span></div>
+<div><span class="text-acc">byok_keys</span>: <span class="text-gray-400">{openai?, anthropic?}</span></div>
+<div><span class="text-acc">deployment_notes</span>: <span class="text-gray-400">string</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Deploy Sequence (6 steps)</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white font-bold">1</span> Validate bundle + org + no duplicate</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white font-bold">2</span> Build snapshot (freeze bundle state)</div></div>
+<div class="conn"><div class="node bg-acc/10 border border-acc/30 text-sm"><span class="text-acc font-bold">3</span> Clone → Insert <code class="text-acc">brain_agents</code> per role</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white font-bold">4</span> Generate API key <code class="text-xs text-gray-500">axm_live_xxx</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white font-bold">5</span> Insert <code class="text-acc">engine_instances</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><span class="text-white font-bold">6</span> Insert <code class="text-acc">engine_bundle_deployments</code> (audit)</div></div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-acc/5 border border-acc/20 rounded-lg p-3 text-xs text-acc">Step 3 is THE critical step — it creates <code>brain_agents</code> records. Without these, Brain Chat returns "No active brain agent deployed." This is the bridge between Superadmin and Member.</div>
+</div>
+</div>
+</section>
+
+<!-- ========== MEMBER FLOWS ========== -->
+<section id="member">
+<h2 class="text-3xl font-bold text-white mb-1 anim">Member Journey</h2>
+<p class="text-gray-400 text-sm mb-8 anim d1">What the client experiences after Superadmin deploys their bundle</p>
+
+<div class="flex flex-wrap gap-1 mb-6 border-b border-gray-800">
+<button class="tab-btn active" onclick="st(this,'m-login')">1. Login</button>
+<button class="tab-btn" onclick="st(this,'m-dash')">2. Dashboard</button>
+<button class="tab-btn" onclick="st(this,'m-brain')">3. Brain Chat</button>
+<button class="tab-btn" onclick="st(this,'m-write')">4. Write Emails</button>
+<button class="tab-btn" onclick="st(this,'m-kb')">5. KB Manager</button>
+<button class="tab-btn" onclick="st(this,'m-other')">6. Other Pages</button>
+</div>
+
+<!-- M: Login -->
+<div class="panel active" id="p-m-login">
+<div class="glass rounded-2xl p-6">
+<h3 class="text-lg font-bold text-white mb-4">Login → Dashboard</h3>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">signInWithPassword({email, password})</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Success → <code class="text-acc">router.push('/dashboard')</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Layout: <code class="text-acc">auth.getUser()</code> → if no user → /login</div></div>
+</div>
+<div class="mt-4 text-xs text-gray-500">No signup page. Users created by Superadmin only. Password via reset link or impersonate.</div>
+</div>
+</div>
+
+<!-- M: Dashboard -->
+<div class="panel" id="p-m-dash">
+<div class="glass rounded-2xl p-6">
+<h3 class="text-lg font-bold text-white mb-4">Dashboard Load</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">API Calls (Supabase Client)</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">users</code> + <code class="text-acc">organizations</code> join</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">runs</code> (status, created_at) for user</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">knowledge_bases</code> count for org</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">users.onboarding_completed</code> check</div></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What's Shown</div>
+<div class="space-y-2 text-sm text-gray-400">
+<div>Total Runs + weekly count + quota bar</div>
+<div>Success Rate %</div>
+<div>KB count / quota</div>
+<div>Quick Actions: New Run, Manage KBs, Analytics</div>
+<div>Recent 5 runs with status</div>
+<div>Onboarding banner if incomplete</div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-warn/5 border border-warn/20 rounded-lg p-3 text-xs text-warn">Shows "runs" — not campaign metrics (sends, replies, bookings). Portal page has those but isn't in sidebar.</div>
+</div>
+</div>
+
+<!-- M: Brain Chat -->
+<div class="panel" id="p-m-brain">
+<div class="glass rounded-2xl p-6">
+<h3 class="text-lg font-bold text-white mb-4">Brain Chat — The Core Product</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Load Sequence</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">GET /api/brain/runtime</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">getActiveBrainRuntime(orgId)</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Reads <code class="text-acc">brain_agents</code> where org_id, user_id IS NULL, status active</div></div>
+<div class="conn"><div class="node bg-crit/10 border border-crit/30 text-sm text-crit">If no brain_agents → "No active brain agent deployed"</div></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Chat Flow (POST /api/brain/chat)</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Auth → org_id</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">ToolLoader.getAgentTools()</code> — from brain_tools + min_tier</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">PromptAssembler</code> — 7 layers + RAG + memories + constitution</div></div>
+<div class="conn"><div class="node bg-acc/10 border border-acc/30 text-sm"><code class="text-acc">BrainOrchestrator.handleTurn()</code> — up to 20 turns</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">AIProviderService.generateChat()</code> → provider chain</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Tool calls → <code class="text-acc">HallucinationInterceptor</code> → <code class="text-acc">MarketXToolExecutor</code></div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Save to messages, log metrics, SSE stream</div></div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-acc/5 border border-acc/20 rounded-lg p-3 text-xs text-acc"><strong>Requires:</strong> (1) brain_agents record (from bundle deploy), (2) AI provider configured (from step 3), (3) brain_tools rows in DB. Without ALL three, Brain Chat fails.</div>
+</div>
+</div>
+
+<!-- M: Write Emails -->
+<div class="panel" id="p-m-write">
+<div class="glass rounded-2xl p-6">
+<div class="flex items-center gap-3 mb-4"><span class="badge b-acc">POST /api/writer/execute</span></div>
+<h3 class="text-lg font-bold text-white mb-4">Write Emails (Writer Studio)</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What UI Sends</div>
+<div class="bg-s1 rounded-xl p-4 font-mono text-xs space-y-1">
+<div><span class="text-acc">kb_id</span>: <span class="text-gray-400">UUID (selected KB)</span></div>
+<div><span class="text-acc">prompt</span>: <span class="text-gray-400">string</span></div>
+<div><span class="text-acc">settings.tone</span>: <span class="text-gray-400">professional|casual|formal|friendly|technical</span></div>
+<div><span class="text-acc">settings.length</span>: <span class="text-gray-400">short|medium|long</span></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">What API Actually Does</div>
+<div class="space-y-2">
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Auth → org → <code class="text-acc">requireActiveBrainRuntime()</code></div></div>
+<div class="conn"><div class="node bg-crit/10 border border-crit/30 text-sm text-crit"><code>kb_id</code> from form is IGNORED</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm"><code class="text-acc">brainKBService.buildWriterContext()</code> — uses Brain KB</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Find workflow template "Email Nurture Flow"</div></div>
+<div class="conn"><div class="node bg-s2 border border-gray-700 text-sm">Queue to <code class="text-acc">engine-execution</code> BullMQ</div></div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-crit/5 border border-crit/20 rounded-lg p-3 text-xs text-crit"><strong>BROKEN:</strong> Form sends kb_id, tone, length — API ignores all of them. API uses Brain KB from brainKBService instead. Form and API are out of sync. Also: no output preview (View/Download buttons are dead).</div>
+</div>
+</div>
+
+<!-- M: KB Manager -->
+<div class="panel" id="p-m-kb">
+<div class="glass rounded-2xl p-6">
+<h3 class="text-lg font-bold text-white mb-4">Knowledge Base Manager</h3>
+<div class="grid md:grid-cols-2 gap-6">
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">CRUD</div>
+<div class="space-y-2 text-sm">
+<div class="flex items-center gap-2"><span class="badge b-ok">GET</span> <code class="text-gray-400">/api/kb?orgId=</code></div>
+<div class="flex items-center gap-2"><span class="badge b-blue">POST</span> <code class="text-gray-400">/api/kb</code></div>
+<div class="flex items-center gap-2"><span class="badge b-warn">PUT</span> <code class="text-gray-400">/api/kb/{id}</code></div>
+<div class="flex items-center gap-2"><span class="badge b-crit">DEL</span> <code class="text-gray-400">/api/kb/{id}</code></div>
+<div class="flex items-center gap-2"><span class="badge b-acc">POST</span> <code class="text-gray-400">/api/kb/{id}/duplicate</code></div>
+</div>
+</div>
+<div>
+<div class="text-xs text-gray-500 uppercase mb-3">Notes</div>
+<div class="space-y-2 text-sm text-gray-400">
+<div>Split layout: sidebar list + markdown editor</div>
+<div>12-section schema (Tommy's format)</div>
+<div>Edit / Preview / JSON tabs</div>
+<div>⌘S save, export/import</div>
+</div>
+</div>
+</div>
+<div class="mt-4 bg-crit/5 border border-crit/20 rounded-lg p-3 text-xs text-crit"><strong>Security:</strong> ALL KB routes use SERVICE_ROLE_KEY only — no user auth, no org scoping. Any unauthenticated request can CRUD any org's KBs.</div>
+</div>
+</div>
+
+<!-- M: Other Pages -->
+<div class="panel" id="p-m-other">
+<div class="glass rounded-2xl p-6">
+<h3 class="text-lg font-bold text-white mb-4">Other Member Pages</h3>
+<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Brain Control</div>
+<div class="text-xs text-gray-500">2048 lines. 6 sections. Overview, Memory Palace, Agent Control, Training, Analytics, Config.</div>
+<div class="badge b-warn mt-2">Too complex for client</div>
+</div>
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Learning Loop</div>
+<div class="text-xs text-gray-500">Read-only. Memories, Gaps, Reflections, Dream Logs. Supabase client queries.</div>
+<div class="badge b-warn mt-2">No actions, raw data</div>
+</div>
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Analytics</div>
+<div class="text-xs text-gray-500">Run metrics only. No email metrics (open/click/reply/booking).</div>
+<div class="badge b-warn mt-2">Wrong metrics for client</div>
+</div>
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Settings</div>
+<div class="text-xs text-gray-500">Name edit, org info, logout. Notification toggles NOT persisted.</div>
+<div class="badge b-ok mt-2">Functional</div>
+</div>
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Portal</div>
+<div class="text-xs text-gray-500">HAS real campaign metrics (sends, replies, bookings, revenue). Feature tiles with tier gating.</div>
+<div class="badge b-crit mt-2">NOT in sidebar</div>
+</div>
+<div class="bg-s2 rounded-xl p-4 border border-gray-700">
+<div class="font-semibold text-white text-sm mb-1">Chat (Legacy)</div>
+<div class="text-xs text-gray-500">Uses old /api/chat. Hardcoded "default-org".</div>
+<div class="badge b-crit mt-2">Should redirect to /brain-chat</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ========== GAPS ========== -->
+<section id="gaps">
+<h2 class="text-3xl font-bold text-white mb-1 anim">Gaps & Broken Links</h2>
+<p class="text-gray-400 text-sm mb-8 anim d1">Every issue found by tracing actual code.</p>
+<div class="space-y-3">
+<div class="glass rounded-xl p-4 border-l-4 border-crit"><div class="flex items-center gap-2 mb-1"><span class="badge b-crit">CRITICAL</span><span class="text-white text-sm font-semibold">Onboarding API inserts wrong columns into knowledge_bases</span></div><div class="text-xs text-gray-400">API inserts <code>content</code>, <code>status</code>, <code>is_primary</code> — but <code>knowledge_bases</code> table has <code>data</code> (JSONB), <code>stage</code>, no <code>is_primary</code>. Insert will fail.</div><div class="text-xs text-gray-600 mt-1">File: <code>api/onboarding/complete/route.ts</code> line 43-48</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-crit"><div class="flex items-center gap-2 mb-1"><span class="badge b-crit">CRITICAL</span><span class="text-white text-sm font-semibold">Writer form and API are out of sync</span></div><div class="text-xs text-gray-400">Form sends kb_id, tone, length. API ignores kb_id, uses Brain KB from brainKBService. API expects angle_class, email_count, flow_goal — form doesn't send these.</div><div class="text-xs text-gray-600 mt-1">File: <code>writer/new/page.tsx</code> vs <code>api/writer/execute/route.ts</code></div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-crit"><div class="flex items-center gap-2 mb-1"><span class="badge b-crit">CRITICAL</span><span class="text-white text-sm font-semibold">KB APIs have zero auth</span></div><div class="text-xs text-gray-400">All /api/kb/* routes use SERVICE_ROLE_KEY only. No user authentication, no org scoping. Anyone can CRUD any org's knowledge bases.</div><div class="text-xs text-gray-600 mt-1">File: <code>api/kb/route.ts</code>, <code>api/kb/[id]/route.ts</code></div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-crit"><div class="flex items-center gap-2 mb-1"><span class="badge b-crit">CRITICAL</span><span class="text-white text-sm font-semibold">Superadmin org/user routes have no auth</span></div><div class="text-xs text-gray-400">POST /api/superadmin/organizations and POST /api/superadmin/users have zero authentication. Anyone can create orgs and users.</div><div class="text-xs text-gray-600 mt-1">File: <code>api/superadmin/organizations/route.ts</code>, <code>api/superadmin/users/route.ts</code></div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-crit"><div class="flex items-center gap-2 mb-1"><span class="badge b-crit">CRITICAL</span><span class="text-white text-sm font-semibold">Migrations 031, 032, 035, 036 not on remote</span></div><div class="text-xs text-gray-400">agent_templates table missing (6 seed agents), 2 brain tools not synced, infra config extensions missing, signal_event idempotency missing + 4 brain tools.</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-warn"><div class="flex items-center gap-2 mb-1"><span class="badge b-warn">IMPORTANT</span><span class="text-white text-sm font-semibold">No AI provider = Brain Chat dead</span></div><div class="text-xs text-gray-400">AIProviderService throws if no provider configured. Must add at least one API key via Superadmin → AI Providers before Brain Chat works.</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-warn"><div class="flex items-center gap-2 mb-1"><span class="badge b-warn">IMPORTANT</span><span class="text-white text-sm font-semibold">No bundle deploy = Brain Chat dead</span></div><div class="text-xs text-gray-400">BrainRuntimeResolver reads brain_agents. No brain_agents = "No active brain deployed". Must deploy bundle first.</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-warn"><div class="flex items-center gap-2 mb-1"><span class="badge b-warn">IMPORTANT</span><span class="text-white text-sm font-semibold">Dead buttons everywhere</span></div><div class="text-xs text-gray-400">History, Settings, Regenerate (brain-chat). View, Download, Delete (writer). Review Errors (dashboard). All non-functional.</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-warn"><div class="flex items-center gap-2 mb-1"><span class="badge b-warn">IMPORTANT</span><span class="text-white text-sm font-semibold">Portal page not in sidebar</span></div><div class="text-xs text-gray-400">Has real campaign metrics (sends, replies, bookings, revenue) but client can't find it — not in navigation.</div></div>
+
+<div class="glass rounded-xl p-4 border-l-4 border-warn"><div class="flex items-center gap-2 mb-1"><span class="badge b-warn">IMPORTANT</span><span class="text-white text-sm font-semibold">organizations/[id] detail page missing</span></div><div class="text-xs text-gray-400">Superadmin org list has Edit/View Details buttons but the route doesn't exist. Will 404.</div></div>
+</div>
+
+<!-- GO LIVE ORDER -->
+<div class="mt-12 glass rounded-2xl p-6 border border-acc/20">
+<h3 class="text-xl font-bold text-white mb-4">Go-Live Order (Must Do)</h3>
+<div class="grid md:grid-cols-2 gap-4">
+<div class="space-y-3">
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">1</div><div class="text-sm text-gray-300">Run migrations 031, 032, 035, 036 on remote</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">2</div><div class="text-sm text-gray-300">Superadmin → AI Providers → Add OpenAI or Anthropic key</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">3</div><div class="text-sm text-gray-300">Superadmin → Brains → Create brain template</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">4</div><div class="text-sm text-gray-300">Superadmin → Engine Bundles → Create bundle (brain + agents + LLM)</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">5</div><div class="text-sm text-gray-300">Superadmin → Engine Bundles → Deploy to org</div></div>
+</div>
+<div class="space-y-3">
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-blue/20 flex items-center justify-center text-xs text-blue font-bold shrink-0">6</div><div class="text-sm text-gray-300">Test Brain Chat as member</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-blue/20 flex items-center justify-center text-xs text-blue font-bold shrink-0">7</div><div class="text-sm text-gray-300">Test onboarding modal (Activate Brain)</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-crit/20 flex items-center justify-center text-xs text-crit font-bold shrink-0">8</div><div class="text-sm text-gray-300">Fix onboarding API — knowledge_bases columns wrong</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-crit/20 flex items-center justify-center text-xs text-crit font-bold shrink-0">9</div><div class="text-sm text-gray-300">Add auth to unprotected routes</div></div>
+<div class="flex items-start gap-3"><div class="w-6 h-6 rounded-full bg-crit/20 flex items-center justify-center text-xs text-crit font-bold shrink-0">10</div><div class="text-sm text-gray-300">Fix Writer form ↔ API mismatch</div></div>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+
+<script>
+function st(btn,id){
+document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
+document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'))
+btn.classList.add('active')
+document.getElementById('p-'+id).classList.add('active')
+}
+const obs=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.style.animationPlayState='running'})},{threshold:.1})
+document.querySelectorAll('.anim').forEach(el=>{el.style.animationPlayState='paused';obs.observe(el)})
+</script>
+</body>
+</html>

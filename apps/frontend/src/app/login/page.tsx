@@ -27,7 +27,6 @@ export default function LoginPage() {
 
             if (authError) throw authError;
 
-            // Redirect to dashboard on success
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.message || 'Login failed. Please try again.');

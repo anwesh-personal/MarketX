@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketX Member Area — UX Audit & Redesign Plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk','sans-serif'], mono: ['IBM Plex Mono','monospace'] },
+                    colors: {
+                        s0:'#030712', s1:'#0a0f1a', s2:'#111827', s3:'#1f2937',
+                        ok:'#22c55e', warn:'#f59e0b', crit:'#ef4444',
+                        acc:'#a855f7', acc2:'#6366f1', blue:'#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body{background:#030712;color:#d1d5db;font-family:'Space Grotesk',sans-serif}
+        .glass{background:rgba(17,24,39,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.07)}
+        .dot-bg{background-image:radial-gradient(rgba(255,255,255,.04) 1px,transparent 1px);background-size:20px 20px}
+        @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        .anim{animation:slideUp .5s ease-out both}
+        .d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}
+        .badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:600}
+        .b-ok{background:rgba(34,197,94,.12);color:#22c55e}
+        .b-warn{background:rgba(245,158,11,.12);color:#f59e0b}
+        .b-crit{background:rgba(239,68,68,.12);color:#ef4444}
+        .b-acc{background:rgba(168,85,247,.12);color:#c084fc}
+        .b-blue{background:rgba(59,130,246,.12);color:#60a5fa}
+        .b-gray{background:rgba(156,163,175,.12);color:#9ca3af}
+        .tab-btn{cursor:pointer;padding:8px 16px;font-size:13px;border-bottom:2px solid transparent;color:#6b7280;transition:all .2s}
+        .tab-btn.active{color:#c084fc;border-color:#a855f7}
+        .tab-btn:hover{color:#e5e7eb}
+        .panel{display:none}.panel.active{display:block}
+        .flow-node{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;background:rgba(17,24,39,.8);position:relative}
+        .flow-node::after{content:'';position:absolute;bottom:-20px;left:50%;width:2px;height:20px;background:rgba(168,85,247,.3)}
+        .flow-node:last-child::after{display:none}
+        .hover-lift{transition:transform .2s,box-shadow .2s}.hover-lift:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,.3)}
+        .acc-body{max-height:0;overflow:hidden;transition:max-height .35s ease}.open .acc-body{max-height:3000px}
+        .acc-arrow{transition:transform .3s}.open .acc-arrow{transform:rotate(180deg)}
+        .journey-step{position:relative;padding-left:32px}
+        .journey-step::before{content:'';position:absolute;left:11px;top:28px;bottom:-8px;width:2px;background:linear-gradient(180deg,#a855f7,transparent)}
+        .journey-step:last-child::before{display:none}
+        .journey-dot{position:absolute;left:0;top:4px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+    </style>
+</head>
+<body class="min-h-screen dot-bg">
+
+<nav class="fixed top-0 w-full z-50 glass border-b border-gray-800/50">
+    <div class="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-acc to-blue flex items-center justify-center text-white font-bold text-sm">M</div>
+            <span class="font-bold text-lg text-white">MarketX UX <span class="text-gray-500 font-normal text-sm">/ Audit + Redesign</span></span>
+        </div>
+        <div class="hidden md:flex items-center gap-5 text-xs">
+            <a href="#current" class="text-gray-400 hover:text-white transition">Current State</a>
+            <a href="#problems" class="text-gray-400 hover:text-white transition">Problems</a>
+            <a href="#redesign" class="text-gray-400 hover:text-white transition">Redesign Plan</a>
+            <a href="#journey" class="text-gray-400 hover:text-white transition">User Journey</a>
+            <a href="#priority" class="text-gray-400 hover:text-white transition">Priority</a>
+        </div>
+    </div>
+</nav>
+
+<main class="pt-20 pb-24 px-4 sm:px-6 max-w-[1400px] mx-auto space-y-20">
+
+<!-- ========== HERO ========== -->
+<section class="pt-8">
+    <h1 class="text-4xl md:text-5xl font-bold text-white mb-3 anim">The Client Doesn't Care About Your Architecture.</h1>
+    <p class="text-lg text-gray-400 mb-4 anim d1">They care about: <strong class="text-white">"Did I get more replies today?"</strong></p>
+    <p class="text-sm text-gray-500 anim d2">11 pages. 2048-line Brain Control. Dead buttons. No onboarding. No guided flow. Here's how we fix it.</p>
+</section>
+
+<!-- ========== CURRENT STATE AUDIT ========== -->
+<section id="current">
+    <h2 class="text-3xl font-bold text-white mb-2 anim">Current Member Area — Page Audit</h2>
+    <p class="text-gray-400 mb-8 text-sm anim d1">Every page, honest status, what works, what doesn't.</p>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dashboard -->
+        <div class="glass rounded-xl p-5 hover-lift anim d1">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/dashboard</span>
+                <span class="badge b-warn">FUNCTIONAL</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">401 lines. Bento grid with stats, quick actions, recent runs.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Stats cards, recent activity</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">"Review Errors" does nothing</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">No real campaign metrics (sends, replies, bookings)</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Runs are not clickable for detail</span></div>
+            </div>
+        </div>
+
+        <!-- Brain Chat -->
+        <div class="glass rounded-xl p-5 hover-lift anim d2">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/brain-chat</span>
+                <span class="badge b-ok">SOLID</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">557 lines. Streaming chat, markdown, push-to-brain.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Streaming, suggestions, copy</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">History button → does nothing</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Settings button → does nothing</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Regenerate → not implemented</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">No conversation sidebar/history</span></div>
+            </div>
+        </div>
+
+        <!-- Brain Control -->
+        <div class="glass rounded-xl p-5 hover-lift anim d3">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/brain-control</span>
+                <span class="badge b-crit">OVERWHELMING</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">2,048 lines. 6 sections. Admin-level complexity.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Way too complex for a client</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Memory Palace = dev tool, not client tool</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Training Center = hidden power features</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">Should be split or simplified</span></div>
+            </div>
+        </div>
+
+        <!-- Writer -->
+        <div class="glass rounded-xl p-5 hover-lift anim d1">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/writer + /writer/new</span>
+                <span class="badge b-warn">FUNCTIONAL</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">245+343 lines. Run list + create form.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">KB select, tone, length, execute</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">View/Download/Delete buttons → dead</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">No output preview</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">No email preview/edit before send</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">Too many steps for "write email"</span></div>
+            </div>
+        </div>
+
+        <!-- KB Manager -->
+        <div class="glass rounded-xl p-5 hover-lift anim d2">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/kb-manager</span>
+                <span class="badge b-ok">SOLID</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">434 lines. Split layout, markdown editor.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Full CRUD, export, import, duplicate</span></div>
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">⌘S save, preview, JSON view</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">12-section schema is intimidating for new users</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">No guided KB filling wizard</span></div>
+            </div>
+        </div>
+
+        <!-- Learning -->
+        <div class="glass rounded-xl p-5 hover-lift anim d3">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/learning</span>
+                <span class="badge b-gray">READ-ONLY</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">335 lines. Memories, gaps, reflections, dreams.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Tabs for each learning type</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">100% read-only — no actions</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Client doesn't understand "Dream Logs"</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">Should show actionable insights, not raw data</span></div>
+            </div>
+        </div>
+
+        <!-- Analytics -->
+        <div class="glass rounded-xl p-5 hover-lift anim d1">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/analytics</span>
+                <span class="badge b-warn">BASIC</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">326 lines. Run metrics, simple bar chart.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Time range filter, basic stats</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Shows "runs" not "campaigns" — wrong metric for client</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">No email metrics (open, click, reply, booking rates)</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">No belief/angle performance</span></div>
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="glass rounded-xl p-5 hover-lift anim d2">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/settings</span>
+                <span class="badge b-warn">PARTIAL</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">318 lines. Profile, org, notifications.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Name edit, org info, logout</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Notification toggles not persisted</span></div>
+                <div class="flex items-center gap-2"><span class="text-warn">!</span><span class="text-gray-400">Missing: API keys, integrations, team members</span></div>
+            </div>
+        </div>
+
+        <!-- Portal -->
+        <div class="glass rounded-xl p-5 hover-lift anim d3">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-white font-semibold">/portal</span>
+                <span class="badge b-acc">HIDDEN GEM</span>
+            </div>
+            <div class="text-xs text-gray-500 mb-3">178 lines. Real campaign metrics. Feature tiles.</div>
+            <div class="space-y-1.5 text-xs">
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Sends, reply rate, bookings, revenue — REAL metrics</span></div>
+                <div class="flex items-center gap-2"><span class="text-ok">✓</span><span class="text-gray-400">Feature tiles with tier gating</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">NOT IN SIDEBAR — client can't find it</span></div>
+                <div class="flex items-center gap-2"><span class="text-crit">✗</span><span class="text-gray-400">Should BE the dashboard</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== CORE PROBLEMS ========== -->
+<section id="problems">
+    <h2 class="text-3xl font-bold text-white mb-2 anim">The 7 Core Problems</h2>
+    <p class="text-gray-400 mb-8 text-sm anim d1">Why a client would feel lost.</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+        <div class="glass rounded-xl p-6 border-l-4 border-crit anim d1">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-crit">1</span>
+                <h3 class="text-white font-bold">No Onboarding. No Guide. No Wizard.</h3>
+            </div>
+            <p class="text-sm text-gray-400">Client signs up → lands on dashboard → sees "Total Runs: 0" → has no idea what to do first. No KB created, no brain set up, no context given. Planned in roadmap, never built.</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-crit anim d2">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-crit">2</span>
+                <h3 class="text-white font-bold">Wrong Dashboard. Wrong Metrics.</h3>
+            </div>
+            <p class="text-sm text-gray-400">Dashboard shows "Runs" and "Success Rate". Client cares about: <strong class="text-white">Sends, Opens, Replies, Bookings, Revenue</strong>. The /portal page HAS these metrics but it's hidden — not even in the sidebar.</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-crit anim d3">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-crit">3</span>
+                <h3 class="text-white font-bold">Brain Control = Engineer's Panel, Not Client's.</h3>
+            </div>
+            <p class="text-sm text-gray-400">2,048 lines. Memory Palace. Embeddings. Intent Patterns. Query Expansions. Agent Control. No client should ever see this. They should see: "Brain Health: Good. Learning: 47 things. Gaps: 3 things to teach."</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-crit anim d4">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-crit">4</span>
+                <h3 class="text-white font-bold">Dead Buttons Everywhere.</h3>
+            </div>
+            <p class="text-sm text-gray-400">History (brain-chat), Settings (brain-chat), Regenerate (brain-chat), View/Download/Delete (writer), Review Errors (dashboard). Clicking does nothing. This kills trust instantly.</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-warn anim d1">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-warn">5</span>
+                <h3 class="text-white font-bold">Writing Emails = 5 Steps + No Preview.</h3>
+            </div>
+            <p class="text-sm text-gray-400">Writer → New → Pick KB → Pick tone → Pick length → Write prompt → Submit → Go back to list → Can't even see the output. Client should say "Write emails for ICP X" in brain chat and get a preview.</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-warn anim d2">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-warn">6</span>
+                <h3 class="text-white font-bold">Learning Page = Raw Data Dump.</h3>
+            </div>
+            <p class="text-sm text-gray-400">"Dream Logs", "Brain Reflections", "Knowledge Gaps" with raw JSON-like data. Client doesn't know what a "Dream Log" is. Should show: "Your Brain learned 12 new things this week. Here's what it needs from you."</p>
+        </div>
+
+        <div class="glass rounded-xl p-6 border-l-4 border-warn anim d3">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-2xl font-bold text-warn">7</span>
+                <h3 class="text-white font-bold">Too Many Pages, No Flow Between Them.</h3>
+            </div>
+            <p class="text-sm text-gray-400">11 pages in sidebar. Client doesn't know what "Learning Loop" means. Should be 5 max: <strong class="text-white">Home, Brain, Writer, Knowledge, Performance</strong>. Everything else folds into these.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== REDESIGN PLAN ========== -->
+<section id="redesign">
+    <h2 class="text-3xl font-bold text-white mb-2 anim">The Redesign — "Magical but Simple"</h2>
+    <p class="text-gray-400 mb-8 text-sm anim d1">Super advanced under the hood. Beautifully simple on the surface.</p>
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap gap-1 mb-6 border-b border-gray-800 anim d2">
+        <button class="tab-btn active" onclick="switchTab(this,'nav')">Navigation</button>
+        <button class="tab-btn" onclick="switchTab(this,'dashboard')">Dashboard</button>
+        <button class="tab-btn" onclick="switchTab(this,'brain')">Brain Hub</button>
+        <button class="tab-btn" onclick="switchTab(this,'writer')">Writer</button>
+        <button class="tab-btn" onclick="switchTab(this,'kb')">Knowledge</button>
+        <button class="tab-btn" onclick="switchTab(this,'onboard')">Onboarding</button>
+        <button class="tab-btn" onclick="switchTab(this,'magic')">Magic Features</button>
+    </div>
+
+    <!-- NAV PANEL -->
+    <div class="panel active" id="p-nav">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Simplified Navigation — 5 Core Pages</h3>
+            <p class="text-sm text-gray-400 mb-6">Kill the clutter. Every page must answer one question for the client.</p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-4">CURRENT (11 PAGES)</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Dashboard</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Writer Studio</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Knowledge Base</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Brain Chat</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Brain Control <span class="text-crit text-xs">(2048 lines)</span></span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Learning Loop</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Analytics</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400">Settings</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400 line-through">Portal (hidden)</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400 line-through">Chat (legacy)</span></div>
+                        <div class="flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-400 line-through">Writer New</span></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs text-acc uppercase tracking-wider mb-4">PROPOSED (5 PAGES)</div>
+                    <div class="space-y-4">
+                        <div class="bg-s2 rounded-lg p-3 border border-acc/20">
+                            <div class="flex items-center gap-2 text-sm font-semibold text-white">🏠 Home</div>
+                            <div class="text-xs text-gray-500 mt-1">Campaign metrics (from /portal) + Brain Health + Quick Actions. Answers: "How am I doing?"</div>
+                        </div>
+                        <div class="bg-s2 rounded-lg p-3 border border-acc/20">
+                            <div class="flex items-center gap-2 text-sm font-semibold text-white">🧠 Brain</div>
+                            <div class="text-xs text-gray-500 mt-1">Chat + History sidebar + Brain health card + Conversation management. Answers: "Talk to your Brain."</div>
+                        </div>
+                        <div class="bg-s2 rounded-lg p-3 border border-acc/20">
+                            <div class="flex items-center gap-2 text-sm font-semibold text-white">✍️ Campaigns</div>
+                            <div class="text-xs text-gray-500 mt-1">Merge Writer + Analytics. See runs, create from Brain, preview output, track performance. Answers: "What's my content doing?"</div>
+                        </div>
+                        <div class="bg-s2 rounded-lg p-3 border border-acc/20">
+                            <div class="flex items-center gap-2 text-sm font-semibold text-white">📚 Knowledge</div>
+                            <div class="text-xs text-gray-500 mt-1">KB Manager + what Brain has learned + gaps to fill. Guided wizard for new KBs. Answers: "What does my Brain know?"</div>
+                        </div>
+                        <div class="bg-s2 rounded-lg p-3 border border-acc/20">
+                            <div class="flex items-center gap-2 text-sm font-semibold text-white">⚙️ Settings</div>
+                            <div class="text-xs text-gray-500 mt-1">Profile + Org + Notifications + Advanced (brain config for power users). Answers: "Adjust my account."</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-s1 rounded-lg p-4 text-xs text-gray-500">
+                <strong class="text-gray-300">Where does Brain Control go?</strong><br>
+                Split it: Brain Health → Home. Agent list → Settings (Advanced). Training → auto (background). Memory Palace → remove from client view (Superadmin only). Analytics → Home.
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PANEL -->
+    <div class="panel" id="p-dashboard">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">New Home — Campaign Command Center</h3>
+            <p class="text-sm text-gray-400 mb-6">Client opens app → sees immediately how their campaigns are doing.</p>
+
+            <div class="grid md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-s2 rounded-xl p-4 text-center border border-gray-700">
+                    <div class="text-3xl font-bold text-white">1,247</div>
+                    <div class="text-xs text-gray-500">Emails Sent</div>
+                    <div class="text-xs text-ok mt-1">↑ 12% this week</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-4 text-center border border-gray-700">
+                    <div class="text-3xl font-bold text-ok">8.2%</div>
+                    <div class="text-xs text-gray-500">Reply Rate</div>
+                    <div class="text-xs text-ok mt-1">↑ 2.1% vs last week</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-4 text-center border border-gray-700">
+                    <div class="text-3xl font-bold text-acc">23</div>
+                    <div class="text-xs text-gray-500">Booked Calls</div>
+                    <div class="text-xs text-ok mt-1">3 this week</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-4 text-center border border-gray-700">
+                    <div class="text-3xl font-bold text-blue">$4.2K</div>
+                    <div class="text-xs text-gray-500">Revenue Pipeline</div>
+                    <div class="text-xs text-gray-600 mt-1">From 8 replies</div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-s2 rounded-xl p-4 border border-gray-700">
+                    <div class="text-xs text-gray-500 uppercase mb-2">🧠 Brain Status</div>
+                    <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-ok animate-pulse"></div><span class="text-sm text-white">Healthy — 87/100</span></div>
+                    <div class="text-xs text-gray-500 mt-2">Learned 12 things this week. 3 gaps need attention.</div>
+                    <button class="mt-3 text-xs text-acc hover:text-acc/80">View Knowledge Gaps →</button>
+                </div>
+                <div class="bg-s2 rounded-xl p-4 border border-gray-700">
+                    <div class="text-xs text-gray-500 uppercase mb-2">🎯 Top Performing Angle</div>
+                    <div class="text-sm text-white font-semibold">"Problem Reframe"</div>
+                    <div class="text-xs text-gray-500 mt-1">12.4% reply rate on ICP: Tech CTOs</div>
+                    <button class="mt-3 text-xs text-acc hover:text-acc/80">Write more with this angle →</button>
+                </div>
+                <div class="bg-s2 rounded-xl p-4 border border-gray-700">
+                    <div class="text-xs text-gray-500 uppercase mb-2">⚡ Quick Actions</div>
+                    <div class="space-y-2 mt-2">
+                        <button class="w-full text-left text-sm bg-acc/10 text-acc rounded-lg px-3 py-2 hover:bg-acc/20 transition">Talk to Brain</button>
+                        <button class="w-full text-left text-sm bg-blue/10 text-blue rounded-lg px-3 py-2 hover:bg-blue/20 transition">Write New Emails</button>
+                        <button class="w-full text-left text-sm bg-ok/10 text-ok rounded-lg px-3 py-2 hover:bg-ok/20 transition">Feed Brain New Knowledge</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BRAIN HUB PANEL -->
+    <div class="panel" id="p-brain">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Brain Hub — Chat + History + Health</h3>
+            <p class="text-sm text-gray-400 mb-6">The Brain IS the product. Make it the center of everything.</p>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="md:col-span-1 space-y-4">
+                    <div class="bg-s2 rounded-xl p-4 border border-gray-700">
+                        <div class="text-xs text-gray-500 uppercase mb-3">Conversations</div>
+                        <div class="space-y-2">
+                            <div class="bg-s3 rounded-lg px-3 py-2 text-sm text-white cursor-pointer hover:bg-acc/10 transition border border-transparent hover:border-acc/20">Email strategy for Q2</div>
+                            <div class="bg-s3 rounded-lg px-3 py-2 text-sm text-gray-400 cursor-pointer hover:bg-acc/10 transition">ICP feedback analysis</div>
+                            <div class="bg-s3 rounded-lg px-3 py-2 text-sm text-gray-400 cursor-pointer hover:bg-acc/10 transition">Pricing angle test</div>
+                        </div>
+                        <button class="mt-3 w-full text-xs text-acc py-2 border border-acc/20 rounded-lg hover:bg-acc/10 transition">+ New Conversation</button>
+                    </div>
+                    <div class="bg-s2 rounded-xl p-4 border border-gray-700">
+                        <div class="text-xs text-gray-500 uppercase mb-2">Brain Health</div>
+                        <div class="flex items-center gap-2 mb-2"><div class="w-2 h-2 rounded-full bg-ok"></div><span class="text-sm text-white">87/100</span></div>
+                        <div class="w-full bg-s3 rounded-full h-2"><div class="bg-ok rounded-full h-2" style="width:87%"></div></div>
+                        <div class="text-xs text-gray-500 mt-2">47 memories · 12 beliefs · 3 gaps</div>
+                    </div>
+                </div>
+                <div class="md:col-span-2 bg-s2 rounded-xl border border-gray-700 p-4 min-h-[300px] flex flex-col">
+                    <div class="flex-grow space-y-4">
+                        <div class="flex gap-3"><div class="w-8 h-8 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">AI</div><div class="bg-s3 rounded-xl rounded-tl-sm px-4 py-3 max-w-[80%]"><p class="text-sm text-gray-300">Hi! I'm your MarketX Brain. I know your ICPs, offers, and what angles are working. How can I help today?</p></div></div>
+                        <div class="flex gap-3 justify-end"><div class="bg-acc/20 rounded-xl rounded-tr-sm px-4 py-3 max-w-[80%]"><p class="text-sm text-white">Write 5 emails for the Tech CTO segment using the "problem reframe" angle</p></div></div>
+                        <div class="flex gap-3"><div class="w-8 h-8 rounded-full bg-acc/20 flex items-center justify-center text-xs text-acc font-bold shrink-0">AI</div><div class="bg-s3 rounded-xl rounded-tl-sm px-4 py-3 max-w-[80%]"><div class="text-sm text-gray-300"><span class="badge b-acc text-[10px] mb-2">Using: generate_email + suggest_angle</span><p class="mt-2">I'm generating 5 emails for "Tech CTO" using "Problem Reframe". This will take about 30 seconds...</p><div class="mt-3 bg-s1 rounded-lg p-3 border border-acc/20"><div class="text-xs text-acc mb-1">📧 Email Flow Queued</div><div class="text-xs text-gray-500">Execution ID: brain-email-xxx · 5 emails · Goal: Meaningful Reply</div><button class="mt-2 text-xs bg-acc/20 text-acc px-3 py-1 rounded-md hover:bg-acc/30 transition">View in Campaigns →</button></div></div></div></div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" class="flex-grow bg-s3 border border-gray-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:border-acc/50 focus:outline-none transition" placeholder="Talk to your Brain...">
+                        <button class="bg-acc text-white px-4 rounded-xl text-sm font-semibold hover:bg-acc/80 transition">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 bg-s1 rounded-lg p-4 text-xs text-gray-500">
+                <strong class="text-gray-300">Key Change:</strong> Brain Chat becomes the command center. Client can write emails, check performance, analyze angles — all by talking to the Brain. The Brain uses its 15 tools behind the scenes. Client never sees "MarketXToolExecutor" — they see magic.
+            </div>
+        </div>
+    </div>
+
+    <!-- WRITER PANEL -->
+    <div class="panel" id="p-writer">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Campaigns — Writer + Performance in One</h3>
+            <p class="text-sm text-gray-400 mb-6">Merge Writer + Analytics. Show content AND results together.</p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <div class="text-xs text-gray-500 uppercase mb-3">CURRENT FLOW (TOO MANY STEPS)</div>
+                    <div class="space-y-3">
+                        <div class="flow-node text-xs text-gray-400">1. Go to Writer Studio</div>
+                        <div class="flow-node text-xs text-gray-400">2. Click "New Run"</div>
+                        <div class="flow-node text-xs text-gray-400">3. Select KB (radio buttons)</div>
+                        <div class="flow-node text-xs text-gray-400">4. Pick tone (5 options)</div>
+                        <div class="flow-node text-xs text-gray-400">5. Pick length (3 options)</div>
+                        <div class="flow-node text-xs text-gray-400">6. Write prompt (optional)</div>
+                        <div class="flow-node text-xs text-gray-400">7. Submit → redirect to list</div>
+                        <div class="flow-node text-xs text-crit">8. Can't see output (TODO) ❌</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-acc uppercase mb-3">NEW FLOW (MAGICAL)</div>
+                    <div class="space-y-3">
+                        <div class="flow-node text-xs text-white border-acc/30">1. Open Brain Chat → "Write emails for ICP X"</div>
+                        <div class="flow-node text-xs text-white border-acc/30">2. Brain asks clarifying Qs (angle? count?)</div>
+                        <div class="flow-node text-xs text-white border-acc/30">3. Brain executes generate_email tool</div>
+                        <div class="flow-node text-xs text-white border-acc/30">4. Shows inline preview card with email samples</div>
+                        <div class="flow-node text-xs text-white border-acc/30">5. Client approves → emails queued to send</div>
+                    </div>
+                    <div class="mt-6 text-xs text-gray-500"><strong class="text-gray-300">OR</strong> Quick-create from Campaigns page:</div>
+                    <div class="space-y-3 mt-3">
+                        <div class="flow-node text-xs text-white border-blue/30">1. Click "+ New Campaign"</div>
+                        <div class="flow-node text-xs text-white border-blue/30">2. Pick ICP + Angle (Brain suggests best)</div>
+                        <div class="flow-node text-xs text-white border-blue/30">3. Preview → Approve → Live</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KB PANEL -->
+    <div class="panel" id="p-kb">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Knowledge — Teach Your Brain</h3>
+            <p class="text-sm text-gray-400 mb-6">Merge KB Manager + Learning page. Show what Brain knows + what it needs.</p>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700">
+                    <div class="text-xs text-ok uppercase mb-3">WHAT YOUR BRAIN KNOWS</div>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between bg-s3 rounded-lg px-3 py-2">
+                            <span class="text-sm text-white">Company Overview</span>
+                            <span class="text-xs text-ok">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-s3 rounded-lg px-3 py-2">
+                            <span class="text-sm text-white">Product Details</span>
+                            <span class="text-xs text-ok">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-s3 rounded-lg px-3 py-2">
+                            <span class="text-sm text-white">ICP: Tech CTOs</span>
+                            <span class="text-xs text-ok">Complete</span>
+                        </div>
+                        <div class="flex items-center justify-between bg-s3 rounded-lg px-3 py-2">
+                            <span class="text-sm text-white">Pricing Strategy</span>
+                            <span class="text-xs text-warn">Partial</span>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">47 memories · Last learned: 2 hours ago</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-crit/20">
+                    <div class="text-xs text-crit uppercase mb-3">WHAT YOUR BRAIN NEEDS</div>
+                    <div class="space-y-3">
+                        <div class="bg-s3 rounded-lg px-3 py-3 border border-crit/10">
+                            <div class="text-sm text-white">Competitor Positioning</div>
+                            <div class="text-xs text-gray-500 mt-1">Brain asked about this 7 times. High impact.</div>
+                            <button class="mt-2 text-xs bg-crit/10 text-crit px-3 py-1 rounded-md hover:bg-crit/20 transition">Teach Brain →</button>
+                        </div>
+                        <div class="bg-s3 rounded-lg px-3 py-3 border border-warn/10">
+                            <div class="text-sm text-white">Case Studies</div>
+                            <div class="text-xs text-gray-500 mt-1">Brain asked about this 4 times. Medium impact.</div>
+                            <button class="mt-2 text-xs bg-warn/10 text-warn px-3 py-1 rounded-md hover:bg-warn/20 transition">Teach Brain →</button>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-500">3 knowledge gaps identified from conversations</div>
+                </div>
+            </div>
+            <div class="mt-6 bg-s1 rounded-lg p-4 text-xs text-gray-500">
+                <strong class="text-gray-300">"Teach Brain" flow:</strong> Click gap → opens guided form (not 12-section markdown) → Brain processes → gap closes. Or: paste a document/URL → Brain extracts knowledge automatically.
+            </div>
+        </div>
+    </div>
+
+    <!-- ONBOARDING PANEL -->
+    <div class="panel" id="p-onboard">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Onboarding — The First 5 Minutes</h3>
+            <p class="text-sm text-gray-400 mb-6">First impressions are everything. Guide them through setup in 3 steps.</p>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-s2 rounded-xl p-6 border border-acc/20 text-center">
+                    <div class="w-12 h-12 rounded-full bg-acc/20 flex items-center justify-center mx-auto mb-3"><span class="text-acc font-bold text-xl">1</span></div>
+                    <h4 class="text-white font-semibold mb-2">Tell Us About You</h4>
+                    <p class="text-xs text-gray-500">Company name, industry, what you sell. 3 fields. Brain creates initial context.</p>
+                    <div class="mt-3 text-xs text-gray-600">→ Auto-creates org + initial KB</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-6 border border-blue/20 text-center">
+                    <div class="w-12 h-12 rounded-full bg-blue/20 flex items-center justify-center mx-auto mb-3"><span class="text-blue font-bold text-xl">2</span></div>
+                    <h4 class="text-white font-semibold mb-2">Who's Your Customer?</h4>
+                    <p class="text-xs text-gray-500">Describe your ideal customer. Job title, pain points, goals. Brain creates ICP.</p>
+                    <div class="mt-3 text-xs text-gray-600">→ Auto-creates ICP + first belief</div>
+                </div>
+                <div class="bg-s2 rounded-xl p-6 border border-ok/20 text-center">
+                    <div class="w-12 h-12 rounded-full bg-ok/20 flex items-center justify-center mx-auto mb-3"><span class="text-ok font-bold text-xl">3</span></div>
+                    <h4 class="text-white font-semibold mb-2">Watch the Magic</h4>
+                    <p class="text-xs text-gray-500">Brain generates your first email draft. Client sees the product working in under 2 minutes.</p>
+                    <div class="mt-3 text-xs text-gray-600">→ Instant "aha moment"</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAGIC FEATURES PANEL -->
+    <div class="panel" id="p-magic">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <h3 class="text-xl font-bold text-white mb-4">Magic Features — Advanced But Invisible</h3>
+            <p class="text-sm text-gray-400 mb-6">The client doesn't see the complexity. They see the result.</p>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-acc mb-3">CMD+K COMMAND PALETTE</div>
+                    <h4 class="text-white font-semibold mb-2">⌘K — Do Anything Instantly</h4>
+                    <p class="text-xs text-gray-400">Type "write email", "check performance", "teach brain about pricing" — goes straight to the action. Power users love this. New users discover by accident.</p>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-ok mb-3">SMART NOTIFICATIONS</div>
+                    <h4 class="text-white font-semibold mb-2">Brain Nudges</h4>
+                    <p class="text-xs text-gray-400">"Your Tech CTO emails got 12% reply rate this week — 3x your average. Want me to write more?" Toast notification that leads to Brain Chat with context pre-loaded.</p>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-blue mb-3">INLINE TOOL CARDS</div>
+                    <h4 class="text-white font-semibold mb-2">Tool Calls → Visual Cards</h4>
+                    <p class="text-xs text-gray-400">When Brain uses tools (analyze_signals, get_campaign_insights), show results as beautiful cards in chat — not raw text. Clickable, expandable, actionable.</p>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-warn mb-3">PROGRESSIVE DISCLOSURE</div>
+                    <h4 class="text-white font-semibold mb-2">Start Simple, Grow Complex</h4>
+                    <p class="text-xs text-gray-400">New user sees 3 pages. As they use more features, sidebar expands. Brain Control only appears after 30 days or when client asks. Settings > Advanced for power users.</p>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-acc mb-3">CONVERSATIONAL WRITE</div>
+                    <h4 class="text-white font-semibold mb-2">"Write Email" = One Sentence</h4>
+                    <p class="text-xs text-gray-400">Client says "write 5 emails for my SaaS CTO ICP using problem reframe angle". Brain resolves ICP, finds belief, picks angle, queues to engine. One message. Done.</p>
+                </div>
+                <div class="bg-s2 rounded-xl p-5 border border-gray-700 hover-lift">
+                    <div class="badge b-ok mb-3">WEEKLY BRAIN REPORT</div>
+                    <h4 class="text-white font-semibold mb-2">Auto-Generated Insights</h4>
+                    <p class="text-xs text-gray-400">Every Monday: "Your Brain learned X things. Best performing angle: Y. 3 gaps need your input. Reply rate up 2%." Dream logs → human-readable summary.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== USER JOURNEY ========== -->
+<section id="journey">
+    <h2 class="text-3xl font-bold text-white mb-2 anim">Ideal Client Journey — Day 1 to Day 30</h2>
+    <p class="text-gray-400 mb-8 text-sm anim d1">What the client experiences at each stage.</p>
+
+    <div class="glass rounded-2xl p-6 md:p-8">
+        <div class="space-y-8">
+            <div class="journey-step anim d1">
+                <div class="journey-dot bg-acc text-white">1</div>
+                <div>
+                    <h4 class="text-white font-semibold">Minute 0 — First Login</h4>
+                    <p class="text-sm text-gray-400 mt-1">Onboarding wizard. 3 steps. Company → ICP → First email generated. Brain initialized with context. Client sees first email draft before they even understand the product.</p>
+                    <span class="badge b-acc mt-2">AHA MOMENT: "It already knows my business?"</span>
+                </div>
+            </div>
+            <div class="journey-step anim d2">
+                <div class="journey-dot bg-blue text-white">2</div>
+                <div>
+                    <h4 class="text-white font-semibold">Day 1 — Exploring</h4>
+                    <p class="text-sm text-gray-400 mt-1">Home dashboard shows first metrics (even if zero). Brain Chat is front and center. Client asks questions: "What do you know about my product?" Brain shows knowledge + gaps. Client fills gaps.</p>
+                    <span class="badge b-blue mt-2">HOOK: Interactive Brain that ASKS for help</span>
+                </div>
+            </div>
+            <div class="journey-step anim d3">
+                <div class="journey-dot bg-ok text-white">3</div>
+                <div>
+                    <h4 class="text-white font-semibold">Week 1 — First Results</h4>
+                    <p class="text-sm text-gray-400 mt-1">First emails sent. Signals start flowing in. Home dashboard lights up with real metrics. Brain starts learning from signal data. Belief confidence scores appear.</p>
+                    <span class="badge b-ok mt-2">VALUE: Real metrics. Real learning. Real ROI.</span>
+                </div>
+            </div>
+            <div class="journey-step anim d4">
+                <div class="journey-dot bg-warn text-white">4</div>
+                <div>
+                    <h4 class="text-white font-semibold">Week 2-4 — Brain Gets Smarter</h4>
+                    <p class="text-sm text-gray-400 mt-1">Dream cycles consolidate patterns. Brain suggests better angles. "Problem Reframe is outperforming Social Proof by 3x for your CTOs." Client trusts Brain's judgment.</p>
+                    <span class="badge b-warn mt-2">MAGIC: Brain proactively suggests optimizations</span>
+                </div>
+            </div>
+            <div class="journey-step anim d5">
+                <div class="journey-dot bg-acc text-white">5</div>
+                <div>
+                    <h4 class="text-white font-semibold">Month 2+ — Autonomous Marketing</h4>
+                    <p class="text-sm text-gray-400 mt-1">Brain handles most decisions. Client just reviews weekly report. "10 campaigns running, 8.2% avg reply rate, 23 bookings this month." Client focuses on closing deals, not writing emails.</p>
+                    <span class="badge b-acc mt-2">RETENTION: They can't leave because Brain has learned everything</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== PRIORITY ========== -->
+<section id="priority">
+    <h2 class="text-3xl font-bold text-white mb-2 anim">Implementation Priority</h2>
+    <p class="text-gray-400 mb-8 text-sm anim d1">What to build first for maximum impact.</p>
+
+    <div class="grid md:grid-cols-3 gap-4">
+        <div class="glass rounded-2xl p-6 border-t-4 border-crit anim d1">
+            <h3 class="text-lg font-bold text-crit mb-3">P0 — This Week</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex gap-2"><span class="text-crit shrink-0">01</span><span class="text-gray-300">Fix all dead buttons (remove or implement)</span></div>
+                <div class="flex gap-2"><span class="text-crit shrink-0">02</span><span class="text-gray-300">Add conversation history sidebar to Brain Chat</span></div>
+                <div class="flex gap-2"><span class="text-crit shrink-0">03</span><span class="text-gray-300">Move Portal metrics to Dashboard (replace run-based stats)</span></div>
+                <div class="flex gap-2"><span class="text-crit shrink-0">04</span><span class="text-gray-300">Wire Regenerate in Brain Chat</span></div>
+                <div class="flex gap-2"><span class="text-crit shrink-0">05</span><span class="text-gray-300">Delete /chat legacy route (redirect to /brain-chat)</span></div>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 border-t-4 border-warn anim d2">
+            <h3 class="text-lg font-bold text-warn mb-3">P1 — Next 2 Weeks</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex gap-2"><span class="text-warn shrink-0">06</span><span class="text-gray-300">Simplify navigation to 5 pages</span></div>
+                <div class="flex gap-2"><span class="text-warn shrink-0">07</span><span class="text-gray-300">Build onboarding wizard (3 steps)</span></div>
+                <div class="flex gap-2"><span class="text-warn shrink-0">08</span><span class="text-gray-300">Add inline tool result cards in Brain Chat</span></div>
+                <div class="flex gap-2"><span class="text-warn shrink-0">09</span><span class="text-gray-300">Merge Writer + Analytics → Campaigns page</span></div>
+                <div class="flex gap-2"><span class="text-warn shrink-0">10</span><span class="text-gray-300">Merge KB Manager + Learning → Knowledge page</span></div>
+            </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 border-t-4 border-ok anim d3">
+            <h3 class="text-lg font-bold text-ok mb-3">P2 — Month 1</h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex gap-2"><span class="text-ok shrink-0">11</span><span class="text-gray-300">⌘K command palette</span></div>
+                <div class="flex gap-2"><span class="text-ok shrink-0">12</span><span class="text-gray-300">Brain nudge notifications (toast + context)</span></div>
+                <div class="flex gap-2"><span class="text-ok shrink-0">13</span><span class="text-gray-300">Weekly Brain Report (auto-generated)</span></div>
+                <div class="flex gap-2"><span class="text-ok shrink-0">14</span><span class="text-gray-300">Progressive disclosure (sidebar grows with usage)</span></div>
+                <div class="flex gap-2"><span class="text-ok shrink-0">15</span><span class="text-gray-300">"Teach Brain" guided flow (paste doc/URL → extract)</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Line -->
+    <div class="mt-8 glass rounded-2xl p-6 border border-acc/20 anim d4">
+        <h3 class="text-lg font-bold text-white mb-3">The One Rule</h3>
+        <p class="text-sm text-gray-400 leading-relaxed">
+            <strong class="text-white">If the client has to think about HOW to use the product, we've failed.</strong>
+            <br><br>
+            The Brain has 15 tools, 3 tiers, 7 prompt layers, a hallucination interceptor, and a dream cycle. 
+            The client should never know any of that exists. They should open the app, see their numbers, talk to their Brain, and watch emails go out. That's it.
+            <br><br>
+            <strong class="text-acc">Advanced under the hood. Magical on the surface.</strong>
+        </p>
+    </div>
+</section>
+
+</main>
+
+<script>
+function switchTab(btn, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'))
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'))
+    btn.classList.add('active')
+    document.getElementById('p-' + id).classList.add('active')
+}
+
+const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.style.animationPlayState = 'running' })
+}, { threshold: 0.1 })
+document.querySelectorAll('.anim').forEach(el => { el.style.animationPlayState = 'paused'; obs.observe(el) })
+</script>
+</body>
+</html>
