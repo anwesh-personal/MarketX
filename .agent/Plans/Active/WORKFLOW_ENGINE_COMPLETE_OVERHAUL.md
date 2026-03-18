@@ -1,6 +1,6 @@
 # WORKFLOW ENGINE — COMPLETE OVERHAUL PLAN
 
-**Status:** PHASES 1-4 COMPLETE — Remaining: Client Portal, Redis State Manager
+**Status:** PHASES 1-5 COMPLETE — Remaining: Client Portal, Redis State Manager
 **Priority:** P0 — This is the core product pipeline
 **Audited by:** Zara (AI Agent), March 18 2026
 **Valuation context:** $40M SaaS — every node MUST work dynamically, no hardcoded bullshit
@@ -9,7 +9,8 @@
 - **Phase 1 DONE** (commit 04972b3): normalizeNodeConfig adapter — 120+ config keys now wired UI→executor
 - **Phase 2 DONE** (commit 04972b3): Conditions respected, loop-foreach iterates, split-parallel uses Promise.all, seo-optimize fixed, Function() eval replaced, quality masking fixed
 - **Phase 3 DONE** (commits 04972b3 + 7bf2f7d): Bundle POST saves agents_config/default_llm, API key auth middleware, org/user scoping, snapshot→runtime wiring
-- **Phase 4 DONE** (this commit): Real web search via Perplexity, enricher nodes upgraded, RLS policies, checkpoint resume from DB
+- **Phase 4 DONE** (commit 1a0d791): Real web search via Perplexity, enricher nodes upgraded, RLS policies, checkpoint resume from DB
+- **Phase 5 DONE** (this commit): execution_data column migration, output-export → Supabase Storage, output-schedule → BullMQ delayed jobs, AbortController timeouts on all fetch(), trigger validation (webhook schema, cron, email filters), input schema validation + file-upload reference handling
 
 ---
 

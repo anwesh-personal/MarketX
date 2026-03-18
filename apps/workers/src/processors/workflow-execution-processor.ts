@@ -1042,39 +1042,127 @@ class WorkflowExecutionService {
     }
 
     /**
-     * Execute trigger node
+     * Execute trigger node — validates config per trigger type
      */
     private executeTriggerNode(node: WorkflowNode, pipelineData: PipelineData): NodeOutput {
+        const nodeType = node.data.nodeType;
+        const config = node.data.config || {};
+        const userInput = pipelineData.userInput;
+
+        const triggerResult: Record<string, any> = {
+            triggered: true,
+            triggerType: nodeType,
+            timestamp: new Date().toISOString(),
+        };
+
+        switch (nodeType) {
+            case 'trigger-webhook':
+            case 'webhook-trigger': {
+                triggerResult.input = userInput;
+                if (config.expectedSchema && typeof config.expectedSchema === 'object') {
+                    const missingFields = Object.keys(config.expectedSchema).filter(k => userInput[k] === undefined);
+                    triggerResult.schemaValidation = missingFields.length === 0 ? 'passed' : 'missing_fields';
+                    triggerResult.missingFields = missingFields;
+                }
+                if (config.payloadValidation && !userInput) {
+                    triggerResult.warning = 'Empty payload received but validation is enabled';
+                }
+                break;
+            }
+            case 'trigger-schedule':
+            case 'schedule-trigger': {
+                triggerResult.input = userInput;
+                if (config.cronExpression) {
+                    triggerResult.cronExpression = config.cronExpression;
+                    triggerResult.timezone = config.timezone || 'UTC';
+                }
+                if (config.frequency) {
+                    triggerResult.frequency = config.frequency;
+                }
+                break;
+            }
+            case 'trigger-email-inbound':
+            case 'email-trigger': {
+                triggerResult.input = userInput;
+                if (userInput.from || userInput.sender) {
+                    triggerResult.sender = userInput.from || userInput.sender;
+                }
+                if (userInput.subject) {
+                    triggerResult.subject = userInput.subject;
+                }
+                if (config.filterFrom) {
+                    const sender = String(userInput.from || userInput.sender || '').toLowerCase();
+                    triggerResult.senderMatch = sender.includes(config.filterFrom.toLowerCase());
+                }
+                if (config.filterSubject) {
+                    const subj = String(userInput.subject || '').toLowerCase();
+                    triggerResult.subjectMatch = subj.includes(config.filterSubject.toLowerCase());
+                }
+                break;
+            }
+            default: {
+                triggerResult.input = userInput;
+            }
+        }
+
         return {
             nodeId: node.id,
             nodeName: node.data.label,
-            nodeType: node.data.nodeType,
+            nodeType,
             type: 'trigger',
-            content: {
-                triggered: true,
-                triggerType: node.data.nodeType,
-                input: pipelineData.userInput,
-                timestamp: new Date().toISOString()
-            }
+            content: triggerResult,
         };
     }
 
     /**
-     * Execute input node
+     * Execute input node — validates schema, handles file references
      */
     private executeInputNode(node: WorkflowNode, pipelineData: PipelineData): NodeOutput {
         const config = node.data.config || {};
+        const nodeType = node.data.nodeType;
+        const userInput = pipelineData.userInput;
+
+        const inputResult: Record<string, any> = {
+            ...userInput,
+            validated: true,
+        };
+
+        if (config.schema && typeof config.schema === 'object') {
+            const requiredFields = Object.entries(config.schema)
+                .filter(([_, spec]: [string, any]) => spec?.required)
+                .map(([key]) => key);
+
+            const missingRequired = requiredFields.filter(f => userInput[f] === undefined || userInput[f] === '');
+            inputResult.schemaValidation = {
+                passed: missingRequired.length === 0,
+                missingRequired,
+                schema: config.schema,
+            };
+        }
+
+        if (nodeType === 'file-upload') {
+            const fileUrl = userInput.file_url || userInput.fileUrl || userInput.attachment_url;
+            const fileName = userInput.file_name || userInput.fileName;
+            const fileType = userInput.file_type || userInput.fileType || userInput.content_type;
+
+            inputResult.fileReference = {
+                url: fileUrl || null,
+                name: fileName || null,
+                type: fileType || null,
+                hasFile: !!fileUrl,
+            };
+
+            if (userInput.file_content || userInput.fileContent) {
+                inputResult.fileContent = userInput.file_content || userInput.fileContent;
+            }
+        }
 
         return {
             nodeId: node.id,
             nodeName: node.data.label,
-            nodeType: node.data.nodeType,
+            nodeType,
             type: 'input',
-            content: {
-                ...pipelineData.userInput,
-                validated: true,
-                schema: config.schema
-            }
+            content: inputResult,
         };
     }
 
@@ -2943,11 +3031,19 @@ Make the content genuinely valuable, not just fluff.`;
                     }
 
                     console.log(`📤 Webhook POST to: ${webhookUrl}`);
-                    const response = await fetch(webhookUrl, {
-                        method: config.method || 'POST',
-                        headers,
-                        body: JSON.stringify(payload),
-                    });
+                    const webhookAbort = new AbortController();
+                    const webhookTimeout = setTimeout(() => webhookAbort.abort(), config.timeoutMs || 30000);
+                    let response: Response;
+                    try {
+                        response = await fetch(webhookUrl, {
+                            method: config.method || 'POST',
+                            headers,
+                            body: JSON.stringify(payload),
+                            signal: webhookAbort.signal,
+                        });
+                    } finally {
+                        clearTimeout(webhookTimeout);
+                    }
 
                     actionResult = {
                         action: 'webhook_sent',
@@ -3048,21 +3144,29 @@ Make the content genuinely valuable, not just fluff.`;
                     const resendApiKey = config.resendApiKey || process.env.RESEND_API_KEY;
 
                     if (resendApiKey) {
-                        // Use Resend
-                        const response = await fetch('https://api.resend.com/emails', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${resendApiKey}`,
-                            },
-                            body: JSON.stringify({
-                                from: config.from || 'Axiom <noreply@axiom.engine>',
-                                to: [emailTo],
-                                subject: emailSubject,
-                                html: emailPayload.html,
-                                text: emailPayload.text,
-                            }),
-                        });
+                        const emailAbort = new AbortController();
+                        const emailTimeout = setTimeout(() => emailAbort.abort(), 15000);
+                        let emailResp: Response;
+                        try {
+                            emailResp = await fetch('https://api.resend.com/emails', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${resendApiKey}`,
+                                },
+                                body: JSON.stringify({
+                                    from: config.from || process.env.DEFAULT_EMAIL_FROM || 'Axiom <noreply@axiom.engine>',
+                                    to: [emailTo],
+                                    subject: emailSubject,
+                                    html: emailPayload.html,
+                                    text: emailPayload.text,
+                                }),
+                                signal: emailAbort.signal,
+                            });
+                        } finally {
+                            clearTimeout(emailTimeout);
+                        }
+                        const response = emailResp;
 
                         const result = await response.json() as { id?: string; error?: string };
                         actionResult = {
@@ -3146,6 +3250,8 @@ Make the content genuinely valuable, not just fluff.`;
                 case 'output-export': {
                     const format = config.format || 'json';
                     const filename = config.filename || `output_${Date.now()}`;
+                    const ext = format === 'markdown' ? 'md' : format;
+                    const fullFilename = `${filename}.${ext}`;
 
                     let exportContent: string;
                     let mimeType: string;
@@ -3173,16 +3279,44 @@ Make the content genuinely valuable, not just fluff.`;
                             mimeType = 'text/plain';
                     }
 
+                    let storagePath: string | null = null;
+                    let publicUrl: string | null = null;
+
+                    if (this.supabase) {
+                        const orgId = pipelineData.executionUser.orgId || 'global';
+                        const execId = pipelineData.executionUser.executionId;
+                        storagePath = `exports/${orgId}/${execId}/${fullFilename}`;
+
+                        const { error: uploadError } = await this.supabase.storage
+                            .from('engine-exports')
+                            .upload(storagePath, Buffer.from(exportContent, 'utf-8'), {
+                                contentType: mimeType,
+                                upsert: true,
+                            });
+
+                        if (uploadError) {
+                            console.warn(`⚠️ Storage upload failed (${uploadError.message}) — file content returned inline`);
+                        } else {
+                            const { data: urlData } = this.supabase.storage
+                                .from('engine-exports')
+                                .getPublicUrl(storagePath);
+                            publicUrl = urlData?.publicUrl || null;
+                            console.log(`📁 Export uploaded: ${storagePath}`);
+                        }
+                    }
+
                     actionResult = {
                         action: 'export_generated',
                         format,
-                        filename: `${filename}.${format}`,
+                        filename: fullFilename,
                         mimeType,
-                        content: exportContent,
+                        storagePath,
+                        publicUrl,
                         size: exportContent.length,
                         success: true,
+                        content: !storagePath ? exportContent : undefined,
                     };
-                    console.log(`📁 Export generated: ${filename}.${format} (${exportContent.length} bytes)`);
+                    console.log(`📁 Export: ${fullFilename} (${exportContent.length} bytes)${publicUrl ? ` → ${publicUrl}` : ''}`);
                     break;
                 }
 
@@ -3193,15 +3327,61 @@ Make the content genuinely valuable, not just fluff.`;
                     const scheduleAt = config.scheduleAt || config.deliverAt;
                     const targetOutput = config.targetOutputType || 'output-email';
 
-                    actionResult = {
-                        action: 'scheduled',
-                        scheduleAt,
-                        targetOutputType: targetOutput,
-                        payload: aggregatedOutput,
-                        success: true,
-                        note: 'Scheduled output requires queue processor',
-                    };
-                    console.log(`⏰ Output scheduled for: ${scheduleAt}`);
+                    if (!scheduleAt) {
+                        throw new Error('Schedule time is required — set scheduleAt or deliverAt in config');
+                    }
+
+                    const scheduleDate = new Date(scheduleAt);
+                    const delayMs = Math.max(0, scheduleDate.getTime() - Date.now());
+
+                    try {
+                        const { Queue: BullQueue } = await import('bullmq');
+                        const schedQueue = new BullQueue('scheduled-task', {
+                            connection: {
+                                host: process.env.REDIS_HOST || 'localhost',
+                                port: parseInt(process.env.REDIS_PORT || '6379'),
+                                password: process.env.REDIS_PASSWORD || undefined,
+                            },
+                        });
+
+                        const jobId = `sched_${pipelineData.executionUser.executionId}_${Date.now()}`;
+
+                        await schedQueue.add('scheduled-output', {
+                            type: targetOutput,
+                            executionId: pipelineData.executionUser.executionId,
+                            userId: pipelineData.executionUser.userId,
+                            orgId: pipelineData.executionUser.orgId,
+                            payload: aggregatedOutput,
+                            config,
+                            scheduledAt: scheduleAt,
+                        }, {
+                            delay: delayMs,
+                            jobId,
+                            removeOnComplete: true,
+                            removeOnFail: false,
+                        });
+
+                        await schedQueue.close();
+
+                        actionResult = {
+                            action: 'scheduled',
+                            scheduleAt,
+                            delayMs,
+                            targetOutputType: targetOutput,
+                            jobId,
+                            success: true,
+                        };
+                        console.log(`⏰ Output scheduled: ${targetOutput} at ${scheduleAt} (delay: ${Math.round(delayMs / 1000)}s)`);
+                    } catch (schedErr: any) {
+                        actionResult = {
+                            action: 'schedule_failed',
+                            scheduleAt,
+                            targetOutputType: targetOutput,
+                            error: schedErr.message,
+                            success: false,
+                        };
+                        console.error(`❌ Schedule failed: ${schedErr.message}`);
+                    }
                     break;
                 }
 
