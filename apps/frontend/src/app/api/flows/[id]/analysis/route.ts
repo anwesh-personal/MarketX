@@ -35,10 +35,17 @@ export async function GET(
 
     const stepIds = (steps ?? []).map(s => s.id)
 
-    const { data: signals } = await supabase
+    const { data: rawSignals } = await supabase
         .from('signal_event')
-        .select('id, flow_step_id, event_type, metadata, occurred_at')
+        .select('id, flow_step_id, event_type, meta, metadata, occurred_at')
         .eq('flow_id', flowId)
+
+    const signals = (rawSignals ?? []).map(s => ({
+        ...s,
+        metadata: (s as any).metadata && Object.keys((s as any).metadata).length > 0
+            ? (s as any).metadata
+            : (s as any).meta || {},
+    }))
 
     const stepAnalysis = (steps ?? []).map(step => {
         const stepSignals = (signals ?? []).filter(s => s.flow_step_id === step.id)

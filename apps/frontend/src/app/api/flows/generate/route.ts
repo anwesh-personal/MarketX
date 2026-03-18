@@ -7,37 +7,103 @@ const generateFlowSchema = z.object({
     version_no: z.number().int().min(1).optional(),
 })
 
-function buildEmailStepCopy(step: number, statement: string, angle: string | null) {
-    const angleLabel = angle || 'core angle'
+interface FlowContext {
+    statement: string
+    angle: string | null
+    offerName: string | null
+    offerPromise: string | null
+    icpName: string | null
+    icpCriteria: Record<string, any> | null
+}
 
-    const subjects = [
-        {
-            a: `Quick thought on ${angleLabel}`,
-            b: `A better lens for this problem`,
+const STEP_STRATEGIES = [
+    { focus: 'pattern_interrupt', goal: 'Challenge an assumption they hold — open a gap in their thinking' },
+    { focus: 'credibility_anchor', goal: 'Share a specific observation or data point that builds trust' },
+    { focus: 'value_demonstration', goal: 'Show the concrete impact of the belief through examples or mini case study' },
+    { focus: 'commitment_test', goal: 'Invite a small next step — reply, call, resource — low friction commitment' },
+]
+
+function buildEmailStepCopy(step: number, ctx: FlowContext) {
+    const { statement, angle, offerName, offerPromise, icpName, icpCriteria } = ctx
+    const angleLabel = angle || 'this approach'
+    const strategy = STEP_STRATEGIES[step - 1] || STEP_STRATEGIES[0]
+
+    const audienceHint = icpName
+        ? `for ${icpName}${icpCriteria?.job_title ? ` (${icpCriteria.job_title})` : ''}`
+        : ''
+
+    const subjectPairs: Record<number, { a: string; b: string }> = {
+        1: {
+            a: `Quick thought on ${angleLabel} ${audienceHint}`.trim(),
+            b: `A different way to think about ${angleLabel}`,
         },
-        {
-            a: `Why this keeps getting ignored`,
-            b: `The hidden blocker behind this`,
+        2: {
+            a: `Why ${angleLabel} keeps getting ignored`,
+            b: `The hidden reason behind ${angleLabel.toLowerCase()} struggles`,
         },
-        {
-            a: `What we are seeing in market behavior`,
-            b: `Pattern we keep seeing in teams`,
+        3: {
+            a: `What we're seeing with ${angleLabel} in practice`,
+            b: `${offerPromise ? offerPromise.substring(0, 50) : `Real results from ${angleLabel}`}`,
         },
-        {
-            a: `Should we test this approach?`,
-            b: `Worth a quick test this week?`,
+        4: {
+            a: `Worth a 15-min test ${audienceHint}?`.trim(),
+            b: `Quick experiment: ${angleLabel}`,
         },
-    ][step - 1]
+    }
+
+    const subjects = subjectPairs[step] || { a: `Email ${step} — ${angleLabel}`, b: `Follow up: ${angleLabel}` }
+
+    const bodyLines: string[] = []
+
+    switch (step) {
+        case 1:
+            bodyLines.push(
+                `I've been thinking about something ${audienceHint || 'in this space'} — and it keeps coming back to one core belief:`,
+                '', `"${statement}"`, '',
+                `Most teams approach ${angleLabel} the conventional way. But what if the real leverage is somewhere else entirely?`,
+                '', `Strategy: ${strategy.goal}`,
+                '', `If this resonates, I'd love to share what we've been seeing. Just hit reply.`,
+            )
+            break
+        case 2:
+            bodyLines.push(
+                `Following up on my last note about ${angleLabel}.`,
+                '', `Here's what I keep observing: ${statement}`,
+                '', `The interesting part isn't the belief itself — it's that ${icpCriteria?.industry || 'most teams'} consistently overlook it.`,
+                offerName ? `\nThis is exactly why we built ${offerName}${offerPromise ? ` — ${offerPromise}` : ''}.` : '',
+                '', `Strategy: ${strategy.goal}`,
+                '', `Curious if you're seeing the same pattern?`,
+            )
+            break
+        case 3:
+            bodyLines.push(
+                `One more thought on ${angleLabel} — this time with specifics.`,
+                '', `"${statement}"`,
+                '', `When teams actually test this belief:`,
+                `• They stop wasting cycles on ${icpCriteria?.pain_points?.[0] || 'the wrong activities'}`,
+                offerPromise ? `• They start seeing ${offerPromise.toLowerCase()}` : '• They see measurable improvement within weeks',
+                `• The ROI compounds because the insight is structural, not tactical`,
+                '', `Strategy: ${strategy.goal}`,
+                '', `Would a concrete example be useful? I can share one relevant to ${icpCriteria?.industry || 'your context'}.`,
+            )
+            break
+        case 4:
+            bodyLines.push(
+                `Last note in this thread — just want to be respectful of your time.`,
+                '', `The core idea: "${statement}"`,
+                '', `If this landed for you at all, I have a simple next step:`,
+                offerName ? `• Check out ${offerName} — it's built around this exact insight` : '• A 15-minute call to explore if this fits your situation',
+                `• No pitch, just a conversation about ${angleLabel} in your context`,
+                '', `Strategy: ${strategy.goal}`,
+                '', `If the timing isn't right, totally understand. Either way, I hope the perspective was useful.`,
+            )
+            break
+    }
 
     return {
-        subjectA: subjects?.a || `Email ${step} - Option A`,
-        subjectB: subjects?.b || `Email ${step} - Option B`,
-        bodyText: [
-            `Belief: ${statement}`,
-            '',
-            `Step ${step} focus: move the conversation forward without changing offer/ICP assumptions.`,
-            'If this is relevant, I can share a concrete test plan tailored to your context.',
-        ].join('\n'),
+        subjectA: subjects.a,
+        subjectB: subjects.b,
+        bodyText: bodyLines.filter(l => l !== undefined).join('\n'),
     }
 }
 
@@ -97,6 +163,45 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Belief not found for this partner' }, { status: 404 })
     }
 
+    // Fetch ICP and offer context for personalized copy
+    let offerName: string | null = null
+    let offerPromise: string | null = null
+    let icpName: string | null = null
+    let icpCriteria: Record<string, any> | null = null
+
+    if (belief.offer_id) {
+        const { data: offer } = await supabase
+            .from('offer')
+            .select('name, primary_promise')
+            .eq('id', belief.offer_id)
+            .single()
+        if (offer) {
+            offerName = offer.name
+            offerPromise = offer.primary_promise
+        }
+    }
+
+    if (belief.icp_id) {
+        const { data: icp } = await supabase
+            .from('icp')
+            .select('name, criteria')
+            .eq('id', belief.icp_id)
+            .single()
+        if (icp) {
+            icpName = icp.name
+            icpCriteria = icp.criteria as Record<string, any>
+        }
+    }
+
+    const flowCtx: FlowContext = {
+        statement: belief.statement,
+        angle: belief.angle,
+        offerName,
+        offerPromise,
+        icpName,
+        icpCriteria,
+    }
+
     const { data: flow, error: flowError } = await supabase
         .from('flow')
         .insert({
@@ -110,6 +215,7 @@ export async function POST(req: NextRequest) {
                 generated_by: 'api/flows/generate',
                 source_brief_id: belief.brief_id,
                 email_block: '1-4',
+                context: { offerName, icpName, angle: belief.angle },
             },
         })
         .select('id, belief_id, version_no, status, created_at')
@@ -123,7 +229,7 @@ export async function POST(req: NextRequest) {
     }
 
     const steps = [1, 2, 3, 4].map((step) => {
-        const copy = buildEmailStepCopy(step, belief.statement, belief.angle)
+        const copy = buildEmailStepCopy(step, flowCtx)
         return {
             flow_id: flow.id,
             step_number: step,

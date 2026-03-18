@@ -72,10 +72,33 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) return NextResponse.json({ error: `Insert failed: ${insertErr.message}` }, { status: 500 })
 
+    if (reflection_notes) {
+        const { data: currentFlow } = await supabase
+            .from('flow')
+            .select('metadata')
+            .eq('id', flow_id)
+            .single()
+
+        const existingMeta = (currentFlow?.metadata as Record<string, any>) || {}
+        const reflections = existingMeta.reflections || []
+        reflections.push({
+            step_number,
+            notes: reflection_notes,
+            created_at: new Date().toISOString(),
+            created_by: me.id,
+        })
+
+        await supabase
+            .from('flow')
+            .update({ metadata: { ...existingMeta, reflections } })
+            .eq('id', flow_id)
+    }
+
     return NextResponse.json({
         success: true,
         flow_id,
         step: created,
+        reflection_notes_saved: !!reflection_notes,
         phase: 'reflection',
         note: 'Post-12 reflection phase — belief expression continues indefinitely',
     }, { status: 201 })

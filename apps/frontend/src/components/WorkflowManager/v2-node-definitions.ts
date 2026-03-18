@@ -418,6 +418,48 @@ const enricherNodes: V2NodeDefinition[] = [
         outputSchema: 'WebSearchOutput'
     },
     {
+        id: 'nd-enrich-company',
+        nodeType: 'enrich-company-data',
+        category: 'enricher',
+        name: 'Company Research',
+        description: 'Research company data using AI-powered search',
+        icon: Building,
+        color: '#EC4899',
+        features: ['Firmographics', 'Tech Stack', 'Leadership', 'Revenue'],
+        capabilities: ['Researches companies', 'Gets leadership data', 'Estimates revenue', 'Identifies competitors'],
+        defaultConfig: { searchDepth: 'medium' },
+        inputSchema: 'CompanyEnrichInput',
+        outputSchema: 'CompanyEnrichOutput'
+    },
+    {
+        id: 'nd-enrich-contact',
+        nodeType: 'enrich-contact-data',
+        category: 'enricher',
+        name: 'Contact Research',
+        description: 'Build professional profiles for contacts',
+        icon: Users,
+        color: '#EC4899',
+        features: ['Career History', 'Expertise', 'Pain Points', 'Comm Style'],
+        capabilities: ['Researches professionals', 'Identifies pain points', 'Maps communication style'],
+        defaultConfig: { includeCareerHistory: true },
+        inputSchema: 'ContactEnrichInput',
+        outputSchema: 'ContactEnrichOutput'
+    },
+    {
+        id: 'nd-enrich-context',
+        nodeType: 'enrich-context',
+        category: 'enricher',
+        name: 'Context Enrichment',
+        description: 'Enrich data with market context, trends, and benchmarks',
+        icon: Globe2,
+        color: '#EC4899',
+        features: ['Market Trends', 'Benchmarks', 'Industry Insights'],
+        capabilities: ['Adds market context', 'Finds benchmarks', 'Identifies trends'],
+        defaultConfig: { contextGoal: 'general market context' },
+        inputSchema: 'ContextEnrichInput',
+        outputSchema: 'ContextEnrichOutput'
+    },
+    {
         id: 'nd-enrich-linkedin',
         nodeType: 'enrich-linkedin',
         category: 'enricher',
