@@ -16,6 +16,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactFlow, {
     Node,
     Edge,
@@ -1046,7 +1047,7 @@ function WorkflowManagerInner() {
                         {isSaving ? (
                             <Loader2 size={16} className="animate-spin" />
                         ) : saveSuccess ? (
-                            <Check size={16} color="#10B981" />
+                            <Check size={16} style={{ color: 'var(--color-success)' }} />
                         ) : (
                             <Save size={16} />
                         )}
@@ -1070,8 +1071,15 @@ function WorkflowManagerInner() {
             {/* Main Content Area */}
             <div className="wm-main-content">
                 {/* Flows Panel */}
+                <AnimatePresence>
                 {isFlowsPanelOpen && (
-                    <div className="wm-flows-panel">
+                    <motion.div
+                        className="wm-flows-panel"
+                        initial={{ width: 0, minWidth: 0, opacity: 0 }}
+                        animate={{ width: 300, minWidth: 300, opacity: 1 }}
+                        exit={{ width: 0, minWidth: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.22, 0.61, 0.36, 1] }}
+                    >
                         <div className="wm-flows-panel-header">
                             <h3>My Flows</h3>
                             <button
@@ -1116,9 +1124,12 @@ function WorkflowManagerInner() {
                                     <p>Create your first workflow or run the V2 migration</p>
                                 </div>
                             ) : (
-                                filteredWorkflows.map((workflow) => (
-                                    <div
+                                filteredWorkflows.map((workflow, index) => (
+                                    <motion.div
                                         key={workflow.id}
+                                        initial={{ opacity: 0, x: -12 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: index * 0.03, duration: 0.25, ease: [0.22, 0.61, 0.36, 1] }}
                                         className={`wm-flow-item ${currentFlowId === workflow.id ? 'active' : ''}`}
                                     >
                                         <div
@@ -1152,12 +1163,13 @@ function WorkflowManagerInner() {
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))
                             )}
                         </div>
-                    </div>
+                    </motion.div>
                 )}
+                </AnimatePresence>
 
                 {/* ReactFlow Canvas */}
                 <div className="wm-canvas-container" ref={reactFlowWrapper}>
@@ -1204,12 +1216,17 @@ function WorkflowManagerInner() {
                         {/* Empty State */}
                         {nodes.length === 0 && (
                             <Panel position="top-center">
-                                <div className="wm-empty-state">
+                                <motion.div
+                                    className="wm-empty-state"
+                                    initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ duration: 0.5, ease: [0.22, 0.61, 0.36, 1] }}
+                                >
                                     <div className="wm-empty-icon">
                                         <Workflow size={32} />
                                     </div>
                                     <h3>Start Building Your Workflow</h3>
-                                    <p>Click "Add Node" to add nodes, or load an existing workflow</p>
+                                    <p>Click &ldquo;Add Node&rdquo; to add nodes, or load an existing workflow</p>
                                     <div className="wm-empty-actions">
                                         <button
                                             className="wm-btn wm-btn-primary"
@@ -1226,7 +1243,7 @@ function WorkflowManagerInner() {
                                             Load Flow
                                         </button>
                                     </div>
-                                </div>
+                                </motion.div>
                             </Panel>
                         )}
                     </ReactFlow>
@@ -1250,9 +1267,27 @@ function WorkflowManagerInner() {
             )}
 
             {/* Execution Result Modal */}
+            <AnimatePresence>
             {executionModal && (
-                <div className="wm-execution-modal-overlay" onClick={() => setExecutionModal(null)} role="dialog" aria-modal="true" aria-labelledby="execution-modal-title">
-                    <div className="wm-execution-modal" onClick={e => e.stopPropagation()}>
+                <motion.div
+                    className="wm-execution-modal-overlay"
+                    onClick={() => setExecutionModal(null)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="execution-modal-title"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
+                    <motion.div
+                        className="wm-execution-modal"
+                        onClick={e => e.stopPropagation()}
+                        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+                        transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
+                    >
                         <div className="wm-execution-modal-header">
                             <h3 id="execution-modal-title">Execution status</h3>
                             <button type="button" className="wm-execution-modal-close" onClick={() => setExecutionModal(null)} aria-label="Close execution status">
@@ -1293,9 +1328,10 @@ function WorkflowManagerInner() {
                                 </>
                             )}
                         </div>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </div>
     );
 }

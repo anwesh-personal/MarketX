@@ -14,6 +14,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Settings, Trash2, GripVertical } from 'lucide-react';
 import type { V2NodeData } from './types';
@@ -55,11 +56,14 @@ function V2WorkflowNodeComponent({
     }, [id, data]);
 
     return (
-        <div
+        <motion.div
             className={`v2-workflow-node ${selected ? 'selected' : ''}`}
             style={{
                 '--node-color': data.color,
             } as React.CSSProperties}
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
         >
             {/* Input Handle */}
             <Handle
@@ -96,7 +100,7 @@ function V2WorkflowNodeComponent({
                 </div>
             )}
 
-            {/* Actions - Always visible when selected, show on hover otherwise */}
+            {/* Actions */}
             <div className="v2-node-actions">
                 <button
                     className="v2-node-action"
@@ -120,7 +124,7 @@ function V2WorkflowNodeComponent({
                 position={Position.Right}
                 className="v2-node-handle v2-node-handle-output"
             />
-        </div>
+        </motion.div>
     );
 }
 

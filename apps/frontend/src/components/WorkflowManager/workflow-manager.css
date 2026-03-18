@@ -2,6 +2,8 @@
  * WORKFLOW MANAGER STYLES
  * Premium, theme-aware styles for the V2 Workflow Manager
  * Uses CSS variables for full theme compatibility
+ *
+ * Micro-interactions · Parallax depth · Glassmorphism · Spring curves
  */
 
 /* ============================================================================
@@ -13,22 +15,41 @@
     flex-direction: column;
     height: 100%;
     min-height: calc(100vh - 64px);
-    /* Account for header */
     width: 100%;
     background: var(--color-background);
     overflow: hidden;
+    position: relative;
 }
 
-/* Top Toolbar */
+.workflow-manager::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(var(--color-accent-rgb), 0.04), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(var(--color-accent-rgb), 0.03), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.workflow-manager > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Top Toolbar — Glass effect with subtle depth */
 .wm-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 20px;
-    background: var(--color-surface);
-    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
     gap: 16px;
     z-index: 100;
+    box-shadow: 0 1px 3px rgba(var(--color-shadow, 0 0 0), 0.04), 0 4px 12px rgba(var(--color-shadow, 0 0 0), 0.02);
 }
 
 .wm-toolbar-left {
@@ -51,14 +72,22 @@
 }
 
 .wm-toolbar-title-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%);
-    border-radius: var(--radius-sm, 8px);
+    border-radius: var(--radius-sm, 10px);
     color: var(--color-on-accent);
+    box-shadow: 0 2px 10px rgba(var(--color-accent-rgb), 0.25);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+}
+
+.wm-toolbar-title-icon:hover {
+    transform: scale(1.08) rotate(-3deg);
+    box-shadow: 0 4px 16px rgba(var(--color-accent-rgb), 0.35);
 }
 
 .wm-toolbar-divider {
@@ -73,7 +102,7 @@
     gap: 12px;
 }
 
-/* Toolbar Buttons */
+/* Toolbar Buttons — Spring curves + micro-interactions */
 .wm-btn {
     display: flex;
     align-items: center;
@@ -83,21 +112,51 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.2s ease,
+                color 0.2s ease,
+                box-shadow 0.3s ease,
+                border-color 0.2s ease;
     border: none;
     background: transparent;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.wm-btn:active {
+    transform: scale(0.96);
+    transition-duration: 0.1s;
 }
 
 .wm-btn-primary {
     background: var(--color-accent);
     color: var(--color-on-accent);
-    box-shadow: 0 2px 8px var(--color-glow);
+    box-shadow: 0 2px 8px var(--color-glow), 0 0 0 0 rgba(var(--color-accent-rgb), 0);
+}
+
+.wm-btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: none;
+    z-index: -1;
 }
 
 .wm-btn-primary:hover {
     background: var(--color-accent-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px var(--color-glow);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px var(--color-glow), 0 0 0 3px rgba(var(--color-accent-rgb), 0.12);
+}
+
+.wm-btn-primary:hover::before {
+    animation: wm-shimmer 0.6s ease forwards;
+}
+
+.wm-btn-primary:active {
+    transform: translateY(0) scale(0.97);
 }
 
 .wm-btn-secondary {
@@ -109,15 +168,23 @@
 .wm-btn-secondary:hover {
     background: var(--color-border);
     border-color: var(--color-border-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--color-shadow, 0 0 0), 0.06);
 }
 
 .wm-btn-ghost {
     color: var(--color-text-secondary);
+    border-radius: 8px;
 }
 
 .wm-btn-ghost:hover {
     background: var(--color-surface-hover);
     color: var(--color-text-primary);
+    transform: translateY(-1px);
+}
+
+.wm-btn-ghost:active {
+    background: var(--color-border);
 }
 
 /* Main Content Area - Flexbox for panel + canvas */
@@ -128,15 +195,18 @@
     height: 100%;
 }
 
-/* Flows Panel - INSIDE the canvas area (not fixed overlay) */
+/* Flows Panel — Glass sidebar with depth */
 .wm-flows-panel {
     width: 300px;
     min-width: 300px;
-    background: var(--color-surface);
-    border-right: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    border-right: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: 4px 0 24px rgba(var(--color-shadow, 0 0 0), 0.04);
 }
 
 .wm-flows-panel-header {
@@ -208,20 +278,30 @@
     gap: 8px;
     margin: 12px 16px;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px dashed var(--color-border);
     background: transparent;
     color: var(--color-text-secondary);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.2s ease,
+                color 0.2s ease,
+                background 0.2s ease,
+                box-shadow 0.3s ease;
 }
 
 .wm-flows-new-btn:hover {
     border-color: var(--color-accent);
     color: var(--color-accent);
-    background: var(--color-glow);
+    background: rgba(var(--color-accent-rgb), 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(var(--color-accent-rgb), 0.08);
+}
+
+.wm-flows-new-btn:active {
+    transform: scale(0.97);
 }
 
 .wm-flows-list {
@@ -260,19 +340,29 @@
     margin-bottom: 8px;
     background: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.2s ease,
+                box-shadow 0.3s ease,
+                background 0.2s ease;
 }
 
 .wm-flow-item:hover {
     border-color: var(--color-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 16px rgba(var(--color-shadow, 0 0 0), 0.06),
+                0 0 0 1px rgba(var(--color-accent-rgb), 0.1);
+    transform: translateX(4px);
+}
+
+.wm-flow-item:active {
+    transform: translateX(2px) scale(0.99);
 }
 
 .wm-flow-item.active {
     border-color: var(--color-accent);
-    background: var(--color-glow);
+    background: rgba(var(--color-accent-rgb), 0.06);
+    box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
 .wm-flow-item-main {
@@ -322,7 +412,7 @@
     opacity: 1;
 }
 
-/* Empty State */
+/* Empty State — Floating icon, glass card */
 .wm-empty-state {
     display: flex;
     flex-direction: column;
@@ -330,22 +420,27 @@
     justify-content: center;
     padding: 60px 40px;
     margin-top: 100px;
-    background: var(--color-surface);
-    border: 2px dashed var(--color-border);
-    border-radius: 16px;
+    background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+    backdrop-filter: blur(16px) saturate(1.3);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    border: 2px dashed color-mix(in srgb, var(--color-border) 60%, transparent);
+    border-radius: 20px;
     text-align: center;
+    box-shadow: 0 8px 40px rgba(var(--color-shadow, 0 0 0), 0.04);
 }
 
 .wm-empty-icon {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-glow);
-    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.12), rgba(var(--color-accent-rgb), 0.04));
+    border-radius: 20px;
     margin-bottom: 20px;
     color: var(--color-accent);
+    animation: wm-float 4s ease-in-out infinite;
+    box-shadow: 0 4px 20px rgba(var(--color-accent-rgb), 0.1);
 }
 
 .wm-empty-state h3 {
@@ -388,27 +483,39 @@
 }
 
 .wm-reactflow .react-flow__minimap {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(var(--color-shadow, 0 0 0), 0.06);
 }
 
 .wm-reactflow .react-flow__controls {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
-    box-shadow: var(--shadow-md);
+    background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
+    border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(var(--color-shadow, 0 0 0), 0.08);
+    overflow: hidden;
 }
 
 .wm-reactflow .react-flow__controls-button {
-    background: var(--color-surface);
+    background: transparent;
     border: none;
     color: var(--color-text-secondary);
+    transition: background 0.15s ease, color 0.15s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .wm-reactflow .react-flow__controls-button:hover {
     background: var(--color-surface-hover);
     color: var(--color-text-primary);
+    transform: scale(1.05);
+}
+
+.wm-reactflow .react-flow__controls-button:active {
+    transform: scale(0.95);
 }
 
 /* ============================================================================
@@ -433,14 +540,17 @@
     width: 100%;
     max-width: 900px;
     max-height: 85vh;
-    background: var(--color-surface);
-    border-radius: var(--radius-lg, 16px);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-xl, 0 25px 60px -12px rgba(0, 0, 0, 0.25));
+    background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    border-radius: var(--radius-lg, 20px);
+    border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+    box-shadow: 0 32px 80px -16px rgba(var(--color-shadow, 0 0 0), 0.25),
+                0 0 1px rgba(var(--color-shadow, 0 0 0), 0.1),
+                0 0 0 1px rgba(var(--color-accent-rgb), 0.04) inset;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 /* Modal Header */
@@ -483,17 +593,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.15s ease,
+                color 0.15s ease;
 }
 
 .add-node-modal-close:hover {
     background: var(--color-surface-hover);
     color: var(--color-text-primary);
+    transform: rotate(90deg) scale(1.05);
+}
+
+.add-node-modal-close:active {
+    transform: rotate(90deg) scale(0.9);
 }
 
 /* Search Bar */
@@ -516,16 +633,20 @@
     padding: 12px 16px 12px 44px;
     font-size: 14px;
     border: 1px solid var(--color-border);
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--color-background);
     color: var(--color-text-primary);
-    transition: all 0.2s ease;
+    transition: border-color 0.2s ease,
+                box-shadow 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+                background 0.2s ease;
 }
 
 .add-node-search-input:focus {
     outline: none;
     border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px var(--color-glow);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.12),
+                0 2px 8px rgba(var(--color-accent-rgb), 0.06);
+    background: var(--color-surface);
 }
 
 .add-node-search-input::placeholder {
@@ -568,7 +689,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid var(--color-border);
     background: var(--color-background);
     color: var(--color-text-secondary);
@@ -576,19 +697,30 @@
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease,
+                box-shadow 0.2s ease;
 }
 
 .add-node-category-tab:hover {
     background: var(--color-surface-hover);
     border-color: var(--color-border-hover);
     color: var(--color-text-primary);
+    transform: translateY(-1px);
+}
+
+.add-node-category-tab:active {
+    transform: translateY(0) scale(0.97);
 }
 
 .add-node-category-tab.active {
     background: var(--color-accent);
     border-color: var(--color-accent);
     color: var(--color-on-accent);
+    box-shadow: 0 2px 10px rgba(var(--color-accent-rgb), 0.25);
+    transform: translateY(-1px);
 }
 
 .add-node-category-tab .category-dot {
@@ -645,22 +777,47 @@
     font-size: 0.875rem;
 }
 
-/* Node Card */
+/* Node Card — Premium hover with parallax depth */
 .add-node-card {
     background: var(--color-background);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.2s ease,
+                box-shadow 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
     position: relative;
+    overflow: hidden;
+}
+
+.add-node-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--node-color, var(--color-accent)), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
 .add-node-card:hover {
     border-color: var(--node-color, var(--color-accent));
-    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.1),
-        0 0 0 1px var(--node-color, var(--color-accent));
-    transform: translateY(-2px);
+    box-shadow: 0 8px 32px -8px rgba(var(--color-shadow, 0 0 0), 0.12),
+                0 0 0 1px var(--node-color, var(--color-accent)),
+                0 -2px 20px -4px rgba(var(--color-accent-rgb), 0.06) inset;
+    transform: translateY(-4px) scale(1.01);
+}
+
+.add-node-card:hover::before {
+    opacity: 1;
+}
+
+.add-node-card:active {
+    transform: translateY(-1px) scale(0.99);
+    transition-duration: 0.1s;
 }
 
 .add-node-card-header {
@@ -677,6 +834,14 @@
     align-items: center;
     justify-content: center;
     border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(var(--color-shadow, 0 0 0), 0.1);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+}
+
+.add-node-card:hover .add-node-card-icon {
+    transform: scale(1.1) rotate(-3deg);
+    box-shadow: 0 4px 16px rgba(var(--color-shadow, 0 0 0), 0.16);
 }
 
 .add-node-card-add {
@@ -701,7 +866,7 @@
 .add-node-card-add:hover {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
 }
 
 .add-node-card-name {
@@ -1112,25 +1277,54 @@
 
 .v2-workflow-node {
     min-width: 180px;
-    background: var(--color-surface);
+    background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 2px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.2s ease,
+                box-shadow 0.35s cubic-bezier(0.22, 0.61, 0.36, 1),
+                background 0.2s ease;
     position: relative;
+}
+
+.v2-workflow-node::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.08), transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .v2-workflow-node:hover {
     border-color: var(--node-color, var(--color-accent));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
-        0 0 0 1px var(--node-color, var(--color-accent));
+    box-shadow: 0 8px 24px -4px rgba(var(--color-shadow, 0 0 0), 0.12),
+                0 0 0 1px var(--node-color, var(--color-accent)),
+                0 0 20px -6px var(--node-color, var(--color-accent));
+    transform: translateY(-3px) scale(1.02);
+}
+
+.v2-workflow-node:hover::after {
+    opacity: 1;
 }
 
 .v2-workflow-node.selected {
     border-color: var(--node-color, var(--color-accent));
     box-shadow: 0 0 0 2px var(--node-color, var(--color-accent)),
-        0 8px 20px rgba(0, 0, 0, 0.15);
+                0 12px 32px -4px rgba(var(--color-shadow, 0 0 0), 0.18),
+                0 0 30px -8px var(--node-color, var(--color-accent));
+    animation: wm-node-breathe 3s ease-in-out infinite;
+}
+
+.v2-workflow-node.selected::after {
+    opacity: 1;
 }
 
 .v2-node-header {
@@ -1147,6 +1341,13 @@
     justify-content: center;
     border-radius: 8px;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(var(--color-shadow, 0 0 0), 0.12);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.v2-workflow-node:hover .v2-node-icon {
+    transform: scale(1.08) rotate(-2deg);
+    box-shadow: 0 4px 12px rgba(var(--color-shadow, 0 0 0), 0.18);
 }
 
 .v2-node-info {
@@ -1212,32 +1413,47 @@
     justify-content: center;
     border-radius: 6px;
     border: none;
-    background: var(--color-surface-hover);
+    background: color-mix(in srgb, var(--color-surface-hover) 80%, transparent);
+    backdrop-filter: blur(4px);
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.15s ease,
+                color 0.15s ease,
+                box-shadow 0.2s ease;
 }
 
 .v2-node-action:hover {
     background: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(var(--color-accent-rgb), 0.3);
+}
+
+.v2-node-action:active {
+    transform: scale(0.95);
 }
 
 .v2-node-action-danger:hover {
     background: var(--color-error);
+    box-shadow: 0 2px 8px rgba(var(--color-error-rgb, 239 68 68), 0.3);
 }
 
-/* Handles */
+/* Handles — Glow ring on hover */
 .v2-node-handle {
     width: 12px !important;
     height: 12px !important;
     border: 2px solid var(--color-surface) !important;
     background: var(--node-color, var(--color-accent)) !important;
-    transition: all 0.15s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.3s ease;
+    box-shadow: 0 0 0 0 rgba(var(--color-accent-rgb), 0);
 }
 
 .v2-node-handle:hover {
-    transform: scale(1.2);
+    transform: scale(1.4);
+    box-shadow: 0 0 0 4px rgba(var(--color-accent-rgb), 0.2),
+                0 0 12px rgba(var(--color-accent-rgb), 0.25);
 }
 
 .v2-node-handle-input {
@@ -1258,11 +1474,13 @@
     font-size: 14px;
     font-weight: 500;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 8px;
     background: transparent;
     color: var(--color-text-primary);
     min-width: 180px;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease,
+                border-color 0.2s ease,
+                box-shadow 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .wm-flow-name-input:hover {
@@ -1273,15 +1491,17 @@
     outline: none;
     background: var(--color-background);
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.1);
 }
 
-/* Unsaved Changes Indicator */
+/* Unsaved Changes Indicator — Glow pulse */
 .wm-unsaved-indicator {
     width: 8px;
     height: 8px;
-    background: var(--color-warning, #F59E0B);
+    background: var(--color-warning);
     border-radius: 50%;
-    animation: pulse 2s infinite;
+    animation: wm-glow-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(var(--color-warning-rgb), 0.4);
 }
 
 @keyframes pulse {
@@ -1399,25 +1619,31 @@
 .wm-config-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(var(--color-shadow, 0 0 0), 0.5);
+    backdrop-filter: blur(12px) saturate(0.9);
+    -webkit-backdrop-filter: blur(12px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1050;
+    animation: wm-fade-in 0.2s ease;
 }
 
 .wm-config-modal {
     width: 500px;
     max-width: 90vw;
     max-height: 80vh;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+    border-radius: 20px;
+    box-shadow: 0 32px 80px -16px rgba(var(--color-shadow, 0 0 0), 0.3),
+                0 0 1px rgba(var(--color-shadow, 0 0 0), 0.15);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    animation: wm-scale-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .wm-config-modal.wm-config-modal-wide {
@@ -1454,6 +1680,12 @@
     align-items: center;
     justify-content: center;
     border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(var(--color-shadow, 0 0 0), 0.12);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.wm-config-modal-icon:hover {
+    transform: scale(1.06) rotate(-2deg);
 }
 
 .wm-config-modal-title h3 {
@@ -1476,15 +1708,22 @@
     justify-content: center;
     border: none;
     background: transparent;
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--color-text-secondary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background 0.15s ease,
+                color 0.15s ease;
 }
 
 .wm-config-modal-close:hover {
     background: var(--color-surface-hover);
     color: var(--color-text-primary);
+    transform: rotate(90deg) scale(1.05);
+}
+
+.wm-config-modal-close:active {
+    transform: rotate(90deg) scale(0.9);
 }
 
 .wm-config-modal-body {
@@ -1521,16 +1760,21 @@
     padding: 10px 14px;
     font-size: 0.875rem;
     border: 1px solid var(--color-border);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--color-background);
     color: var(--color-text-primary);
-    transition: border-color 0.15s ease;
+    transition: border-color 0.2s ease,
+                box-shadow 0.3s cubic-bezier(0.22, 0.61, 0.36, 1),
+                background 0.2s ease;
 }
 
 .wm-config-field input:focus,
 .wm-config-field textarea:focus {
     outline: none;
     border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.1),
+                0 1px 4px rgba(var(--color-accent-rgb), 0.05);
+    background: var(--color-surface);
 }
 
 .wm-config-field textarea {
@@ -1653,27 +1897,28 @@
     position: fixed;
     inset: 0;
     z-index: 2000;
-    background: var(--color-overlay);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(var(--color-shadow, 0 0 0), 0.5);
+    backdrop-filter: blur(12px) saturate(0.9);
+    -webkit-backdrop-filter: blur(12px) saturate(0.9);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 24px;
-    transition: opacity 0.2s ease;
 }
 
 .wm-execution-modal {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg, 12px);
+    background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+    border-radius: 20px;
     max-width: 560px;
     width: 100%;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-xl, 0 24px 48px rgba(0, 0, 0, 0.2));
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    box-shadow: 0 32px 80px -16px rgba(var(--color-shadow, 0 0 0), 0.25),
+                0 0 1px rgba(var(--color-shadow, 0 0 0), 0.1);
 }
 
 .wm-execution-modal-header {
@@ -1742,22 +1987,28 @@
     text-transform: uppercase;
     padding: 4px 10px;
     border-radius: 6px;
+    letter-spacing: 0.03em;
+    transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .wm-execution-status-started,
 .wm-execution-status-running {
-    background: color-mix(in srgb, var(--color-info, #3b82f6) 20%, transparent);
-    color: var(--color-info, #3b82f6);
+    background: color-mix(in srgb, var(--color-info) 18%, transparent);
+    color: var(--color-info);
+    animation: wm-status-pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(var(--color-info-rgb), 0.2);
 }
 
 .wm-execution-status-completed {
-    background: color-mix(in srgb, var(--color-success, #10b981) 20%, transparent);
-    color: var(--color-success, #10b981);
+    background: color-mix(in srgb, var(--color-success) 18%, transparent);
+    color: var(--color-success);
+    box-shadow: 0 0 8px rgba(var(--color-success-rgb), 0.15);
 }
 
 .wm-execution-status-failed {
-    background: color-mix(in srgb, var(--color-error, #ef4444) 20%, transparent);
-    color: var(--color-error, #ef4444);
+    background: color-mix(in srgb, var(--color-error) 18%, transparent);
+    color: var(--color-error);
+    box-shadow: 0 0 8px rgba(var(--color-error-rgb), 0.15);
 }
 
 .wm-execution-meta {
@@ -5788,6 +6039,129 @@
 /* Utility Section in Modal */
 .wm-config-utility-section {
     margin: 8px 0 16px 0;
+}
+
+/* ============================================================================
+   PREMIUM KEYFRAMES — Micro-interactions, parallax, glow
+   ============================================================================ */
+
+@keyframes wm-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+}
+
+@keyframes wm-float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes wm-glow-pulse {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 4px rgba(var(--color-warning-rgb), 0.4);
+    }
+    50% {
+        opacity: 0.7;
+        box-shadow: 0 0 12px rgba(var(--color-warning-rgb), 0.6);
+    }
+}
+
+@keyframes wm-node-breathe {
+    0%, 100% {
+        box-shadow: 0 0 0 2px var(--node-color, var(--color-accent)),
+                    0 12px 32px -4px rgba(var(--color-shadow, 0 0 0), 0.18),
+                    0 0 24px -8px var(--node-color, var(--color-accent));
+    }
+    50% {
+        box-shadow: 0 0 0 2px var(--node-color, var(--color-accent)),
+                    0 12px 32px -4px rgba(var(--color-shadow, 0 0 0), 0.18),
+                    0 0 36px -4px var(--node-color, var(--color-accent));
+    }
+}
+
+@keyframes wm-status-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(var(--color-info-rgb), 0.25);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(var(--color-info-rgb), 0);
+    }
+}
+
+@keyframes wm-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes wm-scale-in {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes wm-slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Edge connection animation — flowing dots */
+.wm-reactflow .react-flow__edge-path {
+    stroke: var(--color-accent);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 3px rgba(var(--color-accent-rgb), 0.15));
+}
+
+/* Selection box glow */
+.wm-reactflow .react-flow__selection {
+    background: rgba(var(--color-accent-rgb), 0.06);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.3);
+    border-radius: 8px;
+}
+
+/* Feature tags stagger hint */
+.v2-node-feature {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.add-node-card-feature {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease;
+}
+
+.add-node-card:hover .add-node-card-feature {
+    background: rgba(var(--color-accent-rgb), 0.08);
+}
+
+/* Add-node card plus button spring */
+.add-node-card-add {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+                opacity 0.2s ease,
+                background 0.15s ease,
+                border-color 0.15s ease,
+                color 0.15s ease;
+}
+
+.add-node-card-add:hover {
+    transform: scale(1.15) rotate(90deg);
+}
+
+/* Reduced motion — respect user preference */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 
 /* Responsive */
