@@ -1,18 +1,19 @@
 /**
  * ENGINE EXECUTION API ROUTE
  * ==========================
- * Replaces direct backend call with worker queue
- * 
- * Flow:
- * 1. Validate request
- * 2. Load engine from DB
- * 3. Queue job to worker
- * 4. Return execution ID
+ * Supports 3 auth methods:
+ *   1. API Key  — `x-api-key: axm_live_*` or `Authorization: Bearer axm_live_*`
+ *   2. Supabase session (member area)
+ *   3. Server-to-server headers (`x-user-id` + `x-org-id`)
+ *
+ * Validates ownership, engine status, then queues to worker.
+ * Passes full engine data (config + snapshot) so worker can use agent LLM/prompt config.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
+import { authenticateEngineApiKey } from '@/lib/engine-api-key-auth';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 
@@ -67,53 +68,92 @@ export async function POST(
         }
         const { input, options = {} } = body;
 
-        // Auth: Supabase session first, then header fallback (for server-to-server / internal calls)
+        // ── Auth: 3 methods — API key, Supabase session, server-to-server ──
         let userId: string;
         let orgId: string | null = null;
+        let engineData: Record<string, any> | null = null;
 
-        try {
-            const serverSupabase = createServerClient();
-            const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
-            if (user && !authError) {
-                userId = user.id;
-                // Fetch org from users table
-                const { data: profile } = await supabase
-                    .from('users')
-                    .select('org_id')
-                    .eq('id', user.id)
-                    .single();
-                orgId = profile?.org_id ?? request.headers.get('x-org-id') ?? null;
-            } else {
-                // Server-to-server: accept headers (internal services only)
-                const headerUserId = request.headers.get('x-user-id');
-                if (!headerUserId || headerUserId === 'anonymous') {
-                    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-                }
-                userId = headerUserId;
-                orgId = request.headers.get('x-org-id') ?? null;
+        // Method 1: API Key auth (axm_live_*)
+        const apiKeyAuth = await authenticateEngineApiKey(request);
+        if (apiKeyAuth) {
+            if (apiKeyAuth.engineId !== engineId) {
+                return NextResponse.json({ error: 'API key does not match this engine' }, { status: 403 });
             }
-        } catch {
-            return NextResponse.json({ error: 'Auth check failed' }, { status: 401 });
+            userId = apiKeyAuth.assignedUserId || 'api-key-user';
+            orgId = apiKeyAuth.orgId;
+            engineData = {
+                id: apiKeyAuth.engineId,
+                name: apiKeyAuth.engineName,
+                config: apiKeyAuth.config,
+                snapshot: apiKeyAuth.snapshot,
+                overrides: apiKeyAuth.overrides,
+                status: apiKeyAuth.status,
+            };
+        } else {
+            // Method 2: Supabase session
+            try {
+                const serverSupabase = createServerClient();
+                const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+                if (user && !authError) {
+                    userId = user.id;
+                    const { data: profile } = await supabase
+                        .from('users')
+                        .select('org_id')
+                        .eq('id', user.id)
+                        .single();
+                    orgId = profile?.org_id ?? request.headers.get('x-org-id') ?? null;
+                } else {
+                    // Method 3: Server-to-server headers
+                    const headerUserId = request.headers.get('x-user-id');
+                    if (!headerUserId || headerUserId === 'anonymous') {
+                        return NextResponse.json({ error: 'Unauthorized — provide API key, session, or x-user-id header' }, { status: 401 });
+                    }
+                    userId = headerUserId;
+                    orgId = request.headers.get('x-org-id') ?? null;
+                }
+            } catch {
+                return NextResponse.json({ error: 'Auth check failed' }, { status: 401 });
+            }
         }
 
-        // Get engine from database
-        const { data: engine, error: engineError } = await supabase
-            .from('engine_instances')
-            .select('*')
-            .eq('id', engineId)
-            .single();
+        // ── Load engine (if not already loaded via API key auth) ──
+        if (!engineData) {
+            const { data: engine, error: engineError } = await supabase
+                .from('engine_instances')
+                .select('id, name, config, snapshot, overrides, status, org_id, assigned_user_id')
+                .eq('id', engineId)
+                .single();
 
-        if (engineError || !engine) {
-            return NextResponse.json(
-                { error: 'Engine not found' },
-                { status: 404 }
-            );
+            if (engineError || !engine) {
+                return NextResponse.json({ error: 'Engine not found' }, { status: 404 });
+            }
+
+            // ── Ownership check: engine must belong to user's org ──
+            if (engine.org_id && orgId && engine.org_id !== orgId) {
+                return NextResponse.json({ error: 'Access denied — engine belongs to a different organization' }, { status: 403 });
+            }
+
+            // ── Status check: engine must be active ──
+            if (engine.status !== 'active') {
+                return NextResponse.json(
+                    { error: `Engine is ${engine.status} — only active engines can be executed` },
+                    { status: 403 }
+                );
+            }
+
+            engineData = {
+                id: engine.id,
+                name: engine.name,
+                config: engine.config,
+                snapshot: engine.snapshot,
+                overrides: engine.overrides,
+                status: engine.status,
+            };
         }
 
-        // Generate execution ID
+        // ── Queue execution ──
         const executionId = randomUUID();
 
-        // Create execution record
         const { error: logError } = await supabase
             .from('engine_run_logs')
             .insert({
@@ -127,34 +167,24 @@ export async function POST(
 
         if (logError) {
             console.error('Failed to create execution log:', logError);
-            return NextResponse.json(
-                { error: 'Failed to create execution record' },
-                { status: 500 }
-            );
+            return NextResponse.json({ error: 'Failed to create execution record' }, { status: 500 });
         }
 
-        // Queue job to engine-execution worker
         await engineQueue.add('engine-execution', {
             executionId,
             engineId,
-            engine: {
-                id: engine.id,
-                name: engine.name,
-                config: engine.config,
-                status: engine.status,
-            },
+            engine: engineData,
             userId,
             orgId,
             input,
             options: {
                 tier: options.tier || 'hobby',
-                timeout: options.timeout || 300000, // 5 min default
+                timeout: options.timeout || 300000,
             },
         });
 
-        console.log(`✅ Queued engine execution: ${executionId}`);
+        console.log(`✅ Queued engine execution: ${executionId} (auth: ${apiKeyAuth ? 'api-key' : 'session'})`);
 
-        // Return execution ID for polling
         return NextResponse.json({
             success: true,
             executionId,

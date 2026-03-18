@@ -73,20 +73,56 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
         // Update status to running
         await updateExecutionStatus(executionId, 'running');
 
-        // Get workflow configuration from engine
+        // Get workflow configuration from engine config or snapshot
         const flowConfig = engine.config?.flowConfig;
         if (!flowConfig || !flowConfig.nodes || !flowConfig.edges) {
             throw new Error('Engine has no valid workflow configuration');
         }
 
-        // Execute workflow directly using ported processor (NO BACKEND CALLBACK!)
+        // Extract agent config from snapshot for runtime use
+        const snapshot = (engine as any).snapshot || engine.config?.bundle_snapshot || {};
+        const agentConfigs = snapshot.agents || [];
+        const defaultLlm = snapshot.default_llm || {};
+
+        // Build engine context with resolved agent LLM/prompt config
+        // This allows the execution processor to use per-engine AI settings
+        const engineContext: Record<string, any> = {};
+        if (agentConfigs.length > 0 || defaultLlm.provider) {
+            const primaryAgent = agentConfigs.find((a: any) => a.is_primary) || agentConfigs[0];
+            if (primaryAgent?.llm || defaultLlm.provider) {
+                const llm = primaryAgent?.llm || defaultLlm;
+                engineContext.defaultProvider = llm.provider;
+                engineContext.defaultModel = llm.model;
+                engineContext.defaultTemperature = llm.temperature;
+                engineContext.defaultMaxTokens = llm.max_tokens;
+            }
+            if (primaryAgent?.prompts) {
+                engineContext.systemPromptOverride = [
+                    primaryAgent.prompts.foundation,
+                    primaryAgent.prompts.persona,
+                    primaryAgent.prompts.domain,
+                    primaryAgent.prompts.guardrails,
+                ].filter(Boolean).join('\n\n');
+            }
+            engineContext.agents = agentConfigs;
+            engineContext.brainAgentIds = snapshot.brain_agent_ids;
+        }
+
+        // Merge engine context into input so nodes can access it
+        const enrichedInput = {
+            ...input,
+            _engine_context: engineContext,
+            ...(engineContext.defaultProvider ? { provider: engineContext.defaultProvider } : {}),
+            ...(engineContext.defaultModel ? { ai_model: engineContext.defaultModel } : {}),
+        };
+
+        // Execute workflow
         const result = await workflowExecutionService.executeWorkflow(
             flowConfig.nodes,
             flowConfig.edges,
-            input,
+            enrichedInput,
             executionId,
             (update) => {
-                // Publish progress to Redis for SSE streaming
                 publishProgress(executionId, update);
             },
             {
