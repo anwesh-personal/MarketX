@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketerX — Satellite Swarm Mail Infrastructure Spec</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface-2: #1a1a26; --surface-3: #222233;
+    --border: #2a2a3d; --border-bright: #3d3d5c;
+    --text: #e8e8f0; --text-dim: #8888aa; --text-muted: #55556e;
+    --accent: #6366f1; --accent-glow: rgba(99,102,241,0.3);
+    --green: #22c55e; --orange: #f59e0b; --red: #ef4444; --cyan: #06b6d4; --pink: #ec4899;
+    --radius: 16px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Outfit',sans-serif; line-height:1.6; }
+  .container { max-width:1200px; margin:0 auto; padding:40px 24px 80px; }
+
+  .hero { text-align:center; padding:60px 0 40px; position:relative; }
+  .hero::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:600px; height:400px; background:radial-gradient(ellipse,var(--accent-glow),transparent 70%); pointer-events:none; z-index:0; }
+  .hero * { position:relative; z-index:1; }
+  .eyebrow { display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; color:var(--accent); border:1px solid rgba(99,102,241,0.3); padding:6px 16px; border-radius:100px; margin-bottom:20px; }
+  .hero h1 { font-size:48px; font-weight:900; letter-spacing:-0.03em; line-height:1.1; margin-bottom:16px; }
+  .hero h1 span { color:var(--accent); }
+  .hero p { font-size:18px; color:var(--text-dim); max-width:700px; margin:0 auto; font-weight:300; }
+  .hero-meta { display:flex; justify-content:center; gap:24px; margin-top:24px; flex-wrap:wrap; }
+  .hero-meta span { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-muted); border:1px solid var(--border); padding:4px 12px; border-radius:6px; }
+
+  .section { margin-top:56px; }
+  .section-label { font-size:10px; font-weight:700; letter-spacing:0.3em; text-transform:uppercase; color:var(--text-muted); margin-bottom:8px; }
+  .section h2 { font-size:28px; font-weight:800; letter-spacing:-0.02em; margin-bottom:8px; }
+  .section > p { color:var(--text-dim); font-size:15px; margin-bottom:24px; max-width:800px; }
+
+  .server-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; }
+  .server-box { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:24px; position:relative; overflow:hidden; transition:border-color 0.3s,box-shadow 0.3s; }
+  .server-box:hover { border-color:var(--border-bright); box-shadow:0 8px 40px -16px rgba(0,0,0,0.5); }
+  .server-box .glow { position:absolute; top:-40px; right:-40px; width:120px; height:120px; border-radius:50%; filter:blur(40px); opacity:0.4; pointer-events:none; }
+  .server-box.brain .glow { background:var(--accent); }
+  .server-box.data .glow { background:var(--cyan); }
+  .server-box.mail .glow { background:var(--orange); }
+  .server-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+  .server-icon { width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:12px; font-size:20px; }
+  .brain .server-icon { background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); }
+  .data .server-icon { background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.3); }
+  .mail .server-icon { background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3); }
+  .server-title { font-size:18px; font-weight:700; }
+  .server-subtitle { font-size:12px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; }
+  .server-spec { list-style:none; margin-top:12px; }
+  .server-spec li { padding:6px 0; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+  .server-spec li:last-child { border-bottom:none; }
+  .server-spec .label { color:var(--text-dim); }
+  .server-spec .value { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; }
+  .service-list { margin-top:16px; display:flex; flex-wrap:wrap; gap:6px; }
+  .service-tag { font-size:11px; font-family:'JetBrains Mono',monospace; padding:3px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface-3); color:var(--text-dim); }
+
+  .flow-container { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:32px; overflow-x:auto; }
+  .flow-row { display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; margin:16px 0; }
+  .flow-node { padding:12px 20px; border-radius:12px; font-size:13px; font-weight:600; text-align:center; min-width:140px; border:1px solid; }
+  .flow-node.purple { background:rgba(99,102,241,0.1); border-color:rgba(99,102,241,0.3); color:#a5b4fc; }
+  .flow-node.cyan { background:rgba(6,182,212,0.1); border-color:rgba(6,182,212,0.3); color:#67e8f9; }
+  .flow-node.orange { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3); color:#fcd34d; }
+  .flow-node.green { background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.3); color:#86efac; }
+  .flow-node.pink { background:rgba(236,72,153,0.1); border-color:rgba(236,72,153,0.3); color:#f9a8d4; }
+  .flow-node small { display:block; font-size:10px; font-weight:400; opacity:0.7; margin-top:2px; font-family:'JetBrains Mono',monospace; }
+  .flow-arrow { font-size:20px; color:var(--text-muted); flex-shrink:0; }
+  .flow-arrow-down { text-align:center; font-size:20px; color:var(--text-muted); margin:8px 0; }
+
+  .spec-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .spec-table th { text-align:left; padding:10px 16px; font-size:10px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border); }
+  .spec-table td { padding:10px 16px; border-bottom:1px solid var(--border); color:var(--text-dim); }
+  .spec-table td:first-child { color:var(--text); font-weight:500; }
+  .spec-table tr:last-child td { border-bottom:none; }
+  .spec-table code { font-family:'JetBrains Mono',monospace; font-size:11px; background:var(--surface-3); padding:2px 8px; border-radius:4px; }
+
+  .sat-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+  @media(max-width:768px){ .sat-grid{grid-template-columns:repeat(2,1fr);} }
+  .sat-domain { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+  .sat-domain .domain-name { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:600; color:var(--orange); margin-bottom:8px; }
+  .sat-domain .sat-count { font-size:28px; font-weight:800; }
+  .sat-domain .sat-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; }
+  .sat-domain .ip-badge { margin-top:8px; font-size:10px; font-family:'JetBrains Mono',monospace; color:var(--cyan); background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2); padding:2px 8px; border-radius:4px; display:inline-block; }
+
+  .stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:24px 0; }
+  .stat-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center; }
+  .stat-card .stat-value { font-size:32px; font-weight:800; letter-spacing:-0.03em; }
+  .stat-card .stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:4px; }
+  .stat-card.accent .stat-value { color:var(--accent); }
+  .stat-card.green .stat-value { color:var(--green); }
+  .stat-card.orange .stat-value { color:var(--orange); }
+  .stat-card.cyan .stat-value { color:var(--cyan); }
+  .stat-card.pink .stat-value { color:var(--pink); }
+
+  .note-box { background:var(--surface-2); border-left:3px solid var(--accent); border-radius:0 var(--radius) var(--radius) 0; padding:16px 20px; margin:20px 0; font-size:13px; color:var(--text-dim); }
+  .note-box strong { color:var(--text); }
+
+  .dns-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
+  .dns-record { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .dns-record .dns-type { font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; display:inline-block; padding:2px 8px; border-radius:4px; margin-bottom:8px; }
+  .dns-record .dns-host { font-size:13px; color:var(--text); font-weight:500; }
+  .dns-record .dns-value { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); margin-top:4px; word-break:break-all; background:var(--surface-3); padding:8px; border-radius:6px; }
+  .dns-spf .dns-type { background:rgba(99,102,241,0.15); color:var(--accent); }
+  .dns-dkim .dns-type { background:rgba(6,182,212,0.15); color:var(--cyan); }
+  .dns-dmarc .dns-type { background:rgba(34,197,94,0.15); color:var(--green); }
+  .dns-ptr .dns-type { background:rgba(245,158,11,0.15); color:var(--orange); }
+  .dns-mx .dns-type { background:rgba(236,72,153,0.15); color:var(--pink); }
+
+  .warmup-chart { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; }
+  .warmup-bars { display:flex; align-items:flex-end; gap:6px; height:180px; padding-top:20px; }
+  .warmup-bar { flex:1; border-radius:6px 6px 0 0; position:relative; min-width:0; }
+  .warmup-bar .bar-label { position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--text-muted); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+  .warmup-bar .bar-value { position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; white-space:nowrap; }
+
+  .checklist { list-style:none; }
+  .checklist li { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px; font-size:14px; }
+  .checklist li:last-child { border-bottom:none; }
+  .checklist .check { flex-shrink:0; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; margin-top:2px; }
+  .checklist .check.done { background:rgba(34,197,94,0.15); color:var(--green); border:1px solid rgba(34,197,94,0.3); }
+  .checklist .check.todo { background:rgba(245,158,11,0.15); color:var(--orange); border:1px solid rgba(245,158,11,0.3); }
+  .checklist .detail { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+  hr.divider { border:none; border-top:1px solid var(--border); margin:40px 0; }
+  .badge { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:0.05em; }
+  .badge.critical { background:rgba(239,68,68,0.15); color:var(--red); }
+  .badge.important { background:rgba(245,158,11,0.15); color:var(--orange); }
+  .badge.ready { background:rgba(34,197,94,0.15); color:var(--green); }
+  footer { text-align:center; padding:40px 0; font-size:12px; color:var(--text-muted); border-top:1px solid var(--border); margin-top:60px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hero">
+    <div class="eyebrow">Infrastructure Specification</div>
+    <h1>Satellite <span>Swarm</span><br>Mail Infrastructure</h1>
+    <p>Complete 3-server architecture for MarketerX — AI-powered email marketing with isolated reputation, intelligent warmup, and self-healing delivery.</p>
+    <div class="hero-meta">
+      <span>v1.0 — March 2026</span>
+      <span>3 Servers Required</span>
+      <span>5 Domains / Partner</span>
+      <span>50 Satellites / Partner</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card accent"><div class="stat-value">3</div><div class="stat-label">Servers</div></div>
+    <div class="stat-card orange"><div class="stat-value">5</div><div class="stat-label">Domains / Partner</div></div>
+    <div class="stat-card cyan"><div class="stat-value">50</div><div class="stat-label">Satellites / Partner</div></div>
+    <div class="stat-card green"><div class="stat-value">150K</div><div class="stat-label">Emails / Day Capacity</div></div>
+    <div class="stat-card pink"><div class="stat-value">5+</div><div class="stat-label">Dedicated IPs</div></div>
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section">
+    <div class="section-label">Section 01</div>
+    <h2>Three-Server Architecture</h2>
+    <p>Each server is purpose-built and isolated. If the mail server gets blacklisted, the brain and data servers are completely unaffected.</p>
+    <div class="server-grid">
+      <div class="server-box brain">
+        <div class="glow"></div>
+        <div class="server-header">
+          <div class="server-icon">&#x1F9E0;</div>
+          <div><div class="server-title">Server 1 — Brain</div><div class="server-subtitle">MarketerX / Axiom</div></div>
+        </div>
+        <ul class="server-spec">
+          <li><span class="label">Role</span><span class="value">AI Orchestrator</span></li>
+          <li><span class="label">CPU</span><span class="value">4 cores</span></li>
+          <li><span class="label">RAM</span><span class="value">16 GB</span></li>
+          <li><span class="label">Storage</span><span class="value">100 GB SSD</span></li>
+          <li><span class="label">OS</span><span class="value">Ubuntu 22.04</span></li>
+          <li><span class="label">Provider</span><span class="value">Railway / Vercel / VPS</span></li>
+        </ul>
+        <div class="service-list">
+          <span class="service-tag">Next.js Frontend</span>
+          <span class="service-tag">Supabase (Postgres)</span>
+          <span class="service-tag">Redis</span>
+          <span class="service-tag">BullMQ Workers ×9</span>
+          <span class="service-tag">AI Provider APIs</span>
+          <span class="service-tag">Market Writer</span>
+          <span class="service-tag">Coach Agent</span>
+          <span class="service-tag">Brain KB + ICP</span>
+        </div>
+      </div>
+      <div class="server-box data">
+        <div class="glow"></div>
+        <div class="server-header">
+          <div class="server-icon">&#x1F4CA;</div>
+          <div><div class="server-title">Server 2 — Data</div><div class="server-subtitle">Refinery Nexus</div></div>
+        </div>
+        <ul class="server-spec">
+          <li><span class="label">Role</span><span class="value">Data Processing & Analytics</span></li>
+          <li><span class="label">CPU</span><span class="value">4 cores</span></li>
+          <li><span class="label">RAM</span><span class="value">16 GB</span></li>
+          <li><span class="label">Storage</span><span class="value">500 GB NVMe</span></li>
+          <li><span class="label">OS</span><span class="value">Ubuntu 22.04</span></li>
+          <li><span class="label">Provider</span><span class="value">Linode / Hetzner</span></li>
+        </ul>
+        <div class="service-list">
+          <span class="service-tag">Refinery API (Express)</span>
+          <span class="service-tag">ClickHouse</span>
+          <span class="service-tag">S3 Ingestion</span>
+          <span class="service-tag">Email Verification</span>
+          <span class="service-tag">Webhook Receivers</span>
+          <span class="service-tag">Stats Engine</span>
+          <span class="service-tag">Engagement Analytics</span>
+        </div>
+      </div>
+      <div class="server-box mail">
+        <div class="glow"></div>
+        <div class="server-header">
+          <div class="server-icon">&#x1F4E8;</div>
+          <div><div class="server-title">Server 3 — Mail</div><div class="server-subtitle">MailWizz + SMTP Engine</div></div>
+        </div>
+        <ul class="server-spec">
+          <li><span class="label">Role</span><span class="value">Email Delivery</span></li>
+          <li><span class="label">CPU</span><span class="value">4 cores</span></li>
+          <li><span class="label">RAM</span><span class="value">8 GB</span></li>
+          <li><span class="label">Storage</span><span class="value">160 GB SSD</span></li>
+          <li><span class="label">OS</span><span class="value">Ubuntu 22.04</span></li>
+          <li><span class="label">IPs</span><span class="value" style="color:var(--orange)">5+ Dedicated IPv4</span></li>
+          <li><span class="label">Provider</span><span class="value" style="color:var(--orange)">OVH / Contabo / Linode</span></li>
+        </ul>
+        <div class="service-list">
+          <span class="service-tag">MailWizz (PHP 8.2)</span>
+          <span class="service-tag">Nginx</span>
+          <span class="service-tag">MariaDB</span>
+          <span class="service-tag">Postfix SMTP</span>
+          <span class="service-tag">OpenDKIM</span>
+          <span class="service-tag">Let's Encrypt</span>
+          <span class="service-tag">Fail2ban</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section">
+    <div class="section-label">Section 02</div>
+    <h2>The Self-Healing Data Flow</h2>
+    <p>Brain picks contacts, writes emails, sends via satellites. Engagement data flows back. Coach Agent learns. Next batch improves automatically.</p>
+    <div class="flow-container">
+      <div class="flow-row">
+        <div class="flow-node purple">&#x1F9E0; Brain<small>MarketerX</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node cyan">&#x1F4CA; Contacts<small>Refinery v1 API</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node purple">&#x270D;&#xFE0F; Writer<small>Market Writer</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node purple">&#x1F6F0;&#xFE0F; Pacing<small>Pick Satellite</small></div>
+      </div>
+      <div class="flow-arrow-down">↓</div>
+      <div class="flow-row">
+        <div class="flow-node orange">&#x1F4E8; MailWizz<small>SMTP Delivery</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node green">&#x1F4EC; Inbox<small>Gmail / Outlook</small></div>
+      </div>
+      <div class="flow-arrow-down">↓ webhooks</div>
+      <div class="flow-row">
+        <div class="flow-node cyan">&#x1F4E5; Webhooks<small>Refinery /v1/webhooks</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node cyan">&#x1F4C8; Stats<small>Refinery /v1/stats</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node pink">&#x1F393; Coach<small>Coach Agent</small></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-node purple">&#x1F9E0; Brain<small>Updated Beliefs</small></div>
+      </div>
+    </div>
+    <div class="note-box"><strong>Key Principle:</strong> The learning layer (Coach Agent, Brain) NEVER knows which MTA is being used. It reads from normalized engagement data only. Swap MailWizz for any other MTA — zero code changes in the brain.</div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section">
+    <div class="section-label">Section 03</div>
+    <h2>Satellite Structure (Per Partner)</h2>
+    <p>Each client gets 5 unique domains with 10 satellites each. No domain reuse between partners. If one domain gets blacklisted, the other 4 continue.</p>
+    <div class="sat-grid">
+      <div class="sat-domain"><div class="domain-name">outreach-alpha.com</div><div class="sat-count">10</div><div class="sat-label">satellites</div><div class="ip-badge">IP: .101</div></div>
+      <div class="sat-domain"><div class="domain-name">reach-beta.io</div><div class="sat-count">10</div><div class="sat-label">satellites</div><div class="ip-badge">IP: .102</div></div>
+      <div class="sat-domain"><div class="domain-name">connect-gamma.co</div><div class="sat-count">10</div><div class="sat-label">satellites</div><div class="ip-badge">IP: .103</div></div>
+      <div class="sat-domain"><div class="domain-name">grow-delta.net</div><div class="sat-count">10</div><div class="sat-label">satellites</div><div class="ip-badge">IP: .104</div></div>
+      <div class="sat-domain"><div class="domain-name">link-epsilon.org</div><div class="sat-count">10</div><div class="sat-label">satellites</div><div class="ip-badge">IP: .105</div></div>
+    </div>
+    <div class="note-box"><strong>Per satellite:</strong> 3,000 sends/day max · 14-day warmup · Individual reputation score (0–1) · Auto-pause if reputation drops · Daily send cap enforced centrally</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-top:16px;overflow-x:auto">
+      <table class="spec-table">
+        <thead><tr><th>Attribute</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Domains per partner</td><td><code>5</code></td><td>Different TLDs for reputation isolation</td></tr>
+          <tr><td>Satellites per domain</td><td><code>10</code></td><td>Individual mailbox identities (e.g. sarah@domain.com)</td></tr>
+          <tr><td>Total satellites</td><td><code>50</code></td><td>5 × 10 = 50 per partner</td></tr>
+          <tr><td>Max sends / satellite / day</td><td><code>3,000</code></td><td>ISP-safe threshold, enforced by pacing engine</td></tr>
+          <tr><td>Max daily capacity</td><td><code>150,000</code></td><td>50 × 3,000 (at full warmup)</td></tr>
+          <tr><td>Warmup period</td><td><code>14 days</code></td><td>Gradual ramp from ~50/day to 3,000/day</td></tr>
+          <tr><td>Activation rule</td><td><code>1 at a time</code></td><td>No spike scaling — sequential activation only</td></tr>
+          <tr><td>IP isolation</td><td><code>1 IP per domain</code></td><td>Blacklist on one domain doesn't affect others</td></tr>
+          <tr><td>Tracking domain</td><td><code>isolated</code></td><td>Each domain uses its own tracking subdomain</td></tr>
+          <tr><td>Reply routing</td><td><code>isolated</code></td><td>Replies route to domain-specific inbox</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4 -->
+  <div class="section">
+    <div class="section-label">Section 04</div>
+    <h2>Warmup Ramp Schedule</h2>
+    <p>Each new satellite starts at ~50 emails/day and gradually ramps to its 3,000/day cap over 14 days. No spikes. No shortcuts.</p>
+    <div class="warmup-chart">
+      <div class="warmup-bars" id="warmupBars"></div>
+      <div style="text-align:center;margin-top:28px;font-size:11px;color:var(--text-muted)">Day 1 → Day 14 warmup schedule (emails per day per satellite)</div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section">
+    <div class="section-label">Section 05</div>
+    <h2>DNS Configuration (Per Domain)</h2>
+    <p>Every domain MUST have all 5 records configured correctly before any email is sent. This is non-negotiable for deliverability.</p>
+    <div class="dns-grid">
+      <div class="dns-record dns-spf"><div class="dns-type">SPF</div><div class="dns-host">@ (root domain)</div><div class="dns-value">v=spf1 ip4:&lt;SERVER_IP&gt; ~all</div></div>
+      <div class="dns-record dns-dkim"><div class="dns-type">DKIM</div><div class="dns-host">mw._domainkey</div><div class="dns-value">v=DKIM1; k=rsa; p=&lt;PUBLIC_KEY&gt;</div></div>
+      <div class="dns-record dns-dmarc"><div class="dns-type">DMARC</div><div class="dns-host">_dmarc</div><div class="dns-value">v=DMARC1; p=quarantine; rua=mailto:dmarc@domain.com; fo=1</div></div>
+      <div class="dns-record dns-ptr"><div class="dns-type">PTR (Reverse DNS)</div><div class="dns-host">&lt;IP Address&gt;</div><div class="dns-value">mail.yourdomain.com</div></div>
+      <div class="dns-record dns-mx"><div class="dns-type">MX</div><div class="dns-host">@ (root domain)</div><div class="dns-value">10 mail.yourdomain.com</div></div>
+    </div>
+    <div class="note-box" style="border-left-color:var(--red)"><strong>⚠ CRITICAL:</strong> Reverse PTR records must be set at the hosting provider level (not domain registrar). Each dedicated IP needs its own PTR record matching the sending domain. This is the #1 missed step that kills deliverability.</div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section">
+    <div class="section-label">Section 06</div>
+    <h2>Mail Server — Hardware Requirements</h2>
+    <p>This is exactly what we need from the server provider. The mail server is the most critical piece — wrong setup = instant spam folder.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto">
+      <table class="spec-table">
+        <thead><tr><th>Requirement</th><th>Spec</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr><td>Operating System</td><td><code>Ubuntu 22.04 LTS</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>CPU</td><td><code>4+ cores</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>RAM</td><td><code>8 GB minimum</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>Storage</td><td><code>160 GB SSD</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>Dedicated IPv4 Addresses</td><td><code>5+ additional IPs</code></td><td><span class="badge critical">Critical</span></td></tr>
+          <tr><td>Reverse PTR (rDNS)</td><td><code>Settable per IP</code></td><td><span class="badge critical">Critical</span></td></tr>
+          <tr><td>Port 25 Open</td><td><code>Outbound SMTP not blocked</code></td><td><span class="badge critical">Critical</span></td></tr>
+          <tr><td>Port 587 Open</td><td><code>Submission port</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>Clean IP History</td><td><code>IPs not on any blacklists</code></td><td><span class="badge critical">Critical</span></td></tr>
+          <tr><td>Bandwidth</td><td><code>Unmetered or 10TB+</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>Root Access</td><td><code>Full root / sudo</code></td><td><span class="badge important">Required</span></td></tr>
+          <tr><td>Uptime SLA</td><td><code>99.9%+</code></td><td><span class="badge important">Required</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box" style="border-left-color:var(--orange);margin-top:20px">
+      <strong>Provider Recommendations:</strong><br>
+      • <strong>OVH</strong> — Best for bulk mail. Port 25 open by default. Cheap extra IPs (~$2/IP/mo). Good rDNS control.<br>
+      • <strong>Contabo</strong> — Very cheap. Port 25 open. Manual rDNS via support ticket.<br>
+      • <strong>Hetzner</strong> — Excellent hardware. Port 25 blocked by default (must request unblock, strict policy).<br>
+      • <strong>Linode</strong> — Good but port 25 restricted for new accounts (support request needed).<br>
+      • <strong>DigitalOcean / AWS</strong> — Port 25 blocked. NOT recommended for self-hosted mail.
+    </div>
+  </div>
+
+  <!-- SECTION 7 -->
+  <div class="section">
+    <div class="section-label">Section 07</div>
+    <h2>Mail Server Software Stack</h2>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto">
+      <table class="spec-table">
+        <thead><tr><th>Software</th><th>Version</th><th>Purpose</th><th>Config Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Nginx</td><td><code>latest</code></td><td>Web server for MailWizz</td><td>SSL via Let's Encrypt, proxy PHP-FPM</td></tr>
+          <tr><td>PHP</td><td><code>8.2+</code></td><td>MailWizz runtime</td><td>Extensions: mbstring, curl, zip, gd, imap, xml, mysql</td></tr>
+          <tr><td>MariaDB</td><td><code>10.11+</code></td><td>MailWizz database</td><td>InnoDB, utf8mb4, max_connections=200</td></tr>
+          <tr><td>MailWizz</td><td><code>latest</code></td><td>Email marketing platform</td><td>Lists, campaigns, tracking, webhooks</td></tr>
+          <tr><td>Postfix</td><td><code>3.x</code></td><td>SMTP engine</td><td>Multi-IP binding, TLS, queue management</td></tr>
+          <tr><td>OpenDKIM</td><td><code>2.11+</code></td><td>DKIM signing</td><td>Per-domain key pairs, milter integration with Postfix</td></tr>
+          <tr><td>Certbot</td><td><code>latest</code></td><td>SSL certificates</td><td>Auto-renew for all domains</td></tr>
+          <tr><td>Fail2ban</td><td><code>latest</code></td><td>Security</td><td>Block brute-force SSH, SMTP, HTTP attempts</td></tr>
+          <tr><td>UFW Firewall</td><td><code>built-in</code></td><td>Firewall</td><td>Allow: 22, 25, 80, 443, 587. Block everything else.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 8 -->
+  <div class="section">
+    <div class="section-label">Section 08</div>
+    <h2>Postfix Multi-IP Domain Routing</h2>
+    <p>Each domain sends from its own dedicated IP. This is the core of satellite reputation isolation.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto">
+      <table class="spec-table">
+        <thead><tr><th>Domain</th><th>Dedicated IP</th><th>Reverse PTR</th><th>Satellites</th></tr></thead>
+        <tbody>
+          <tr><td>outreach-alpha.com</td><td><code>xxx.xxx.xxx.101</code></td><td><code>mail.outreach-alpha.com</code></td><td>10 mailboxes</td></tr>
+          <tr><td>reach-beta.io</td><td><code>xxx.xxx.xxx.102</code></td><td><code>mail.reach-beta.io</code></td><td>10 mailboxes</td></tr>
+          <tr><td>connect-gamma.co</td><td><code>xxx.xxx.xxx.103</code></td><td><code>mail.connect-gamma.co</code></td><td>10 mailboxes</td></tr>
+          <tr><td>grow-delta.net</td><td><code>xxx.xxx.xxx.104</code></td><td><code>mail.grow-delta.net</code></td><td>10 mailboxes</td></tr>
+          <tr><td>link-epsilon.org</td><td><code>xxx.xxx.xxx.105</code></td><td><code>mail.link-epsilon.org</code></td><td>10 mailboxes</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note-box"><strong>Postfix config:</strong> <code>sender_dependent_default_transport_maps</code> routes each domain's mail through its assigned IP. This is a standard Postfix feature — any experienced mail admin will know how to set this up.</div>
+  </div>
+
+  <!-- SECTION 9 -->
+  <div class="section">
+    <div class="section-label">Section 09</div>
+    <h2>Deliverability Monitoring Thresholds</h2>
+    <p>Continuously tracked per satellite. Any violation triggers automatic protective action.</p>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto">
+      <table class="spec-table">
+        <thead><tr><th>Metric</th><th>Window</th><th>Threshold</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Inbox Placement Rate</td><td>Rolling 7d</td><td>&lt; 90%</td><td>Pause scale expansion</td></tr>
+          <tr><td>Spam Placement Rate</td><td>Rolling 7d</td><td>&gt; 5%</td><td>Reduce sending velocity</td></tr>
+          <tr><td>Hard Bounce Rate</td><td>Rolling 14d</td><td>&gt; 2%</td><td>Suppress source segment</td></tr>
+          <tr><td>Complaint Rate</td><td>Rolling 30d</td><td>&gt; 0.1%</td><td>Investigate message fit</td></tr>
+          <tr><td>Domain Reputation</td><td>Rolling 30d</td><td>Declining trend</td><td>Freeze all scale expansion</td></tr>
+          <tr><td>Satellite Reputation</td><td>Per snapshot</td><td>&lt; 0.3</td><td>Auto-pause satellite</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 10 -->
+  <div class="section">
+    <div class="section-label">Section 10</div>
+    <h2>Implementation Status</h2>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px">
+      <ul class="checklist">
+        <li><span class="check done">✓</span><div><strong>Satellite DB Schema + APIs</strong><div class="detail">sending_domains, sending_satellites, deliverability_snapshots, deliverability_alerts — all in Supabase</div></div></li>
+        <li><span class="check done">✓</span><div><strong>Send Pacing Engine</strong><div class="detail">Daily cap enforcement, warmup progression, capacity checks — API routes built</div></div></li>
+        <li><span class="check done">✓</span><div><strong>DNS Record Generation</strong><div class="detail">Auto-generates SPF, DKIM, DMARC records per domain — /api/domains</div></div></li>
+        <li><span class="check done">✓</span><div><strong>MTA Adapter System (Axiom)</strong><div class="detail">MailWizz, Mailgun, SES, SendGrid, Generic SMTP adapters — provider-agnostic</div></div></li>
+        <li><span class="check done">✓</span><div><strong>Webhook Receivers (Axiom + Refinery)</strong><div class="detail">Bounce, open, click, reply, complaint, unsubscribe — normalized to signal_event + engagement_events</div></div></li>
+        <li><span class="check done">✓</span><div><strong>Refinery v1 API</strong><div class="detail">Contacts, segments, verify, webhooks, stats, MTA adapter — Bearer rnx_live_xxx auth</div></div></li>
+        <li><span class="check done">✓</span><div><strong>Coach Agent + Learning Loop</strong><div class="detail">Reads engagement data, updates belief confidence, saves brain_memories — self-healing loop</div></div></li>
+        <li><span class="check todo">!</span><div><strong>Mail Server Procurement</strong><div class="detail">Need dedicated server with 5+ IPs, port 25 open, clean IP history, rDNS control</div></div></li>
+        <li><span class="check todo">!</span><div><strong>MailWizz Installation + License</strong><div class="detail">PHP 8.2 + Nginx + MariaDB + MailWizz license + Postfix SMTP</div></div></li>
+        <li><span class="check todo">!</span><div><strong>Domain Procurement</strong><div class="detail">5 domains per partner — different TLDs, clean history, aged 30+ days preferred</div></div></li>
+        <li><span class="check todo">!</span><div><strong>DNS + rDNS Configuration</strong><div class="detail">SPF, DKIM, DMARC, MX, PTR records for each domain + IP pair</div></div></li>
+        <li><span class="check todo">!</span><div><strong>Postfix Multi-IP Setup</strong><div class="detail">sender_dependent_default_transport_maps — route each domain through its dedicated IP</div></div></li>
+        <li><span class="check todo">!</span><div><strong>MailWizz Webhook Integration</strong><div class="detail">Point webhook URLs to Refinery /api/v1/webhooks/* and Axiom /api/webhooks/email/mailwizz</div></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>
+    MarketerX × Refinery Nexus × MailWizz — Infrastructure Specification v1.0<br>
+    Prepared March 2026 · Confidential
+  </footer>
+
+</div>
+<script>
+  const warmupData = [
+    {day:1,sends:50},{day:2,sends:100},{day:3,sends:200},{day:4,sends:350},
+    {day:5,sends:500},{day:6,sends:700},{day:7,sends:1000},{day:8,sends:1300},
+    {day:9,sends:1600},{day:10,sends:1900},{day:11,sends:2200},{day:12,sends:2500},
+    {day:13,sends:2800},{day:14,sends:3000},
+  ];
+  const barsEl = document.getElementById('warmupBars');
+  warmupData.forEach(d => {
+    const pct = (d.sends / 3000) * 100;
+    const hue = 40 + (pct / 100) * 80;
+    const bar = document.createElement('div');
+    bar.className = 'warmup-bar';
+    bar.style.height = pct + '%';
+    bar.style.background = 'linear-gradient(to top, hsl(' + hue + ', 80%, 45%), hsl(' + hue + ', 90%, 55%))';
+    bar.innerHTML = '<span class="bar-value">' + d.sends.toLocaleString() + '</span><span class="bar-label">D' + d.day + '</span>';
+    barsEl.appendChild(bar);
+  });
+</script>
+</body>
+</html>

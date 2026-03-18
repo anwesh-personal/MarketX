@@ -7,7 +7,7 @@ import {
     BrainCircuit,
     Check,
     CheckCircle2,
-    ChevronDown,
+    ChevronRight,
     CircleDot,
     Key,
     Loader2,
@@ -31,6 +31,7 @@ import {
     SuperadminConfirmDialog,
     SuperadminErrorState,
     SuperadminLoadingState,
+    SuperadminPageHero,
 } from '@/components/SuperAdmin/surfaces'
 
 interface AIProvider {
@@ -71,21 +72,40 @@ const PROVIDER_CATALOG: Array<{
     shortName: string
     tone: ProviderTone
     icon: typeof Bot
+    tagline: string
 }> = [
-    { id: 'openai', name: 'OpenAI', shortName: 'GPT', tone: 'success', icon: Sparkles },
-    { id: 'anthropic', name: 'Anthropic', shortName: 'Claude', tone: 'warning', icon: ShieldCheck },
-    { id: 'google', name: 'Google', shortName: 'Gemini', tone: 'info', icon: BrainCircuit },
-    { id: 'mistral', name: 'Mistral', shortName: 'Mistral', tone: 'accent', icon: Rocket },
-    { id: 'perplexity', name: 'Perplexity', shortName: 'Sonar', tone: 'info', icon: Wand2 },
-    { id: 'xai', name: 'xAI', shortName: 'Grok', tone: 'primary', icon: Zap },
+    { id: 'openai', name: 'OpenAI', shortName: 'GPT', tone: 'success', icon: Sparkles, tagline: 'GPT-4o, o1, o3 & DALL-E' },
+    { id: 'anthropic', name: 'Anthropic', shortName: 'Claude', tone: 'warning', icon: ShieldCheck, tagline: 'Claude 3.5 & Opus' },
+    { id: 'google', name: 'Google', shortName: 'Gemini', tone: 'info', icon: BrainCircuit, tagline: 'Gemini Pro & Flash' },
+    { id: 'mistral', name: 'Mistral', shortName: 'Mistral', tone: 'accent', icon: Rocket, tagline: 'Large, Medium & Codestral' },
+    { id: 'perplexity', name: 'Perplexity', shortName: 'Sonar', tone: 'info', icon: Wand2, tagline: 'Sonar Large & Online' },
+    { id: 'xai', name: 'xAI', shortName: 'Grok', tone: 'primary', icon: Zap, tagline: 'Grok-2 & Grok-2 Mini' },
 ]
 
-const TONE_COLORS: Record<ProviderTone, { dot: string; bg: string; border: string; text: string; glow: string }> = {
-    success: { dot: 'bg-success', bg: 'bg-success/8', border: 'border-success/15', text: 'text-success', glow: 'shadow-[0_0_20px_-4px_rgba(var(--color-success-rgb),0.3)]' },
-    warning: { dot: 'bg-warning', bg: 'bg-warning/8', border: 'border-warning/15', text: 'text-warning', glow: 'shadow-[0_0_20px_-4px_rgba(var(--color-warning-rgb),0.3)]' },
-    info: { dot: 'bg-info', bg: 'bg-info/8', border: 'border-info/15', text: 'text-info', glow: 'shadow-[0_0_20px_-4px_rgba(var(--color-info-rgb),0.3)]' },
-    accent: { dot: 'bg-accent', bg: 'bg-accent/8', border: 'border-accent/15', text: 'text-accent', glow: 'shadow-[0_0_20px_-4px_rgba(var(--color-accent-rgb),0.3)]' },
-    primary: { dot: 'bg-primary', bg: 'bg-primary/8', border: 'border-primary/15', text: 'text-primary', glow: 'shadow-[0_0_20px_-4px_rgba(var(--color-accent-rgb),0.3)]' },
+const TONE_MAP: Record<ProviderTone, {
+    dot: string; bg: string; border: string; text: string
+    glowRgb: string; iconBg: string; gradientFrom: string
+}> = {
+    success: {
+        dot: 'bg-success', bg: 'bg-success/8', border: 'border-success/20', text: 'text-success',
+        glowRgb: 'var(--color-success-rgb)', iconBg: 'bg-success/12', gradientFrom: 'from-success/10',
+    },
+    warning: {
+        dot: 'bg-warning', bg: 'bg-warning/8', border: 'border-warning/20', text: 'text-warning',
+        glowRgb: 'var(--color-warning-rgb)', iconBg: 'bg-warning/12', gradientFrom: 'from-warning/10',
+    },
+    info: {
+        dot: 'bg-info', bg: 'bg-info/8', border: 'border-info/20', text: 'text-info',
+        glowRgb: 'var(--color-info-rgb)', iconBg: 'bg-info/12', gradientFrom: 'from-info/10',
+    },
+    accent: {
+        dot: 'bg-accent', bg: 'bg-accent/8', border: 'border-accent/20', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-accent/12', gradientFrom: 'from-accent/10',
+    },
+    primary: {
+        dot: 'bg-primary', bg: 'bg-primary/8', border: 'border-primary/20', text: 'text-primary',
+        glowRgb: 'var(--color-primary-rgb)', iconBg: 'bg-primary/12', gradientFrom: 'from-primary/10',
+    },
 }
 
 export default function AIProvidersPage() {
@@ -158,7 +178,6 @@ export default function AIProvidersPage() {
         if (!newKeyName || !newKeyValue) { toast.error('Name and API key required'); return }
         setIsSaving(true)
         try {
-            // Step 1: Real validation — hits provider API, fetches models, upserts to DB
             const testRes = await fetchWithAuth(`/api/superadmin/ai-providers/${providerType}/test`, {
                 method: 'POST',
                 body: JSON.stringify({ provider: providerType, api_key: newKeyValue }),
@@ -166,7 +185,6 @@ export default function AIProvidersPage() {
             const testData = await testRes.json()
             if (!testRes.ok || !testData.valid) throw new Error(testData.error || 'API key rejected by provider')
 
-            // Step 2: Save the credential (models already in DB from step 1)
             const saveRes = await fetchWithAuth('/api/superadmin/ai-providers', {
                 method: 'POST',
                 body: JSON.stringify({ provider: providerType, name: newKeyName, api_key: newKeyValue }),
@@ -250,196 +268,53 @@ export default function AIProvidersPage() {
     }
 
     return (
-        <div className="space-y-lg">
-            {/* Hero — compact */}
-            <section className="relative overflow-hidden rounded-[calc(var(--radius-xl)*1.5)] border border-border/60 bg-surface/80 px-lg py-md backdrop-blur-xl"
-                style={{
-                    backgroundImage: `
-                        radial-gradient(ellipse at 20% 0%, rgba(var(--color-accent-rgb), 0.1), transparent 50%),
-                        radial-gradient(ellipse at 80% 100%, rgba(var(--color-info-rgb), 0.06), transparent 40%)
-                    `,
-                }}
-            >
-                <div className="flex items-center justify-between gap-lg">
-                    <div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-textTertiary">Inference Fabric</p>
-                        <h1 className="mt-xs text-2xl font-bold tracking-tight text-textPrimary">AI Provider Control</h1>
-                    </div>
-                    <div className="flex items-center gap-md">
+        <div className="space-y-xl">
+            <SuperadminPageHero
+                eyebrow="Inference Fabric"
+                title="AI Provider Control"
+                description="Manage API keys, discover models, and orchestrate your multi-provider AI infrastructure."
+                actions={
+                    <div className="flex items-center gap-sm">
                         <div className="flex gap-sm text-xs">
-                            <span className="rounded-full border border-success/20 bg-success/8 px-sm py-xs text-success">{stats.activeKeys} keys</span>
-                            <span className="rounded-full border border-info/20 bg-info/8 px-sm py-xs text-info">{stats.activeModels} models</span>
+                            <span className="rounded-full border border-success/20 bg-success/8 px-sm py-xs font-semibold text-success">
+                                {stats.activeKeys} keys
+                            </span>
+                            <span className="rounded-full border border-info/20 bg-info/8 px-sm py-xs font-semibold text-info">
+                                {stats.activeModels} models
+                            </span>
                         </div>
                         <button onClick={loadProviders}
-                            className="rounded-lg border border-border bg-surface/80 p-sm text-textSecondary transition-all hover:border-borderHover hover:text-textPrimary hover:shadow-sm active:scale-95">
+                            className="rounded-[var(--radius-lg)] border border-border bg-surface/80 p-sm text-textSecondary transition-all duration-[var(--duration-fast)] hover:border-borderHover hover:text-textPrimary hover:shadow-[var(--shadow-sm)] active:scale-95">
                             <RefreshCw className="h-4 w-4" />
                         </button>
                     </div>
-                </div>
-            </section>
+                }
+            />
 
-            {/* Provider rows */}
-            <div className="space-y-sm">
-                {grouped.map((prov) => {
-                    const Icon = prov.icon
-                    const tone = TONE_COLORS[prov.tone]
-                    const isExpanded = expandedProvider === prov.id
-                    const hasKeys = prov.keys.length > 0
-                    const activeKeys = prov.keys.filter(k => k.is_active).length
-                    const activeModels = prov.models.filter(m => m.is_active).length
-                    const isAdding = addingTo === prov.id
-
-                    return (
-                        <div key={prov.id}
-                            className={cn(
-                                'group/prov rounded-[calc(var(--radius-xl)*1.2)] border transition-all duration-300',
-                                isExpanded
-                                    ? `${tone.border} bg-surface/95 backdrop-blur-xl ${tone.glow}`
-                                    : 'border-border/60 bg-surface/70 hover:border-border hover:bg-surface/90 hover:shadow-md',
-                            )}
-                            style={{ transform: isExpanded ? 'translateY(-1px)' : undefined }}
-                        >
-                            {/* Provider header row */}
-                            <button
-                                onClick={() => setExpandedProvider(isExpanded ? null : prov.id)}
-                                className="flex w-full items-center gap-md px-md py-sm text-left transition-all"
-                            >
-                                <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl border transition-all duration-300', tone.border, tone.bg,
-                                    isExpanded && 'scale-110'
-                                )}>
-                                    <Icon className={cn('h-4 w-4', tone.text)} />
-                                </div>
-
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-sm">
-                                        <span className="text-sm font-semibold text-textPrimary">{prov.name}</span>
-                                        <span className="text-[10px] font-medium uppercase tracking-widest text-textTertiary">{prov.shortName}</span>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-sm text-xs">
-                                    {hasKeys ? (
-                                        <>
-                                            <span className="flex items-center gap-xxs rounded-full border border-border bg-background/60 px-sm py-xs">
-                                                <span className={cn('h-1.5 w-1.5 rounded-full', activeKeys > 0 ? tone.dot : 'bg-textTertiary')} />
-                                                {activeKeys}/{prov.keys.length} keys
-                                            </span>
-                                            {prov.models.length > 0 && (
-                                                <span className="rounded-full border border-border bg-background/60 px-sm py-xs">
-                                                    {activeModels}/{prov.models.length} models
-                                                </span>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <span className="text-textTertiary">No keys</span>
-                                    )}
-                                </div>
-
-                                <ChevronDown className={cn(
-                                    'h-4 w-4 text-textTertiary transition-transform duration-300',
-                                    isExpanded && 'rotate-180'
-                                )} />
-                            </button>
-
-                            {/* Expanded content */}
-                            <div className={cn(
-                                'grid transition-all duration-300',
-                                isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                            )}>
-                                <div className="overflow-hidden">
-                                    <div className="space-y-sm border-t border-border/50 px-md pb-md pt-sm">
-
-                                        {/* Keys section */}
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-textTertiary">Credentials</p>
-                                            <button onClick={() => { setAddingTo(isAdding ? null : prov.id); setNewKeyName(''); setNewKeyValue('') }}
-                                                className={cn(
-                                                    'flex items-center gap-xxs rounded-lg px-sm py-xs text-xs font-medium transition-all',
-                                                    isAdding ? 'bg-error/10 text-error' : 'bg-surface hover:bg-surfaceHover text-textSecondary hover:text-textPrimary border border-border'
-                                                )}>
-                                                {isAdding ? <><X className="h-3 w-3" /> Cancel</> : <><Plus className="h-3 w-3" /> Add key</>}
-                                            </button>
-                                        </div>
-
-                                        {/* Add key form */}
-                                        {isAdding && (
-                                            <div className="flex items-center gap-sm rounded-xl border border-dashed border-border bg-background/60 p-sm animate-in fade-in slide-in-from-top-1 duration-200">
-                                                <input value={newKeyName} onChange={e => setNewKeyName(e.target.value)}
-                                                    placeholder="Label" className="w-32 rounded-lg border border-border bg-surface px-sm py-xs text-xs text-textPrimary placeholder:text-textTertiary focus:outline-none focus:ring-1 focus:ring-borderFocus" />
-                                                <input type="password" value={newKeyValue} onChange={e => setNewKeyValue(e.target.value)}
-                                                    placeholder="API key" className="flex-1 rounded-lg border border-border bg-surface px-sm py-xs font-mono text-xs text-textPrimary placeholder:text-textTertiary focus:outline-none focus:ring-1 focus:ring-borderFocus" />
-                                                <button onClick={() => handleAddKey(prov.id)} disabled={isSaving}
-                                                    className="flex items-center gap-xxs rounded-lg bg-primary px-sm py-xs text-xs font-semibold text-onPrimary transition-all hover:opacity-90 active:scale-95 disabled:opacity-50">
-                                                    {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                                                    {isSaving ? 'Testing...' : 'Validate'}
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* Key list */}
-                                        {prov.keys.length === 0 ? (
-                                            <p className="py-sm text-center text-xs text-textTertiary">No credentials configured for {prov.name}</p>
-                                        ) : (
-                                            <div className="space-y-xs">
-                                                {prov.keys.map(key => (
-                                                    <div key={key.id}
-                                                        className={cn(
-                                                            'flex items-center gap-sm rounded-lg border px-sm py-xs transition-all duration-200 hover:shadow-sm',
-                                                            key.is_active ? 'border-success/15 bg-success/4' : 'border-border/60 bg-background/40'
-                                                        )}>
-                                                        <CircleDot className={cn('h-3 w-3 flex-shrink-0', key.is_active ? 'text-success' : 'text-textTertiary')} />
-                                                        <span className="flex-1 truncate text-xs font-medium text-textPrimary">{key.name}</span>
-                                                        <code className="max-w-[120px] truncate text-[10px] text-textTertiary">{key.api_key}</code>
-                                                        <span className="text-[10px] text-textTertiary">{key.usage_count} uses</span>
-                                                        <button onClick={() => handleToggle(key.id, key.is_active)}
-                                                            className="rounded px-xs py-xxs text-[10px] font-medium text-textSecondary hover:bg-surfaceHover hover:text-textPrimary transition-all">
-                                                            {key.is_active ? 'Deactivate' : 'Activate'}
-                                                        </button>
-                                                        <button onClick={() => setPendingDeleteId(key.id)}
-                                                            className="rounded p-xxs text-textTertiary hover:bg-error/10 hover:text-error transition-all">
-                                                            <Trash2 className="h-3 w-3" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Models section */}
-                                        {hasKeys && (
-                                            <>
-                                                <div className="flex items-center justify-between pt-sm">
-                                                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-textTertiary">Discovered Models</p>
-                                                    <button onClick={() => handleRediscover(prov.keys[0].id)} disabled={discoveringFor === prov.keys[0].id}
-                                                        className="flex items-center gap-xxs rounded-lg border border-border bg-surface px-sm py-xs text-xs text-textSecondary hover:text-textPrimary hover:bg-surfaceHover transition-all disabled:opacity-50">
-                                                        <RefreshCw className={cn('h-3 w-3', discoveringFor === prov.keys[0].id && 'animate-spin')} />
-                                                        Rediscover
-                                                    </button>
-                                                </div>
-
-                                                {prov.models.length === 0 ? (
-                                                    <p className="py-sm text-center text-xs text-textTertiary">No models discovered yet. Click Rediscover to fetch models.</p>
-                                                ) : (
-                                                    <div className="grid grid-cols-1 gap-xs sm:grid-cols-2 xl:grid-cols-3">
-                                                        {prov.models.map(model => (
-                                                            <ModelCard
-                                                                key={model.id}
-                                                                model={model}
-                                                                providerId={prov.keys[0]?.id}
-                                                                tone={prov.tone}
-                                                                isTesting={testingModel === model.model_id}
-                                                                onTest={handleTestModel}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )
-                })}
+            {/* Provider Card Grid */}
+            <div className="grid grid-cols-1 gap-lg md:grid-cols-2 xl:grid-cols-3">
+                {grouped.map((prov) => (
+                    <ProviderCard
+                        key={prov.id}
+                        provider={prov}
+                        isExpanded={expandedProvider === prov.id}
+                        isAdding={addingTo === prov.id}
+                        isSaving={isSaving}
+                        newKeyName={newKeyName}
+                        newKeyValue={newKeyValue}
+                        testingModel={testingModel}
+                        discoveringFor={discoveringFor}
+                        onToggleExpand={() => setExpandedProvider(expandedProvider === prov.id ? null : prov.id)}
+                        onToggleAdding={() => { setAddingTo(addingTo === prov.id ? null : prov.id); setNewKeyName(''); setNewKeyValue('') }}
+                        onKeyNameChange={setNewKeyName}
+                        onKeyValueChange={setNewKeyValue}
+                        onAddKey={handleAddKey}
+                        onToggle={handleToggle}
+                        onDelete={setPendingDeleteId}
+                        onTestModel={handleTestModel}
+                        onRediscover={handleRediscover}
+                    />
+                ))}
             </div>
 
             <SuperadminConfirmDialog
@@ -454,6 +329,254 @@ export default function AIProvidersPage() {
     )
 }
 
+function ProviderCard({
+    provider,
+    isExpanded,
+    isAdding,
+    isSaving,
+    newKeyName,
+    newKeyValue,
+    testingModel,
+    discoveringFor,
+    onToggleExpand,
+    onToggleAdding,
+    onKeyNameChange,
+    onKeyValueChange,
+    onAddKey,
+    onToggle,
+    onDelete,
+    onTestModel,
+    onRediscover,
+}: {
+    provider: {
+        id: string; name: string; shortName: string; tone: ProviderTone
+        icon: typeof Bot; tagline: string
+        keys: AIProvider[]; models: AIModel[]
+    }
+    isExpanded: boolean
+    isAdding: boolean
+    isSaving: boolean
+    newKeyName: string
+    newKeyValue: string
+    testingModel: string | null
+    discoveringFor: string | null
+    onToggleExpand: () => void
+    onToggleAdding: () => void
+    onKeyNameChange: (v: string) => void
+    onKeyValueChange: (v: string) => void
+    onAddKey: (providerType: string) => void
+    onToggle: (id: string, active: boolean) => void
+    onDelete: (id: string) => void
+    onTestModel: (providerId: string, modelId: string) => void
+    onRediscover: (providerId: string) => void
+}) {
+    const Icon = provider.icon
+    const tone = TONE_MAP[provider.tone]
+    const hasKeys = provider.keys.length > 0
+    const activeKeys = provider.keys.filter(k => k.is_active).length
+    const activeModels = provider.models.filter(m => m.is_active).length
+
+    return (
+        <div
+            className={cn(
+                'group relative flex flex-col overflow-hidden rounded-[calc(var(--radius-xl)*1.5)] border transition-all duration-[var(--duration-normal)]',
+                isExpanded
+                    ? 'md:col-span-2 xl:col-span-3 border-borderHover bg-surface/90 backdrop-blur-xl'
+                    : 'border-border/60 bg-surface/70 backdrop-blur-lg hover:border-borderHover hover:-translate-y-[2px]',
+            )}
+            style={{
+                boxShadow: isExpanded
+                    ? `0 0 0 1px rgba(${tone.glowRgb}, 0.08), 0 24px 80px -20px rgba(${tone.glowRgb}, 0.22)`
+                    : `0 8px 40px -24px var(--color-shadow)`,
+            }}
+        >
+            {/* Top gradient accent line */}
+            <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] opacity-80"
+                style={{
+                    background: `linear-gradient(90deg, transparent, rgba(${tone.glowRgb}, 0.6), transparent)`,
+                }}
+            />
+
+            {/* Background gradient orb */}
+            <div
+                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-30 blur-3xl transition-opacity duration-[var(--duration-slow)] group-hover:opacity-50"
+                style={{ background: `rgba(${tone.glowRgb}, 0.15)` }}
+            />
+
+            {/* Card Header — always visible */}
+            <button
+                onClick={onToggleExpand}
+                className="relative flex items-start gap-lg px-lg py-lg text-left transition-all"
+            >
+                {/* Icon */}
+                <div className={cn(
+                    'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[calc(var(--radius-xl)*1.2)] border transition-all duration-[var(--duration-normal)]',
+                    tone.border, tone.iconBg,
+                    isExpanded && 'scale-110',
+                )}>
+                    <Icon className={cn('h-6 w-6', tone.text)} />
+                </div>
+
+                {/* Provider info */}
+                <div className="min-w-0 flex-1 space-y-xs">
+                    <div className="flex items-center gap-sm">
+                        <h3 className="text-lg font-bold tracking-tight text-textPrimary">{provider.name}</h3>
+                        <span className="rounded-full border border-border bg-background/60 px-sm py-xxs text-[10px] font-bold uppercase tracking-[0.2em] text-textTertiary">
+                            {provider.shortName}
+                        </span>
+                    </div>
+                    <p className="text-sm text-textSecondary">{provider.tagline}</p>
+
+                    {/* Status badges */}
+                    <div className="flex flex-wrap items-center gap-xs pt-xs">
+                        {hasKeys ? (
+                            <>
+                                <span className={cn(
+                                    'inline-flex items-center gap-xxs rounded-full border px-sm py-xxs text-xs font-semibold',
+                                    activeKeys > 0
+                                        ? 'border-success/20 bg-success/8 text-success'
+                                        : 'border-border bg-background/60 text-textTertiary',
+                                )}>
+                                    <span className={cn('h-1.5 w-1.5 rounded-full', activeKeys > 0 ? 'bg-success' : 'bg-textTertiary')} />
+                                    {activeKeys}/{provider.keys.length} keys
+                                </span>
+                                {provider.models.length > 0 && (
+                                    <span className="inline-flex items-center gap-xxs rounded-full border border-border bg-background/60 px-sm py-xxs text-xs font-semibold text-textSecondary">
+                                        {activeModels}/{provider.models.length} models
+                                    </span>
+                                )}
+                            </>
+                        ) : (
+                            <span className="inline-flex items-center gap-xxs rounded-full border border-border/50 bg-background/40 px-sm py-xxs text-xs text-textTertiary">
+                                <Key className="h-3 w-3" />
+                                No keys configured
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Expand arrow */}
+                <div className={cn(
+                    'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/60 text-textTertiary transition-all duration-[var(--duration-normal)]',
+                    isExpanded && 'rotate-90 border-borderHover text-textPrimary',
+                )}>
+                    <ChevronRight className="h-4 w-4" />
+                </div>
+            </button>
+
+            {/* Expanded Detail Section */}
+            <div className={cn(
+                'grid transition-all duration-[var(--duration-normal)]',
+                isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+            )}>
+                <div className="overflow-hidden">
+                    <div className="space-y-lg border-t border-border/50 px-lg pb-lg pt-lg">
+
+                        {/* Credentials Section */}
+                        <div className="space-y-sm">
+                            <div className="flex items-center justify-between">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-textTertiary">Credentials</p>
+                                <button onClick={(e) => { e.stopPropagation(); onToggleAdding() }}
+                                    className={cn(
+                                        'flex items-center gap-xxs rounded-[var(--radius-lg)] px-sm py-xs text-xs font-medium transition-all duration-[var(--duration-fast)]',
+                                        isAdding
+                                            ? 'bg-error/10 text-error hover:bg-error/15'
+                                            : 'border border-border bg-surface text-textSecondary hover:bg-surfaceHover hover:text-textPrimary',
+                                    )}>
+                                    {isAdding ? <><X className="h-3 w-3" /> Cancel</> : <><Plus className="h-3 w-3" /> Add key</>}
+                                </button>
+                            </div>
+
+                            {/* Add key form */}
+                            {isAdding && (
+                                <div className="flex flex-col gap-sm rounded-[var(--radius-xl)] border border-dashed border-border bg-background/60 p-md animate-in fade-in slide-in-from-top-1 duration-200 sm:flex-row sm:items-center">
+                                    <input value={newKeyName} onChange={e => onKeyNameChange(e.target.value)}
+                                        placeholder="Label"
+                                        className="w-full rounded-[var(--radius-lg)] border border-border bg-surface px-sm py-xs text-sm text-textPrimary placeholder:text-textTertiary focus:outline-none focus:ring-1 focus:ring-borderFocus sm:w-40" />
+                                    <input type="password" value={newKeyValue} onChange={e => onKeyValueChange(e.target.value)}
+                                        placeholder="sk-... or API key"
+                                        className="flex-1 rounded-[var(--radius-lg)] border border-border bg-surface px-sm py-xs font-mono text-sm text-textPrimary placeholder:text-textTertiary focus:outline-none focus:ring-1 focus:ring-borderFocus" />
+                                    <button onClick={() => onAddKey(provider.id)} disabled={isSaving}
+                                        className="flex items-center justify-center gap-xxs rounded-[var(--radius-lg)] bg-primary px-md py-xs text-sm font-semibold text-onPrimary transition-all duration-[var(--duration-fast)] hover:opacity-90 active:scale-95 disabled:opacity-50">
+                                        {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                        {isSaving ? 'Validating...' : 'Validate & Save'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Key list */}
+                            {provider.keys.length === 0 ? (
+                                <p className="py-md text-center text-sm text-textTertiary">
+                                    No credentials configured for {provider.name}. Add a key to get started.
+                                </p>
+                            ) : (
+                                <div className="space-y-xs">
+                                    {provider.keys.map(key => (
+                                        <div key={key.id}
+                                            className={cn(
+                                                'flex flex-wrap items-center gap-sm rounded-[var(--radius-lg)] border px-md py-sm transition-all duration-[var(--duration-fast)]',
+                                                key.is_active
+                                                    ? 'border-success/15 bg-success/4 hover:bg-success/8'
+                                                    : 'border-border/60 bg-background/40 hover:bg-background/60',
+                                            )}>
+                                            <CircleDot className={cn('h-3.5 w-3.5 flex-shrink-0', key.is_active ? 'text-success' : 'text-textTertiary')} />
+                                            <span className="flex-1 truncate text-sm font-semibold text-textPrimary">{key.name}</span>
+                                            <code className="max-w-[140px] truncate rounded-[var(--radius-sm)] bg-background/60 px-xs py-xxs text-[11px] text-textTertiary">{key.api_key}</code>
+                                            <span className="text-xs text-textTertiary">{key.usage_count} uses</span>
+                                            <button onClick={() => onToggle(key.id, key.is_active)}
+                                                className="rounded-[var(--radius-md)] px-sm py-xxs text-xs font-medium text-textSecondary transition-all hover:bg-surfaceHover hover:text-textPrimary">
+                                                {key.is_active ? 'Deactivate' : 'Activate'}
+                                            </button>
+                                            <button onClick={() => onDelete(key.id)}
+                                                className="rounded-[var(--radius-md)] p-xs text-textTertiary transition-all hover:bg-error/10 hover:text-error">
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Models Section */}
+                        {hasKeys && (
+                            <div className="space-y-sm">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-textTertiary">Discovered Models</p>
+                                    <button onClick={() => onRediscover(provider.keys[0].id)} disabled={discoveringFor === provider.keys[0].id}
+                                        className="flex items-center gap-xxs rounded-[var(--radius-lg)] border border-border bg-surface px-sm py-xs text-xs font-medium text-textSecondary transition-all hover:bg-surfaceHover hover:text-textPrimary disabled:opacity-50">
+                                        <RefreshCw className={cn('h-3 w-3', discoveringFor === provider.keys[0].id && 'animate-spin')} />
+                                        Rediscover
+                                    </button>
+                                </div>
+
+                                {provider.models.length === 0 ? (
+                                    <p className="py-md text-center text-sm text-textTertiary">
+                                        No models discovered yet. Click Rediscover to fetch available models.
+                                    </p>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                        {provider.models.map(model => (
+                                            <ModelCard
+                                                key={model.id}
+                                                model={model}
+                                                providerId={provider.keys[0]?.id}
+                                                tone={provider.tone}
+                                                isTesting={testingModel === model.model_id}
+                                                onTest={onTestModel}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function ModelCard({ model, providerId, tone, isTesting, onTest }: {
     model: AIModel
     providerId: string
@@ -461,15 +584,14 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
     isTesting: boolean
     onTest: (providerId: string, modelId: string) => void
 }) {
-    const colors = TONE_COLORS[tone]
+    const colors = TONE_MAP[tone]
     const passed = model.test_passed === true
     const failed = model.test_passed === false
-    const untested = model.test_passed === null
 
     return (
         <div className={cn(
-            'group/model relative rounded-lg border px-sm py-xs transition-all duration-200',
-            'hover:shadow-sm hover:-translate-y-px',
+            'group/model relative overflow-hidden rounded-[var(--radius-xl)] border px-md py-sm transition-all duration-[var(--duration-fast)]',
+            'hover:-translate-y-px hover:shadow-[var(--shadow-sm)]',
             model.is_active ? `${colors.border} ${colors.bg}` : 'border-border/50 bg-background/40',
             model.is_deprecated && 'opacity-50',
         )}>
@@ -477,15 +599,15 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-xs">
                         {model.is_active ? (
-                            <CheckCircle2 className="h-3 w-3 flex-shrink-0 text-success" />
+                            <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-success" />
                         ) : failed ? (
-                            <XCircle className="h-3 w-3 flex-shrink-0 text-error" />
+                            <XCircle className="h-3.5 w-3.5 flex-shrink-0 text-error" />
                         ) : (
-                            <CircleDot className="h-3 w-3 flex-shrink-0 text-textTertiary" />
+                            <CircleDot className="h-3.5 w-3.5 flex-shrink-0 text-textTertiary" />
                         )}
-                        <span className="truncate text-xs font-semibold text-textPrimary">{model.model_id}</span>
+                        <span className="truncate text-xs font-bold text-textPrimary">{model.model_id}</span>
                     </div>
-                    <div className="mt-xxs flex flex-wrap items-center gap-xs text-[10px] text-textTertiary">
+                    <div className="mt-xs flex flex-wrap items-center gap-xs text-[10px] text-textTertiary">
                         {model.context_window_tokens && (
                             <span>{(model.context_window_tokens / 1000).toFixed(0)}k ctx</span>
                         )}
@@ -496,7 +618,7 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
                         {model.supports_function_calling && <span className="text-accent">tools</span>}
                     </div>
                     {failed && model.test_error && (
-                        <p className="mt-xxs truncate text-[10px] text-error" title={model.test_error}>{model.test_error}</p>
+                        <p className="mt-xs truncate text-[10px] text-error" title={model.test_error}>{model.test_error}</p>
                     )}
                 </div>
 
@@ -504,10 +626,10 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
                     onClick={(e) => { e.stopPropagation(); onTest(providerId, model.model_id) }}
                     disabled={isTesting}
                     className={cn(
-                        'flex-shrink-0 rounded-md p-xs transition-all',
+                        'flex-shrink-0 rounded-[var(--radius-md)] p-xs transition-all',
                         isTesting
                             ? 'text-textTertiary'
-                            : 'text-textTertiary hover:bg-surface hover:text-textPrimary hover:shadow-sm active:scale-90',
+                            : 'text-textTertiary hover:bg-surface hover:text-textPrimary hover:shadow-[var(--shadow-sm)] active:scale-90',
                     )}
                     title="Test this model"
                 >
@@ -516,7 +638,7 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
             </div>
 
             {model.last_tested && (
-                <p className="mt-xxs text-[9px] text-textTertiary">
+                <p className="mt-xs text-[9px] text-textTertiary">
                     Tested {new Date(model.last_tested).toLocaleDateString()}
                 </p>
             )}
