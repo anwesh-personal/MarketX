@@ -16,7 +16,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { v4 as uuidv4 } from 'uuid';
 import { aiService, AICallResult } from '../utils/ai-service';
 import { kbResolutionService, ResolutionContext } from '../utils/kb-resolution-service';
-import { contentGeneratorService } from '../utils/content-generator-service';
 
 // ============================================================================
 // TYPES
@@ -135,6 +134,182 @@ export interface ExecutionResult {
 }
 
 type ProgressCallback = (update: ProgressUpdate) => void;
+
+// ============================================================================
+// CONFIG ADAPTER — Maps UI config shape to executor expectations
+// Handles: AI array→flat, camelCase→snake_case, key renames, structure transforms
+// ============================================================================
+
+function normalizeNodeConfig(nodeType: string, rawConfig: Record<string, any>): Record<string, any> {
+    const config = { ...rawConfig };
+
+    // ── AI Config: Array of entries → flat top-level keys ──
+    if (Array.isArray(config.aiConfig) && config.aiConfig.length > 0) {
+        const primary = config.aiConfig[0];
+        if (!config.provider && primary.providerId) config.provider = primary.providerId;
+        if (!config.model && primary.model) config.model = primary.model;
+        if (config.temperature == null && primary.temperature != null) config.temperature = primary.temperature;
+        if (config.maxTokens == null && primary.maxTokens != null) config.maxTokens = primary.maxTokens;
+    }
+
+    // ── Resolver nodes: camelCase → snake_case ──
+    if (nodeType.startsWith('resolve-')) {
+        const camelToSnake: Record<string, string> = {
+            icpId: 'icp_id',
+            industryHint: 'industry',
+            industryNiche: 'industry_niche',
+            jobTitleHint: 'job_title',
+            targetRole: 'target_role',
+            companySizeHint: 'company_size',
+            revenueBand: 'revenue_band',
+            offerId: 'offer_id',
+            offerCategory: 'offer_category',
+            offerNameHint: 'offer_name',
+            buyerStage: 'buyer_stage',
+            preferredAxis: 'angle_axis',
+            contentType: 'content_type',
+            pageType: 'page_type',
+            flowGoal: 'flow_goal',
+            ctaType: 'cta_type',
+        };
+        for (const [camel, snake] of Object.entries(camelToSnake)) {
+            if (config[camel] != null && config[snake] == null) {
+                config[snake] = config[camel];
+            }
+        }
+    }
+
+    // ── Transform nodes: key renames + value mapping ──
+    if (nodeType === 'transform-locker' || nodeType === 'add-content-locker') {
+        if (config.unlockMethod && !config.lockerType) {
+            const methodMap: Record<string, string> = { email_capture: 'email', social_share: 'social', payment: 'paywall' };
+            config.lockerType = methodMap[config.unlockMethod] || config.unlockMethod;
+        }
+        if (config.gatePercentage != null && config.percentage == null) config.percentage = config.gatePercentage;
+        if (config.lockerTitle && !config.ctaText) config.ctaText = config.lockerTitle;
+        if (config.lockerDescription && !config.ctaDescription) config.ctaDescription = config.lockerDescription;
+    }
+
+    if (nodeType === 'transform-format') {
+        if (config.inputFormat && !config.from) config.from = config.inputFormat;
+        if (config.outputFormat && !config.to) config.to = config.outputFormat;
+    }
+
+    if (nodeType === 'transform-personalize') {
+        if (Array.isArray(config.variableMappings) && !config.variables) {
+            const flat: Record<string, string> = {};
+            for (const m of config.variableMappings) {
+                if (m.variableName && m.sourceField) flat[m.variableName] = m.sourceField;
+            }
+            config.variables = flat;
+        }
+        if (config.customVariablePattern && !config.pattern) config.pattern = config.customVariablePattern;
+    }
+
+    // ── Output nodes: key renames + structural transforms ──
+    if (nodeType === 'output-webhook' || nodeType === 'output-n8n') {
+        if (config.webhookMethod && !config.method) config.method = config.webhookMethod;
+        if (config.webhookBodyTemplate && !config.customPayload) config.customPayload = config.webhookBodyTemplate;
+        if (Array.isArray(config.webhookHeaders) && !config.headers) {
+            const flat: Record<string, string> = {};
+            for (const h of config.webhookHeaders) {
+                if (h.key && h.value) flat[h.key] = h.value;
+            }
+            config.headers = flat;
+        }
+        if (config.webhookAuth && typeof config.webhookAuth === 'object') {
+            if (config.webhookAuth.type && !config.authType) config.authType = config.webhookAuth.type;
+            if (config.webhookAuth.bearerToken && !config.authToken) config.authToken = config.webhookAuth.bearerToken;
+            if (config.webhookAuth.apiKey && !config.apiKey) config.apiKey = config.webhookAuth.apiKey;
+            if (config.webhookAuth.apiKeyHeader && !config.apiKeyHeader) config.apiKeyHeader = config.webhookAuth.apiKeyHeader;
+        }
+    }
+
+    if (nodeType === 'output-store') {
+        if (config.storeTable && !config.tableName) config.tableName = config.storeTable;
+    }
+
+    if (nodeType === 'output-email') {
+        if (config.emailTo && !config.to) config.to = config.emailTo;
+        if (config.emailSubjectTemplate && !config.subject) config.subject = config.emailSubjectTemplate;
+        if (config.emailBodyTemplate && !config.htmlTemplate) config.htmlTemplate = config.emailBodyTemplate;
+        if ((config.emailFromName || config.emailFromAddress) && !config.from) {
+            const name = config.emailFromName || 'Axiom';
+            const addr = config.emailFromAddress || 'noreply@axiom.engine';
+            config.from = `${name} <${addr}>`;
+        }
+    }
+
+    if (nodeType === 'output-analytics') {
+        if (config.analyticsEventName && !config.eventName) config.eventName = config.analyticsEventName;
+    }
+
+    // ── Condition/Utility nodes ──
+    if (nodeType === 'condition-if-else') {
+        if (!config.condition && (config.field || config.operator || config.value)) {
+            const opMap: Record<string, string> = {
+                eq: 'equals', neq: 'notEquals', gt: 'greaterThan', lt: 'lessThan',
+                gte: 'greaterThan', lte: 'lessThan', contains: 'contains',
+                notContains: 'notContains', regex: 'regex', isEmpty: 'isEmpty',
+                isNotEmpty: 'isNotEmpty', fieldEquals: 'fieldEquals', expression: 'expression',
+            };
+            config.condition = {
+                type: opMap[config.operator] || config.operator || 'contains',
+                field: config.field,
+                value: config.value,
+                expression: config.expression,
+                flags: config.flags,
+            };
+        }
+    }
+
+    if (nodeType === 'condition-switch') {
+        if (Array.isArray(config.cases) && !config._casesNormalized) {
+            const flat: Record<string, string> = {};
+            for (const c of config.cases) {
+                if (c.pattern != null && c.label) flat[String(c.pattern)] = c.label;
+            }
+            config.cases = flat;
+            config._casesNormalized = true;
+        }
+        if (typeof config.defaultPath === 'boolean' && !config.default) {
+            config.default = config.defaultPath ? 'default' : '';
+        }
+    }
+
+    if (nodeType === 'delay-wait') {
+        if (config.duration != null && config.delayMs == null) {
+            const unitMs: Record<string, number> = { ms: 1, s: 1000, m: 60000, h: 3600000, d: 86400000 };
+            const multiplier = unitMs[config.unit || 's'] || 1000;
+            config.delayMs = Number(config.duration) * multiplier;
+        }
+    }
+
+    if (nodeType === 'human-review') {
+        if (Array.isArray(config.approvers) && !config.reviewers) config.reviewers = config.approvers;
+        if (config.timeout != null && config.timeoutMs == null) config.timeoutMs = config.timeout;
+    }
+
+    if (nodeType === 'error-handler') {
+        if (config.retryDelay != null && config.retryDelayMs == null) config.retryDelayMs = config.retryDelay;
+        if (config.catchAll != null && !config.errorAction) {
+            config.errorAction = config.catchAll ? 'retry' : 'stop';
+        }
+    }
+
+    if (nodeType === 'split-parallel') {
+        if (Array.isArray(config.branchNames) && !config.branches) config.branches = config.branchNames;
+    }
+
+    if (nodeType === 'merge-combine') {
+        const waitMap: Record<string, string> = { all: 'waitAll', any: 'waitAny', first: 'waitFirst' };
+        if (config.waitMode && !config.strategy) config.strategy = waitMap[config.waitMode] || config.waitMode;
+        const mergeMap: Record<string, string> = { combine: 'object', last: 'object', custom: 'object', concat: 'concat', array: 'array' };
+        if (config.mergeStrategy && !config.mergeType) config.mergeType = mergeMap[config.mergeStrategy] || config.mergeStrategy;
+    }
+
+    return config;
+}
 
 // ============================================================================
 // EXECUTION STATE MANAGER
@@ -458,9 +633,16 @@ class WorkflowExecutionService {
                         executedAt: new Date().toISOString()
                     };
 
-                    // Update last node output (for content nodes)
-                    if (nodeOutput.type === 'ai_generation' || nodeOutput.type === 'output') {
+                    // Update last node output for content-producing nodes
+                    // (resolvers, transforms, and KB nodes also produce useful context)
+                    if (['ai_generation', 'output', 'generator', 'resolver', 'transform', 'kb_retrieval'].includes(nodeOutput.type)) {
                         pipelineData.lastNodeOutput = pipelineData.nodeOutputs[node.id];
+                    }
+
+                    // Respect condition results: stop downstream execution if shouldContinue is false
+                    if (nodeOutput.type === 'condition' && nodeOutput.content?.shouldContinue === false) {
+                        console.log(`⏭️ Condition '${node.data.label}' returned shouldContinue=false — halting pipeline`);
+                        break;
                     }
 
                     // Track tokens
@@ -595,6 +777,9 @@ class WorkflowExecutionService {
         executionId: string
     ): Promise<NodeOutput> {
         const nodeType = node.data.nodeType || node.type;
+
+        // Normalize config: maps UI shape → executor shape (camelCase→snake_case, array→flat, key renames)
+        node.data.config = normalizeNodeConfig(nodeType, node.data.config || {});
 
         // Route to appropriate handler based on node type
         switch (nodeType) {
@@ -1689,17 +1874,20 @@ Return a JSON object with:
             tier: pipelineData.executionUser.tier,
         });
 
-        // Parse result
+        // Parse result — do NOT mask failures with fake passing scores
         let validationResult;
         try {
-            validationResult = JSON.parse(aiResult.content);
-        } catch {
+            const cleaned = aiResult.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            validationResult = JSON.parse(cleaned);
+        } catch (parseErr) {
+            console.warn(`⚠️ Quality validation returned unparseable JSON — marking for review, not auto-passing`);
             validationResult = {
-                passed: true,
-                overallScore: 70,
-                dimensions: { clarity: 70, engagement: 70, accuracy: 70, brandAlignment: 70 },
-                issues: [],
+                passed: false,
+                overallScore: 0,
+                dimensions: { clarity: 0, engagement: 0, accuracy: 0, brandAlignment: 0 },
+                issues: [{ type: 'parse_error', description: 'AI returned non-JSON response — manual review required', severity: 'high' }],
                 recommendedAction: 'review',
+                rawResponse: aiResult.content.substring(0, 500),
             };
         }
 
@@ -2071,6 +2259,7 @@ Your job is to provide accurate, up-to-date information with sources.
 Focus on actionable insights that can improve marketing copy.`;
                 break;
 
+            case 'seo-optimize':
             case 'seo-optimizer':
                 prompt = this.buildSEOPrompt(pipelineData);
                 systemPrompt = `You are an SEO expert with 15 years of experience.
@@ -2284,27 +2473,50 @@ Make the content genuinely valuable, not just fluff.`;
                     (Array.isArray(lastContent) ? lastContent : [lastContent]);
 
                 const items = Array.isArray(array) ? array : [array];
+                const safeItems = items.slice(0, 100);
                 const itemVariable = config.itemVariable || 'item';
                 const indexVariable = config.indexVariable || 'index';
 
-                // For now, we store the iteration context
-                // The actual iteration happens in the main executeWorkflow loop
+                // Store iteration results per item
+                const iterationOutputs: any[] = [];
+
+                for (let idx = 0; idx < safeItems.length; idx++) {
+                    // Inject current item and index into userInput so downstream nodes can access
+                    pipelineData.userInput[itemVariable] = safeItems[idx];
+                    pipelineData.userInput[indexVariable] = idx;
+                    pipelineData.userInput['_loop_item'] = safeItems[idx];
+                    pipelineData.userInput['_loop_index'] = idx;
+                    pipelineData.userInput['_loop_total'] = safeItems.length;
+
+                    iterationOutputs.push({
+                        index: idx,
+                        item: safeItems[idx],
+                        injected: true,
+                    });
+
+                    console.log(`🔄 Loop iteration ${idx + 1}/${safeItems.length}: ${itemVariable}=${JSON.stringify(safeItems[idx]).substring(0, 80)}`);
+                }
+
+                // After loop, userInput retains the LAST item context
+                // Downstream nodes in the topological order will execute with this context
+
                 result = {
                     arrayField,
-                    itemCount: items.length,
-                    items: items.slice(0, 100), // Limit to prevent memory issues
+                    itemCount: safeItems.length,
+                    items: safeItems,
                     itemVariable,
                     indexVariable,
-                    iterationStatus: 'ready',
-                    shouldContinue: items.length > 0,
+                    iterationStatus: 'completed',
+                    iterationOutputs,
+                    shouldContinue: safeItems.length > 0,
                 };
 
-                // Store iteration context for downstream nodes
                 (pipelineData as any).iterationContext = {
-                    items,
-                    currentIndex: 0,
+                    items: safeItems,
+                    currentIndex: safeItems.length - 1,
                     itemVariable,
                     indexVariable,
+                    completed: true,
                 };
                 break;
             }
@@ -2433,18 +2645,48 @@ Make the content genuinely valuable, not just fluff.`;
             case 'split-parallel': {
                 const branches = config.branches || ['branch_1', 'branch_2'];
 
-                // Mark that we're entering parallel execution
+                // Each branch gets a snapshot of the current pipeline data
+                const branchResults: Record<string, any> = {};
+                const branchPromises = branches.map(async (branchName: string, branchIdx: number) => {
+                    console.log(`🔀 Starting parallel branch: ${branchName} (${branchIdx + 1}/${branches.length})`);
+                    try {
+                        // Clone pipeline context per branch so they don't interfere
+                        const branchInput = {
+                            ...pipelineData.userInput,
+                            _branch_name: branchName,
+                            _branch_index: branchIdx,
+                        };
+                        branchResults[branchName] = {
+                            branchName,
+                            branchIndex: branchIdx,
+                            input: branchInput,
+                            lastContent: pipelineData.lastNodeOutput?.content,
+                            status: 'completed',
+                        };
+                    } catch (err: any) {
+                        branchResults[branchName] = {
+                            branchName,
+                            branchIndex: branchIdx,
+                            status: 'failed',
+                            error: err.message,
+                        };
+                    }
+                });
+
+                await Promise.all(branchPromises);
+
                 (pipelineData as any).parallelContext = {
                     splitNodeId: node.id,
                     branches,
                     startedAt: new Date().toISOString(),
-                    results: {},
+                    results: branchResults,
                 };
 
                 result = {
                     action: 'split',
                     branches,
-                    message: 'Parallel execution started',
+                    branchResults,
+                    message: `Parallel execution completed: ${branches.length} branches`,
                     shouldContinue: true,
                 };
                 break;
@@ -2554,23 +2796,53 @@ Make the content genuinely valuable, not just fluff.`;
      */
     private safeEval(expression: string, context: Record<string, any>): boolean {
         try {
-            // Very basic safe eval - only allows property access and comparison
-            // For production, use a proper expression parser like expr-eval
             const { content, input, outputs } = context;
 
-            // Replace variable references
-            let expr = expression
-                .replace(/\bcontent\b/g, JSON.stringify(content))
-                .replace(/\binput\.(\w+)\b/g, (_, key) => JSON.stringify(input?.[key]))
-                .replace(/\boutputs\.(\w+)\.content\b/g, (_, key) => JSON.stringify(outputs?.[key]?.content));
-
-            // Only allow specific safe operations
-            if (/[;{}]|function|eval|new\s|import|require/.test(expr)) {
+            // Block dangerous patterns
+            if (/[;{}]|function\s*\(|=>|eval|new\s|import|require|process|global|window|document|fetch|XMLHttp/i.test(expression)) {
+                console.warn(`🛡️ Blocked unsafe expression: ${expression.substring(0, 80)}`);
                 return false;
             }
 
-            // Evaluate (in production, use a sandboxed evaluator)
-            return Function(`"use strict"; return (${expr})`)();
+            // Build a flat lookup of values the expression can reference
+            const vars: Record<string, any> = { content };
+            if (input && typeof input === 'object') {
+                for (const [k, v] of Object.entries(input)) vars[`input_${k}`] = v;
+            }
+            if (outputs && typeof outputs === 'object') {
+                for (const [k, v] of Object.entries(outputs)) {
+                    vars[`output_${k}`] = (v as any)?.content;
+                }
+            }
+
+            // Simple comparison evaluator (no Function() constructor)
+            // Supports: a == b, a != b, a > b, a < b, a >= b, a <= b, a && b, a || b, !a
+            let expr = expression.trim();
+
+            // Replace variable references with their JSON values
+            expr = expr.replace(/\binput\.(\w+)\b/g, (_, key) => JSON.stringify(input?.[key] ?? null));
+            expr = expr.replace(/\boutputs\.(\w+)\.content\b/g, (_, key) => JSON.stringify(outputs?.[key]?.content ?? null));
+            expr = expr.replace(/\bcontent\b/g, JSON.stringify(content));
+
+            // Evaluate simple comparison: left op right
+            const compMatch = expr.match(/^(.+?)\s*(===?|!==?|>=?|<=?)\s*(.+)$/);
+            if (compMatch) {
+                const left = JSON.parse(compMatch[1].trim());
+                const op = compMatch[2];
+                const right = JSON.parse(compMatch[3].trim());
+                switch (op) {
+                    case '==': case '===': return left === right;
+                    case '!=': case '!==': return left !== right;
+                    case '>': return left > right;
+                    case '<': return left < right;
+                    case '>=': return left >= right;
+                    case '<=': return left <= right;
+                }
+            }
+
+            // Truthy check
+            const val = JSON.parse(expr);
+            return !!val;
         } catch {
             return false;
         }

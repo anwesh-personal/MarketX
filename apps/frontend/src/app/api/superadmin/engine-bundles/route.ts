@@ -99,6 +99,8 @@ export async function POST(req: NextRequest) {
             default_api_key_mode = 'platform',
             tier = 'echii',
             config = {},
+            agents_config,
+            default_llm,
         } = body
 
         if (!name?.trim()) {
@@ -123,20 +125,25 @@ export async function POST(req: NextRequest) {
 
         const finalSlug = existing ? `${slug}-${Date.now()}` : slug
 
+        const insertPayload: Record<string, any> = {
+            name: name.trim(),
+            description: description?.trim() || null,
+            slug: finalSlug,
+            brain_template_id: brain_template_id || null,
+            workflow_template_id,
+            email_provider_id: email_provider_id || null,
+            default_api_key_mode,
+            tier,
+            config,
+            status: 'active',
+        }
+
+        if (agents_config) insertPayload.agents_config = agents_config
+        if (default_llm) insertPayload.default_llm = default_llm
+
         const { data: bundle, error } = await supabase
             .from('engine_bundles')
-            .insert({
-                name: name.trim(),
-                description: description?.trim() || null,
-                slug: finalSlug,
-                brain_template_id: brain_template_id || null,
-                workflow_template_id,
-                email_provider_id: email_provider_id || null,
-                default_api_key_mode,
-                tier,
-                config,
-                status: 'active',
-            })
+            .insert(insertPayload)
             .select()
             .single()
 
