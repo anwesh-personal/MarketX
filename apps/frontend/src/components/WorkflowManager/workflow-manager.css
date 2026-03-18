@@ -4240,7 +4240,7 @@
 }
 
 .output-config-add-btn:hover {
-    background: #d97706;
+    background: var(--color-warning);
 }
 
 /* Remove Button */
@@ -4364,7 +4364,7 @@
 }
 
 .enricher-config-icon {
-    color: #8b5cf6;
+    color: var(--color-accent);
     /* Purple for enrichers */
 }
 
@@ -4524,7 +4524,7 @@
 }
 
 .enricher-config-provider-btn.active {
-    border-color: #8b5cf6;
+    border-color: var(--color-accent);
     background: rgba(139, 92, 246, 0.08);
 }
 
@@ -4566,7 +4566,7 @@
 }
 
 .enricher-config-depth-btn.active {
-    border-color: #8b5cf6;
+    border-color: var(--color-accent);
     background: rgba(139, 92, 246, 0.08);
 }
 
@@ -4605,7 +4605,7 @@
 
 .enricher-config-tag-input button {
     padding: 10px 14px;
-    background: #8b5cf6;
+    background: var(--color-accent);
     border: none;
     border-radius: 8px;
     color: white;
@@ -4614,7 +4614,7 @@
 }
 
 .enricher-config-tag-input button:hover {
-    background: #7c3aed;
+    background: var(--color-accent-hover);
 }
 
 /* Tags */
@@ -4649,7 +4649,7 @@
 
 .enricher-config-tag.field {
     background: rgba(139, 92, 246, 0.1);
-    color: #8b5cf6;
+    color: var(--color-accent);
     border: 1px solid rgba(139, 92, 246, 0.2);
 }
 
@@ -4699,7 +4699,7 @@
 .enricher-config-checkbox-item input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: #8b5cf6;
+    accent-color: var(--color-accent);
 }
 
 /* Checks Grid (for validation checks) */
@@ -4723,13 +4723,13 @@
 
 .enricher-config-check-item:hover {
     background: var(--color-background);
-    border-color: #8b5cf6;
+    border-color: var(--color-accent);
 }
 
 .enricher-config-check-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #8b5cf6;
+    accent-color: var(--color-accent);
     margin-top: 2px;
     flex-shrink: 0;
 }
@@ -4813,7 +4813,7 @@
 }
 
 .transform-config-icon {
-    color: #14b8a6;
+    color: var(--color-accent);
     /* Teal for transforms */
 }
 
@@ -4966,7 +4966,7 @@
 .transform-config-field-inline input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #14b8a6;
+    accent-color: var(--color-accent);
     cursor: pointer;
 }
 
@@ -4992,12 +4992,12 @@
 }
 
 .transform-config-unlock-btn:hover {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: var(--color-background);
 }
 
 .transform-config-unlock-btn.active {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
@@ -5039,7 +5039,7 @@
 }
 
 .transform-config-style-btn.active {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
@@ -5064,7 +5064,7 @@
 .transform-config-slider-wrapper input[type="range"] {
     flex: 1;
     height: 6px;
-    accent-color: #14b8a6;
+    accent-color: var(--color-accent);
     cursor: pointer;
 }
 
@@ -5073,7 +5073,7 @@
     text-align: right;
     font-weight: 600;
     font-size: 0.9rem;
-    color: #14b8a6;
+    color: var(--color-accent);
 }
 
 /* Provider Grid */
@@ -5103,7 +5103,7 @@
 }
 
 .transform-config-provider-btn.active {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
@@ -5145,13 +5145,13 @@
 
 .transform-config-checkbox-item:hover {
     background: var(--color-background);
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
 }
 
 .transform-config-checkbox-item input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: #14b8a6;
+    accent-color: var(--color-accent);
 }
 
 /* Format Visual */
@@ -5182,7 +5182,7 @@
 }
 
 .transform-config-format-visual .format-to {
-    border: 2px solid #14b8a6;
+    border: 2px solid var(--color-accent);
 }
 
 .transform-config-format-visual .format-from span,
@@ -5196,7 +5196,7 @@
 .transform-config-format-visual .format-arrow {
     font-size: 1.5rem;
     font-weight: bold;
-    color: #14b8a6;
+    color: var(--color-accent);
 }
 
 /* Mode Grid */
@@ -5226,7 +5226,7 @@
 }
 
 .transform-config-mode-btn.active {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
@@ -5268,7 +5268,7 @@
 }
 
 .transform-config-fallback-btn.active {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
@@ -5312,14 +5312,14 @@
 }
 
 .transform-config-quick-vars .quick-var-btn:hover:not(.added) {
-    border-color: #14b8a6;
+    border-color: var(--color-accent);
     background: rgba(20, 184, 166, 0.08);
 }
 
 .transform-config-quick-vars .quick-var-btn.added {
     background: rgba(20, 184, 166, 0.1);
-    border-color: #14b8a6;
-    color: #14b8a6;
+    border-color: var(--color-accent);
+    color: var(--color-accent);
     cursor: default;
     opacity: 0.7;
 }
@@ -5405,7 +5405,7 @@
 
 .transform-config-tag-input button {
     padding: 10px 14px;
-    background: #14b8a6;
+    background: var(--color-accent);
     border: none;
     border-radius: 8px;
     color: white;
@@ -5414,7 +5414,7 @@
 }
 
 .transform-config-tag-input button:hover {
-    background: #0d9488;
+    background: var(--color-accent-hover);
 }
 
 /* Tags */
@@ -5437,7 +5437,7 @@
 
 .transform-config-tag.code {
     background: rgba(20, 184, 166, 0.1);
-    color: #14b8a6;
+    color: var(--color-accent);
     border: 1px solid rgba(20, 184, 166, 0.2);
     font-family: 'SF Mono', Monaco, monospace;
 }
@@ -5472,7 +5472,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: #14b8a6;
+    background: var(--color-accent);
     border: none;
     border-radius: 6px;
     color: white;
@@ -5483,7 +5483,7 @@
 }
 
 .transform-config-add-btn:hover {
-    background: #0d9488;
+    background: var(--color-accent-hover);
 }
 
 /* Remove Button */
@@ -5595,7 +5595,7 @@
 }
 
 .utility-config-icon {
-    color: #6366f1;
+    color: var(--color-accent);
     /* Indigo for utilities */
 }
 
@@ -5741,7 +5741,7 @@
 .utility-config-field-inline input[type="checkbox"] {
     width: 18px;
     height: 18px;
-    accent-color: #6366f1;
+    accent-color: var(--color-accent);
     cursor: pointer;
 }
 
@@ -5766,13 +5766,13 @@
 }
 
 .utility-config-type-btn:hover {
-    border-color: #6366f1;
+    border-color: var(--color-accent);
 }
 
 .utility-config-type-btn.active {
-    border-color: #6366f1;
+    border-color: var(--color-accent);
     background: rgba(99, 102, 241, 0.08);
-    color: #6366f1;
+    color: var(--color-accent);
 }
 
 /* Mode Grid */
@@ -5802,7 +5802,7 @@
 }
 
 .utility-config-mode-btn.active {
-    border-color: #6366f1;
+    border-color: var(--color-accent);
     background: rgba(99, 102, 241, 0.08);
 }
 
@@ -5835,7 +5835,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #6366f1;
+    background: var(--color-accent);
     color: white;
     border-radius: 50%;
     font-size: 0.75rem;
@@ -5892,7 +5892,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #6366f1;
+    background: var(--color-accent);
     color: white;
     border-radius: 50%;
     font-size: 0.8rem;
@@ -5933,7 +5933,7 @@
 
 .utility-config-tag-input button {
     padding: 10px 14px;
-    background: #6366f1;
+    background: var(--color-accent);
     border: none;
     border-radius: 8px;
     color: white;
@@ -5942,7 +5942,7 @@
 }
 
 .utility-config-tag-input button:hover {
-    background: #4f46e5;
+    background: var(--color-accent-hover);
 }
 
 /* Tags */

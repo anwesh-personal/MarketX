@@ -13,7 +13,7 @@
  * @author Axiom AI
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     CheckCircle, Shield, Search,
     ChevronDown, Plus, Trash2, AlertTriangle, Sparkles,
@@ -455,7 +455,28 @@ function ConstitutionConfig({ config, onChange }: {
     config: ValidatorConfigEntry;
     onChange: (updates: Partial<ValidatorConfigEntry>) => void;
 }) {
+    const [constitutions, setConstitutions] = useState<{ id: string; name: string }[]>([]);
+    const [constitutionLoading, setConstitutionLoading] = useState(false);
     const [newForbiddenTerm, setNewForbiddenTerm] = useState('');
+
+    useEffect(() => {
+        let cancelled = false;
+        setConstitutionLoading(true);
+        fetch('/api/superadmin/constitutions')
+            .then(r => r.ok ? r.json() : { constitutions: [] })
+            .then(data => {
+                if (!cancelled) {
+                    const items = (data.constitutions || data.data || []).map((c: any) => ({
+                        id: c.id,
+                        name: c.name || c.title || c.id,
+                    }));
+                    setConstitutions(items);
+                }
+            })
+            .catch(() => { if (!cancelled) setConstitutions([]); })
+            .finally(() => { if (!cancelled) setConstitutionLoading(false); });
+        return () => { cancelled = true; };
+    }, []);
     const [newRequiredElement, setNewRequiredElement] = useState('');
 
     const addForbiddenTerm = () => {
@@ -494,21 +515,27 @@ function ConstitutionConfig({ config, onChange }: {
                 <div className="validator-config-section-title">Constitution Settings</div>
 
                 <div className="validator-config-field">
-                    <label>Constitution / Guardrails ID</label>
+                    <label>Constitution / Guardrails</label>
                     <div className="validator-config-select-wrapper">
                         <select
                             value={config.constitutionId || ''}
                             onChange={(e) => onChange({ constitutionId: e.target.value })}
+                            disabled={constitutionLoading}
                         >
-                            <option value="">Select a constitution...</option>
-                            {/* In production, these would be fetched from KB */}
-                            <option value="const-brand-voice">Brand Voice Guidelines</option>
-                            <option value="const-legal-compliance">Legal Compliance</option>
-                            <option value="const-marketing-ethics">Marketing Ethics</option>
-                            <option value="const-industry-specific">Industry-Specific Rules</option>
+                            <option value="">
+                                {constitutionLoading ? 'Loading constitutions...' : constitutions.length === 0 ? 'No constitutions found (engine KB will be used)' : 'Select a constitution...'}
+                            </option>
+                            {constitutions.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
                         </select>
                         <ChevronDown size={16} className="select-icon" />
                     </div>
+                    {constitutions.length === 0 && !constitutionLoading && (
+                        <span className="validator-config-hint">
+                            If no constitution is selected, the engine&apos;s KB guardrails will be used automatically
+                        </span>
+                    )}
                 </div>
 
                 <div className="validator-config-field validator-config-field-inline">

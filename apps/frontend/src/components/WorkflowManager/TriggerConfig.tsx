@@ -12,11 +12,11 @@
  * @author Axiom AI
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
     Webhook, Clock, Play, Mail,
     ChevronDown, Plus, Trash2, Info, Copy, Check,
-    Key, Shield, Calendar, AlertCircle
+    Key, Shield, Calendar, AlertCircle, Loader2
 } from 'lucide-react';
 
 // ============================================================================
@@ -640,6 +640,28 @@ function EmailConfig({ config, onChange }: {
     config: TriggerConfigEntry;
     onChange: (updates: Partial<TriggerConfigEntry>) => void;
 }) {
+    const [mailboxes, setMailboxes] = useState<{ id: string; name: string }[]>([]);
+    const [mailboxLoading, setMailboxLoading] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        setMailboxLoading(true);
+        fetch('/api/superadmin/email-connections')
+            .then(r => r.ok ? r.json() : { connections: [] })
+            .then(data => {
+                if (!cancelled) {
+                    const items = (data.connections || data.mailboxes || []).map((c: any) => ({
+                        id: c.id || c.mailbox_id,
+                        name: c.name || c.email || c.label || c.id,
+                    }));
+                    setMailboxes(items);
+                }
+            })
+            .catch(() => { if (!cancelled) setMailboxes([]); })
+            .finally(() => { if (!cancelled) setMailboxLoading(false); });
+        return () => { cancelled = true; };
+    }, []);
+
     const toggleExtractField = (field: string) => {
         const current = config.extractFields || [];
         const updated = current.includes(field)
@@ -668,18 +690,22 @@ function EmailConfig({ config, onChange }: {
                         <select
                             value={config.mailboxId || ''}
                             onChange={(e) => onChange({ mailboxId: e.target.value })}
+                            disabled={mailboxLoading}
                         >
-                            <option value="">Select a mailbox...</option>
-                            {/* In production, these would be fetched from API */}
-                            <option value="inbox-primary">Primary Inbox</option>
-                            <option value="inbox-support">Support Inbox</option>
-                            <option value="inbox-sales">Sales Inbox</option>
+                            <option value="">
+                                {mailboxLoading ? 'Loading mailboxes...' : mailboxes.length === 0 ? 'No mailboxes configured' : 'Select a mailbox...'}
+                            </option>
+                            {mailboxes.map(mb => (
+                                <option key={mb.id} value={mb.id}>{mb.name}</option>
+                            ))}
                         </select>
                         <ChevronDown size={16} className="select-icon" />
                     </div>
-                    <span className="trigger-config-hint">
-                        Configure mailboxes in Settings → Email Connections
-                    </span>
+                    {mailboxes.length === 0 && !mailboxLoading && (
+                        <span className="trigger-config-hint">
+                            Configure mailboxes in Settings → Email Connections first
+                        </span>
+                    )}
                 </div>
             </div>
 
