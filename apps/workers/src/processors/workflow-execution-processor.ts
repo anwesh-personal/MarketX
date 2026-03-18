@@ -312,60 +312,146 @@ function normalizeNodeConfig(nodeType: string, rawConfig: Record<string, any>): 
 }
 
 // ============================================================================
-// EXECUTION STATE MANAGER
+// EXECUTION STATE MANAGER — Redis-backed with in-memory fallback
+// Survives worker restarts. State expires after 24h.
 // ============================================================================
 
+import Redis from 'ioredis';
+
+function buildRedisClient(): Redis | null {
+    try {
+        const url = process.env.REDIS_URL;
+        if (url) return new Redis(url, { maxRetriesPerRequest: 3, lazyConnect: true });
+        const host = process.env.REDIS_HOST || 'localhost';
+        const port = parseInt(process.env.REDIS_PORT || '6379');
+        const password = process.env.REDIS_PASSWORD || undefined;
+        return new Redis({ host, port, password, maxRetriesPerRequest: 3, lazyConnect: true });
+    } catch {
+        return null;
+    }
+}
+
+const STATE_TTL = 86400; // 24h
+
 class ExecutionStateManager {
-    private executionStates: Map<string, any> = new Map();
-    private checkpointStates: Map<string, any> = new Map();
+    private redis: Redis | null;
+    private fallbackMap: Map<string, any> = new Map();
+    private connected = false;
 
-    updateState(executionId: string, updates: Record<string, any>): void {
-        const current = this.executionStates.get(executionId) || {};
-        this.executionStates.set(executionId, { ...current, ...updates });
+    constructor() {
+        this.redis = buildRedisClient();
+        if (this.redis) {
+            this.redis.connect().then(() => {
+                this.connected = true;
+                console.log('✅ [StateManager] Redis connected');
+            }).catch(() => {
+                console.warn('⚠️ [StateManager] Redis unavailable — using in-memory fallback');
+                this.connected = false;
+            });
+        }
     }
 
-    getState(executionId: string): any {
-        return this.executionStates.get(executionId);
+    private stateKey(executionId: string): string { return `wf:state:${executionId}`; }
+    private checkpointKey(executionId: string, nodeId: string): string { return `wf:ckpt:${executionId}:${nodeId}`; }
+    private reviewKey(reviewId: string): string { return `wf:review:${reviewId}`; }
+
+    async updateState(executionId: string, updates: Record<string, any>): Promise<void> {
+        if (this.connected && this.redis) {
+            try {
+                const current = await this.redis.get(this.stateKey(executionId));
+                const merged = { ...(current ? JSON.parse(current) : {}), ...updates };
+                await this.redis.set(this.stateKey(executionId), JSON.stringify(merged), 'EX', STATE_TTL);
+                return;
+            } catch { /* fall through */ }
+        }
+        const current = this.fallbackMap.get(executionId) || {};
+        this.fallbackMap.set(executionId, { ...current, ...updates });
     }
 
-    createCheckpoint(executionId: string, nodeId: string, state: any): void {
-        const key = `${executionId}:${nodeId}`;
-        this.checkpointStates.set(key, { ...state, checkpointAt: new Date().toISOString() });
+    async getState(executionId: string): Promise<any> {
+        if (this.connected && this.redis) {
+            try {
+                const val = await this.redis.get(this.stateKey(executionId));
+                return val ? JSON.parse(val) : null;
+            } catch { /* fall through */ }
+        }
+        return this.fallbackMap.get(executionId) || null;
     }
 
-    getCheckpoint(executionId: string, nodeId: string): any {
-        return this.checkpointStates.get(`${executionId}:${nodeId}`);
+    async createCheckpoint(executionId: string, nodeId: string, state: any): Promise<void> {
+        const data = { ...state, checkpointAt: new Date().toISOString() };
+        if (this.connected && this.redis) {
+            try {
+                await this.redis.set(this.checkpointKey(executionId, nodeId), JSON.stringify(data), 'EX', STATE_TTL);
+                return;
+            } catch { /* fall through */ }
+        }
+        this.fallbackMap.set(`ckpt:${executionId}:${nodeId}`, data);
     }
 
-    isWorkflowStopped(executionId: string): boolean {
-        const state = this.executionStates.get(executionId);
+    async getCheckpoint(executionId: string, nodeId: string): Promise<any> {
+        if (this.connected && this.redis) {
+            try {
+                const val = await this.redis.get(this.checkpointKey(executionId, nodeId));
+                return val ? JSON.parse(val) : null;
+            } catch { /* fall through */ }
+        }
+        return this.fallbackMap.get(`ckpt:${executionId}:${nodeId}`) || null;
+    }
+
+    async isWorkflowStopped(executionId: string): Promise<boolean> {
+        const state = await this.getState(executionId);
         return state?.status === 'stopped' || state?.forceStopped === true;
     }
 
-    isWorkflowPaused(executionId: string): boolean {
-        const state = this.executionStates.get(executionId);
+    async isWorkflowPaused(executionId: string): Promise<boolean> {
+        const state = await this.getState(executionId);
         return state?.status === 'paused';
     }
 
-    stopWorkflow(executionId: string): void {
-        this.updateState(executionId, { status: 'stopped', forceStopped: true });
+    async stopWorkflow(executionId: string): Promise<void> {
+        await this.updateState(executionId, { status: 'stopped', forceStopped: true });
     }
 
-    pauseWorkflow(executionId: string): void {
-        this.updateState(executionId, { status: 'paused' });
+    async pauseWorkflow(executionId: string): Promise<void> {
+        await this.updateState(executionId, { status: 'paused' });
     }
 
-    resumeWorkflow(executionId: string): void {
-        this.updateState(executionId, { status: 'running' });
+    async resumeWorkflow(executionId: string): Promise<void> {
+        await this.updateState(executionId, { status: 'running' });
     }
 
-    clearState(executionId: string): void {
-        this.executionStates.delete(executionId);
-        // Clear all checkpoints for this execution
-        for (const key of this.checkpointStates.keys()) {
-            if (key.startsWith(`${executionId}:`)) {
-                this.checkpointStates.delete(key);
-            }
+    async storeReview(reviewId: string, data: Record<string, any>): Promise<void> {
+        if (this.connected && this.redis) {
+            try {
+                await this.redis.set(this.reviewKey(reviewId), JSON.stringify(data), 'EX', STATE_TTL);
+                return;
+            } catch { /* fall through */ }
+        }
+        this.fallbackMap.set(`review:${reviewId}`, data);
+    }
+
+    async getReview(reviewId: string): Promise<any> {
+        if (this.connected && this.redis) {
+            try {
+                const val = await this.redis.get(this.reviewKey(reviewId));
+                return val ? JSON.parse(val) : null;
+            } catch { /* fall through */ }
+        }
+        return this.fallbackMap.get(`review:${reviewId}`) || null;
+    }
+
+    async clearState(executionId: string): Promise<void> {
+        if (this.connected && this.redis) {
+            try {
+                const keys = await this.redis.keys(`wf:*:${executionId}*`);
+                if (keys.length > 0) await this.redis.del(...keys);
+                return;
+            } catch { /* fall through */ }
+        }
+        this.fallbackMap.delete(executionId);
+        for (const key of this.fallbackMap.keys()) {
+            if (key.includes(executionId)) this.fallbackMap.delete(key);
         }
     }
 }
@@ -531,7 +617,7 @@ class WorkflowExecutionService {
         }
 
         // Initialize execution state
-        stateManager.updateState(executionId, {
+        await stateManager.updateState(executionId, {
             status: 'running',
             startTime: new Date().toISOString(),
             progress: 0
@@ -590,7 +676,7 @@ class WorkflowExecutionService {
                 const node = executionOrder[i];
 
                 // Check if workflow was stopped
-                if (stateManager.isWorkflowStopped(executionId)) {
+                if (await stateManager.isWorkflowStopped(executionId)) {
                     console.log(`🛑 Workflow ${executionId} stopped`);
                     return {
                         success: false,
@@ -660,7 +746,7 @@ class WorkflowExecutionService {
                     }
 
                     // Create checkpoint
-                    stateManager.createCheckpoint(executionId, node.id, {
+                    await stateManager.createCheckpoint(executionId, node.id, {
                         nodeOutputs: pipelineData.nodeOutputs,
                         tokenUsage: pipelineData.tokenUsage
                     });
@@ -732,7 +818,7 @@ class WorkflowExecutionService {
                 });
             }
 
-            stateManager.updateState(executionId, {
+            await stateManager.updateState(executionId, {
                 status: 'completed',
                 endTime: new Date().toISOString(),
                 progress: 100
@@ -749,7 +835,7 @@ class WorkflowExecutionService {
             };
 
         } catch (error: any) {
-            stateManager.updateState(executionId, {
+            await stateManager.updateState(executionId, {
                 status: 'failed',
                 endTime: new Date().toISOString(),
                 error: error.message
@@ -2662,21 +2748,73 @@ Make the content genuinely valuable, not just fluff.`;
             case 'human-review': {
                 const reviewType = config.reviewType || 'approval';
                 const reviewers = config.reviewers || [];
-                const timeout = config.timeoutMs || 86400000; // 24 hours default
+                const timeout = config.timeoutMs || 86400000;
 
-                // Store pending review in execution state
                 const reviewId = `review_${node.id}_${Date.now()}`;
-                stateManager.updateState(pipelineData.executionUser.executionId, {
-                    pendingReview: {
-                        reviewId,
-                        nodeId: node.id,
-                        reviewType,
-                        reviewers,
-                        content: lastContent,
-                        createdAt: new Date().toISOString(),
-                        expiresAt: new Date(Date.now() + timeout).toISOString(),
-                    },
+                const reviewData = {
+                    reviewId,
+                    executionId: pipelineData.executionUser.executionId,
+                    nodeId: node.id,
+                    reviewType,
+                    reviewers,
+                    content: lastContent,
+                    contentPreview: typeof lastContent === 'string' ? lastContent.substring(0, 500) : JSON.stringify(lastContent).substring(0, 500),
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + timeout).toISOString(),
+                    status: 'pending',
+                };
+
+                // Store review in Redis (persists across restarts)
+                await stateManager.storeReview(reviewId, reviewData);
+
+                // Also store in execution state
+                await stateManager.updateState(pipelineData.executionUser.executionId, {
+                    pendingReview: reviewData,
                 });
+
+                // Persist to DB if available (so superadmin can see pending reviews)
+                if ((this as any).supabase) {
+                    try {
+                        await (this as any).supabase
+                            .from('engine_run_logs')
+                            .update({
+                                execution_data: {
+                                    pendingReview: reviewData,
+                                    status: 'awaiting_review',
+                                },
+                                status: 'running',
+                            })
+                            .eq('id', pipelineData.executionUser.executionId);
+                    } catch (dbErr) {
+                        console.warn('⚠️ Failed to persist review to DB:', dbErr);
+                    }
+                }
+
+                // Send webhook notification if configured
+                if (config.notifyWebhook) {
+                    try {
+                        const notifyAbort = new AbortController();
+                        const notifyTimeout = setTimeout(() => notifyAbort.abort(), 10000);
+                        await fetch(config.notifyWebhook, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'human_review_required',
+                                reviewId,
+                                executionId: pipelineData.executionUser.executionId,
+                                reviewType,
+                                reviewers,
+                                contentPreview: reviewData.contentPreview,
+                                expiresAt: reviewData.expiresAt,
+                            }),
+                            signal: notifyAbort.signal,
+                        });
+                        clearTimeout(notifyTimeout);
+                        console.log(`🔔 Review notification sent to ${config.notifyWebhook}`);
+                    } catch (notifyErr) {
+                        console.warn(`⚠️ Review notification failed: ${(notifyErr as Error).message}`);
+                    }
+                }
 
                 result = {
                     reviewId,
@@ -2684,13 +2822,13 @@ Make the content genuinely valuable, not just fluff.`;
                     reviewers,
                     status: 'pending',
                     message: 'Workflow paused for human review',
-                    content: typeof lastContent === 'string' ? lastContent.substring(0, 500) : lastContent,
-                    shouldContinue: config.autoApprove || false, // Default: wait for approval
+                    contentPreview: reviewData.contentPreview,
+                    expiresAt: reviewData.expiresAt,
+                    shouldContinue: config.autoApprove || false,
                 };
 
-                // If not auto-approve, pause the workflow
                 if (!config.autoApprove) {
-                    stateManager.pauseWorkflow(pipelineData.executionUser.executionId);
+                    await stateManager.pauseWorkflow(pipelineData.executionUser.executionId);
                 }
                 break;
             }
@@ -2700,52 +2838,93 @@ Make the content genuinely valuable, not just fluff.`;
             // =====================================================
             case 'error-handler': {
                 const errorAction = config.errorAction || 'log';
-                const retryCount = config.retryCount || 0;
-                const retryDelayMs = config.retryDelayMs || 1000;
+                const maxRetries = config.retryCount || 3;
+                const retryDelayMs = config.retryDelayMs || 2000;
+                const fallbackValue = config.fallbackValue ?? null;
 
-                // Check if there was an error in previous execution
-                const lastError = stateManager.getState(pipelineData.executionUser.executionId)?.lastError;
+                const execState = await stateManager.getState(pipelineData.executionUser.executionId);
+                const lastError = execState?.lastError;
+                const currentRetry = execState?.retryAttempt || 0;
 
                 if (lastError) {
                     switch (errorAction) {
-                        case 'retry':
-                            result = {
-                                action: 'retry',
-                                retryCount,
-                                retryDelayMs,
-                                lastError,
-                                shouldContinue: true,
-                            };
+                        case 'retry': {
+                            if (currentRetry < maxRetries) {
+                                const attempt = currentRetry + 1;
+                                const backoffDelay = retryDelayMs * Math.pow(1.5, attempt - 1);
+                                console.log(`🔄 Error handler: retry ${attempt}/${maxRetries} for node ${lastError.nodeId} (delay: ${Math.round(backoffDelay)}ms)`);
+
+                                await stateManager.updateState(pipelineData.executionUser.executionId, {
+                                    retryAttempt: attempt,
+                                    lastError: null,
+                                });
+
+                                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+
+                                result = {
+                                    action: 'retrying',
+                                    attempt,
+                                    maxRetries,
+                                    delayMs: Math.round(backoffDelay),
+                                    failedNodeId: lastError.nodeId,
+                                    shouldContinue: true,
+                                };
+                            } else {
+                                console.log(`❌ Error handler: max retries (${maxRetries}) exhausted for node ${lastError.nodeId}`);
+                                result = {
+                                    action: 'retries_exhausted',
+                                    attempts: currentRetry,
+                                    maxRetries,
+                                    lastError,
+                                    shouldContinue: false,
+                                };
+                            }
                             break;
+                        }
                         case 'skip':
+                            console.log(`⏭️ Error handler: skipping failed node ${lastError.nodeId}`);
+                            await stateManager.updateState(pipelineData.executionUser.executionId, { lastError: null });
                             result = {
-                                action: 'skip',
+                                action: 'skipped',
                                 skippedNode: lastError.nodeId,
+                                error: lastError.message,
                                 shouldContinue: true,
                             };
                             break;
                         case 'fallback':
+                            console.log(`🔀 Error handler: using fallback value for ${lastError.nodeId}`);
+                            await stateManager.updateState(pipelineData.executionUser.executionId, { lastError: null });
+                            pipelineData.lastNodeOutput = {
+                                nodeId: node.id,
+                                nodeName: 'Error Handler Fallback',
+                                nodeType: 'error-handler',
+                                type: 'ai_generation',
+                                content: fallbackValue,
+                            };
                             result = {
-                                action: 'fallback',
-                                fallbackValue: config.fallbackValue || null,
+                                action: 'fallback_applied',
+                                fallbackValue,
+                                originalError: lastError,
                                 shouldContinue: true,
                             };
                             break;
                         case 'stop':
                             result = {
-                                action: 'stop',
+                                action: 'stopped',
                                 error: lastError,
                                 shouldContinue: false,
                             };
                             break;
                         default:
+                            console.log(`📝 Error handler: logged error from ${lastError.nodeId}`);
                             result = {
-                                action: 'log',
+                                action: 'logged',
                                 error: lastError,
                                 shouldContinue: true,
                             };
                     }
                 } else {
+                    await stateManager.updateState(pipelineData.executionUser.executionId, { retryAttempt: 0 });
                     result = {
                         action: 'no_error',
                         message: 'No errors detected',
@@ -4051,16 +4230,13 @@ PROVIDE THE FOLLOWING:
     /**
      * Stop a running workflow
      */
-    stopWorkflow(executionId: string): void {
-        stateManager.stopWorkflow(executionId);
+    async stopWorkflow(executionId: string): Promise<void> {
+        await stateManager.stopWorkflow(executionId);
         console.log(`🛑 Workflow stop requested: ${executionId}`);
     }
 
-    /**
-     * Pause a running workflow
-     */
-    pauseWorkflow(executionId: string): void {
-        stateManager.pauseWorkflow(executionId);
+    async pauseWorkflow(executionId: string): Promise<void> {
+        await stateManager.pauseWorkflow(executionId);
         console.log(`⏸️ Workflow pause requested: ${executionId}`);
     }
 
@@ -4151,7 +4327,7 @@ PROVIDE THE FOLLOWING:
             .update({ status: 'running', error_message: null })
             .eq('id', executionId);
 
-        stateManager.updateState(executionId, { status: 'running' });
+        await stateManager.updateState(executionId, { status: 'running' });
 
         const startTime = Date.now();
 
@@ -4160,7 +4336,7 @@ PROVIDE THE FOLLOWING:
             for (let i = failedIdx; i < executionOrder.length; i++) {
                 const node = executionOrder[i];
 
-                if (stateManager.isWorkflowStopped(executionId)) {
+                if (await stateManager.isWorkflowStopped(executionId)) {
                     return {
                         success: false, executionId,
                         nodeOutputs: pipelineData.nodeOutputs,
@@ -4207,7 +4383,7 @@ PROVIDE THE FOLLOWING:
                     });
                 }
 
-                stateManager.createCheckpoint(executionId, node.id, {
+                await stateManager.createCheckpoint(executionId, node.id, {
                     nodeOutputs: pipelineData.nodeOutputs, tokenUsage: pipelineData.tokenUsage,
                 });
             }
@@ -4228,18 +4404,12 @@ PROVIDE THE FOLLOWING:
         }
     }
 
-    /**
-     * Resume a paused workflow (in-memory state toggle)
-     */
-    resumeWorkflow(executionId: string): void {
-        stateManager.resumeWorkflow(executionId);
+    async resumeWorkflow(executionId: string): Promise<void> {
+        await stateManager.resumeWorkflow(executionId);
         console.log(`▶️ Workflow resume requested: ${executionId}`);
     }
 
-    /**
-     * Get execution state
-     */
-    getExecutionState(executionId: string): any {
+    async getExecutionState(executionId: string): Promise<any> {
         return stateManager.getState(executionId);
     }
 }
