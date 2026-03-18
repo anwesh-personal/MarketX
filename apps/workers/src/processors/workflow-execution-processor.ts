@@ -2253,11 +2253,38 @@ Return your evaluation as valid JSON.`;
                 break;
 
             case 'web-search':
-                prompt = this.buildWebSearchPrompt(pipelineData);
-                systemPrompt = `You are a research specialist with expertise in ${userInput.industry_niche || 'marketing'}.
-Your job is to provide accurate, up-to-date information with sources.
-Focus on actionable insights that can improve marketing copy.`;
+            case 'enrich-web-search': {
+                const searchQuery = config.searchQuery
+                    || userInput.search_query
+                    || `${userInput.industry_niche || userInput.industry || 'marketing'} ${userInput.topic || userInput.company_name || ''} latest trends and insights`.trim();
+                prompt = `Search and provide comprehensive, up-to-date research on:\n\n${searchQuery}\n\nContext from pipeline:\n${JSON.stringify(pipelineData.lastNodeOutput?.content || userInput).substring(0, 2000)}\n\nReturn:\n1. Key findings with specific data points\n2. Source URLs where available\n3. Actionable insights for content creation\n4. Any relevant statistics or trends`;
+                systemPrompt = `You are a research specialist with deep expertise in ${userInput.industry_niche || userInput.industry || 'marketing'}. Provide accurate, sourced, current information. Always include URLs when citing sources.`;
                 break;
+            }
+
+            case 'enrich-company-data': {
+                const companyName = config.companyName || userInput.company_name || userInput.target_company || '';
+                const companyDomain = config.companyDomain || userInput.company_domain || '';
+                prompt = `Research and provide a comprehensive company profile for: ${companyName}${companyDomain ? ` (${companyDomain})` : ''}\n\nReturn structured data:\n1. Company overview (founding year, headquarters, size)\n2. Industry and market position\n3. Key products/services\n4. Recent news and developments\n5. Leadership team\n6. Technology stack (if available)\n7. Estimated revenue range\n8. Key competitors\n\nBe specific — provide real data, not generic descriptions.`;
+                systemPrompt = 'You are a business intelligence analyst. Provide accurate, structured company data based on publicly available information. If data is uncertain, indicate confidence level.';
+                break;
+            }
+
+            case 'enrich-contact-data': {
+                const contactName = config.contactName || userInput.contact_name || userInput.target_name || '';
+                const contactTitle = config.contactTitle || userInput.contact_title || userInput.job_title || '';
+                const contactCompany = config.contactCompany || userInput.company_name || '';
+                prompt = `Research and build a professional profile for: ${contactName}${contactTitle ? `, ${contactTitle}` : ''}${contactCompany ? ` at ${contactCompany}` : ''}\n\nReturn structured data:\n1. Professional background and career history\n2. Current role and responsibilities\n3. Key areas of expertise\n4. Published content or speaking engagements\n5. Professional interests and focus areas\n6. Potential pain points based on role\n7. Communication style preferences (formal/casual/technical)\n\nFocus on information useful for personalized outreach.`;
+                systemPrompt = 'You are a sales intelligence specialist. Build accurate professional profiles from publicly available information. Focus on insights useful for personalized business communication.';
+                break;
+            }
+
+            case 'enrich-context': {
+                const contextGoal = config.contextGoal || userInput.enrichment_goal || 'general market context';
+                prompt = `Provide enriched context for: ${contextGoal}\n\nExisting data:\n${JSON.stringify(pipelineData.lastNodeOutput?.content || userInput).substring(0, 3000)}\n\nReturn:\n1. Additional context and background\n2. Related trends and developments\n3. Key statistics or benchmarks\n4. Relevant industry insights\n5. Suggested angles or approaches based on this context`;
+                systemPrompt = `You are a strategic research analyst. Enrich the given data with relevant context, trends, and insights from ${userInput.industry_niche || userInput.industry || 'the relevant industry'}.`;
+                break;
+            }
 
             case 'seo-optimize':
             case 'seo-optimizer':
@@ -2284,9 +2311,10 @@ Make the content genuinely valuable, not just fluff.`;
                 systemPrompt = 'You are a helpful AI assistant. Process the content as requested.';
         }
 
-        // Determine which provider/model to use
-        const provider = config.provider || 'openai';
-        const model = config.model || userInput.ai_model || 'gpt-4o';
+        // Determine provider/model — web search and enrichment nodes prefer Perplexity for real-time data
+        const isSearchNode = ['web-search', 'enrich-web-search', 'enrich-company-data', 'enrich-contact-data', 'enrich-context'].includes(nodeType);
+        const provider = config.provider || (isSearchNode ? 'perplexity' : 'openai');
+        const model = config.model || userInput.ai_model || (isSearchNode ? 'llama-3.1-sonar-large-128k-online' : 'gpt-4o');
 
         console.log(`🤖 AI Call: ${provider}/${model} for node ${node.data.label}`);
 
@@ -3857,7 +3885,171 @@ PROVIDE THE FOLLOWING:
     }
 
     /**
-     * Resume a paused workflow
+     * Resume a failed workflow from its DB checkpoint.
+     * Loads the checkpoint data (nodeOutputs, tokenUsage, failedNodeId),
+     * restores pipeline state, and re-executes from the failed node onward.
+     */
+    async resumeFromCheckpoint(
+        executionId: string,
+        nodes: WorkflowNode[],
+        edges: WorkflowEdge[],
+        progressCallback: ProgressCallback | null,
+        executionUser: ExecutionContext,
+        options: ExecutionOptions = {}
+    ): Promise<ExecutionResult> {
+        if (!this.supabase) {
+            throw new Error('Cannot resume: no Supabase client');
+        }
+
+        const { data: runLog, error } = await this.supabase
+            .from('engine_run_logs')
+            .select('execution_data, input_data, status')
+            .eq('id', executionId)
+            .single();
+
+        if (error || !runLog) {
+            throw new Error(`Cannot resume: execution ${executionId} not found`);
+        }
+
+        const checkpoint = (runLog as any).execution_data;
+        if (!checkpoint?.checkpoint || !checkpoint.failedNodeId) {
+            throw new Error('Cannot resume: no valid checkpoint found for this execution');
+        }
+
+        console.log(`🔄 Resuming execution ${executionId} from node ${checkpoint.failedNodeId}`);
+
+        // Restore initial input from checkpoint
+        const initialInput = checkpoint.userInput || (runLog as any).input_data || {};
+
+        // Build execution order
+        const executionOrder = this.buildExecutionOrder(nodes, edges);
+
+        // Find index of failed node
+        const failedIdx = executionOrder.findIndex(n => n.id === checkpoint.failedNodeId);
+        if (failedIdx === -1) {
+            throw new Error(`Cannot resume: failed node ${checkpoint.failedNodeId} not found in execution order`);
+        }
+
+        // Load KB/config if engine
+        let kb: Record<string, any> | null = options.preloadedKb || null;
+        let engineConfig: Record<string, any> | null = options.preloadedConfig || null;
+        let constitution: Record<string, any> | null = null;
+
+        if (options.engineId && !kb) {
+            const engineData = await this.loadEngineData(options.engineId);
+            kb = engineData.kb;
+            engineConfig = engineData.config;
+            constitution = engineData.constitution;
+        }
+
+        // Rebuild pipeline state from checkpoint
+        const pipelineData: PipelineData = {
+            userInput: initialInput,
+            nodeOutputs: checkpoint.nodeOutputs || {},
+            lastNodeOutput: null,
+            executionUser,
+            kb,
+            engineConfig,
+            constitution,
+            tokenUsage: checkpoint.tokenUsage || { totalTokens: 0, totalCost: 0, totalWords: 0 },
+            tokenLedger: [],
+        };
+
+        // Find last content node output
+        const outputValues = Object.values(pipelineData.nodeOutputs) as NodeOutput[];
+        const lastContentNode = outputValues
+            .filter(o => ['ai_generation', 'output', 'generator', 'resolver', 'transform'].includes(o.type))
+            .sort((a, b) => (a.sequenceNumber || 0) - (b.sequenceNumber || 0))
+            .pop();
+        if (lastContentNode) {
+            pipelineData.lastNodeOutput = lastContentNode;
+        }
+
+        // Update DB status
+        await this.supabase
+            .from('engine_run_logs')
+            .update({ status: 'running', error_message: null })
+            .eq('id', executionId);
+
+        stateManager.updateState(executionId, { status: 'running' });
+
+        const startTime = Date.now();
+
+        try {
+            // Resume from the failed node
+            for (let i = failedIdx; i < executionOrder.length; i++) {
+                const node = executionOrder[i];
+
+                if (stateManager.isWorkflowStopped(executionId)) {
+                    return {
+                        success: false, executionId,
+                        nodeOutputs: pipelineData.nodeOutputs,
+                        lastNodeOutput: pipelineData.lastNodeOutput,
+                        tokenUsage: pipelineData.tokenUsage,
+                        tokenLedger: pipelineData.tokenLedger,
+                        durationMs: Date.now() - startTime,
+                        error: 'Workflow stopped by user',
+                    };
+                }
+
+                const progress = Math.round(((i + 0.5) / executionOrder.length) * 100);
+                if (progressCallback) {
+                    progressCallback({
+                        nodeId: node.id, nodeName: node.data.label, nodeType: node.data.nodeType,
+                        progress, status: 'running', nodeIndex: i, totalNodes: executionOrder.length,
+                    });
+                }
+
+                console.log(`▶️ [Resume] Executing node ${i + 1}/${executionOrder.length}: ${node.data.label}`);
+
+                const nodeOutput = await this.executeNode(node, pipelineData, executionId);
+
+                pipelineData.nodeOutputs[node.id] = {
+                    ...nodeOutput, sequenceNumber: i + 1, executedAt: new Date().toISOString(),
+                };
+
+                if (['ai_generation', 'output', 'generator', 'resolver', 'transform', 'kb_retrieval'].includes(nodeOutput.type)) {
+                    pipelineData.lastNodeOutput = pipelineData.nodeOutputs[node.id];
+                }
+
+                if (nodeOutput.type === 'condition' && nodeOutput.content?.shouldContinue === false) {
+                    console.log(`⏭️ Condition halted pipeline during resume`);
+                    break;
+                }
+
+                if (nodeOutput.aiMetadata) {
+                    pipelineData.tokenUsage.totalTokens += nodeOutput.aiMetadata.tokens;
+                    pipelineData.tokenUsage.totalCost += nodeOutput.aiMetadata.cost;
+                    pipelineData.tokenLedger.push({
+                        nodeId: node.id, nodeName: node.data.label,
+                        tokens: nodeOutput.aiMetadata.tokens, cost: nodeOutput.aiMetadata.cost,
+                        provider: nodeOutput.aiMetadata.provider, timestamp: new Date().toISOString(),
+                    });
+                }
+
+                stateManager.createCheckpoint(executionId, node.id, {
+                    nodeOutputs: pipelineData.nodeOutputs, tokenUsage: pipelineData.tokenUsage,
+                });
+            }
+
+            console.log(`🎉 Resume completed: ${executionId}`);
+
+            return {
+                success: true, executionId,
+                nodeOutputs: pipelineData.nodeOutputs,
+                lastNodeOutput: pipelineData.lastNodeOutput,
+                tokenUsage: pipelineData.tokenUsage,
+                tokenLedger: pipelineData.tokenLedger,
+                durationMs: Date.now() - startTime,
+            };
+        } catch (resumeError: any) {
+            await this.saveCheckpointToDatabase(executionId, executionOrder[0]?.id || 'unknown', pipelineData, resumeError.message);
+            throw resumeError;
+        }
+    }
+
+    /**
+     * Resume a paused workflow (in-memory state toggle)
      */
     resumeWorkflow(executionId: string): void {
         stateManager.resumeWorkflow(executionId);
