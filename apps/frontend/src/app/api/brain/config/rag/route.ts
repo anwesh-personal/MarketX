@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 
 async function getAuthContext(supabase: any) {
     const { data: { user }, error } = await supabase.auth.getUser()
@@ -15,6 +16,9 @@ async function getAuthContext(supabase: any) {
 
 export async function PATCH(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const supabase = createClient()
         const ctx = await getAuthContext(supabase)
         if (!ctx) {

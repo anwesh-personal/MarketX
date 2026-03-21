@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
+import { requireFeature } from '@/lib/requireFeature'
 
 export async function GET(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_feed_brain')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -27,6 +31,9 @@ export async function DELETE(request: NextRequest) {
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
         if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
+        const gate = await requireFeature(request, 'can_feed_brain')
+        if (gate.denied) return gate.response
 
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -6,9 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveBrainRuntime } from '@/services/brain/BrainRuntimeResolver'
+import { requireFeature } from '@/lib/requireFeature'
 
 export async function GET(req: NextRequest) {
     try {
+        const gate = await requireFeature(req, 'can_chat_brain')
+        if (gate.denied) return gate.response
+
         const supabase = createClient()
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         if (userError || !user) {

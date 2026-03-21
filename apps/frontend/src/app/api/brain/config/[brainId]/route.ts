@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { brainAIConfigService } from '@/services/brain/BrainAIConfigService'
 import type { BrainAIConfig } from '@/services/brain/BrainAIConfigService'
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 
 /**
  * GET /api/brain/config/[brainId]
@@ -27,6 +28,9 @@ export async function GET(
     { params }: { params: { brainId: string } }
 ) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const { brainId } = params
 
         if (!brainId) {
@@ -35,11 +39,6 @@ export async function GET(
                 { status: 400 }
             )
         }
-
-        // TODO: Add authentication check
-        // const supabase = createClient()
-        // const { data: { user } } = await supabase.auth.getUser()
-        // if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         // Fetch brain configuration
         const config = await brainAIConfigService.getBrainAIConfig(brainId)
@@ -75,6 +74,9 @@ export async function PUT(
     { params }: { params: { brainId: string } }
 ) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const { brainId } = params
         const body = await request.json()
 
@@ -84,11 +86,6 @@ export async function PUT(
                 { status: 400 }
             )
         }
-
-        // TODO: Add authentication & authorization check
-        // const supabase = createClient()
-        // const { data: { user } } = await supabase.auth.getUser()
-        // if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
         // Validate request body
         const {

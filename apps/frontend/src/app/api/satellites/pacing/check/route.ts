@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getConfigValues } from '@/lib/platform-config'
+import { requireFeature } from '@/lib/requireFeature'
 
 const schema = z.object({
     satellite_id: z.string().uuid(),
@@ -9,6 +10,9 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+    const gate = await requireFeature(req, 'can_manage_satellites')
+    if (gate.denied) return gate.response
+
     const supabase = createClient()
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()

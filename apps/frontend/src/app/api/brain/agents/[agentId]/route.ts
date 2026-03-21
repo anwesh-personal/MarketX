@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 
 async function getAuthContext(supabase: any) {
     const { data: { user }, error } = await supabase.auth.getUser()
@@ -18,6 +19,9 @@ export async function GET(
     { params }: { params: Promise<{ agentId: string }> }
 ) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const { agentId } = await params
         const supabase = createClient()
         const ctx = await getAuthContext(supabase)
@@ -51,6 +55,9 @@ export async function PATCH(
     { params }: { params: Promise<{ agentId: string }> }
 ) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const { agentId } = await params
         const body = await request.json()
 
@@ -99,6 +106,9 @@ export async function DELETE(
     { params }: { params: Promise<{ agentId: string }> }
 ) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const { agentId } = await params
         const supabase = createClient()
         const ctx = await getAuthContext(supabase)

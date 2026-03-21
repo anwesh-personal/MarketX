@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { getConfigValues } from '@/lib/platform-config'
+import { requireFeature } from '@/lib/requireFeature'
 
 const provisionSchema = z.object({
   domains: z.array(z.object({
@@ -16,20 +17,14 @@ const provisionSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
+  const gate = await requireFeature(req, 'can_manage_satellites')
+  if (gate.denied) return gate.response
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: me, error: meError } = await supabase
-    .from('users')
-    .select('id, org_id, role')
-    .eq('id', user.id)
-    .single()
-  if (meError || !me?.org_id) return NextResponse.json({ error: 'User org context not found' }, { status: 403 })
-  if (!['owner', 'admin', 'superadmin'].includes(me.role ?? '')) {
+  if (!['owner', 'admin', 'superadmin'].includes(gate.role)) {
     return NextResponse.json({ error: 'Only admin/owner can provision satellites' }, { status: 403 })
   }
+
+  const supabase = createClient()
 
   let body: unknown
   try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }) }
@@ -56,7 +51,7 @@ export async function POST(req: NextRequest) {
   const { data: existingDomainCount } = await supabase
     .from('sending_domains')
     .select('id')
-    .eq('partner_id', me.org_id)
+    .eq('partner_id', gate.orgId)
   if ((existingDomainCount?.length ?? 0) + input.domains.length > maxDomainsPerOrg) {
     return NextResponse.json({
       error: `Provisioning would exceed the ${maxDomainsPerOrg} domain limit. Current: ${existingDomainCount?.length ?? 0}, Requested: ${input.domains.length}. Adjust via Platform Config.`,
@@ -64,7 +59,7 @@ export async function POST(req: NextRequest) {
   }
 
   const domainRows = input.domains.map((d) => ({
-    partner_id: me.org_id,
+    partner_id: gate.orgId,
     domain: d.domain.toLowerCase(),
     tld: d.tld.toLowerCase(),
     provider: d.provider,
@@ -87,7 +82,7 @@ export async function POST(req: NextRequest) {
     for (let i = 1; i <= input.mailboxes_per_domain; i += 1) {
       const localPart = `${input.mailbox_prefix}${String(i).padStart(2, '0')}`
       rows.push({
-        partner_id: me.org_id,
+        partner_id: gate.orgId,
         domain_id: domain.id,
         mailbox_local_part: localPart,
         mailbox_email: `${localPart}@${domain.domain}`,
@@ -114,7 +109,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    partner_id: me.org_id,
+    partner_id: gate.orgId,
     domains_provisioned: insertedDomains.length,
     satellites_provisioned: insertedSatellites?.length ?? 0,
     domains: insertedDomains,

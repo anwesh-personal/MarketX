@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
+import { requireFeature } from '@/lib/requireFeature'
 
 export async function GET(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

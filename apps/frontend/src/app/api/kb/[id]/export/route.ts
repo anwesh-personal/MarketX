@@ -6,11 +6,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
 import { kbToMarkdown, KnowledgeBaseSchema } from '@/lib/kb'
+import { requireFeature } from '@/lib/requireFeature'
 
 interface RouteParams { params: { id: string } }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
+        const gate = await requireFeature(request, 'can_export_data')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 

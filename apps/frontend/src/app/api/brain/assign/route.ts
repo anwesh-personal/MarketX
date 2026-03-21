@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { brainAIConfigService } from '@/services/brain/BrainAIConfigService'
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 
 /**
  * POST /api/brain/assign
@@ -21,6 +22,9 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function POST(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const supabase = createClient()
 
         // Verify authentication
@@ -92,6 +96,9 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_train_brain')
+        if (gate.denied) return gate.response
+
         const supabase = createClient()
 
         // Verify authentication

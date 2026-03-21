@@ -5,11 +5,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
+import { requireFeature } from '@/lib/requireFeature'
 
 interface RouteParams { params: { id: string } }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
+        const gate = await requireFeature(request, 'can_view_kb')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
