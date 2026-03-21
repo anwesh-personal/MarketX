@@ -85,9 +85,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (error) throw error
 
         if (kbData) {
-            await supabaseAdmin.from('kb_versions').insert({
-                kb_id: params.id, version: data.version, data: current.data, created_at: new Date().toISOString(),
-            }).then(() => {}).catch((err: any) => console.warn('Version history not saved:', err.message))
+            try {
+                await supabaseAdmin.from('kb_versions').insert({
+                    kb_id: params.id, version: data.version, data: current.data, created_at: new Date().toISOString(),
+                })
+            } catch (vErr: any) {
+                console.warn('Version history not saved:', vErr.message)
+            }
         }
 
         return NextResponse.json({ success: true, kb: data })
