@@ -22,6 +22,8 @@ import {
     X
 } from 'lucide-react'
 import { BrainBackground } from '@/components/BrainBackground'
+import { useFeatureGate } from '@/lib/useFeatureGate'
+import { UpgradeWall } from '@/components/UpgradeWall'
 
 // ============================================================
 // TYPES
@@ -59,6 +61,7 @@ export default function BrainControlPage() {
     const [activeSection, setActiveSection] = useState('overview')
     const [stats, setStats] = useState<BrainStats | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const { allowed: canTrainBrain, loading: gateLoading, tier } = useFeatureGate('can_train_brain')
 
     useEffect(() => {
         const loadStats = async () => {
@@ -112,6 +115,18 @@ export default function BrainControlPage() {
         { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'from-accent/80 to-accent' },
         { id: 'config', label: 'Configuration', icon: Settings, color: 'from-muted-foreground to-muted-foreground/70' }
     ]
+
+    // ── Feature gate ──
+    if (gateLoading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+        )
+    }
+    if (!canTrainBrain) {
+        return <UpgradeWall feature="Brain Command Center" tier={tier} />
+    }
 
     return (
         <div className="h-full flex flex-col">

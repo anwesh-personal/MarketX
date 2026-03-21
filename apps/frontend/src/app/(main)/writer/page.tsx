@@ -18,6 +18,8 @@ import {
     FileText,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useFeatureGate } from '@/lib/useFeatureGate';
+import { UpgradeWall } from '@/components/UpgradeWall';
 
 interface Run {
     id: string;
@@ -31,6 +33,7 @@ interface Run {
 export default function WriterPage() {
     const router = useRouter();
     const supabase = createClient();
+    const { allowed: canWrite, loading: gateLoading, tier } = useFeatureGate('can_write_emails');
     const [runs, setRuns] = useState<Run[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -91,12 +94,16 @@ export default function WriterPage() {
         return matchesSearch && matchesStatus;
     });
 
-    if (isLoading) {
+    if (gateLoading || isLoading) {
         return (
             <div className="flex items-center justify-center h-96">
                 <Loader2 className="w-8 h-8 text-primary animate-spin" />
             </div>
         );
+    }
+
+    if (!canWrite) {
+        return <UpgradeWall feature="Writer Studio" tier={tier} />;
     }
 
     return (

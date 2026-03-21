@@ -8,6 +8,8 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useTheme } from '@/contexts/ThemeContext'
 import { BrainBackground } from '@/components/BrainBackground'
+import { useFeatureGate } from '@/lib/useFeatureGate'
+import { UpgradeWall } from '@/components/UpgradeWall'
 
 // ============================================================
 // TYPES
@@ -40,6 +42,7 @@ interface ActiveRuntime {
 export default function BrainChatPage() {
     const router = useRouter()
     const { mode } = useTheme()
+    const { allowed: canChatBrain, loading: gateLoading, tier } = useFeatureGate('can_chat_brain')
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -254,6 +257,18 @@ export default function BrainChatPage() {
             e.preventDefault()
             sendMessage()
         }
+    }
+
+    // ── Feature gate ──
+    if (gateLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+        )
+    }
+    if (!canChatBrain) {
+        return <UpgradeWall feature="Brain Chat" tier={tier} />
     }
 
     return (

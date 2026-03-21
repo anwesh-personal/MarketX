@@ -19,6 +19,8 @@ import { KBEditor } from '@/components/kb/KBEditor';
 import { KnowledgeBase } from '@/lib/kb';
 import { createClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { useFeatureGate } from '@/lib/useFeatureGate';
+import { UpgradeWall } from '@/components/UpgradeWall';
 
 interface KBListItem {
     id: string;
@@ -38,6 +40,7 @@ interface KBFull extends KBListItem {
 export default function KBManagerPage() {
     const router = useRouter();
     const supabase = createClient();
+    const { allowed: canViewKb, loading: gateLoading, tier } = useFeatureGate('can_view_kb');
     const [kbs, setKbs] = useState<KBListItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedKb, setSelectedKb] = useState<KBFull | null>(null);
@@ -227,6 +230,18 @@ export default function KBManagerPage() {
         kb.name.toLowerCase().includes(search.toLowerCase()) ||
         kb.description?.toLowerCase().includes(search.toLowerCase())
     );
+
+    // ── Feature gate ──
+    if (gateLoading) {
+        return (
+            <div className="flex items-center justify-center h-96">
+                <Loader2 className="w-5 h-5 animate-spin text-textTertiary" />
+            </div>
+        );
+    }
+    if (!canViewKb) {
+        return <UpgradeWall feature="Knowledge Base" tier={tier} />;
+    }
 
     return (
         <div className="flex h-[calc(100vh-64px)] bg-background text-textPrimary">

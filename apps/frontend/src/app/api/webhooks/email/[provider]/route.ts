@@ -219,5 +219,35 @@ export async function POST(
     }
   }
 
+  // ── Forward to Refinery Nexus (fire-and-forget) ───────────
+  // Axiom is the primary webhook receiver (for learning-loop / signal_event).
+  // Refinery is the data warehouse. We forward so ClickHouse engagement_events
+  // stays in sync without requiring MailWizz to dual-send.
+  forwardToRefinery(rawBody, providerId).catch((err) =>
+    console.warn('[webhook] Refinery forward failed (non-blocking):', err.message)
+  )
+
   return NextResponse.json({ received: eventsWithOrg.length, provider: providerId })
+}
+
+/**
+ * Fire-and-forget: POST raw webhook payload to Refinery Nexus.
+ * Uses the REFINERY_NEXUS_URL env var + a v1 API key.
+ * If either is missing, silently skips (dev mode / not yet configured).
+ */
+async function forwardToRefinery(rawBody: string, provider: string) {
+  const refineryUrl = process.env.REFINERY_NEXUS_URL
+  const refineryKey = process.env.REFINERY_NEXUS_API_KEY
+  if (!refineryUrl || !refineryKey) return
+
+  const endpoint = `${refineryUrl.replace(/\/+$/, '')}/api/v1/webhooks/${provider}`
+  await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Api-Key': refineryKey,
+    },
+    body: rawBody,
+    signal: AbortSignal.timeout(5000),
+  })
 }
