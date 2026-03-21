@@ -17,6 +17,8 @@
 
 import { Worker, Job, Queue } from 'bullmq';
 import { QueueName, getRedisConnectionOptions } from '../config/queues';
+import { createClient } from '@supabase/supabase-js';
+import { getSupabaseConfig } from '../config/supabase';
 
 // ============================================================================
 // TYPES
@@ -28,6 +30,7 @@ export interface ScheduledTaskJob {
         | 'learning_loop'
         | 'kb_reprocess'
         | 'analytics_rollup'
+        | 'satellite_daily_reset'
         | 'custom';
     orgId?: string;
     agentId?: string;
@@ -116,6 +119,29 @@ async function processScheduledTask(job: Job<ScheduledTaskJob>) {
 
         case 'custom': {
             console.log(`[ScheduledTask] Custom task acknowledged:`, JSON.stringify(payload).substring(0, 200));
+            break;
+        }
+
+        case 'satellite_daily_reset': {
+            // Reset current_daily_sent to 0 for all active satellites.
+            // Must run once per day (midnight UTC) via external cron.
+            // Without this, satellites permanently exhaust capacity and stop sending.
+            const sbConfig = getSupabaseConfig();
+            const supabase = createClient(sbConfig.url, sbConfig.serviceKey);
+
+            const { data: resetResult, error: resetErr } = await supabase
+                .from('sending_satellites')
+                .update({ current_daily_sent: 0 })
+                .eq('is_active', true)
+                .select('id');
+
+            if (resetErr) {
+                console.error(`❌ [ScheduledTask] satellite_daily_reset failed: ${resetErr.message}`);
+                throw resetErr;
+            }
+
+            const count = resetResult?.length ?? 0;
+            console.log(`✅ [ScheduledTask] satellite_daily_reset: reset ${count} satellites`);
             break;
         }
 

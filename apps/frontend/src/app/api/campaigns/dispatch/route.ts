@@ -1,0 +1,91 @@
+/**
+ * CAMPAIGN DISPATCH API
+ * =====================
+ * POST /api/campaigns/dispatch
+ *
+ * Production-grade endpoint for launching email campaigns.
+ * Routes through the SatelliteSendOrchestrator — recipients are
+ * distributed across the org's satellite constellation with
+ * warmup-aware pacing enforced.
+ *
+ * Auth: Supabase session (admin/owner role required)
+ * Body: { campaignName, subject, htmlBody, textBody?, recipients[], trackingTags?, scheduledAt? }
+ *
+ * Returns a detailed manifest: which satellite sent what, overflow recipients, etc.
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
+import { satelliteSendOrchestrator } from '@/services/email/SatelliteSendOrchestrator'
+
+const dispatchSchema = z.object({
+  campaignName: z.string().min(1).max(200),
+  subject: z.string().min(1).max(500),
+  htmlBody: z.string().min(1),
+  textBody: z.string().optional(),
+  fromName: z.string().max(100).optional(),
+  recipients: z.array(z.object({
+    email: z.string().email(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    customFields: z.record(z.string()).optional(),
+  })).min(1).max(50000),
+  trackingTags: z.object({
+    orgId: z.string().optional(),
+    partnerId: z.string().optional(),
+    beliefId: z.string().optional(),
+    icpId: z.string().optional(),
+    offerId: z.string().optional(),
+    briefId: z.string().optional(),
+  }).optional(),
+  scheduledAt: z.string().datetime().optional(),
+})
+
+export async function POST(req: NextRequest) {
+  const supabase = createClient()
+
+  // ── Auth ────────────────────────────────────────────────────────────────
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (userError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { data: me } = await supabase
+    .from('users')
+    .select('id, org_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!me?.org_id) {
+    return NextResponse.json({ error: 'User org context not found' }, { status: 403 })
+  }
+
+  // Only admins/owners can dispatch campaigns
+  const allowed = ['admin', 'owner', 'superadmin']
+  if (!allowed.includes(me.role ?? '')) {
+    return NextResponse.json({ error: 'Insufficient permissions — admin or owner role required' }, { status: 403 })
+  }
+
+  // ── Parse ───────────────────────────────────────────────────────────────
+  let body: unknown
+  try { body = await req.json() } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+
+  const parsed = dispatchSchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 })
+  }
+
+  // ── Dispatch ────────────────────────────────────────────────────────────
+  const result = await satelliteSendOrchestrator.dispatch(me.org_id, {
+    ...parsed.data,
+    trackingTags: {
+      ...parsed.data.trackingTags,
+      orgId: me.org_id,
+    },
+  })
+
+  const status = result.success ? 200 : (result.error?.includes('exhausted') ? 429 : 500)
+  return NextResponse.json(result, { status })
+}

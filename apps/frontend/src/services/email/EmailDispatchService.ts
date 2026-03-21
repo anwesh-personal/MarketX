@@ -19,6 +19,7 @@
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { getEmailProviderAdapter, listSupportedProviders } from './EmailProviderAdapter'
 import type { SendEmailParams, BulkSendParams, BulkSendResult, SendEmailResult, CampaignStats } from './EmailProviderAdapter'
+import { satelliteSendOrchestrator } from './SatelliteSendOrchestrator'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,14 +69,37 @@ export class EmailDispatchService {
   }
 
   /**
-   * Send a bulk campaign via the org's active provider.
+   * Send a bulk campaign via the org's satellite constellation.
+   * The SatelliteSendOrchestrator distributes recipients across satellites,
+   * enforces warmup pacing, and records sends. Direct adapter bypass is used
+   * ONLY as a fallback when no satellites are provisioned.
    */
   async sendBulk(orgId: string, params: BulkSendParams): Promise<DispatchResult> {
-    const { adapter, providerId, error: provErr } = await this.loadAdapter(orgId)
-    if (!adapter) return { success: false, error: provErr || 'No active email provider for org' }
+    // Primary path: satellite-paced dispatch
+    const orchResult = await satelliteSendOrchestrator.dispatch(orgId, params)
 
-    const result: BulkSendResult = await adapter.sendBulk(params)
-    return { success: result.success, campaignId: result.campaignId, provider: providerId, error: result.error }
+    if (orchResult.success || orchResult.totalSent > 0) {
+      return {
+        success: orchResult.success,
+        campaignId: orchResult.chunks[0]?.campaignId,
+        provider: 'satellite-orchestrated',
+        error: orchResult.overflow.length > 0
+          ? `${orchResult.totalSent} sent, ${orchResult.overflow.length} recipients exceeded daily capacity`
+          : undefined,
+      }
+    }
+
+    // Fallback: if NO satellites at all, try direct adapter (legacy / no-satellite orgs)
+    if (orchResult.error?.includes('No eligible satellites')) {
+      const { adapter, providerId, error: provErr } = await this.loadAdapter(orgId)
+      if (!adapter) return { success: false, error: provErr || 'No active email provider for org' }
+
+      console.warn(`[EmailDispatchService] Org ${orgId} has no satellites — falling back to direct adapter send (no pacing enforcement)`)
+      const result: BulkSendResult = await adapter.sendBulk(params)
+      return { success: result.success, campaignId: result.campaignId, provider: providerId, error: result.error }
+    }
+
+    return { success: false, error: orchResult.error || 'Dispatch failed' }
   }
 
   /**
