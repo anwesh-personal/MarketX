@@ -228,11 +228,11 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
 <div class="hero">
   <div class="pill">production infrastructure blueprint</div>
   <h1>The Final<br><em>Infrastructure</em></h1>
-  <p>Three systems. One command center. Five disposable satellite VPS boxes. MarketX (Axiom) orchestrates everything. 10.5M+ leads already ingested in Refinery, with millions more in the 5x5 Coop pipeline waiting to be wired in.</p>
+  <p>Three systems. One command center. Five disposable satellite VPS boxes. MarketX (Axiom) orchestrates everything. 10.5M+ leads currently ingested in Refinery — this is just the first batch. Millions more sitting in the 5x5 Coop pipeline ready to pour in once infrastructure goes live.</p>
   <div class="hstats">
     <div class="hstat"><div class="v" style="color:var(--sat)">1</div><div class="l">command center</div></div>
     <div class="hstat"><div class="v" style="color:var(--mw)">5</div><div class="l">satellite vps</div></div>
-    <div class="hstat"><div class="v" style="color:var(--rf)">10.5M+</div><div class="l">ingested leads</div></div>
+    <div class="hstat"><div class="v" style="color:var(--rf)">10.5M+</div><div class="l">currently ingested (growing)</div></div>
     <div class="hstat"><div class="v" style="color:var(--ax)">150K</div><div class="l">emails / day</div></div>
   </div>
 </div>
@@ -260,7 +260,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="g2">
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--rf);font-weight:600;margin-bottom:14px;letter-spacing:.06em">IP .66 — REFINERY NEXUS</div>
-      <div style="font-size:.9rem;color:var(--t3);line-height:1.6;margin-bottom:14px">Data warehouse. 10.5M+ ingested leads in ClickHouse (millions more in 5x5 Coop ready to ingest). Runs SMTP verification, catches webhooks from MailWizz, feeds analytics back to Axiom's Coach Agent.</div>
+      <div style="font-size:.9rem;color:var(--t3);line-height:1.6;margin-bottom:14px">Data warehouse. 10.5M+ leads currently ingested in ClickHouse — first batch only. Millions more records in the 5x5 Coop pipeline ready to flow in. Runs SMTP verification, catches webhooks from MailWizz, feeds analytics back to Axiom's Coach Agent.</div>
       <div style="font-family:var(--mono);font-size:.8rem;color:var(--t4);line-height:1.8">
         Express 5 :4000 (PM2) &bull; ClickHouse :8123 (SSD)<br>
         MinIO :9002 (SATA) &bull; Nginx/Varnish &bull; CloudPanel :8443<br>
@@ -273,6 +273,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <div style="font-family:var(--mono);font-size:.8rem;color:var(--t4);line-height:1.8">
         PHP 8.1 + ionCube &bull; Percona MySQL 8.4 :3306<br>
         Nginx via CloudPanel &bull; MailWizz 2.7.6<br>
+        Live at: <span style="color:var(--mw)">mail.iiiemail.email</span><br>
         License: <span style="color:var(--mw)">$299 one-time</span>
       </div>
     </div>
@@ -305,14 +306,14 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <div class="an-icon">&#x1F5C4;&#xFE0F;</div>
       <div class="an-name">Refinery Nexus</div>
       <div class="an-sub">RACKNERD .66 &bull; IIIEMAIL.EMAIL</div>
-      <div class="an-desc">Data warehouse. 10.5M+ ingested leads in ClickHouse (millions more in 5x5 Coop). SMTP verification, webhook ingestion.</div>
+      <div class="an-desc">Data warehouse. 10.5M+ currently ingested (first batch — millions more in 5x5 Coop pipeline). SMTP verification, webhook ingestion.</div>
       <button class="an-btn" onclick="openM('refinery')">deep dive &rarr;</button>
     </div>
 
     <div class="anode c-mw" id="nd-mw" style="left:20px;top:380px">
       <div class="an-icon">&#x1F4E8;</div>
       <div class="an-name">MailWizz Orchestrator</div>
-      <div class="an-sub">RACKNERD .67 &bull; CAMPAIGN MANAGER</div>
+      <div class="an-sub">RACKNERD .67 &bull; MAIL.IIIEMAIL.EMAIL</div>
       <div class="an-desc">Manages campaigns + dispatches to satellite VPS "Delivery Servers". Does NOT send emails itself.</div>
       <button class="an-btn" onclick="openM('mailwizz')">deep dive &rarr;</button>
     </div>
@@ -321,7 +322,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <div class="an-icon">&#x1F6F0;&#xFE0F;</div>
       <div class="an-name">Satellite VPS Fleet</div>
       <div class="an-sub">5 SEPARATE BOXES &bull; DIFFERENT SUBNETS</div>
-      <div class="an-desc">Dedicated SMTP boxes ($25/mo each). Each optimized for 30K/day but capped at 3K per mailbox (10 mailboxes = 30K). Disposable — if one burns, replace it.</div>
+      <div class="an-desc">Dedicated SMTP boxes ($50/mo each). Each optimized for 30K/day but capped at 3K per mailbox (10 mailboxes = 30K). Disposable — if one burns, replace it.</div>
       <button class="an-btn" onclick="openM('satellites')">deep dive &rarr;</button>
     </div>
 
@@ -383,8 +384,8 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--rf);font-weight:700;margin-bottom:10px">DATA PIPELINE (LEADS)</div>
       <div style="font-size:.9rem;color:var(--t3);line-height:1.7">
-        <strong style="color:var(--t1)">Currently ingested:</strong> 10.5M+ leads in ClickHouse<br>
-        <strong style="color:var(--t1)">5x5 Coop pipeline:</strong> Millions more records waiting to be wired in<br>
+        <strong style="color:var(--t1)">Currently ingested:</strong> 10.5M+ leads in ClickHouse (first batch only)<br>
+        <strong style="color:var(--t1)">5x5 Coop pipeline:</strong> Millions more records ready — will pour in once infra goes live<br>
         <strong style="color:var(--t1)">Ingestion:</strong> CSV, CSV.gz, Parquet from S3/MinIO — batch insert 10K at a time<br>
         <strong style="color:var(--t1)">Verification:</strong> Built-in 7-step SMTP engine (no external service needed)<br>
         <strong style="color:var(--t1)">Segments:</strong> Dynamic ClickHouse queries on universal_person table
@@ -397,7 +398,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
 <div class="wrap"><section id="satellites">
   <div class="tag st">02 — satellite fleet</div>
   <h2>5 Disposable VPS Boxes</h2>
-  <p class="sub">Each satellite is a separate SMTP server ($25/mo) from a trusted vendor. Each is optimized for 30K emails/day with its own dedicated IP. Tommy's model: cap each mailbox at 3K/day &times; 10 mailboxes = 30K/day per box (exactly the box's rated capacity). If one gets blacklisted, you lose $25 — not your business.</p>
+  <p class="sub">Each satellite is a separate SMTP server ($50/mo) from a trusted vendor. Each is optimized for 30K emails/day with its own dedicated IP. Tommy's model: cap each mailbox at 3K/day &times; 10 mailboxes = 30K/day per box (exactly the box's rated capacity). If one gets blacklisted, you lose $50 — not your business.</p>
 
   <div class="g5" id="satGrid"></div>
 
@@ -405,7 +406,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--sat)">50</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">total satellites</div></div>
     <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--mw)">3,000</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">max / satellite / day</div></div>
     <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--ok)">150,000</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">safe emails / day</div></div>
-    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--err)">$25</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">cost if one burns</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--err)">$50</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">cost if one burns</div></div>
   </div>
 
   <div class="card" style="margin-top:20px;border-left:2px solid var(--sat)">
@@ -414,7 +415,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <strong style="color:var(--t1)">Subnet fingerprinting:</strong> Gmail sees that 107.172.56.68, .69, .70 are all in the same /28 block. Same ASN, same datacenter. Red flag.<br>
       <strong style="color:var(--t1)">Collateral damage:</strong> One blacklisted IP can taint the entire /28 subnet.<br>
       <strong style="color:var(--t1)">Single point of failure:</strong> Server down = ALL satellites down.<br>
-      <strong style="color:var(--t1)">Disposability:</strong> A $25/mo SMTP box is replaceable in hours. Your $90/mo command center with all your data is not.
+      <strong style="color:var(--t1)">Disposability:</strong> A $50/mo SMTP box is replaceable in hours. Your $90/mo command center with all your data is not.
     </div>
   </div>
 </section></div>
@@ -428,7 +429,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     <div class="fs c-ax" data-a><div class="fn">1</div><div class="ft">Targeting</div><div class="fd">Axiom asks Refinery for 500 verified leads from ClickHouse segments.</div><div class="fa">GET iiiemail.email/api/v1/segments/:id/contacts</div></div>
     <div class="fs c-ax" data-a><div class="fn">2</div><div class="ft">AI Content Generation</div><div class="fd">Writer Engine uses Knowledge Base + OpenAI/Anthropic to generate personalized emails.</div><div class="fa">POST /api/writer/execute (Axiom)</div></div>
     <div class="fs c-ax" data-a><div class="fn">3</div><div class="ft">Satellite Pacing</div><div class="fd">SendPacingAgent checks each satellite's daily cap, warmup day, reputation score. Allocates across satellites.</div><div class="fa">GET /api/satellites/pacing/check (Axiom)</div></div>
-    <div class="fs c-mw" data-a><div class="fn">4</div><div class="ft">Dispatch to MailWizz</div><div class="fd">Campaign sent to MailWizz on .67 via API. MailWizz assigns the campaign to the correct Delivery Server (satellite VPS).</div><div class="fa">POST 107.172.56.67/api/v1/campaigns</div></div>
+    <div class="fs c-mw" data-a><div class="fn">4</div><div class="ft">Dispatch to MailWizz</div><div class="fd">Campaign sent to MailWizz (mail.iiiemail.email) via API. MailWizz assigns the campaign to the correct Delivery Server (satellite VPS).</div><div class="fa">POST mail.iiiemail.email/api/v1/campaigns</div></div>
     <div class="fs c-sat" data-a><div class="fn">5</div><div class="ft">Satellite SMTP Delivers</div><div class="fd">The satellite box (optimized for 30K/day, capped at 3K per mailbox) sends via Postfix through its dedicated IP. OpenDKIM signs. 10 mailboxes &times; 3K = 30K/day per box.</div><div class="fa">SMTP :25 &rarr; satellite dedicated IP &rarr; recipient MX</div></div>
     <div class="fs c-rf" data-a><div class="fn">6</div><div class="ft">Webhook to Refinery</div><div class="fd">MailWizz fires webhooks to Refinery (iiiemail.email) on every open, click, bounce, reply, complaint, unsubscribe.</div><div class="fa">POST iiiemail.email/api/v1/webhooks/{event}</div></div>
     <div class="fs c-rf" data-a><div class="fn">7</div><div class="ft">ClickHouse Storage</div><div class="fd">Events land in engagement_events (partitioned monthly, on SSD). Hard bounces auto-update universal_person status.</div><div class="fa">INSERT INTO refinery.engagement_events</div></div>
@@ -461,7 +462,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <tr><td><strong style="color:var(--sat)">Command Center</strong></td><td>RackNerd Dedicated</td><td>Xeon E3-1240 V3, 32 GB, 465 GB SSD + 1.8 TB, 14 IPs</td><td class="price">~$65-90</td></tr>
       <tr><td><strong style="color:var(--rf)">Refinery Nexus</strong></td><td>Self-hosted (.66)</td><td>Express 5 + ClickHouse + MinIO + PM2</td><td class="price">$0 (incl.)</td></tr>
       <tr><td><strong style="color:var(--mw)">MailWizz</strong></td><td>Self-hosted (.67)</td><td>PHP 8.1 + Percona MySQL via CloudPanel</td><td class="price">$0 (incl.)</td></tr>
-      <tr><td><strong style="color:var(--sat)">Satellite SMTP &times;5</strong></td><td>Trusted Vendor (optimized SMTP boxes)</td><td>1 dedicated IP each, optimized for 30K/day, used at 30K (10 mailboxes &times; 3K cap)</td><td class="price">$125/mo ($25 ea)</td></tr>
+      <tr><td><strong style="color:var(--sat)">Satellite SMTP &times;5</strong></td><td>Trusted Vendor (optimized SMTP boxes)</td><td>1 dedicated IP each, optimized for 30K/day, used at 30K (10 mailboxes &times; 3K cap)</td><td class="price">$250/mo ($50 ea)</td></tr>
       <tr><td><strong style="color:var(--ax)">Axiom Frontend</strong></td><td>Vercel</td><td>Next.js 14 standalone, CDN</td><td class="price">$0-20</td></tr>
       <tr><td><strong style="color:var(--ax)">Axiom Workers</strong></td><td>Railway</td><td>BullMQ, Redis, 10 queues, port 3100</td><td class="price">$5-20</td></tr>
       <tr><td><strong style="color:var(--ax)">Supabase (Axiom)</strong></td><td>Supabase Cloud</td><td>PostgreSQL + Auth + RLS</td><td class="price">$0-25</td></tr>
@@ -470,8 +471,8 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     </tbody>
   </table>
   <div style="display:flex;gap:16px;margin-top:20px;flex-wrap:wrap">
-    <div class="card" style="flex:1;min-width:200px;text-align:center"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">$201 – $311/mo</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">total monthly infrastructure</div></div>
-    <div class="card" style="flex:1;min-width:200px;text-align:center;border-color:rgba(34,197,94,.2)"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">$20K–$35K</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">refinery nexus build value (if outsourced)</div></div>
+    <div class="card" style="flex:1;min-width:200px;text-align:center"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">$326 – $436/mo</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">total monthly infrastructure</div></div>
+    <div class="card" style="flex:1;min-width:200px;text-align:center;border-color:rgba(34,197,94,.2)"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">~$7K</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">refinery nexus build value (insourced + IDE)</div></div>
     <div class="card" style="flex:1;min-width:200px;text-align:center;border-color:rgba(245,158,11,.2)"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--mw)">$299</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">mailwizz license (one-time)</div></div>
   </div>
 </section></div>
@@ -574,11 +575,11 @@ drawC();
 
 /* ===== SATELLITES ===== */
 const sats=[
-  {provider:'SMTP Vendor',ip:'{sat-1-ip}',domain:'{domain-1}.com',tld:'.com',cost:'$25/mo'},
-  {provider:'SMTP Vendor',ip:'{sat-2-ip}',domain:'{domain-2}.io',tld:'.io',cost:'$25/mo'},
-  {provider:'SMTP Vendor',ip:'{sat-3-ip}',domain:'{domain-3}.com',tld:'.com',cost:'$25/mo'},
-  {provider:'SMTP Vendor',ip:'{sat-4-ip}',domain:'{domain-4}.net',tld:'.net',cost:'$25/mo'},
-  {provider:'SMTP Vendor',ip:'{sat-5-ip}',domain:'{domain-5}.co',tld:'.co',cost:'$25/mo'}
+  {provider:'SMTP Vendor',ip:'{sat-1-ip}',domain:'{domain-1}.com',tld:'.com',cost:'$50/mo'},
+  {provider:'SMTP Vendor',ip:'{sat-2-ip}',domain:'{domain-2}.io',tld:'.io',cost:'$50/mo'},
+  {provider:'SMTP Vendor',ip:'{sat-3-ip}',domain:'{domain-3}.com',tld:'.com',cost:'$50/mo'},
+  {provider:'SMTP Vendor',ip:'{sat-4-ip}',domain:'{domain-4}.net',tld:'.net',cost:'$50/mo'},
+  {provider:'SMTP Vendor',ip:'{sat-5-ip}',domain:'{domain-5}.co',tld:'.co',cost:'$50/mo'}
 ];
 const mbn=['sarah','john','emily','david','alex','jessica','mike','anna','chris','lisa'];
 const sg=document.getElementById('satGrid');
@@ -610,9 +611,9 @@ new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)document.querySele
 const mo=document.getElementById('mo'),mc=document.getElementById('mc');
 const md={
 axiom:{t:'Axiom (MarketX)',c:'#8b5cf6',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--ax2);color:var(--ax)">Next.js 14</span><span class="tg" style="background:var(--ax2);color:var(--ax)">BullMQ 5.67</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ioredis 5.9</span><span class="tg" style="background:var(--ax2);color:var(--ax)">Supabase</span><span class="tg" style="background:var(--ax2);color:var(--ax)">OpenAI 6.16</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ReactFlow</span></div><h3>deployment</h3><div class="g2i"><div class="ib"><div class="ik">frontend</div><div class="iv" style="color:var(--ok)">Vercel</div></div><div class="ib"><div class="ik">workers</div><div class="iv" style="color:var(--ok)">Railway :3100</div></div><div class="ib"><div class="ik">database</div><div class="iv">Supabase (uvrpucqzlqhsuttbczbo)</div></div><div class="ib"><div class="ik">redis</div><div class="iv">Railway Redis (axiom:)</div></div></div><h3>key components</h3><ul class="api"><li>Writer Engine — POST /api/writer/execute</li><li>Coach Agent — MarketingCoachProcessor</li><li>MailWizz Adapter — HMAC-SHA256</li><li>Mastery Agents — 8 concurrent (pacing, timing, angle...)</li><li>8 MTA providers supported (provider-agnostic via signal_event)</li></ul><h3>pacing config</h3><ul class="api"><li>send_pacing_daily_cap — 3,000/satellite</li><li>send_pacing_warmup_default_days — 14</li><li>send_pacing_ramp_strategy — exponential</li><li>auto-pause: bounce &gt;2% or spam &gt;5%</li></ul></div>`},
-refinery:{t:'Refinery Nexus',c:'#06b6d4',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--rf2);color:var(--rf)">Express 5.0.1</span><span class="tg" style="background:var(--rf2);color:var(--rf)">TypeScript 5.7</span><span class="tg" style="background:var(--rf2);color:var(--rf)">ClickHouse 1.8</span><span class="tg" style="background:var(--rf2);color:var(--rf)">MinIO (S3)</span><span class="tg" style="background:var(--rf2);color:var(--rf)">Zod 4.3</span><span class="tg" style="background:var(--rf2);color:var(--rf)">React 19 + Vite 7</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">server</div><div class="iv" style="color:var(--rf)">107.172.56.66</div></div><div class="ib"><div class="ik">live url</div><div class="iv" style="color:var(--rf)">iiiemail.email</div></div><div class="ib"><div class="ik">clickhouse</div><div class="iv">:8123 / 24GB mem / SSD</div></div><div class="ib"><div class="ik">minio</div><div class="iv">:9002 / refinery-data / SATA</div></div></div><h3>smtp verification (built-in, 7-step)</h3><ul class="api"><li>1. Syntax → 2. Disposable (10K+) → 3. Free provider</li><li>4. Role account → 5. MX resolution (cached)</li><li>6. Catch-all → 7. SMTP RCPT TO probe</li><li>250=valid | 550=invalid | 450=greylisted | 452=full</li></ul><h3>build value if outsourced</h3><div class="ib" style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12)"><div class="ik" style="color:var(--ok)">traditional dev cost</div><div class="iv" style="color:var(--ok);font-size:1.2rem">$20,000 – $35,000</div></div></div>`},
-mailwizz:{t:'MailWizz Orchestrator',c:'#f59e0b',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--mw2);color:var(--mw)">PHP 8.1</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Percona MySQL 8.4</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Nginx (CloudPanel)</span><span class="tg" style="background:var(--mw2);color:var(--mw)">ionCube</span><span class="tg" style="background:var(--mw2);color:var(--mw)">MailWizz 2.7.6</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--mw)">107.172.56.67</div></div><div class="ib"><div class="ik">role</div><div class="iv">Campaign Manager (NOT sender)</div></div><div class="ib"><div class="ik">managed by</div><div class="iv">CloudPanel :8443</div></div><div class="ib"><div class="ik">license</div><div class="iv" style="color:var(--mw)">$299 one-time</div></div></div><h3>how it connects to satellites</h3><ul class="api"><li>MailWizz Admin → Delivery Servers → Add External SMTP</li><li>Each satellite VPS = one "Delivery Server" entry</li><li>Campaigns assigned to specific delivery servers</li><li>MailWizz rotates based on rules + capacity</li></ul><h3>webhooks → refinery</h3><ul class="api"><li>POST iiiemail.email/api/v1/webhooks/bounce</li><li>POST iiiemail.email/api/v1/webhooks/open</li><li>POST iiiemail.email/api/v1/webhooks/click</li><li>POST iiiemail.email/api/v1/webhooks/complaint</li><li>POST iiiemail.email/api/v1/webhooks/unsubscribe</li></ul></div>`},
-satellites:{t:'Satellite SMTP Fleet',c:'#ec4899',h:`<div class="mb"><h3>the concept</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.6;margin-bottom:16px">Each satellite is a <strong style="color:var(--t1)">separate, dedicated SMTP server</strong> from a trusted vendor. NOT a different IP on the same server. True physical + network isolation. If one burns, you lose $25 — not your infrastructure.</div><h3>per satellite specs</h3><div class="g2i"><div class="ib"><div class="ik">type</div><div class="iv">Optimized SMTP Box</div></div><div class="ib"><div class="ik">rated capacity</div><div class="iv" style="color:var(--ok)">30,000 emails/day</div></div><div class="ib"><div class="ik">ip</div><div class="iv">1 dedicated IPv4</div></div><div class="ib"><div class="ik">port 25</div><div class="iv" style="color:var(--ok)">Open + optimized</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">$25/mo</div></div><div class="ib"><div class="ik">stack</div><div class="iv">Postfix + OpenDKIM + hardened</div></div><div class="ib"><div class="ik">our usage</div><div class="iv">10 mailboxes × 3K = 30K/day</div></div><div class="ib"><div class="ik">source</div><div class="iv">Trusted vendor (colleague)</div></div></div><h3>the math</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.7;margin-bottom:12px"><strong style="color:var(--t1)">Box capacity:</strong> 30,000 emails/day<br><strong style="color:var(--t1)">Tommy's model:</strong> 3,000 per mailbox × 10 mailboxes = 30,000/day<br><strong style="color:var(--t1)">Result:</strong> Each box runs at exactly its rated capacity. Not wasteful — precise.<br><strong style="color:var(--t1)">5 boxes:</strong> 150,000 safe emails/day at full ramp</div><h3>why these boxes work</h3><ul class="api"><li>Pre-configured for email sending (Postfix + DKIM already optimized)</li><li>Clean IPs from trusted source (not random cloud provider IPs)</li><li>rDNS/PTR control included</li><li>Port 25 guaranteed open (many cloud providers block it)</li><li>$25 is the sweet spot — cheap enough to burn, quality enough to deliver</li></ul></div>`}
+refinery:{t:'Refinery Nexus',c:'#06b6d4',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--rf2);color:var(--rf)">Express 5.0.1</span><span class="tg" style="background:var(--rf2);color:var(--rf)">TypeScript 5.7</span><span class="tg" style="background:var(--rf2);color:var(--rf)">ClickHouse 1.8</span><span class="tg" style="background:var(--rf2);color:var(--rf)">MinIO (S3)</span><span class="tg" style="background:var(--rf2);color:var(--rf)">Zod 4.3</span><span class="tg" style="background:var(--rf2);color:var(--rf)">React 19 + Vite 7</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">server</div><div class="iv" style="color:var(--rf)">107.172.56.66</div></div><div class="ib"><div class="ik">live url</div><div class="iv" style="color:var(--rf)">iiiemail.email</div></div><div class="ib"><div class="ik">clickhouse</div><div class="iv">:8123 / 24GB mem / SSD</div></div><div class="ib"><div class="ik">minio</div><div class="iv">:9002 / refinery-data / SATA</div></div></div><h3>smtp verification (built-in, 7-step)</h3><ul class="api"><li>1. Syntax → 2. Disposable (10K+) → 3. Free provider</li><li>4. Role account → 5. MX resolution (cached)</li><li>6. Catch-all → 7. SMTP RCPT TO probe</li><li>250=valid | 550=invalid | 450=greylisted | 452=full</li></ul><h3>build value if outsourced</h3><div class="ib" style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12)"><div class="ik" style="color:var(--ok)">build value (insourced + IDE)</div><div class="iv" style="color:var(--ok);font-size:1.2rem">~$7,000</div></div></div>`},
+mailwizz:{t:'MailWizz Orchestrator',c:'#f59e0b',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--mw2);color:var(--mw)">PHP 8.1</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Percona MySQL 8.4</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Nginx (CloudPanel)</span><span class="tg" style="background:var(--mw2);color:var(--mw)">ionCube</span><span class="tg" style="background:var(--mw2);color:var(--mw)">MailWizz 2.7.6</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--mw)">107.172.56.67</div></div><div class="ib"><div class="ik">live url</div><div class="iv" style="color:var(--mw)">mail.iiiemail.email</div></div><div class="ib"><div class="ik">role</div><div class="iv">Campaign Manager (NOT sender)</div></div><div class="ib"><div class="ik">managed by</div><div class="iv">CloudPanel :8443</div></div><div class="ib"><div class="ik">license</div><div class="iv" style="color:var(--mw)">$299 one-time</div></div></div><h3>how it connects to satellites</h3><ul class="api"><li>MailWizz Admin → Delivery Servers → Add External SMTP</li><li>Each satellite VPS = one "Delivery Server" entry</li><li>Campaigns assigned to specific delivery servers</li><li>MailWizz rotates based on rules + capacity</li></ul><h3>webhooks → refinery</h3><ul class="api"><li>POST iiiemail.email/api/v1/webhooks/bounce</li><li>POST iiiemail.email/api/v1/webhooks/open</li><li>POST iiiemail.email/api/v1/webhooks/click</li><li>POST iiiemail.email/api/v1/webhooks/complaint</li><li>POST iiiemail.email/api/v1/webhooks/unsubscribe</li></ul></div>`},
+satellites:{t:'Satellite SMTP Fleet',c:'#ec4899',h:`<div class="mb"><h3>the concept</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.6;margin-bottom:16px">Each satellite is a <strong style="color:var(--t1)">separate, dedicated SMTP server</strong> from a trusted vendor. NOT a different IP on the same server. True physical + network isolation. If one burns, you lose $50 — not your infrastructure.</div><h3>per satellite specs</h3><div class="g2i"><div class="ib"><div class="ik">type</div><div class="iv">Optimized SMTP Box</div></div><div class="ib"><div class="ik">rated capacity</div><div class="iv" style="color:var(--ok)">30,000 emails/day</div></div><div class="ib"><div class="ik">ip</div><div class="iv">1 dedicated IPv4</div></div><div class="ib"><div class="ik">port 25</div><div class="iv" style="color:var(--ok)">Open + optimized</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">$50/mo</div></div><div class="ib"><div class="ik">stack</div><div class="iv">Postfix + OpenDKIM + hardened</div></div><div class="ib"><div class="ik">our usage</div><div class="iv">10 mailboxes × 3K = 30K/day</div></div><div class="ib"><div class="ik">source</div><div class="iv">Trusted vendor (colleague)</div></div></div><h3>the math</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.7;margin-bottom:12px"><strong style="color:var(--t1)">Box capacity:</strong> 30,000 emails/day<br><strong style="color:var(--t1)">Tommy's model:</strong> 3,000 per mailbox × 10 mailboxes = 30,000/day<br><strong style="color:var(--t1)">Result:</strong> Each box runs at exactly its rated capacity. Not wasteful — precise.<br><strong style="color:var(--t1)">5 boxes:</strong> 150,000 safe emails/day at full ramp</div><h3>why these boxes work</h3><ul class="api"><li>Pre-configured for email sending (Postfix + DKIM already optimized)</li><li>Clean IPs from trusted source (not random cloud provider IPs)</li><li>rDNS/PTR control included</li><li>Port 25 guaranteed open (many cloud providers block it)</li><li>$50 per dedicated IP — disposable enough to burn, quality enough to deliver</li></ul></div>`}
 };
 sats.forEach((s,i)=>{md['sat'+i]={t:'Satellite VPS '+(i+1)+': '+s.domain,c:'#ec4899',h:`<div class="mb"><h3>config</h3><div class="g2i"><div class="ib"><div class="ik">provider</div><div class="iv">${s.provider}</div></div><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--sat)">${s.ip}</div></div><div class="ib"><div class="ik">domain</div><div class="iv" style="color:var(--mw)">${s.domain}</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">${s.cost}</div></div></div><h3>10 mailboxes</h3><ul class="api">${mbn.map((n,j)=>`<li>Satellite ${i*10+j+1}: <strong style="color:var(--sat)">${n}@${s.domain}</strong> — 3,000/day</li>`).join('')}</ul><h3>dns records</h3><div style="font-family:var(--mono);font-size:.8rem;background:#000;padding:12px;border-radius:6px;color:#a5b4fc;white-space:pre;overflow-x:auto;line-height:1.6">SPF:   v=spf1 mx ip4:${s.ip} ~all
 DKIM:  mail._domainkey → generated on this VPS
