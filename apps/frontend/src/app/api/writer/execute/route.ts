@@ -27,6 +27,7 @@ import { Queue } from 'bullmq'
 import { randomUUID } from 'crypto'
 import { requireActiveBrainRuntime } from '@/services/brain/BrainRuntimeResolver'
 import { brainKBService } from '@/services/brain/BrainKBService'
+import { requireFeature } from '@/lib/requireFeature'
 
 // Redis config comes from DB (infra-config), falls back to env then localhost
 import { getRedisConnectionConfig } from '@/lib/infra-config'
@@ -54,6 +55,10 @@ interface WriterExecuteRequest {
 
 export async function POST(req: NextRequest) {
     try {
+        // Feature gate — enforce plan access
+        const gate = await requireFeature(req, 'can_write_emails')
+        if (gate.denied) return gate.response
+
         const supabase = createClient()
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) {

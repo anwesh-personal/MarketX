@@ -6,9 +6,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthContext, supabaseAdmin } from '@/lib/api-auth'
 import { KnowledgeBaseSchema } from '@/lib/kb'
+import { requireFeature } from '@/lib/requireFeature'
 
 export async function GET(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_view_kb')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 
@@ -29,6 +33,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const gate = await requireFeature(request, 'can_view_kb')
+        if (gate.denied) return gate.response
+
         const ctx = await getAuthContext()
         if (!ctx) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
 

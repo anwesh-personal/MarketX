@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 import { getActiveBrainRuntime, type BrainRuntime } from '@/services/brain/BrainRuntimeResolver'
 import { brainConfigService, type BrainConfig } from '@/services/brain/BrainConfigService'
 import { brainOrchestrator } from '@/services/brain/BrainOrchestrator'
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
     const supabase = createClient()
 
     try {
+        // 0. Feature gate — enforce plan access BEFORE any LLM work
+        const gate = await requireFeature(req, 'can_chat_brain')
+        if (gate.denied) return gate.response
+
         // 1. Authenticate and get context
         const context = await getRequestContext(req)
 
