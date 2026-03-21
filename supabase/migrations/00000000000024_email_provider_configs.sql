@@ -111,7 +111,11 @@ VALUES
     ('promotion_negative_rate_max', '{"value":0.25,"unit":"ratio"}'::jsonb,
      'Maximum negative reply rate allowed for promotion gate pass'),
     ('promotion_booked_call_rate_min', '{"value":0.02,"unit":"ratio"}'::jsonb,
-     'Minimum booked call rate for promotion gate pass')
+     'Minimum booked call rate for promotion gate pass'),
+    ('refinery_mta_provider', '{"value":"mailwizz"}'::jsonb,
+     'Default MTA Provider backend used by Refinery Nexus'),
+    ('refinery_mta_base_url', '{"value":"https://mw.refinerynexus.com/api"}'::jsonb,
+     'Base URL for the MTA Provider API backend (e.g. MailWizz API)')
 ON CONFLICT (key) DO NOTHING;
 
 COMMIT;
