@@ -59,23 +59,8 @@ export async function POST(req: NextRequest) {
         const gate = await requireFeature(req, 'can_write_emails')
         if (gate.denied) return gate.response
 
-        const supabase = createClient()
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        const { data: userRecord } = await supabase
-            .from('users')
-            .select('org_id')
-            .eq('id', user.id)
-            .single()
-
-        if (!userRecord?.org_id) {
-            return NextResponse.json({ error: 'User org context not found' }, { status: 403 })
-        }
-
-        const orgId = userRecord.org_id
+        // gate already authenticated + resolved org
+        const orgId = gate.orgId
 
         const brainRuntime = await requireActiveBrainRuntime(orgId)
 
@@ -233,7 +218,7 @@ export async function POST(req: NextRequest) {
                 config: engineWithFlow.config,
                 status: engineWithFlow.status,
             },
-            userId: user.id,
+            userId: gate.userId,
             orgId: orgId,
             input,
             options: { 
@@ -245,7 +230,7 @@ export async function POST(req: NextRequest) {
         let runId: string | null = null
         const runPayload = {
             org_id: orgId,
-            triggered_by: user.id,
+            triggered_by: gate.userId,
             writer_input: settings,
             status: 'running',
             execution_id: executionId,

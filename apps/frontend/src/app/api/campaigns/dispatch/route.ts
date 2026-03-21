@@ -16,7 +16,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
+import { requireFeature } from '@/lib/requireFeature'
 import { satelliteSendOrchestrator } from '@/services/email/SatelliteSendOrchestrator'
 
 const dispatchSchema = z.object({
@@ -43,26 +43,13 @@ const dispatchSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
+  // ── Feature gate + auth ─────────────────────────────────────────────────
+  const gate = await requireFeature(req, 'can_write_emails')
+  if (gate.denied) return gate.response
 
-  // ── Auth ────────────────────────────────────────────────────────────────
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
-  if (userError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { data: me } = await supabase
-    .from('users')
-    .select('id, org_id, role')
-    .eq('id', user.id)
-    .single()
-  if (!me?.org_id) {
-    return NextResponse.json({ error: 'User org context not found' }, { status: 403 })
-  }
-
-  // Only admins/owners can dispatch campaigns
+  // Only admins/owners can dispatch campaigns (additional role check on top of feature gate)
   const allowed = ['admin', 'owner', 'superadmin']
-  if (!allowed.includes(me.role ?? '')) {
+  if (!allowed.includes(gate.role)) {
     return NextResponse.json({ error: 'Insufficient permissions — admin or owner role required' }, { status: 403 })
   }
 
@@ -78,11 +65,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Dispatch ────────────────────────────────────────────────────────────
-  const result = await satelliteSendOrchestrator.dispatch(me.org_id, {
+  const result = await satelliteSendOrchestrator.dispatch(gate.orgId, {
     ...parsed.data,
     trackingTags: {
       ...parsed.data.trackingTags,
-      orgId: me.org_id,
+      orgId: gate.orgId,
     },
   })
 

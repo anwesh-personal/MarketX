@@ -283,9 +283,15 @@ export class SatelliteSendOrchestrator {
 
   private async recordSends(db: any, satellite: Satellite, sendsCompleted: number) {
     const newDailySent = satellite.current_daily_sent + sendsCompleted
-    const newWarmupDay = satellite.warmup_day < satellite.warmup_target_days
-      ? satellite.warmup_day + 1
-      : satellite.warmup_day
+
+    // Advance warmup_day only once per calendar day.
+    // The daily reset cron sets current_daily_sent to 0 at midnight UTC.
+    // So if current_daily_sent was 0 before this send, this is the first send of the day.
+    const isFirstSendOfDay = satellite.current_daily_sent === 0
+    const newWarmupDay =
+      isFirstSendOfDay && satellite.warmup_day < satellite.warmup_target_days
+        ? satellite.warmup_day + 1
+        : satellite.warmup_day
 
     const statusTransition =
       satellite.status === 'warming' && newWarmupDay >= satellite.warmup_target_days

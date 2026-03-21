@@ -66,15 +66,8 @@ export async function POST(req: NextRequest) {
         const gate = await requireFeature(req, 'can_chat_brain')
         if (gate.denied) return gate.response
 
-        // 1. Authenticate and get context
-        const context = await getRequestContext(req)
-
-        if (!context) {
-            return NextResponse.json(
-                { error: 'Unauthorized - Please sign in' },
-                { status: 401 }
-            )
-        }
+        // gate already authenticated + resolved org — use directly
+        const context = { userId: gate.userId, orgId: gate.orgId }
 
         // 2. Validate request
         const body = await req.json()

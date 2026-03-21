@@ -7,7 +7,6 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Check,
   X,
   Edit,
   Save,
@@ -103,10 +102,12 @@ export default function PortalTiersPage() {
   const handleSave = async (partnerId: string) => {
     setSaving(true)
     try {
+      // Strip DB-internal fields — only send what the API upsert schema expects
+      const { id, created_at, updated_at, partner, partner_id, ...payload } = editState as any
       const res = await fetchWithAuth('/api/superadmin/portal-tiers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...editState, partner_id: partnerId }),
+        body: JSON.stringify({ ...payload, partner_id: partnerId }),
       })
       if (!res.ok) throw new Error('Failed to save')
       toast.success('Portal config updated')
