@@ -151,6 +151,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'Infrastructure' },
         { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'Infrastructure' },
         { name: 'Platform Config', href: '/superadmin/platform-config', icon: Settings, group: 'Infrastructure' },
+        { name: 'Portal Tiers', href: '/superadmin/portal-tiers', icon: Shield, group: 'Infrastructure' },
         { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'Infrastructure' },
         { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'Infrastructure' },
     ];
