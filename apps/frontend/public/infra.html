@@ -8,83 +8,84 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#050507;--s1:#0a0a10;--s2:#0f0f18;--s3:#161622;--s4:#1e1e30;
-  --b1:#1a1a2e;--b2:#2a2a44;--b3:#3a3a5a;
-  --t1:#f0f0f8;--t2:#b0b0c8;--t3:#707088;--t4:#484860;
-  --ax:#8b5cf6;--ax2:rgba(139,92,246,.1);--ax3:rgba(139,92,246,.25);
-  --rf:#06b6d4;--rf2:rgba(6,182,212,.1);--rf3:rgba(6,182,212,.25);
-  --mw:#f59e0b;--mw2:rgba(245,158,11,.1);--mw3:rgba(245,158,11,.25);
-  --sat:#ec4899;--sat2:rgba(236,72,153,.1);--sat3:rgba(236,72,153,.25);
-  --ok:#22c55e;--err:#ef4444;
+  --bg:#06060a;--s1:#0c0c14;--s2:#12121e;--s3:#1a1a2a;--s4:#222236;
+  --b1:#1e1e34;--b2:#2e2e4e;--b3:#404068;
+  --t1:#f4f4fc;--t2:#cccce0;--t3:#9a9ab4;--t4:#6e6e8a;
+  --ax:#8b5cf6;--ax2:rgba(139,92,246,.12);--ax3:rgba(139,92,246,.28);
+  --rf:#06b6d4;--rf2:rgba(6,182,212,.12);--rf3:rgba(6,182,212,.28);
+  --mw:#f59e0b;--mw2:rgba(245,158,11,.12);--mw3:rgba(245,158,11,.28);
+  --sat:#ec4899;--sat2:rgba(236,72,153,.12);--sat3:rgba(236,72,153,.28);
+  --ok:#34d399;--err:#f87171;
   --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
-  --r:14px;--r2:20px;
+  --r:12px;--r2:16px;
 }
 html{scroll-behavior:smooth;font-size:16px}
-body{font-family:var(--sans);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;line-height:1.6}
 ::selection{background:var(--ax);color:#fff}
-::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar{width:7px}
 ::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--b1);border-radius:3px}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--b3)}
 
-/* CANVAS */
 canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
 
 /* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(5,5,7,.7);backdrop-filter:blur(24px) saturate(1.6);border-bottom:1px solid rgba(255,255,255,.04)}
-.nl{font-family:var(--mono);font-size:.8rem;font-weight:600;color:var(--t2);letter-spacing:.04em}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,3vw,32px);background:rgba(6,6,10,.82);backdrop-filter:blur(24px) saturate(1.6);border-bottom:1px solid rgba(255,255,255,.06)}
+.nl{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--t2);letter-spacing:.04em}
 .nl span{color:var(--ax)}
-.nr{display:flex;gap:4px}
-.nr a{font-family:var(--mono);font-size:.82rem;font-weight:500;color:var(--t4);text-decoration:none;padding:6px 12px;border-radius:6px;transition:.2s;letter-spacing:.02em}
-.nr a:hover,.nr a.on{color:var(--t2);background:rgba(255,255,255,.04)}
+.nr{display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.nr::-webkit-scrollbar{display:none}
+.nr a{font-family:var(--mono);font-size:.78rem;font-weight:500;color:var(--t4);text-decoration:none;padding:7px 12px;border-radius:8px;transition:all .2s;letter-spacing:.02em;white-space:nowrap}
+.nr a:hover,.nr a.on{color:var(--t1);background:rgba(255,255,255,.06)}
 
 /* LAYOUT */
-.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 32px}
-section{padding:120px 0}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 clamp(16px,4vw,32px)}
+section{padding:100px 0}
 section:first-of-type{padding-top:140px}
 
 /* TYPO */
-.tag{font-family:var(--mono);font-size:.8rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:16px;display:inline-block}
-.tag.ax{color:var(--ax)}.tag.rf{color:var(--rf)}.tag.mw{color:var(--mw)}.tag.st{color:var(--sat)}.tag.nt{color:var(--t4)}
-h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:12px}
-.sub{color:var(--t3);font-size:1.05rem;line-height:1.65;max-width:640px;margin-bottom:48px}
+.tag{font-family:var(--mono);font-size:.78rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:20px;display:inline-block;padding:4px 12px;border-radius:6px;background:rgba(255,255,255,.03)}
+.tag.ax{color:var(--ax);background:var(--ax2)}.tag.rf{color:var(--rf);background:var(--rf2)}.tag.mw{color:var(--mw);background:var(--mw2)}.tag.st{color:var(--sat);background:var(--sat2)}.tag.nt{color:var(--t4)}
+h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:16px;color:var(--t1)}
+.sub{color:var(--t3);font-size:1rem;line-height:1.75;max-width:660px;margin-bottom:48px}
 
 /* HERO */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 32px 80px;position:relative;z-index:1}
-.hero .pill{font-family:var(--mono);font-size:.8rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ax);padding:6px 18px;border-radius:100px;border:1px solid var(--ax3);background:var(--ax2);margin-bottom:28px;animation:fu .7s ease both}
-.hero h1{font-size:clamp(2.8rem,7vw,5.5rem);font-weight:900;letter-spacing:-.04em;line-height:1;margin-bottom:20px;animation:fu .7s .1s ease both}
-.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--ax),var(--rf),var(--mw));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{color:var(--t3);font-size:1.1rem;max-width:580px;line-height:1.7;animation:fu .7s .2s ease both}
-.hstats{display:flex;gap:40px;margin-top:48px;animation:fu .7s .3s ease both;flex-wrap:wrap;justify-content:center}
-.hstat .v{font-family:var(--mono);font-size:2rem;font-weight:700}
-.hstat .l{font-family:var(--mono);font-size:.8rem;color:var(--t4);letter-spacing:.06em;margin-top:2px}
-@keyframes fu{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px clamp(16px,4vw,32px) 80px;position:relative;z-index:1}
+.hero .pill{font-family:var(--mono);font-size:.78rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ax);padding:8px 20px;border-radius:100px;border:1px solid var(--ax3);background:var(--ax2);margin-bottom:32px;animation:fu .7s ease both}
+.hero h1{font-size:clamp(2.4rem,6.5vw,5rem);font-weight:900;letter-spacing:-.04em;line-height:1.05;margin-bottom:24px;animation:fu .7s .1s ease both}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--ax),var(--rf),var(--mw));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{color:var(--t3);font-size:1.05rem;max-width:600px;line-height:1.8;animation:fu .7s .2s ease both}
+.hstats{display:flex;gap:32px;margin-top:52px;animation:fu .7s .3s ease both;flex-wrap:wrap;justify-content:center}
+.hstat{text-align:center;min-width:100px}
+.hstat .v{font-family:var(--mono);font-size:1.8rem;font-weight:700}
+.hstat .l{font-family:var(--mono);font-size:.76rem;color:var(--t4);letter-spacing:.06em;margin-top:4px}
+@keyframes fu{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 
 /* CARD */
-.card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:28px;transition:.3s}
-.card:hover{border-color:var(--b2);transform:translateY(-2px)}
+.card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:24px 28px;transition:all .3s ease}
+.card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
 
 /* GRID */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-.g5{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.g5{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
 
 /* SPEC BLOCK */
-.sb{background:var(--s1);border-radius:var(--r);padding:16px}
-.sb .k{font-family:var(--mono);font-size:.8rem;color:var(--t4);letter-spacing:.04em;margin-bottom:2px}
-.sb .v{font-family:var(--mono);font-size:.95rem;font-weight:600}
+.sb{background:var(--s1);border-radius:var(--r);padding:16px 18px;border:1px solid rgba(255,255,255,.03)}
+.sb .k{font-family:var(--mono);font-size:.76rem;color:var(--t4);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.sb .v{font-family:var(--mono);font-size:.92rem;font-weight:600;color:var(--t1)}
 
 /* ARCH DIAGRAM */
 #archDiag{position:relative;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:40px;min-height:700px;overflow:hidden}
 .anode{position:absolute;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:20px;width:280px;cursor:grab;user-select:none;z-index:2;transition:box-shadow .3s,border-color .3s}
 .anode:active{cursor:grabbing}
 .anode:hover{border-color:var(--b2)}
-.anode .an-icon{font-size:1.4rem;margin-bottom:6px}
-.anode .an-name{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:3px}
-.anode .an-sub{font-family:var(--mono);font-size:.78rem;color:var(--t4);letter-spacing:.04em;margin-bottom:10px}
-.anode .an-desc{font-size:.9rem;color:var(--t3);line-height:1.5;margin-bottom:12px}
-.anode .an-btn{font-family:var(--mono);font-size:.8rem;font-weight:600;padding:5px 14px;border-radius:6px;border:none;cursor:pointer;transition:.2s;letter-spacing:.02em}
+.anode .an-icon{font-size:1.4rem;margin-bottom:8px}
+.anode .an-name{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:4px}
+.anode .an-sub{font-family:var(--mono);font-size:.76rem;color:var(--t4);letter-spacing:.04em;margin-bottom:12px}
+.anode .an-desc{font-size:.88rem;color:var(--t3);line-height:1.6;margin-bottom:14px}
+.anode .an-btn{font-family:var(--mono);font-size:.78rem;font-weight:600;padding:6px 16px;border-radius:8px;border:none;cursor:pointer;transition:all .2s;letter-spacing:.02em}
 .anode.c-ax{border-top:2px solid var(--ax)}.anode.c-ax:hover{box-shadow:0 0 40px var(--ax2)}
 .anode.c-ax .an-name{color:var(--ax)}.anode.c-ax .an-btn{background:var(--ax2);color:var(--ax)}
 .anode.c-ax .an-btn:hover{background:var(--ax);color:#fff}
@@ -97,111 +98,150 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
 .anode.c-sat{border-top:2px solid var(--sat)}.anode.c-sat:hover{box-shadow:0 0 40px var(--sat2)}
 .anode.c-sat .an-name{color:var(--sat)}.anode.c-sat .an-btn{background:var(--sat2);color:var(--sat)}
 .anode.c-sat .an-btn:hover{background:var(--sat);color:#fff}
-.conn-lbl{position:absolute;z-index:3;font-family:var(--mono);font-size:.76rem;padding:3px 8px;border-radius:4px;background:var(--s2);border:1px solid var(--b1);color:var(--t4);pointer-events:none;white-space:nowrap}
+.conn-lbl{position:absolute;z-index:3;font-family:var(--mono);font-size:.74rem;padding:4px 10px;border-radius:6px;background:var(--s2);border:1px solid var(--b1);color:var(--t4);pointer-events:none;white-space:nowrap}
 
 /* SATELLITE VPS */
-.sat-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:20px;transition:.3s;cursor:pointer}
-.sat-card:hover{border-color:var(--sat);box-shadow:0 0 30px var(--sat2);transform:translateY(-2px)}
-.sat-card .sc-ip{font-family:var(--mono);font-size:.84rem;color:var(--sat);margin-bottom:2px}
+.sat-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:20px;transition:all .3s;cursor:pointer}
+.sat-card:hover{border-color:var(--sat);box-shadow:0 4px 24px var(--sat2);transform:translateY(-2px)}
+.sat-card .sc-ip{font-family:var(--mono);font-size:.84rem;color:var(--sat);margin-bottom:4px;font-weight:600}
 .sat-card .sc-provider{font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-bottom:12px}
-.sat-card .sc-domain{font-family:var(--mono);font-size:.88rem;color:var(--mw);margin-bottom:8px}
-.sat-card .sc-stack{font-family:var(--mono);font-size:.78rem;color:var(--t4);line-height:1.6}
-.sat-dots{display:flex;gap:5px;margin-top:12px}
-.sat-dot{width:22px;height:22px;border-radius:50%;background:var(--sat2);border:1px solid rgba(236,72,153,.2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.82rem;color:var(--sat);transition:.2s;position:relative}
-.sat-dot:hover{background:var(--sat);color:#fff;transform:scale(1.2)}
-.sat-dot .tt{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--s3);color:var(--t1);font-size:.78rem;padding:4px 8px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;transition:.15s;border:1px solid var(--b1)}
+.sat-card .sc-domain{font-family:var(--mono);font-size:.88rem;color:var(--mw);margin-bottom:8px;font-weight:600}
+.sat-card .sc-stack{font-family:var(--mono);font-size:.78rem;color:var(--t3);line-height:1.7}
+.sat-dots{display:flex;gap:5px;margin-top:14px;flex-wrap:wrap}
+.sat-dot{width:24px;height:24px;border-radius:50%;background:var(--sat2);border:1px solid rgba(236,72,153,.2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--sat);transition:all .2s;position:relative}
+.sat-dot:hover{background:var(--sat);color:#fff;transform:scale(1.15)}
+.sat-dot .tt{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--s3);color:var(--t1);font-size:.76rem;padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:.15s;border:1px solid var(--b1);box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .sat-dot:hover .tt{opacity:1}
 
 /* FLOW TIMELINE */
-.ftl{position:relative;padding-left:48px}
-.ftl::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:1.5px;background:linear-gradient(to bottom,var(--ax),var(--rf),var(--mw),var(--sat),var(--rf),var(--ax))}
-.fs{position:relative;margin-bottom:28px;padding:20px 24px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);opacity:0;transform:translateX(24px);transition:.5s}
+.ftl{position:relative;padding-left:52px}
+.ftl::before{content:'';position:absolute;left:19px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--ax),var(--rf),var(--mw),var(--sat),var(--rf),var(--ax));border-radius:1px}
+.fs{position:relative;margin-bottom:20px;padding:20px 24px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);opacity:0;transform:translateX(24px);transition:.5s}
 .fs.vis{opacity:1;transform:translateX(0)}
-.fs:hover{border-color:var(--b2)}
-.fs .fn{position:absolute;left:-40px;top:20px;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.8rem;font-weight:700}
-.fs .ft{font-family:var(--mono);font-size:.95rem;font-weight:700;margin-bottom:4px}
-.fs .fd{font-size:.92rem;color:var(--t3);line-height:1.55}
-.fs .fa{font-family:var(--mono);font-size:.8rem;margin-top:8px;padding:6px 10px;background:rgba(0,0,0,.3);border-radius:4px;color:var(--ok);display:inline-block}
+.fs:hover{border-color:var(--b2);box-shadow:0 4px 20px rgba(0,0,0,.25)}
+.fs .fn{position:absolute;left:-42px;top:20px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.78rem;font-weight:700;box-shadow:0 0 0 3px var(--bg)}
+.fs .ft{font-family:var(--mono);font-size:.92rem;font-weight:700;margin-bottom:6px;color:var(--t1)}
+.fs .fd{font-size:.9rem;color:var(--t3);line-height:1.65}
+.fs .fa{font-family:var(--mono);font-size:.78rem;margin-top:10px;padding:7px 12px;background:rgba(0,0,0,.35);border-radius:6px;color:var(--ok);display:inline-block;border:1px solid rgba(52,211,153,.1)}
 .fs.c-ax .fn{background:var(--ax);color:#fff}
 .fs.c-rf .fn{background:var(--rf);color:#000}
 .fs.c-mw .fn{background:var(--mw);color:#000}
 .fs.c-sat .fn{background:var(--sat);color:#fff}
 
 /* TABLE */
-.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--s1);border-radius:var(--r);overflow:hidden;border:1px solid var(--b1)}
-.tbl thead th{padding:14px 20px;text-align:left;font-family:var(--mono);font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);background:var(--s2);border-bottom:1px solid var(--b1)}
-.tbl tbody td{padding:14px 20px;font-size:.92rem;border-bottom:1px solid rgba(255,255,255,.02);vertical-align:top}
+.tbl-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r);border:1px solid var(--b1)}
+.tbl{width:100%;border-collapse:separate;border-spacing:0;background:var(--s1);min-width:600px}
+.tbl thead th{padding:14px 20px;text-align:left;font-family:var(--mono);font-size:.76rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t4);background:var(--s2);border-bottom:1px solid var(--b1);white-space:nowrap}
+.tbl tbody td{padding:14px 20px;font-size:.9rem;color:var(--t2);border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
 .tbl tbody tr:last-child td{border-bottom:none}
-.tbl tbody tr:hover td{background:rgba(255,255,255,.01)}
-.tbl .price{font-family:var(--mono);font-weight:700;color:var(--ok)}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.02)}
+.tbl .price{font-family:var(--mono);font-weight:700;color:var(--ok);white-space:nowrap}
 
 /* QUEUE GRID */
-.qc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:16px;transition:.3s}
-.qc:hover{border-color:var(--ax);box-shadow:0 0 20px var(--ax2)}
-.qc .qn{font-family:var(--mono);font-size:.86rem;color:var(--ax);font-weight:600;margin-bottom:4px}
-.qc .qd{font-size:.88rem;color:var(--t3);margin-bottom:10px;line-height:1.4}
-.qc .qm{font-family:var(--mono);font-size:.78rem;color:var(--t4);display:flex;gap:8px}
-.qc .qm span{background:rgba(139,92,246,.06);padding:2px 6px;border-radius:3px}
+.qc{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:18px;transition:all .3s}
+.qc:hover{border-color:var(--ax);box-shadow:0 4px 20px var(--ax2)}
+.qc .qn{font-family:var(--mono);font-size:.84rem;color:var(--ax);font-weight:600;margin-bottom:6px}
+.qc .qd{font-size:.88rem;color:var(--t3);margin-bottom:10px;line-height:1.5}
+.qc .qm{font-family:var(--mono);font-size:.76rem;color:var(--t4);display:flex;gap:8px}
+.qc .qm span{background:rgba(139,92,246,.08);padding:3px 8px;border-radius:4px}
 
 /* SCHEMA ACCORDION */
 .sch{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
-.sch-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;transition:.15s}
+.sch-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;transition:.15s}
 .sch-h:hover{background:var(--s3)}
-.sch-h .sn{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--rf)}
+.sch-h .sn{font-family:var(--mono);font-size:.82rem;font-weight:600;color:var(--rf)}
 .sch-h .se{font-family:var(--mono);font-size:.78rem;color:var(--t4)}
 .sch-h .chv{color:var(--t4);transition:.3s;font-size:.9rem}
 .sch-h.open .chv{transform:rotate(180deg)}
 .sch-b{max-height:0;overflow:hidden;transition:max-height .35s ease}
-.sch-b.open{max-height:500px}
+.sch-b.open{max-height:600px;overflow-y:auto}
 .sch-b table{width:100%;border-collapse:collapse}
-.sch-b th{padding:8px 20px;text-align:left;font-family:var(--mono);font-size:.76rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t4);background:var(--s3)}
-.sch-b td{padding:8px 20px;font-family:var(--mono);font-size:.86rem;border-bottom:1px solid rgba(255,255,255,.02)}
+.sch-b th{padding:10px 20px;text-align:left;font-family:var(--mono);font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t4);background:var(--s3)}
+.sch-b td{padding:10px 20px;font-family:var(--mono);font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.03);color:var(--t2)}
 .sch-b td:first-child{color:var(--rf)}
 
 /* DNS */
-.dns{background:var(--s2);border-radius:var(--r);padding:24px;border-left:3px solid var(--t4);margin-bottom:16px;transition:.3s}
-.dns:hover{transform:translateX(4px)}
+.dns{position:relative;background:var(--s2);border-radius:var(--r2);padding:28px 28px 28px 32px;border-left:4px solid var(--t4);margin-bottom:20px;transition:all .3s;overflow:hidden}
+.dns:hover{transform:translateX(4px);box-shadow:0 4px 24px rgba(0,0,0,.25)}
 .dns.spf{border-left-color:var(--ax)}.dns.dkim{border-left-color:var(--sat)}.dns.dmarc{border-left-color:var(--mw)}.dns.ptr{border-left-color:var(--ok)}.dns.mx{border-left-color:var(--rf)}
-.dns h3{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:6px}
-.dns .kid{font-size:.92rem;padding:10px 14px;background:rgba(34,197,94,.05);border-radius:6px;border:1px solid rgba(34,197,94,.12);color:var(--ok);margin-bottom:12px;font-style:italic;line-height:1.5}
-.dns .exp{color:var(--t3);font-size:.92rem;margin-bottom:12px;line-height:1.5}
-.dns pre{font-family:var(--mono);font-size:.88rem;background:#000;padding:12px 16px;border-radius:6px;color:#a5b4fc;overflow-x:auto;white-space:pre;line-height:1.6}
+.dns h3{font-family:var(--mono);font-size:1.05rem;font-weight:700;margin-bottom:10px}
+.dns .kid{font-size:.9rem;padding:12px 16px;background:rgba(52,211,153,.06);border-radius:8px;border:1px solid rgba(52,211,153,.15);color:var(--ok);margin-bottom:14px;font-style:italic;line-height:1.65;word-wrap:break-word;overflow-wrap:break-word}
+.dns .exp{color:var(--t3);font-size:.9rem;margin-bottom:14px;line-height:1.65}
+.dns pre{font-family:var(--mono);font-size:.82rem;background:rgba(0,0,0,.5);padding:16px 20px;border-radius:8px;color:#a5b4fc;overflow-x:auto;white-space:pre-wrap;word-break:break-all;line-height:1.7;border:1px solid rgba(255,255,255,.04)}
 
 /* WARMUP */
-.wbar-wrap{display:flex;align-items:flex-end;gap:8px;height:320px;margin-top:24px}
-.wb{flex:1;min-width:0;border-radius:4px 4px 0 0;position:relative;transition:height 1s cubic-bezier(.34,1.56,.64,1);cursor:pointer}
+.wbar-wrap{display:flex;align-items:flex-end;gap:6px;height:300px;margin-top:24px;padding:0 4px}
+.wb{flex:1;min-width:0;border-radius:6px 6px 0 0;position:relative;transition:height 1s cubic-bezier(.34,1.56,.64,1);cursor:pointer}
 .wb:hover{filter:brightness(1.3)}
-.wb .wv{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.78rem;color:var(--t4);white-space:nowrap}
-.wb .wd{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.78rem;color:var(--t4);white-space:nowrap}
+.wb .wv{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.72rem;color:var(--t3);white-space:nowrap;font-weight:600}
+.wb .wd{position:absolute;bottom:-24px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:.72rem;color:var(--t4);white-space:nowrap;font-weight:500}
 
 /* MODAL */
-.mo{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.8);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
+.mo{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.82);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.3s}
 .mo.open{opacity:1;pointer-events:all}
-.mc{width:90%;max-width:860px;max-height:82vh;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow-y:auto;transform:scale(.94) translateY(16px);transition:.35s cubic-bezier(.16,1,.3,1)}
+.mc{width:92%;max-width:860px;max-height:85vh;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow-y:auto;transform:scale(.94) translateY(16px);transition:.35s cubic-bezier(.16,1,.3,1)}
 .mo.open .mc{transform:scale(1) translateY(0)}
 .mh{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;padding:20px 28px;background:var(--s2);border-bottom:1px solid var(--b1)}
-.mh h2{font-family:var(--mono);font-size:1.15rem;font-weight:700}
-.mx{background:none;border:1px solid var(--b1);color:var(--t3);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:.2s}
-.mx:hover{background:var(--err);border-color:var(--err);color:#fff}
+.mh h2{font-family:var(--mono);font-size:1.1rem;font-weight:700}
+.m-close{background:none;border:1px solid var(--b1);color:var(--t3);width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.m-close:hover{background:var(--err);border-color:var(--err);color:#fff}
 .mb{padding:28px}
-.mb h3{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--t2);margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--b1)}
+.mb h3{font-family:var(--mono);font-size:.92rem;font-weight:700;color:var(--t1);margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--b1)}
 .mb h3:first-child{margin-top:0}
-.mb .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.mb .tg{font-family:var(--mono);font-size:.78rem;font-weight:600;padding:3px 10px;border-radius:100px}
+.mb .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.mb .tg{font-family:var(--mono);font-size:.76rem;font-weight:600;padding:4px 12px;border-radius:100px}
 .mb .api{list-style:none}
-.mb .api li{font-family:var(--mono);font-size:.82rem;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.03);color:var(--t3)}
+.mb .api li{font-family:var(--mono);font-size:.82rem;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);color:var(--t3)}
 .mb .g2i{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.mb .ib{background:var(--s2);border-radius:8px;padding:14px}
-.mb .ib .ik{font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-bottom:2px}
-.mb .ib .iv{font-family:var(--mono);font-size:.82rem;font-weight:600}
+.mb .ib{background:var(--s2);border-radius:8px;padding:14px 16px;border:1px solid rgba(255,255,255,.03)}
+.mb .ib .ik{font-family:var(--mono);font-size:.76rem;color:var(--t4);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+.mb .ib .iv{font-family:var(--mono);font-size:.84rem;font-weight:600}
 
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .g4{grid-template-columns:repeat(2,1fr)}
+  #archDiag{min-height:auto;padding:20px}
+  .anode{position:relative!important;left:auto!important;top:auto!important;width:100%!important;margin-bottom:12px}
+  #archSvg{display:none}
+  .conn-lbl{display:none}
+  #archDiag{display:flex;flex-direction:column;gap:12px}
+}
 @media(max-width:768px){
-  .hstats{gap:20px}
-  .nr{display:none}
-  section{padding:80px 0}
+  nav{height:52px;padding:0 16px}
+  .nr{gap:0}
+  .nr a{font-size:.72rem;padding:5px 8px}
+  section{padding:60px 0}
+  section:first-of-type{padding-top:100px}
+  .hero{padding:100px 16px 60px;min-height:auto}
+  .hero h1{margin-bottom:20px}
+  .hstats{gap:16px}
+  .hstat .v{font-size:1.5rem}
+  h2{font-size:clamp(1.5rem,5vw,2.2rem)}
+  .sub{font-size:.92rem}
   .g2,.g3,.g4{grid-template-columns:1fr}
+  .g5{grid-template-columns:1fr}
+  .card{padding:20px}
+  .sb{padding:12px 14px}
+  .dns{padding:20px 20px 20px 24px}
+  .dns pre{font-size:.76rem;padding:12px 14px}
+  .ftl{padding-left:44px}
+  .fs{padding:16px 18px}
+  .fs .fn{left:-36px;width:24px;height:24px;font-size:.72rem}
+  .wbar-wrap{height:220px;gap:3px}
+  .wb .wv,.wb .wd{font-size:.64rem}
   .mb .g2i{grid-template-columns:1fr}
-  .anode{width:220px!important}
+  .mc{width:96%;max-height:90vh}
+  .mh{padding:16px 20px}
+  .mb{padding:20px}
+}
+@media(max-width:480px){
+  .nr{display:none}
+  .hero h1{font-size:2rem}
+  .hstats{flex-direction:column;gap:12px;align-items:center}
+  .hstat{display:flex;align-items:center;gap:10px}
+  .hstat .l{margin-top:0}
+  .sat-dots{gap:3px}
+  .sat-dot{width:20px;height:20px;font-size:.7rem}
 }
 </style>
 </head>
@@ -260,8 +300,8 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="g2">
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--rf);font-weight:600;margin-bottom:14px;letter-spacing:.06em">IP .66 — REFINERY NEXUS</div>
-      <div style="font-size:.9rem;color:var(--t3);line-height:1.6;margin-bottom:14px">Data warehouse. 10.5M+ leads currently ingested in ClickHouse — first batch only. Millions more records in the 5x5 Coop pipeline ready to flow in. Runs SMTP verification, catches webhooks from MailWizz, feeds analytics back to Axiom's Coach Agent.</div>
-      <div style="font-family:var(--mono);font-size:.8rem;color:var(--t4);line-height:1.8">
+      <div style="font-size:.9rem;color:var(--t2);line-height:1.7;margin-bottom:14px">Data warehouse. 10.5M+ leads currently ingested in ClickHouse — first batch only. Millions more records in the 5x5 Coop pipeline ready to flow in. Runs SMTP verification, catches webhooks from MailWizz, feeds analytics back to Axiom's Coach Agent.</div>
+      <div style="font-family:var(--mono);font-size:.8rem;color:var(--t3);line-height:1.9">
         Express 5 :4000 (PM2) &bull; ClickHouse :8123 (SSD)<br>
         MinIO :9002 (SATA) &bull; Nginx/Varnish &bull; CloudPanel :8443<br>
         Live at: <span style="color:var(--rf)">iiiemail.email</span>
@@ -269,8 +309,8 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     </div>
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--mw);font-weight:600;margin-bottom:14px;letter-spacing:.06em">IP .67 — MAILWIZZ ORCHESTRATOR</div>
-      <div style="font-size:.85rem;color:var(--t3);line-height:1.6;margin-bottom:14px">Campaign manager, NOT the sender. MailWizz manages lists, templates, and campaigns — then dispatches to satellite VPS boxes as "Delivery Servers". Think of it as the general giving orders.</div>
-      <div style="font-family:var(--mono);font-size:.8rem;color:var(--t4);line-height:1.8">
+      <div style="font-size:.9rem;color:var(--t2);line-height:1.7;margin-bottom:14px">Campaign manager, NOT the sender. MailWizz manages lists, templates, and campaigns — then dispatches to satellite VPS boxes as "Delivery Servers". Think of it as the general giving orders.</div>
+      <div style="font-family:var(--mono);font-size:.8rem;color:var(--t3);line-height:1.9">
         PHP 8.1 + ionCube &bull; Percona MySQL 8.4 :3306<br>
         Nginx via CloudPanel &bull; MailWizz 2.7.6<br>
         Live at: <span style="color:var(--mw)">mail.iiiemail.email</span><br>
@@ -281,7 +321,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
 
   <div class="card" style="margin-top:20px;border-left:2px solid var(--err)">
     <div style="font-family:var(--mono);font-size:.84rem;color:var(--err);font-weight:600;margin-bottom:8px">IMPORTANT DISTINCTION</div>
-    <div style="font-size:.88rem;color:var(--t2);line-height:1.65">The 14 IPs on this server (.66 through .78) are <strong>NOT used for sending emails</strong>. If you send from the same /28 subnet, Gmail sees all IPs as one identity. That defeats the purpose. The actual sending happens from <strong>separate satellite VPS boxes</strong> in completely different datacenters and subnets.</div>
+    <div style="font-size:.9rem;color:var(--t2);line-height:1.7">The 14 IPs on this server (.66 through .78) are <strong>NOT used for sending emails</strong>. If you send from the same /28 subnet, Gmail sees all IPs as one identity. That defeats the purpose. The actual sending happens from <strong>separate satellite VPS boxes</strong> in completely different datacenters and subnets.</div>
   </div>
 </section></div>
 
@@ -345,27 +385,27 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
         <span style="font-family:var(--mono);font-size:.84rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--ax2);color:var(--ax);white-space:nowrap">1. MarketX (Axiom)</span>
         <span style="color:var(--t4);font-size:1.2rem">&rarr;</span>
-        <span style="font-size:.92rem;color:var(--t2)">"Send this campaign to these 500 leads, use satellites 2 and 4, stay under daily cap"</span>
+        <span style="font-size:.9rem;color:var(--t2);line-height:1.5">"Send this campaign to these 500 leads, use satellites 2 and 4, stay under daily cap"</span>
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <span style="font-family:var(--mono);font-size:.84rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--mw2);color:var(--mw);white-space:nowrap">2. MailWizz (.67)</span>
+        <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--mw2);color:var(--mw);white-space:nowrap">2. MailWizz (.67)</span>
         <span style="color:var(--t4);font-size:1.2rem">&rarr;</span>
-        <span style="font-size:.92rem;color:var(--t2)">"Route batch A to Delivery Server 2 (satellite VPS), batch B to Delivery Server 4"</span>
+        <span style="font-size:.9rem;color:var(--t2);line-height:1.5">"Route batch A to Delivery Server 2 (satellite VPS), batch B to Delivery Server 4"</span>
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <span style="font-family:var(--mono);font-size:.84rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--sat2);color:var(--sat);white-space:nowrap">3. Satellite VPS</span>
+        <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--sat2);color:var(--sat);white-space:nowrap">3. Satellite VPS</span>
         <span style="color:var(--t4);font-size:1.2rem">&rarr;</span>
-        <span style="font-size:.92rem;color:var(--t2)">"Postfix sends email from my unique IP, OpenDKIM signs it, delivered to Gmail"</span>
+        <span style="font-size:.9rem;color:var(--t2);line-height:1.5">"Postfix sends email from my unique IP, OpenDKIM signs it, delivered to Gmail"</span>
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <span style="font-family:var(--mono);font-size:.84rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--rf2);color:var(--rf);white-space:nowrap">4. Refinery (.66)</span>
+        <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--rf2);color:var(--rf);white-space:nowrap">4. Refinery (.66)</span>
         <span style="color:var(--t4);font-size:1.2rem">&rarr;</span>
-        <span style="font-size:.92rem;color:var(--t2)">"Webhook received: john@company.com opened the email, clicked the CTA link"</span>
+        <span style="font-size:.9rem;color:var(--t2);line-height:1.5">"Webhook received: john@company.com opened the email, clicked the CTA link"</span>
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-        <span style="font-family:var(--mono);font-size:.84rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--ax2);color:var(--ax);white-space:nowrap">5. MarketX (Coach)</span>
+        <span style="font-family:var(--mono);font-size:.82rem;font-weight:700;padding:6px 16px;border-radius:8px;background:var(--ax2);color:var(--ax);white-space:nowrap">5. MarketX (Coach)</span>
         <span style="color:var(--t4);font-size:1.2rem">&rarr;</span>
-        <span style="font-size:.92rem;color:var(--t2)">"That subject line worked 3x better. Update Knowledge Base. Tomorrow's batch improves."</span>
+        <span style="font-size:.9rem;color:var(--t2);line-height:1.5">"That subject line worked 3x better. Update Knowledge Base. Tomorrow's batch improves."</span>
       </div>
     </div>
   </div>
@@ -373,7 +413,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="g2">
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--ax);font-weight:700;margin-bottom:10px">AXIOM'S BUILT-IN ORCHESTRATION TOOLS</div>
-      <div style="font-size:.9rem;color:var(--t3);line-height:1.7">
+      <div style="font-size:.9rem;color:var(--t2);line-height:1.8">
         <strong style="color:var(--t1)">SendPacingAgent</strong> — decides which satellite gets which emails, respects daily caps<br>
         <strong style="color:var(--t1)">MailWizzAdapter</strong> — dispatches campaigns to MailWizz via HMAC-SHA256 API<br>
         <strong style="color:var(--t1)">Coach Agent</strong> — reads engagement data from Refinery, updates Knowledge Base<br>
@@ -383,7 +423,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     </div>
     <div class="card">
       <div style="font-family:var(--mono);font-size:.84rem;color:var(--rf);font-weight:700;margin-bottom:10px">DATA PIPELINE (LEADS)</div>
-      <div style="font-size:.9rem;color:var(--t3);line-height:1.7">
+      <div style="font-size:.9rem;color:var(--t2);line-height:1.8">
         <strong style="color:var(--t1)">Currently ingested:</strong> 10.5M+ leads in ClickHouse (first batch only)<br>
         <strong style="color:var(--t1)">5x5 Coop pipeline:</strong> Millions more records ready — will pour in once infra goes live<br>
         <strong style="color:var(--t1)">Ingestion:</strong> CSV, CSV.gz, Parquet from S3/MinIO — batch insert 10K at a time<br>
@@ -403,19 +443,19 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="g5" id="satGrid"></div>
 
   <div class="g4" style="margin-top:32px">
-    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--sat)">50</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">total satellites</div></div>
-    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--mw)">3,000</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">max / satellite / day</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--sat)">50</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">total mailboxes</div></div>
+    <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--mw)">3,000</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">max / mailbox / day</div></div>
     <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--ok)">150,000</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">safe emails / day</div></div>
     <div class="card" style="text-align:center"><div style="font-family:var(--mono);font-size:2rem;font-weight:700;color:var(--err)">$50</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:2px">cost if one burns</div></div>
   </div>
 
   <div class="card" style="margin-top:20px;border-left:2px solid var(--sat)">
     <div style="font-family:var(--mono);font-size:.84rem;color:var(--sat);font-weight:600;margin-bottom:8px">WHY SEPARATE VPS, NOT SAME-BOX IPS?</div>
-    <div style="font-size:.85rem;color:var(--t3);line-height:1.65">
+    <div style="font-size:.9rem;color:var(--t2);line-height:1.75">
       <strong style="color:var(--t1)">Subnet fingerprinting:</strong> Gmail sees that 107.172.56.68, .69, .70 are all in the same /28 block. Same ASN, same datacenter. Red flag.<br>
       <strong style="color:var(--t1)">Collateral damage:</strong> One blacklisted IP can taint the entire /28 subnet.<br>
       <strong style="color:var(--t1)">Single point of failure:</strong> Server down = ALL satellites down.<br>
-      <strong style="color:var(--t1)">Disposability:</strong> A $50/mo SMTP box is replaceable in hours. Your $90/mo command center with all your data is not.
+      <strong style="color:var(--t1)">Disposability:</strong> A $50/mo SMTP box is replaceable in hours. Your ~$65-90/mo command center with all your data is not.
     </div>
   </div>
 </section></div>
@@ -434,7 +474,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
     <div class="fs c-rf" data-a><div class="fn">6</div><div class="ft">Webhook to Refinery</div><div class="fd">MailWizz fires webhooks to Refinery (iiiemail.email) on every open, click, bounce, reply, complaint, unsubscribe.</div><div class="fa">POST iiiemail.email/api/v1/webhooks/{event}</div></div>
     <div class="fs c-rf" data-a><div class="fn">7</div><div class="ft">ClickHouse Storage</div><div class="fd">Events land in engagement_events (partitioned monthly, on SSD). Hard bounces auto-update universal_person status.</div><div class="fa">INSERT INTO refinery.engagement_events</div></div>
     <div class="fs c-ax" data-a><div class="fn">8</div><div class="ft">Coach Agent Learns</div><div class="fd">MarketingCoachProcessor reads engagement data. Updates Knowledge Base with winning patterns. Tomorrow's emails improve.</div><div class="fa">learning-loop &rarr; coach_analysis &rarr; KB update</div></div>
-    <div class="fs c-sat" data-a><div class="fn">9</div><div class="ft">Auto-Heal</div><div class="fd">Bounce &gt;2% or spam &gt;5%? Satellite auto-paused. Traffic re-routed. Burned VPS killed and replaced with a fresh $5 box.</div><div class="fa">SendPacingAgent &rarr; pause &rarr; replace</div></div>
+    <div class="fs c-sat" data-a><div class="fn">9</div><div class="ft">Auto-Heal</div><div class="fd">Bounce &gt;2% or spam &gt;5%? Satellite auto-paused. Traffic re-routed. Burned VPS killed and replaced with a fresh $50 box.</div><div class="fa">SendPacingAgent &rarr; pause &rarr; replace</div></div>
   </div>
 </section></div>
 
@@ -456,6 +496,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="tag nt">05 — real costs</div>
   <h2>Monthly Infrastructure</h2>
   <p class="sub">Every number is what we actually pay or will pay. No hypothetical providers.</p>
+  <div class="tbl-wrap">
   <table class="tbl">
     <thead><tr><th>service</th><th>provider</th><th>details</th><th>monthly</th></tr></thead>
     <tbody>
@@ -470,6 +511,7 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
       <tr><td><strong style="color:var(--mw)">5 Outreach Domains</strong></td><td>Namecheap / Cloudflare</td><td>Mixed TLDs, aged preferred — $15/yr avg each</td><td class="price">~$6.25/mo ($75/yr)</td></tr>
     </tbody>
   </table>
+  </div>
   <div style="display:flex;gap:16px;margin-top:20px;flex-wrap:wrap">
     <div class="card" style="flex:1;min-width:200px;text-align:center"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">$326 – $436/mo</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">total monthly infrastructure</div></div>
     <div class="card" style="flex:1;min-width:200px;text-align:center;border-color:rgba(34,197,94,.2)"><div style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--ok)">~$7K</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-top:4px">refinery nexus build value (insourced + IDE)</div></div>
@@ -509,30 +551,57 @@ h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-.03em;line-hei
   <div class="tag nt">08 — dns mastery</div>
   <h2>DNS Configuration</h2>
   <p class="sub">Every satellite domain needs these 5 records. PTR is set at the satellite VPS provider's dashboard — NOT in Cloudflare.</p>
-  <div class="dns spf"><h3 style="color:var(--ax)">1. SPF</h3><div class="kid">Like a guest list. SPF tells Gmail: "Only this satellite VPS IP is allowed to send for this domain."</div><div class="exp">Authorize the satellite VPS IP — NOT the command center IP.</div><pre>Type: TXT  |  Name: @
-v=spf1 mx ip4:{satellite_vps_ip} ~all</pre></div>
-  <div class="dns dkim"><h3 style="color:var(--sat)">2. DKIM</h3><div class="kid">A wax seal on every letter. Gmail checks if it's intact. If tampered, the seal breaks.</div><div class="exp">Generated by OpenDKIM on each satellite VPS. Each domain has its own key pair.</div><pre>Type: TXT  |  Name: mail._domainkey
+  <div class="dns spf">
+    <h3 style="color:var(--ax)">1. SPF</h3>
+    <div class="kid">Like a guest list. SPF tells Gmail: "Only this satellite VPS IP is allowed to send for this domain."</div>
+    <div class="exp">Authorize the satellite VPS IP — NOT the command center IP.</div>
+    <pre>Type: TXT  |  Name: @
+v=spf1 mx ip4:{satellite_vps_ip} ~all</pre>
+  </div>
+
+  <div class="dns dkim">
+    <h3 style="color:var(--sat)">2. DKIM</h3>
+    <div class="kid">A wax seal on every letter. Gmail checks if it's intact. If tampered, the seal breaks.</div>
+    <div class="exp">Generated by OpenDKIM on each satellite VPS. Each domain has its own key pair.</div>
+    <pre>Type: TXT  |  Name: mail._domainkey
 v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w...
 
-Generated on satellite VPS: opendkim-genkey -s mail -d domain.com</pre></div>
-  <div class="dns dmarc"><h3 style="color:var(--mw)">3. DMARC</h3><div class="kid">The school principal. If SPF or DKIM fails, DMARC decides: quarantine or reject.</div><pre>Type: TXT  |  Name: _dmarc
-v=DMARC1; p=quarantine; pct=100; aspf=r; adkim=r;</pre></div>
-  <div class="dns ptr"><h3 style="color:var(--ok)">4. PTR / rDNS</h3><div class="kid">Gmail asks: "Does this satellite IP really belong to mail.domain.com?" PTR is the background check.</div><div class="exp"><strong>Set at the satellite VPS provider's dashboard</strong> — each provider has their own rDNS panel.</div><pre>{satellite_vps_ip}  ──►  mail.{domain}.com
+Generated on satellite VPS: opendkim-genkey -s mail -d domain.com</pre>
+  </div>
 
-Set in: RackNerd VPS panel / BuyVM panel / Contabo panel</pre></div>
-  <div class="dns mx"><h3 style="color:var(--rf)">5. MX Record</h3><div class="kid">The mailing address for replies. Tells the internet where to deliver incoming mail.</div><pre>Type: MX  |  Name: @  |  Priority: 10
-Value: mail.{domain}.com</pre></div>
+  <div class="dns dmarc">
+    <h3 style="color:var(--mw)">3. DMARC</h3>
+    <div class="kid">The school principal. If SPF or DKIM fails, DMARC decides: quarantine or reject.</div>
+    <pre>Type: TXT  |  Name: _dmarc
+v=DMARC1; p=quarantine; pct=100; aspf=r; adkim=r;</pre>
+  </div>
+
+  <div class="dns ptr">
+    <h3 style="color:var(--ok)">4. PTR / rDNS</h3>
+    <div class="kid">Gmail asks: "Does this satellite IP really belong to mail.domain.com?" PTR is the background check.</div>
+    <div class="exp"><strong>Set at the satellite VPS provider's dashboard</strong> — each provider has their own rDNS panel.</div>
+    <pre>{satellite_vps_ip}  ──►  mail.{domain}.com
+
+Set in: Satellite VPS provider's control panel (rDNS / PTR settings)</pre>
+  </div>
+
+  <div class="dns mx">
+    <h3 style="color:var(--rf)">5. MX Record</h3>
+    <div class="kid">The mailing address for replies. Tells the internet where to deliver incoming mail.</div>
+    <pre>Type: MX   |  Name: @   |  Priority: 10
+Value: mail.{domain}.com</pre>
+  </div>
 </section></div>
 
 <!-- ======== WARMUP ======== -->
 <div class="wrap"><section id="warmup">
   <div class="tag nt">09 — warmup</div>
   <h2>14-Day Velocity Ramp</h2>
-  <p class="sub">Each satellite VPS starts at 15/day and ramps to 3,000. Auto-pause at &gt;2% bounce or &gt;5% spam.</p>
+  <p class="sub">Each mailbox starts at 15/day and ramps to 3,000. 10 mailboxes per satellite = 30K/day per box at full ramp. Auto-pause at &gt;2% bounce or &gt;5% spam.</p>
   <div class="card">
-    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-bottom:8px"><span>per satellite vps</span><span>pause: bounce &gt;2% | spam &gt;5%</span></div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.78rem;color:var(--t4);margin-bottom:8px"><span>per mailbox (×10 per satellite)</span><span>pause: bounce &gt;2% | spam &gt;5%</span></div>
     <div class="wbar-wrap" id="wChart"></div>
-    <div style="display:flex;gap:24px;justify-content:center;margin-top:40px;font-family:var(--mono);font-size:.8rem;color:var(--t4)"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--ax)"></span>single satellite</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--sat)"></span>full fleet &times;50</span></div>
+    <div style="display:flex;gap:24px;justify-content:center;margin-top:40px;font-family:var(--mono);font-size:.8rem;color:var(--t4)"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--ax)"></span>single satellite</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--sat)"></span>full fleet &times;5</span></div>
   </div>
 </section></div>
 
@@ -610,18 +679,18 @@ new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)document.querySele
 /* ===== MODALS ===== */
 const mo=document.getElementById('mo'),mc=document.getElementById('mc');
 const md={
-axiom:{t:'Axiom (MarketX)',c:'#8b5cf6',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--ax2);color:var(--ax)">Next.js 14</span><span class="tg" style="background:var(--ax2);color:var(--ax)">BullMQ 5.67</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ioredis 5.9</span><span class="tg" style="background:var(--ax2);color:var(--ax)">Supabase</span><span class="tg" style="background:var(--ax2);color:var(--ax)">OpenAI 6.16</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ReactFlow</span></div><h3>deployment</h3><div class="g2i"><div class="ib"><div class="ik">frontend</div><div class="iv" style="color:var(--ok)">Vercel</div></div><div class="ib"><div class="ik">workers</div><div class="iv" style="color:var(--ok)">Railway :3100</div></div><div class="ib"><div class="ik">database</div><div class="iv">Supabase (uvrpucqzlqhsuttbczbo)</div></div><div class="ib"><div class="ik">redis</div><div class="iv">Railway Redis (axiom:)</div></div></div><h3>key components</h3><ul class="api"><li>Writer Engine — POST /api/writer/execute</li><li>Coach Agent — MarketingCoachProcessor</li><li>MailWizz Adapter — HMAC-SHA256</li><li>Mastery Agents — 8 concurrent (pacing, timing, angle...)</li><li>8 MTA providers supported (provider-agnostic via signal_event)</li></ul><h3>pacing config</h3><ul class="api"><li>send_pacing_daily_cap — 3,000/satellite</li><li>send_pacing_warmup_default_days — 14</li><li>send_pacing_ramp_strategy — exponential</li><li>auto-pause: bounce &gt;2% or spam &gt;5%</li></ul></div>`},
+axiom:{t:'Axiom (MarketX)',c:'#8b5cf6',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--ax2);color:var(--ax)">Next.js 14</span><span class="tg" style="background:var(--ax2);color:var(--ax)">BullMQ 5.67</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ioredis 5.9</span><span class="tg" style="background:var(--ax2);color:var(--ax)">Supabase</span><span class="tg" style="background:var(--ax2);color:var(--ax)">OpenAI 6.16</span><span class="tg" style="background:var(--ax2);color:var(--ax)">ReactFlow</span></div><h3>deployment</h3><div class="g2i"><div class="ib"><div class="ik">frontend</div><div class="iv" style="color:var(--ok)">Vercel</div></div><div class="ib"><div class="ik">workers</div><div class="iv" style="color:var(--ok)">Railway :3100</div></div><div class="ib"><div class="ik">database</div><div class="iv">Supabase (uvrpucqzlqhsuttbczbo)</div></div><div class="ib"><div class="ik">redis</div><div class="iv">Railway Redis (axiom:)</div></div></div><h3>key components</h3><ul class="api"><li>Writer Engine — POST /api/writer/execute</li><li>Coach Agent — MarketingCoachProcessor</li><li>MailWizz Adapter — HMAC-SHA256</li><li>Mastery Agents — 8 concurrent (pacing, timing, angle...)</li><li>8 MTA providers supported (provider-agnostic via signal_event)</li></ul><h3>pacing config</h3><ul class="api"><li>send_pacing_daily_cap — 3,000/mailbox (30K/satellite)</li><li>send_pacing_warmup_default_days — 14</li><li>send_pacing_ramp_strategy — exponential</li><li>auto-pause: bounce &gt;2% or spam &gt;5%</li></ul></div>`},
 refinery:{t:'Refinery Nexus',c:'#06b6d4',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--rf2);color:var(--rf)">Express 5.0.1</span><span class="tg" style="background:var(--rf2);color:var(--rf)">TypeScript 5.7</span><span class="tg" style="background:var(--rf2);color:var(--rf)">ClickHouse 1.8</span><span class="tg" style="background:var(--rf2);color:var(--rf)">MinIO (S3)</span><span class="tg" style="background:var(--rf2);color:var(--rf)">Zod 4.3</span><span class="tg" style="background:var(--rf2);color:var(--rf)">React 19 + Vite 7</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">server</div><div class="iv" style="color:var(--rf)">107.172.56.66</div></div><div class="ib"><div class="ik">live url</div><div class="iv" style="color:var(--rf)">iiiemail.email</div></div><div class="ib"><div class="ik">clickhouse</div><div class="iv">:8123 / 24GB mem / SSD</div></div><div class="ib"><div class="ik">minio</div><div class="iv">:9002 / refinery-data / SATA</div></div></div><h3>smtp verification (built-in, 7-step)</h3><ul class="api"><li>1. Syntax → 2. Disposable (10K+) → 3. Free provider</li><li>4. Role account → 5. MX resolution (cached)</li><li>6. Catch-all → 7. SMTP RCPT TO probe</li><li>250=valid | 550=invalid | 450=greylisted | 452=full</li></ul><h3>build value if outsourced</h3><div class="ib" style="background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.12)"><div class="ik" style="color:var(--ok)">build value (insourced + IDE)</div><div class="iv" style="color:var(--ok);font-size:1.2rem">~$7,000</div></div></div>`},
 mailwizz:{t:'MailWizz Orchestrator',c:'#f59e0b',h:`<div class="mb"><h3>tech stack</h3><div class="tags"><span class="tg" style="background:var(--mw2);color:var(--mw)">PHP 8.1</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Percona MySQL 8.4</span><span class="tg" style="background:var(--mw2);color:var(--mw)">Nginx (CloudPanel)</span><span class="tg" style="background:var(--mw2);color:var(--mw)">ionCube</span><span class="tg" style="background:var(--mw2);color:var(--mw)">MailWizz 2.7.6</span></div><h3>where it runs</h3><div class="g2i"><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--mw)">107.172.56.67</div></div><div class="ib"><div class="ik">live url</div><div class="iv" style="color:var(--mw)">mail.iiiemail.email</div></div><div class="ib"><div class="ik">role</div><div class="iv">Campaign Manager (NOT sender)</div></div><div class="ib"><div class="ik">managed by</div><div class="iv">CloudPanel :8443</div></div><div class="ib"><div class="ik">license</div><div class="iv" style="color:var(--mw)">$299 one-time</div></div></div><h3>how it connects to satellites</h3><ul class="api"><li>MailWizz Admin → Delivery Servers → Add External SMTP</li><li>Each satellite VPS = one "Delivery Server" entry</li><li>Campaigns assigned to specific delivery servers</li><li>MailWizz rotates based on rules + capacity</li></ul><h3>webhooks → refinery</h3><ul class="api"><li>POST iiiemail.email/api/v1/webhooks/bounce</li><li>POST iiiemail.email/api/v1/webhooks/open</li><li>POST iiiemail.email/api/v1/webhooks/click</li><li>POST iiiemail.email/api/v1/webhooks/complaint</li><li>POST iiiemail.email/api/v1/webhooks/unsubscribe</li></ul></div>`},
 satellites:{t:'Satellite SMTP Fleet',c:'#ec4899',h:`<div class="mb"><h3>the concept</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.6;margin-bottom:16px">Each satellite is a <strong style="color:var(--t1)">separate, dedicated SMTP server</strong> from a trusted vendor. NOT a different IP on the same server. True physical + network isolation. If one burns, you lose $50 — not your infrastructure.</div><h3>per satellite specs</h3><div class="g2i"><div class="ib"><div class="ik">type</div><div class="iv">Optimized SMTP Box</div></div><div class="ib"><div class="ik">rated capacity</div><div class="iv" style="color:var(--ok)">30,000 emails/day</div></div><div class="ib"><div class="ik">ip</div><div class="iv">1 dedicated IPv4</div></div><div class="ib"><div class="ik">port 25</div><div class="iv" style="color:var(--ok)">Open + optimized</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">$50/mo</div></div><div class="ib"><div class="ik">stack</div><div class="iv">Postfix + OpenDKIM + hardened</div></div><div class="ib"><div class="ik">our usage</div><div class="iv">10 mailboxes × 3K = 30K/day</div></div><div class="ib"><div class="ik">source</div><div class="iv">Trusted vendor (colleague)</div></div></div><h3>the math</h3><div style="font-size:.92rem;color:var(--t3);line-height:1.7;margin-bottom:12px"><strong style="color:var(--t1)">Box capacity:</strong> 30,000 emails/day<br><strong style="color:var(--t1)">Tommy's model:</strong> 3,000 per mailbox × 10 mailboxes = 30,000/day<br><strong style="color:var(--t1)">Result:</strong> Each box runs at exactly its rated capacity. Not wasteful — precise.<br><strong style="color:var(--t1)">5 boxes:</strong> 150,000 safe emails/day at full ramp</div><h3>why these boxes work</h3><ul class="api"><li>Pre-configured for email sending (Postfix + DKIM already optimized)</li><li>Clean IPs from trusted source (not random cloud provider IPs)</li><li>rDNS/PTR control included</li><li>Port 25 guaranteed open (many cloud providers block it)</li><li>$50 per dedicated IP — disposable enough to burn, quality enough to deliver</li></ul></div>`}
 };
-sats.forEach((s,i)=>{md['sat'+i]={t:'Satellite VPS '+(i+1)+': '+s.domain,c:'#ec4899',h:`<div class="mb"><h3>config</h3><div class="g2i"><div class="ib"><div class="ik">provider</div><div class="iv">${s.provider}</div></div><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--sat)">${s.ip}</div></div><div class="ib"><div class="ik">domain</div><div class="iv" style="color:var(--mw)">${s.domain}</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">${s.cost}</div></div></div><h3>10 mailboxes</h3><ul class="api">${mbn.map((n,j)=>`<li>Satellite ${i*10+j+1}: <strong style="color:var(--sat)">${n}@${s.domain}</strong> — 3,000/day</li>`).join('')}</ul><h3>dns records</h3><div style="font-family:var(--mono);font-size:.8rem;background:#000;padding:12px;border-radius:6px;color:#a5b4fc;white-space:pre;overflow-x:auto;line-height:1.6">SPF:   v=spf1 mx ip4:${s.ip} ~all
+sats.forEach((s,i)=>{md['sat'+i]={t:'Satellite VPS '+(i+1)+': '+s.domain,c:'#ec4899',h:`<div class="mb"><h3>config</h3><div class="g2i"><div class="ib"><div class="ik">provider</div><div class="iv">${s.provider}</div></div><div class="ib"><div class="ik">ip</div><div class="iv" style="color:var(--sat)">${s.ip}</div></div><div class="ib"><div class="ik">domain</div><div class="iv" style="color:var(--mw)">${s.domain}</div></div><div class="ib"><div class="ik">cost</div><div class="iv" style="color:var(--ok)">${s.cost}</div></div></div><h3>10 mailboxes</h3><ul class="api">${mbn.map((n,j)=>`<li>Mailbox ${j+1}: <strong style="color:var(--sat)">${n}@${s.domain}</strong> — 3,000/day</li>`).join('')}</ul><h3>dns records</h3><div style="font-family:var(--mono);font-size:.8rem;background:#000;padding:12px;border-radius:6px;color:#a5b4fc;white-space:pre;overflow-x:auto;line-height:1.6">SPF:   v=spf1 mx ip4:${s.ip} ~all
 DKIM:  mail._domainkey → generated on this VPS
 DMARC: _dmarc → v=DMARC1; p=quarantine;
 MX:    @ → 10 mail.${s.domain}
 PTR:   ${s.ip} → mail.${s.domain} (${s.provider} panel)</div></div>`}});
 
-function openM(k){const d=md[k];if(!d)return;mc.innerHTML=`<div class="mh" style="border-top:2px solid ${d.c}"><h2 style="color:${d.c}">${d.t}</h2><button class="mx" onclick="closeM()">&times;</button></div>${d.h}`;mo.classList.add('open');document.body.style.overflow='hidden'}
+function openM(k){const d=md[k];if(!d)return;mc.innerHTML=`<div class="mh" style="border-top:2px solid ${d.c}"><h2 style="color:${d.c}">${d.t}</h2><button class="m-close" onclick="closeM()">&times;</button></div>${d.h}`;mo.classList.add('open');document.body.style.overflow='hidden'}
 function closeM(){mo.classList.remove('open');document.body.style.overflow=''}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
 </script>
