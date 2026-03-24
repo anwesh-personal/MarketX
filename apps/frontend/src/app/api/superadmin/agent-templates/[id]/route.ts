@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query, queryOne } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
 import { getSuperadmin } from '@/lib/superadmin-middleware'
 import type { AgentTemplate } from '../route'
 
@@ -57,10 +57,15 @@ export async function GET(
         }
 
         const { id } = await params
+        const supabase = createClient()
 
-        const agent = await queryOne<AgentTemplate>(`
-            SELECT * FROM agent_templates WHERE id = $1
-        `, [id])
+        const { data: agent, error: agentError } = await supabase
+            .from('agent_templates')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle()
+
+        if (agentError) throw new Error(agentError.message)
 
         if (!agent) {
             return NextResponse.json(
@@ -69,38 +74,46 @@ export async function GET(
             )
         }
 
-        const skills = await query<any>(`
-            SELECT * FROM agent_template_skills 
-            WHERE agent_template_id = $1
-            ORDER BY execution_order, name
-        `, [id])
+        const { data: skills } = await supabase
+            .from('agent_template_skills')
+            .select('*')
+            .eq('agent_template_id', id)
+            .order('execution_order')
+            .order('name')
 
-        const kbEntries = await query<any>(`
-            SELECT * FROM agent_template_kb
-            WHERE agent_template_id = $1 AND is_active = true
-            ORDER BY priority DESC, created_at DESC
-        `, [id])
+        const { data: kbEntries } = await supabase
+            .from('agent_template_kb')
+            .select('*')
+            .eq('agent_template_id', id)
+            .eq('is_active', true)
+            .order('priority', { ascending: false })
+            .order('created_at', { ascending: false })
 
-        const brainAssignments = await query<any>(`
-            SELECT 
-                baa.*,
-                bt.name as brain_name,
-                bt.version as brain_version
-            FROM brain_agent_assignments baa
-            JOIN brain_templates bt ON bt.id = baa.brain_template_id
-            WHERE baa.agent_template_id = $1
-            ORDER BY bt.name
-        `, [id])
+        const { data: brainAssignments } = await supabase
+            .from('brain_agent_assignments')
+            .select(`
+                *,
+                brain_templates!inner ( name, version )
+            `)
+            .eq('agent_template_id', id)
+
+        const skillList = skills ?? []
+        const kbList = kbEntries ?? []
+        const assignList = (brainAssignments ?? []).map((ba: any) => ({
+            ...ba,
+            brain_name: ba.brain_templates?.name,
+            brain_version: ba.brain_templates?.version,
+        }))
 
         return NextResponse.json({
             agent,
-            skills,
-            kbEntries,
-            brainAssignments,
+            skills: skillList,
+            kbEntries: kbList,
+            brainAssignments: assignList,
             stats: {
-                skillCount: skills.length,
-                kbEntryCount: kbEntries.length,
-                assignedBrains: brainAssignments.length
+                skillCount: skillList.length,
+                kbEntryCount: kbList.length,
+                assignedBrains: assignList.length
             }
         })
     } catch (error: any) {
@@ -134,11 +147,16 @@ export async function PATCH(
         const body = await req.json()
         const validated = updateAgentTemplateSchema.parse(body)
 
-        const existing = await queryOne<AgentTemplate>(
-            'SELECT * FROM agent_templates WHERE id = $1',
-            [id]
-        )
+        const supabase = createClient()
 
+        // Check exists
+        const { data: existing, error: existErr } = await supabase
+            .from('agent_templates')
+            .select('id')
+            .eq('id', id)
+            .maybeSingle()
+
+        if (existErr) throw new Error(existErr.message)
         if (!existing) {
             return NextResponse.json(
                 { error: 'Agent template not found' },
@@ -146,66 +164,25 @@ export async function PATCH(
             )
         }
 
-        const updates: string[] = []
-        const values: any[] = []
-        let paramIndex = 1
-
-        const fieldMappings: Record<string, string> = {
-            name: 'name',
-            description: 'description',
-            avatar_emoji: 'avatar_emoji',
-            avatar_color: 'avatar_color',
-            category: 'category',
-            product_target: 'product_target',
-            system_prompt: 'system_prompt',
-            persona_prompt: 'persona_prompt',
-            instruction_prompt: 'instruction_prompt',
-            guardrails_prompt: 'guardrails_prompt',
-            preferred_provider: 'preferred_provider',
-            preferred_model: 'preferred_model',
-            temperature: 'temperature',
-            max_tokens: 'max_tokens',
-            tools_enabled: 'tools_enabled',
-            skills: 'skills',
-            has_own_kb: 'has_own_kb',
-            kb_object_types: 'kb_object_types',
-            kb_min_confidence: 'kb_min_confidence',
-            input_schema: 'input_schema',
-            output_schema: 'output_schema',
-            max_turns: 'max_turns',
-            requires_approval: 'requires_approval',
-            can_access_brain: 'can_access_brain',
-            can_write_to_brain: 'can_write_to_brain',
-            is_active: 'is_active',
-            tier: 'tier',
+        // Build update payload — only include fields that were provided
+        const updatePayload: Record<string, unknown> = {
+            updated_at: new Date().toISOString(),
         }
 
-        for (const [key, dbField] of Object.entries(fieldMappings)) {
-            if (validated[key as keyof typeof validated] !== undefined) {
-                let value = validated[key as keyof typeof validated]
-                
-                if (key === 'skills' || key === 'input_schema' || key === 'output_schema') {
-                    value = JSON.stringify(value)
-                }
-                
-                updates.push(`${dbField} = $${paramIndex++}`)
-                values.push(value)
+        for (const [key, value] of Object.entries(validated)) {
+            if (value !== undefined) {
+                updatePayload[key] = value
             }
         }
 
-        if (updates.length === 0) {
-            return NextResponse.json({ agent: existing })
-        }
+        const { data: updated, error: updateErr } = await supabase
+            .from('agent_templates')
+            .update(updatePayload)
+            .eq('id', id)
+            .select()
+            .single()
 
-        values.push(id)
-        const sql = `
-            UPDATE agent_templates 
-            SET ${updates.join(', ')}
-            WHERE id = $${paramIndex}
-            RETURNING *
-        `
-
-        const updated = await queryOne<AgentTemplate>(sql, values)
+        if (updateErr) throw new Error(updateErr.message)
 
         return NextResponse.json({ agent: updated })
     } catch (error: any) {
@@ -249,12 +226,15 @@ export async function DELETE(
         }
 
         const { id } = await params
+        const supabase = createClient()
 
-        const existing = await queryOne<AgentTemplate>(
-            'SELECT * FROM agent_templates WHERE id = $1',
-            [id]
-        )
+        const { data: existing, error: existErr } = await supabase
+            .from('agent_templates')
+            .select('id, slug, is_system')
+            .eq('id', id)
+            .maybeSingle()
 
+        if (existErr) throw new Error(existErr.message)
         if (!existing) {
             return NextResponse.json(
                 { error: 'Agent template not found' },
@@ -269,24 +249,26 @@ export async function DELETE(
             )
         }
 
-        const assignments = await query<any>(
-            'SELECT COUNT(*) as count FROM brain_agent_assignments WHERE agent_template_id = $1',
-            [id]
-        )
+        // Check brain assignments
+        const { count } = await supabase
+            .from('brain_agent_assignments')
+            .select('id', { count: 'exact', head: true })
+            .eq('agent_template_id', id)
 
-        if (assignments[0]?.count > 0) {
+        if (count && count > 0) {
             return NextResponse.json(
                 { 
                     error: 'Cannot delete agent template that is assigned to brains',
-                    assignedCount: assignments[0].count
+                    assignedCount: count
                 },
                 { status: 409 }
             )
         }
 
-        await query('DELETE FROM agent_template_kb WHERE agent_template_id = $1', [id])
-        await query('DELETE FROM agent_template_skills WHERE agent_template_id = $1', [id])
-        await query('DELETE FROM agent_templates WHERE id = $1', [id])
+        // Delete related data
+        await supabase.from('agent_template_kb').delete().eq('agent_template_id', id)
+        await supabase.from('agent_template_skills').delete().eq('agent_template_id', id)
+        await supabase.from('agent_templates').delete().eq('id', id)
 
         return NextResponse.json({ 
             success: true,

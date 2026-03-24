@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         const validated = chatRequestSchema.parse(body)
 
         // 3. Resolve active brain runtime (single source of truth: deployed brain_agents)
-        const runtime = await getActiveBrainRuntime(context.orgId)
+        const runtime = await getActiveBrainRuntime(context.orgId, context.userId)
 
         if (!runtime) {
             return NextResponse.json(

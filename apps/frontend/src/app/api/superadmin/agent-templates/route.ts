@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { query, queryOne } from '@/lib/db'
+import { createClient } from '@/lib/supabase/server'
 import { getSuperadmin } from '@/lib/superadmin-middleware'
 
 // ============================================================
@@ -99,62 +99,53 @@ export async function GET(req: NextRequest) {
         const product = searchParams.get('product')
         const activeOnly = searchParams.get('active') === 'true'
 
-        let sql = `
-            SELECT 
-                id, slug, name, description, avatar_emoji, avatar_color,
-                category, product_target, system_prompt, persona_prompt,
-                instruction_prompt, guardrails_prompt, preferred_provider,
-                preferred_model, temperature, max_tokens, tools_enabled,
-                skills, has_own_kb, kb_object_types, kb_min_confidence,
-                input_schema, output_schema, max_turns, requires_approval,
-                can_access_brain, can_write_to_brain, is_active, is_system,
-                tier, version, created_by, created_at, updated_at
-            FROM agent_templates
-            WHERE 1=1
-        `
-        const params: any[] = []
-        let paramIndex = 1
+        const supabase = createClient()
+        let qb = supabase
+            .from('agent_templates')
+            .select('*')
+            .order('category')
+            .order('name')
 
         if (category) {
-            sql += ` AND category = $${paramIndex++}`
-            params.push(category)
+            qb = qb.eq('category', category)
         }
 
         if (product) {
-            sql += ` AND (product_target = $${paramIndex++} OR product_target = 'all')`
-            params.push(product)
+            qb = qb.or(`product_target.eq.${product},product_target.eq.all`)
         }
 
         if (activeOnly) {
-            sql += ` AND is_active = true`
+            qb = qb.eq('is_active', true)
         }
 
-        sql += ` ORDER BY category, name`
+        const { data: templates, error } = await qb
 
-        const templates = await query<AgentTemplate>(sql, params)
+        if (error) throw new Error(error.message)
+
+        const all = templates ?? []
 
         const stats = {
-            total: templates.length,
-            active: templates.filter(t => t.is_active).length,
+            total: all.length,
+            active: all.filter(t => t.is_active).length,
             byCategory: {
-                writer: templates.filter(t => t.category === 'writer').length,
-                research: templates.filter(t => t.category === 'research').length,
-                learning: templates.filter(t => t.category === 'learning').length,
-                builder: templates.filter(t => t.category === 'builder').length,
-                general: templates.filter(t => t.category === 'general').length,
+                writer: all.filter(t => t.category === 'writer').length,
+                research: all.filter(t => t.category === 'research').length,
+                learning: all.filter(t => t.category === 'learning').length,
+                builder: all.filter(t => t.category === 'builder').length,
+                general: all.filter(t => t.category === 'general').length,
             },
             byProduct: {
-                market_writer: templates.filter(t => t.product_target === 'market_writer' || t.product_target === 'all').length,
-                market_builder: templates.filter(t => t.product_target === 'market_builder' || t.product_target === 'all').length,
-                market_coach: templates.filter(t => t.product_target === 'market_coach' || t.product_target === 'all').length,
+                market_writer: all.filter(t => t.product_target === 'market_writer' || t.product_target === 'all').length,
+                market_builder: all.filter(t => t.product_target === 'market_builder' || t.product_target === 'all').length,
+                market_coach: all.filter(t => t.product_target === 'market_coach' || t.product_target === 'all').length,
             },
-            system: templates.filter(t => t.is_system).length,
+            system: all.filter(t => t.is_system).length,
         }
 
         return NextResponse.json({
-            agents: templates,
+            agents: all,
             stats,
-            count: templates.length
+            count: all.length
         })
     } catch (error: any) {
         console.error('GET /api/superadmin/agent-templates failed:', error)
@@ -183,10 +174,14 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const validated = createAgentTemplateSchema.parse(body)
 
-        const existing = await queryOne<{ id: string }>(
-            'SELECT id FROM agent_templates WHERE slug = $1',
-            [validated.slug]
-        )
+        const supabase = createClient()
+
+        // Check slug uniqueness
+        const { data: existing } = await supabase
+            .from('agent_templates')
+            .select('id')
+            .eq('slug', validated.slug)
+            .maybeSingle()
 
         if (existing) {
             return NextResponse.json(
@@ -195,53 +190,51 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const result = await queryOne<AgentTemplate>(`
-            INSERT INTO agent_templates (
-                slug, name, description, avatar_emoji, avatar_color,
-                category, product_target, system_prompt, persona_prompt,
-                instruction_prompt, guardrails_prompt, preferred_provider,
-                preferred_model, temperature, max_tokens, tools_enabled,
-                skills, has_own_kb, kb_object_types, kb_min_confidence,
-                input_schema, output_schema, max_turns, requires_approval,
-                can_access_brain, can_write_to_brain, is_active, tier,
-                created_by
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                $21, $22, $23, $24, $25, $26, $27, $28, $29
-            )
-            RETURNING *
-        `, [
-            validated.slug,
-            validated.name,
-            validated.description || null,
-            validated.avatar_emoji,
-            validated.avatar_color,
-            validated.category,
-            validated.product_target,
-            validated.system_prompt,
-            validated.persona_prompt || null,
-            validated.instruction_prompt || null,
-            validated.guardrails_prompt || null,
-            validated.preferred_provider || null,
-            validated.preferred_model || null,
-            validated.temperature,
-            validated.max_tokens,
-            validated.tools_enabled,
-            JSON.stringify(validated.skills),
-            validated.has_own_kb,
-            validated.kb_object_types,
-            validated.kb_min_confidence,
-            JSON.stringify(validated.input_schema),
-            JSON.stringify(validated.output_schema),
-            validated.max_turns,
-            validated.requires_approval,
-            validated.can_access_brain,
-            validated.can_write_to_brain,
-            validated.is_active,
-            validated.tier,
-            admin.id
-        ])
+        const { data: result, error } = await supabase
+            .from('agent_templates')
+            .insert({
+                slug: validated.slug,
+                name: validated.name,
+                description: validated.description || null,
+                avatar_emoji: validated.avatar_emoji,
+                avatar_color: validated.avatar_color,
+                category: validated.category,
+                product_target: validated.product_target,
+                system_prompt: validated.system_prompt,
+                persona_prompt: validated.persona_prompt || null,
+                instruction_prompt: validated.instruction_prompt || null,
+                guardrails_prompt: validated.guardrails_prompt || null,
+                preferred_provider: validated.preferred_provider || null,
+                preferred_model: validated.preferred_model || null,
+                temperature: validated.temperature,
+                max_tokens: validated.max_tokens,
+                tools_enabled: validated.tools_enabled,
+                skills: validated.skills,
+                has_own_kb: validated.has_own_kb,
+                kb_object_types: validated.kb_object_types,
+                kb_min_confidence: validated.kb_min_confidence,
+                input_schema: validated.input_schema,
+                output_schema: validated.output_schema,
+                max_turns: validated.max_turns,
+                requires_approval: validated.requires_approval,
+                can_access_brain: validated.can_access_brain,
+                can_write_to_brain: validated.can_write_to_brain,
+                is_active: validated.is_active,
+                tier: validated.tier,
+                created_by: admin.id,
+            })
+            .select()
+            .single()
+
+        if (error) {
+            if (error.code === '23505') {
+                return NextResponse.json(
+                    { error: 'An agent template with this slug already exists' },
+                    { status: 409 }
+                )
+            }
+            throw new Error(error.message)
+        }
 
         return NextResponse.json(
             { agent: result },

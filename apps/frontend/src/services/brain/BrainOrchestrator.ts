@@ -1251,8 +1251,8 @@ class BrainOrchestrator {
      * Load brain config for org (single source of truth: deployed brain_agents)
      * Returns the org's BrainConfig from active runtime, or null if none deployed.
      */
-    async loadBrainConfig(orgId: string): Promise<BrainConfig | null> {
-        const runtime = await getActiveBrainRuntime(orgId);
+    async loadBrainConfig(orgId: string, userId?: string): Promise<BrainConfig | null> {
+        const runtime = await getActiveBrainRuntime(orgId, userId);
         return runtime?.brainConfigForRAG ?? null;
     }
 

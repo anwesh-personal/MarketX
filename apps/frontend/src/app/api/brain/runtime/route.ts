@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'User org context not found' }, { status: 403 })
         }
 
-        const runtime = await getActiveBrainRuntime(userRecord.org_id)
+        const runtime = await getActiveBrainRuntime(userRecord.org_id, user.id)
         if (!runtime) {
             return NextResponse.json(
                 { error: 'No active brain agent deployed for your organization', runtime: null },

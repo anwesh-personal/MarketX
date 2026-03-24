@@ -56,6 +56,11 @@ export async function GET(
             error: execution.error_message,
             createdAt: execution.started_at ?? execution.created_at,
             updatedAt: execution.completed_at ?? execution.updated_at,
+            // Real-time progress from worker (written on every node completion)
+            progress: executionData.percentage ?? null,
+            currentNode: executionData.currentNode ?? null,
+            nodeIndex: executionData.nodeIndex ?? null,
+            totalNodes: executionData.totalNodes ?? null,
         });
 
     } catch (error: any) {

@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createClient } from '@/lib/supabase/server'
 import { getSuperadmin } from '@/lib/superadmin-middleware'
-import { queryOne } from '@/lib/db'
 import type { AgentTemplate } from '../agent-templates/route'
 import { brainOrchestrator } from '@/services/brain/BrainOrchestrator'
 import { ToolLoader } from '@/services/brain/tools/ToolLoader'
@@ -41,10 +41,15 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { agentTemplateId, message, history, orgId } = bodySchema.parse(body)
 
-        const template = await queryOne<AgentTemplate>(
-            'SELECT * FROM agent_templates WHERE id = $1 AND is_active = true',
-            [agentTemplateId]
-        )
+        const supabase = createClient()
+        const { data: template, error: tmplErr } = await supabase
+            .from('agent_templates')
+            .select('*')
+            .eq('id', agentTemplateId)
+            .eq('is_active', true)
+            .maybeSingle()
+
+        if (tmplErr) throw new Error(tmplErr.message)
         if (!template) {
             return NextResponse.json({ error: 'Agent template not found or inactive' }, { status: 404 })
         }

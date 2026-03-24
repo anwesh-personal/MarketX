@@ -124,44 +124,71 @@ const DEFAULT_SELF_HEALING: BrainRuntimeSelfHealing = {
 }
 
 /**
- * Load the active deployed org-level brain agent and return normalized runtime.
- * Returns null if org has no active deployed agent (caller may fall back to template-only or error).
+ * Load the active deployed brain agent for an org (and optionally a specific user).
+ * Resolution order: user-specific agent first → org-wide agent fallback.
+ * Returns null if no active deployed agent found.
  */
-export async function getActiveBrainRuntime(orgId: string): Promise<BrainRuntime | null> {
+export async function getActiveBrainRuntime(orgId: string, userId?: string): Promise<BrainRuntime | null> {
     const supabase = createClient()
 
-    const { data: agent, error } = await supabase
-        .from('brain_agents')
-        .select(`
-            id,
-            template_id,
-            template_version,
-            name,
-            foundation_prompt,
-            persona_prompt,
-            domain_prompt,
-            guardrails_prompt,
-            strict_grounding,
-            max_turns,
-            preferred_provider,
-            preferred_model,
-            use_platform_keys,
-            tools_granted,
-            rag_top_k,
-            rag_min_confidence,
-            rag_query_expansion,
-            rag_fts_weight,
-            rag_vector_weight
-        `)
-        .eq('org_id', orgId)
-        .is('user_id', null)
-        .in('status', ['active', 'configuring'])
-        .order('deployed_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    const AGENT_COLUMNS = `
+        id,
+        template_id,
+        template_version,
+        name,
+        foundation_prompt,
+        persona_prompt,
+        domain_prompt,
+        guardrails_prompt,
+        strict_grounding,
+        max_turns,
+        preferred_provider,
+        preferred_model,
+        use_platform_keys,
+        tools_granted,
+        rag_top_k,
+        rag_min_confidence,
+        rag_query_expansion,
+        rag_fts_weight,
+        rag_vector_weight
+    `
 
-    if (error) {
-        throw new Error(`BrainRuntimeResolver: failed to load agent for org ${orgId}: ${error.message}`)
+    let agent: DeployedAgentRow | null = null
+
+    // 1. Try user-specific agent first (if userId provided)
+    if (userId) {
+        const { data, error } = await supabase
+            .from('brain_agents')
+            .select(AGENT_COLUMNS)
+            .eq('org_id', orgId)
+            .eq('user_id', userId)
+            .in('status', ['active', 'configuring'])
+            .order('deployed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (error) {
+            throw new Error(`BrainRuntimeResolver: failed to load user agent for org ${orgId}, user ${userId}: ${error.message}`)
+        }
+        agent = data as unknown as DeployedAgentRow | null
+    }
+
+    // 2. Fall back to org-wide agent
+    if (!agent) {
+        const { data, error } = await supabase
+            .from('brain_agents')
+            .select(AGENT_COLUMNS)
+            .eq('org_id', orgId)
+            .is('user_id', null)
+            .in('status', ['active', 'configuring'])
+            .order('deployed_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+        if (error) {
+            throw new Error(`BrainRuntimeResolver: failed to load org agent for org ${orgId}: ${error.message}`)
+        }
+        agent = data as unknown as DeployedAgentRow | null
     }
 
     if (!agent) {
@@ -240,10 +267,10 @@ function buildBrainConfigFromAgent(row: DeployedAgentRow, rag: BrainRuntimeRAG):
 }
 
 /**
- * Require active brain runtime for org. Throws if none deployed.
+ * Require active brain runtime for org (optionally user-specific). Throws if none deployed.
  */
-export async function requireActiveBrainRuntime(orgId: string): Promise<BrainRuntime> {
-    const runtime = await getActiveBrainRuntime(orgId)
+export async function requireActiveBrainRuntime(orgId: string, userId?: string): Promise<BrainRuntime> {
+    const runtime = await getActiveBrainRuntime(orgId, userId)
     if (!runtime) {
         throw new Error(`No active brain agent deployed for organization ${orgId}. Deploy a brain from Superadmin first.`)
     }

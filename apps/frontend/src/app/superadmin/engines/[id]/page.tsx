@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { useSuperadminAuth } from '@/lib/useSuperadminAuth';
 
 export default function EngineDetailsPage({ params }: { params: { id: string } }) {
-    const { admin } = useSuperadminAuth();
+    const { admin, fetchWithAuth } = useSuperadminAuth();
     const token = admin?.token;
     const router = useRouter();
     const [engine, setEngine] = useState<EngineInstance | null>(null);
@@ -166,8 +166,10 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
                     } else if (statusData.status === 'running') {
                         setExecutionState(prev => ({
                             ...prev,
-                            progress: Math.min(prev.progress + 5, 90), // Fake progress for now
-                            currentNode: 'Processing...',
+                            progress: statusData.progress ?? prev.progress,
+                            currentNode: statusData.currentNode
+                                ? `${statusData.currentNode} (${statusData.nodeIndex != null && statusData.totalNodes ? `${statusData.nodeIndex + 1}/${statusData.totalNodes}` : '...'})`
+                                : 'Processing...',
                         }));
                     }
                 } catch (pollError) {
