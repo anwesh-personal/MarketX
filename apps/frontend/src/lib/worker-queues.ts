@@ -20,14 +20,22 @@ export enum QueueName {
     MASTERY_AGENT = 'mastery-agent',
 }
 
-// Support REDIS_URL (Railway format) or separate host/port/password
-const connectionOptions = process.env.REDIS_URL
-    ? { url: process.env.REDIS_URL }
-    : {
+// Parse REDIS_URL into {host, port, password} for BullMQ (does NOT accept {url})
+const connectionOptions = (() => {
+    if (process.env.REDIS_URL) {
+        const url = new URL(process.env.REDIS_URL)
+        return {
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            password: url.password || undefined,
+        }
+    }
+    return {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
     }
+})()
 
 const defaultOptions: QueueOptions = {
     connection: connectionOptions,
