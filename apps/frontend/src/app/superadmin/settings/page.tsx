@@ -2,12 +2,15 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+    AlertTriangle,
+    CheckCircle,
     Globe,
     Loader2,
     Lock,
     Mail,
     RefreshCw,
     Save,
+    Send,
     Settings as SettingsIcon,
     Shield,
     UserPlus,
@@ -77,6 +80,8 @@ export default function SettingsPage() {
     const [newAdmin, setNewAdmin] = useState({ email: '', full_name: '', password: '' })
     const [loadedConfigKeys, setLoadedConfigKeys] = useState<string[]>([])
     const [configuredSecrets, setConfiguredSecrets] = useState<Record<string, boolean>>({})
+    const [testingSmtp, setTestingSmtp] = useState(false)
+    const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; error?: string; latencyMs?: number } | null>(null)
 
     const loadData = useCallback(async (refreshing = false) => {
         if (refreshing) setIsRefreshing(true)
@@ -317,6 +322,61 @@ export default function SettingsPage() {
                                 />
                             </FieldCard>
                         </div>
+                    </div>
+
+                    {smtpTestResult && (
+                        <div className={`mt-md flex items-center gap-sm rounded-[calc(var(--radius-lg)*1.25)] border p-md text-sm ${
+                            smtpTestResult.success
+                                ? 'border-success/30 bg-success/5 text-success'
+                                : 'border-error/30 bg-error/5 text-error'
+                        }`}>
+                            {smtpTestResult.success
+                                ? <><CheckCircle className="h-4 w-4 flex-shrink-0" /> SMTP connection successful ({smtpTestResult.latencyMs}ms)</>
+                                : <><AlertTriangle className="h-4 w-4 flex-shrink-0" /> {smtpTestResult.error}</>
+                            }
+                        </div>
+                    )}
+
+                    <div className="mt-md flex items-center gap-sm">
+                        <SuperadminButton
+                            icon={testingSmtp ? Loader2 : Zap}
+                            onClick={async () => {
+                                setTestingSmtp(true); setSmtpTestResult(null)
+                                try {
+                                    await handleSave()
+                                    const res = await fetchWithAuth('/api/superadmin/system-email', {
+                                        method: 'POST',
+                                        body: JSON.stringify({ action: 'test_connection' }),
+                                    })
+                                    const data = await res.json()
+                                    setSmtpTestResult(data)
+                                    if (data.success) toast.success(`SMTP OK (${data.latencyMs}ms)`)
+                                    else toast.error(data.error || 'Connection failed')
+                                } catch { toast.error('Test failed') }
+                                finally { setTestingSmtp(false) }
+                            }}
+                            disabled={testingSmtp || !configs.smtp_host}
+                        >
+                            {testingSmtp ? 'Testing…' : 'Test SMTP Connection'}
+                        </SuperadminButton>
+                        <SuperadminButton
+                            tone="primary"
+                            icon={Send}
+                            onClick={() => {
+                                const recipient = prompt('Send test email to:')
+                                if (!recipient) return
+                                fetchWithAuth('/api/superadmin/system-email', {
+                                    method: 'POST',
+                                    body: JSON.stringify({ action: 'test', recipient }),
+                                }).then(r => r.json()).then(d => {
+                                    if (d.success) toast.success('Test email sent!')
+                                    else toast.error(d.error || 'Send failed')
+                                }).catch(() => toast.error('Send failed'))
+                            }}
+                            disabled={!configs.smtp_host}
+                        >
+                            Send Test Email
+                        </SuperadminButton>
                     </div>
                 </SuperadminPanel>
             )}
