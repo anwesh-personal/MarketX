@@ -2,15 +2,12 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-    AlertTriangle,
-    CheckCircle,
     Globe,
     Loader2,
     Lock,
     Mail,
     RefreshCw,
     Save,
-    Send,
     Settings as SettingsIcon,
     Shield,
     UserPlus,
@@ -33,6 +30,9 @@ import {
     SuperadminSegmentedControl,
     SuperadminToolbar,
 } from '@/components/SuperAdmin/surfaces'
+import dynamic from 'next/dynamic'
+
+const SystemEmailPage = dynamic(() => import('../system-email/page'), { ssr: false, loading: () => <SuperadminLoadingState label="Loading System Email" /> })
 
 interface SystemConfigRow {
     key: string
@@ -54,7 +54,7 @@ const DEFAULT_CONFIGS: Record<string, any> = DEFAULT_SUPERADMIN_SETTINGS
 
 const TAB_OPTIONS: Array<{ value: SettingsTab; label: string }> = [
     { value: 'general', label: 'General' },
-    { value: 'email', label: 'Email' },
+    { value: 'email', label: 'System Email' },
     { value: 'security', label: 'Security' },
     { value: 'limits', label: 'Limits' },
     { value: 'admins', label: 'Admins' },
@@ -80,8 +80,6 @@ export default function SettingsPage() {
     const [newAdmin, setNewAdmin] = useState({ email: '', full_name: '', password: '' })
     const [loadedConfigKeys, setLoadedConfigKeys] = useState<string[]>([])
     const [configuredSecrets, setConfiguredSecrets] = useState<Record<string, boolean>>({})
-    const [testingSmtp, setTestingSmtp] = useState(false)
-    const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; error?: string; latencyMs?: number } | null>(null)
 
     const loadData = useCallback(async (refreshing = false) => {
         if (refreshing) setIsRefreshing(true)
@@ -292,94 +290,7 @@ export default function SettingsPage() {
                 </SuperadminPanel>
             )}
 
-            {activeTab === 'email' && (
-                <SuperadminPanel
-                    title="Email Delivery"
-                    description="Configure SMTP for transactional and system-originated delivery."
-                    tone="info"
-                >
-                    <div className="grid grid-cols-1 gap-md md:grid-cols-2">
-                        <FieldCard label="SMTP Host">
-                            <TextInput value={configs.smtp_host} onChange={(value) => updateConfig('smtp_host', value)} placeholder="smtp.gmail.com" icon={<Mail className="h-4 w-4" />} />
-                        </FieldCard>
-                        <FieldCard label="SMTP Port">
-                            <TextInput value={String(configs.smtp_port)} onChange={(value) => updateConfig('smtp_port', parseInt(value || '0', 10))} icon={<Zap className="h-4 w-4" />} />
-                        </FieldCard>
-                        <FieldCard label="SMTP Username">
-                            <TextInput value={configs.smtp_username} onChange={(value) => updateConfig('smtp_username', value)} icon={<Users className="h-4 w-4" />} />
-                        </FieldCard>
-                        <FieldCard label="From Email">
-                            <TextInput value={configs.smtp_from_email} onChange={(value) => updateConfig('smtp_from_email', value)} placeholder="noreply@axiom.app" icon={<Mail className="h-4 w-4" />} />
-                        </FieldCard>
-                        <div className="md:col-span-2">
-                            <FieldCard label="SMTP Password">
-                                <TextInput
-                                    type="password"
-                                    value={configs.smtp_password}
-                                    onChange={(value) => updateConfig('smtp_password', value)}
-                                    icon={<Lock className="h-4 w-4" />}
-                                    placeholder={configuredSecrets.smtp_password ? 'Configured. Leave blank to keep existing secret.' : 'Set SMTP password'}
-                                />
-                            </FieldCard>
-                        </div>
-                    </div>
-
-                    {smtpTestResult && (
-                        <div className={`mt-md flex items-center gap-sm rounded-[calc(var(--radius-lg)*1.25)] border p-md text-sm ${
-                            smtpTestResult.success
-                                ? 'border-success/30 bg-success/5 text-success'
-                                : 'border-error/30 bg-error/5 text-error'
-                        }`}>
-                            {smtpTestResult.success
-                                ? <><CheckCircle className="h-4 w-4 flex-shrink-0" /> SMTP connection successful ({smtpTestResult.latencyMs}ms)</>
-                                : <><AlertTriangle className="h-4 w-4 flex-shrink-0" /> {smtpTestResult.error}</>
-                            }
-                        </div>
-                    )}
-
-                    <div className="mt-md flex items-center gap-sm">
-                        <SuperadminButton
-                            icon={testingSmtp ? Loader2 : Zap}
-                            onClick={async () => {
-                                setTestingSmtp(true); setSmtpTestResult(null)
-                                try {
-                                    await handleSave()
-                                    const res = await fetchWithAuth('/api/superadmin/system-email', {
-                                        method: 'POST',
-                                        body: JSON.stringify({ action: 'test_connection' }),
-                                    })
-                                    const data = await res.json()
-                                    setSmtpTestResult(data)
-                                    if (data.success) toast.success(`SMTP OK (${data.latencyMs}ms)`)
-                                    else toast.error(data.error || 'Connection failed')
-                                } catch { toast.error('Test failed') }
-                                finally { setTestingSmtp(false) }
-                            }}
-                            disabled={testingSmtp || !configs.smtp_host}
-                        >
-                            {testingSmtp ? 'Testing…' : 'Test SMTP Connection'}
-                        </SuperadminButton>
-                        <SuperadminButton
-                            tone="primary"
-                            icon={Send}
-                            onClick={() => {
-                                const recipient = prompt('Send test email to:')
-                                if (!recipient) return
-                                fetchWithAuth('/api/superadmin/system-email', {
-                                    method: 'POST',
-                                    body: JSON.stringify({ action: 'test', recipient }),
-                                }).then(r => r.json()).then(d => {
-                                    if (d.success) toast.success('Test email sent!')
-                                    else toast.error(d.error || 'Send failed')
-                                }).catch(() => toast.error('Send failed'))
-                            }}
-                            disabled={!configs.smtp_host}
-                        >
-                            Send Test Email
-                        </SuperadminButton>
-                    </div>
-                </SuperadminPanel>
-            )}
+            {activeTab === 'email' && <SystemEmailPage />}
 
             {activeTab === 'security' && (
                 <SuperadminPanel
