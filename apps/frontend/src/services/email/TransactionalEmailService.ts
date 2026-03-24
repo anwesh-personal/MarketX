@@ -204,13 +204,8 @@ export class TransactionalEmailService {
             }
 
             const transport = this.createTransport(cfg)
-            const fromName = (opts?.fromName || cfg.fromName || '').trim()
-            const fromAddr = (opts?.fromAddress || cfg.fromEmail || cfg.username || '').trim()
-
-            if (!fromAddr) {
-                await this.log({ template_id: tpl.id, template_slug: slug, recipient, subject, status: 'failed', error: 'No from email configured. Set smtp_from_email in Settings.', variables: vars, sent_by: opts?.sentBy || null })
-                return { success: false, error: 'No from email address configured.', templateSlug: slug, recipient }
-            }
+            const fromName = opts?.fromName || cfg.fromName
+            const fromAddr = opts?.fromAddress || cfg.fromEmail
 
             try {
                 const info = await transport.sendMail({
