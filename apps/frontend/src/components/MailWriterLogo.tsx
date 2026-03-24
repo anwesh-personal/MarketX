@@ -29,7 +29,7 @@ export function MailWriterLogo({ className = '', size = 'md', showText = true }:
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <img
-                src={isNight ? '/1.png' : '/2.png'}
+                src={isNight ? '/7.png' : '/6.png'}
                 alt="MarketX"
                 style={{
                     height: `${height}px`,

@@ -796,7 +796,7 @@ export default function SystemMap() {
       <nav className={`sticky top-0 z-50 border-b ${navBg} backdrop-blur-xl px-5 py-3 flex items-center justify-between`}>
         <div className="flex items-center gap-3">
           <Image
-            src={dark ? '/1.png' : '/2.png'}
+            src={dark ? '/7.png' : '/6.png'}
             alt="MarketX"
             width={120}
             height={36}
@@ -827,7 +827,7 @@ export default function SystemMap() {
         <motion.div initial="hidden" animate="show" variants={stagger} className="text-center space-y-4 py-2">
           <motion.div variants={fadeUp} className="flex justify-center">
             <Image
-              src={dark ? '/1.png' : '/2.png'}
+              src={dark ? '/7.png' : '/6.png'}
               alt="MarketX"
               width={200}
               height={60}
@@ -1382,7 +1382,7 @@ export default function SystemMap() {
         <div className={`text-center py-8 border-t ${dark ? 'border-white/10' : 'border-slate-200'} space-y-4`}>
           <div className="flex justify-center">
             <Image
-              src={dark ? '/1.png' : '/2.png'}
+              src={dark ? '/7.png' : '/6.png'}
               alt="MarketX"
               width={120}
               height={36}
