@@ -49,19 +49,19 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const { action, process_name, server_id } = await request.json();
 
         if (!action || !process_name) {
             return NextResponse.json(
-                { error: 'action and process_name req
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-uired' },
+                { error: 'action and process_name required' },
                 { status: 400 }
             );
         }

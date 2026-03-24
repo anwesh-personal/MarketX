@@ -13,13 +13,8 @@ import { getSuperadmin } from '@/lib/superadmin-middleware';
  */
 export async function GET(request: NextRequest) {
     try {
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const supabase = createClient();
 
@@ -57,19 +52,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const { name, description, host, port, username, password, ssh_key } = await request.json();
 
         if (!name || !host || !username) {
-            return N
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-extResponse.json(
+            return NextResponse.json(
                 { error: 'name, host, and username required' },
                 { status: 400 }
             );
@@ -123,6 +113,9 @@ extResponse.json(
  */
 export async function PATCH(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const { id, name, description, host, port, username, password, ssh_key, status } = await request.json();
 
@@ -135,15 +128,7 @@ export async function PATCH(request: NextRequest) {
 
         const updateData: any = {};
         if (name) updateData.name = name;
-        if (description !== undef
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-ined) updateData.description = description;
+        if (description !== undefined) updateData.description = description;
         if (host) updateData.host = host;
         if (port) updateData.port = port;
         if (username) updateData.username = username;
@@ -184,6 +169,9 @@ ined) updateData.description = description;
  */
 export async function DELETE(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const { id } = await request.json();
 
@@ -209,15 +197,7 @@ export async function DELETE(request: NextRequest) {
     } catch (error: any) {
         console.error('Delete VPS server error:', error);
         return NextResponse.json(
-  
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-          { error: error.message || 'Failed to delete server' },
+            { error: error.message || 'Failed to delete server' },
             { status: 500 }
         );
     }

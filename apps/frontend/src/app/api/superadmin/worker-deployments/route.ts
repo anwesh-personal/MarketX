@@ -14,13 +14,8 @@ import { getSuperadmin } from '@/lib/superadmin-middleware';
  */
 export async function GET(request: NextRequest) {
     try {
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const supabase = createClient();
         const searchParams = request.nextUrl.searchParams;
@@ -64,6 +59,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const {
             template_id,
@@ -71,15 +69,7 @@ export async function POST(request: NextRequest) {
             name,
             environment_vars,
             pm2_config,
-        } = await request
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-.json();
+        } = await request.json();
 
         // Validation
         if (!template_id || !vps_server_id || !name) {
@@ -178,6 +168,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const { id } = await request.json();
 
@@ -191,15 +184,7 @@ export async function DELETE(request: NextRequest) {
         // Get deployment
         const { data: deployment, error: fetchError } = await supabase
             .from('worker_deployments')
-            .select('*, vps_servers:vps_se
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-rver_id(*)')
+            .select('*, vps_servers:vps_server_id(*)')
             .eq('id', id)
             .single();
 

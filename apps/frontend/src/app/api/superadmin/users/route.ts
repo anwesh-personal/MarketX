@@ -54,6 +54,14 @@ export async function GET(request: NextRequest) {
 // POST - Create new user
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const {
             email,
@@ -62,14 +70,6 @@ export async function POST(request: NextRequest) {
             org_id,
             role = 'member',
             can_upload_kb = false,
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-
             can_trigger_runs = false,
             can_view_analytics = true,
             can_manage_team = false,
@@ -240,6 +240,14 @@ export async function POST(request: NextRequest) {
 // PATCH - Update user
 export async function PATCH(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const { userId, new_password, ...updates } = body;
 
@@ -251,15 +259,7 @@ export async function PATCH(request: NextRequest) {
         if (new_password) {
             if (new_password.length < 8) {
                 return NextResponse.json(
-                    { error: 'Pa
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-ssword must be at least 8 characters' },
+                    { error: 'Password must be at least 8 characters' },
                     { status: 400 }
                 );
             }
@@ -318,6 +318,14 @@ ssword must be at least 8 characters' },
 // DELETE - Delete user
 export async function DELETE(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get('userId');
 
@@ -334,15 +342,7 @@ export async function DELETE(request: NextRequest) {
                 { error: `Failed to delete user: ${authError.message}` },
                 { status: 500 }
             );
-  
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-      }
+        }
 
         // Also delete from users table (in case cascade didn't work)
         await supabase.from('users').delete().eq('id', userId);

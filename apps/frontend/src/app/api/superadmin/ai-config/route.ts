@@ -10,13 +10,8 @@ const supabase = createClient(
 // GET - Load AI config
 export async function GET(request: NextRequest) {
     try {
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { data, error } = await supabase
             .from('system_configs')
@@ -38,21 +33,16 @@ export async function GET(request: NextRequest) {
 // POST - Save AI config
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const { config } = await request.json();
 
         const { error } = await supabase
             .from('system_configs')
             .upsert({
                 key: 'ai_providers',
-                valu
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-e: config,
+                value: config,
                 updated_at: new Date().toISOString(),
             });
 

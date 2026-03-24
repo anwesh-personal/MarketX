@@ -14,13 +14,8 @@ import { getSuperadmin } from '@/lib/superadmin-middleware';
  */
 export async function POST(request: NextRequest) {
     try {
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const supabase = createClient();
         const {
@@ -131,19 +126,14 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const supabase = createClient();
         const searchParams = request.nextUrl.searchParams;
 
         const organization_id = searchParams.get('organization_id');
-        const user_id = searchParams
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-.get('user_id');
+        const user_id = searchParams.get('user_id');
         const provider = searchParams.get('provider');
         const limit = parseInt(searchParams.get('limit') || '100');
         const offset = parseInt(searchParams.get('offset') || '0');
