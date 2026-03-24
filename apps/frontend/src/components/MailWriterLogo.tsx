@@ -30,7 +30,7 @@ export function MailWriterLogo({ className = '', size = 'md', showText = true }:
         <div className={`flex items-center gap-3 ${className}`}>
             <img
                 src={isNight ? '/7.png' : '/6.png'}
-                alt="MarketX"
+                alt="Market Writer"
                 style={{
                     height: `${height}px`,
                     width: 'auto',
@@ -39,7 +39,7 @@ export function MailWriterLogo({ className = '', size = 'md', showText = true }:
             />
             {showText && (
                 <span className={`${textSize} font-semibold tracking-tight text-textPrimary`}>
-                    MarketX
+                    Market Writer
                 </span>
             )}
         </div>

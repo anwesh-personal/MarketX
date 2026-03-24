@@ -206,7 +206,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                         </button>
 
                         {/* Logo */}
-                        <MailWriterLogo size="md" />
+                        <MailWriterLogo size="md" showText={false} />
                     </div>
 
                     {/* Right: Theme Selector + User */}
@@ -349,7 +349,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                             animate-slide-in-left
                         ">
                             <div className="flex items-center justify-between p-lg border-b border-border">
-                                <MailWriterLogo size="sm" />
+                                <MailWriterLogo size="sm" showText={false} />
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
                                     className="

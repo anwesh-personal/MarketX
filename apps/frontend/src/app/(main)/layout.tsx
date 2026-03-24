@@ -92,7 +92,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
 
-                        <MailWriterLogo size="md" />
+                        <MailWriterLogo size="md" showText={false} />
                     </div>
 
                     {/* Right: Theme + User */}
@@ -178,7 +178,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                             <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
                             <div className="absolute left-0 top-0 bottom-0 w-80 bg-surface border-r border-border shadow-xl animate-slide-in-left flex flex-col">
                                 <div className="p-md border-b border-border flex justify-between items-center">
-                                    <MailWriterLogo size="md" />
+                                    <MailWriterLogo size="md" showText={false} />
                                     <button onClick={() => setMobileMenuOpen(false)} className="btn btn-ghost p-2">
                                         <X className="w-5 h-5" />
                                     </button>

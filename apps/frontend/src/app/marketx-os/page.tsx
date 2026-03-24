@@ -1312,7 +1312,7 @@ export default function MarketXOsPage() {
         <div className='flex items-center justify-between gap-4'>
           <div className='flex items-center gap-3'>
             <motion.div whileHover={{ scale: 1.06 }} className='flex items-center justify-center'>
-              <MailWriterLogo size='sm' />
+              <MailWriterLogo size='sm' showText={false} />
             </motion.div>
             <div>
               <p className={`text-[10px] font-black uppercase tracking-[0.3em] text-textSecondary`}>System Core V4.0.1</p>
