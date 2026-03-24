@@ -35,3 +35,4 @@ Thumbs.db
 # Database
 *.sqlite
 *.db
+.agent/creds.md
