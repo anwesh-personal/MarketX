@@ -5,6 +5,7 @@ import { aggregateAnalytics } from '../processors/analytics/aggregator'
 
 const worker = new Worker(QueueName.ANALYTICS, aggregateAnalytics, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 2,
     limiter: {
         max: 3,

@@ -197,6 +197,7 @@ async function processDreamStateJob(job: Job<DreamStateJob>) {
 
 const worker = new Worker(QueueName.DREAM_STATE, processDreamStateJob, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 2, // Lower concurrency - background tasks
     limiter: {
         max: 5,

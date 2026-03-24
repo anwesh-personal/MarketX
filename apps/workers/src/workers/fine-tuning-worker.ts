@@ -368,6 +368,7 @@ async function processFineTuningJob(job: Job<FineTuningJob>): Promise<FineTuning
 
 const worker = new Worker(QueueName.FINE_TUNING, processFineTuningJob, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 1, // Fine-tuning jobs are heavy, run one at a time
     limiter: {
         max: 2,

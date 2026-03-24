@@ -162,6 +162,7 @@ const worker = new Worker<ScheduledTaskJob>(
     processScheduledTask,
     {
         connection,
+        prefix: 'axiom:',
         concurrency: 5,
         limiter: {
             max: 20,

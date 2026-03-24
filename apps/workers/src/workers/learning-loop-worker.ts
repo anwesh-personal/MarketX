@@ -248,6 +248,7 @@ async function processLearningLoopJob(job: Job<LearningLoopJob>): Promise<Learni
 
 const worker = new Worker(QueueName.LEARNING_LOOP, processLearningLoopJob, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 1,
     limiter: {
         max: 1,

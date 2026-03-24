@@ -208,7 +208,7 @@ export async function POST(req: NextRequest) {
         }
 
         const redisConnection = await getRedisConnectionConfig()
-        const engineQueue = new Queue('engine-execution', { connection: redisConnection })
+        const engineQueue = new Queue('engine-execution', { connection: redisConnection, prefix: 'axiom:' })
         await engineQueue.add('engine-execution', {
             executionId,
             engineId: engine.id,

@@ -104,7 +104,7 @@ export async function POST(
 
             // Engine found - queue to engine-execution
             const executionId = randomUUID();
-            const engineQueue = new Queue('engine-execution', { connection: getRedisConfig() });
+            const engineQueue = new Queue('engine-execution', { connection: getRedisConfig(), prefix: 'axiom:' });
 
             const { error: logError } = await supabase
                 .from('engine_run_logs')
@@ -182,7 +182,7 @@ export async function POST(
         }
 
         const executionId = randomUUID();
-        const engineQueue = new Queue('engine-execution', { connection: getRedisConfig() });
+        const engineQueue = new Queue('engine-execution', { connection: getRedisConfig(), prefix: 'axiom:' });
 
         const { error: logError } = await supabase
             .from('engine_run_logs')

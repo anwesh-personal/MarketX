@@ -5,6 +5,7 @@ import { processKBDocument } from '../processors/kb/kb-processor'
 
 const worker = new Worker(QueueName.KB_PROCESSING, processKBDocument, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 5,
     limiter: {
         max: 10,

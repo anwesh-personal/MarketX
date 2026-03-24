@@ -5,6 +5,7 @@ import { summarizeConversation } from '../processors/conversation/summarizer'
 
 const worker = new Worker(QueueName.CONVERSATION_SUMMARY, summarizeConversation, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 3,
     limiter: {
         max: 5,

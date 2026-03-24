@@ -356,6 +356,7 @@ const worker = new Worker<MasteryAgentJob, MasteryAgentResult>(
     processMasteryAgentJob,
     {
         connection: getRedisConnectionOptions(),
+        prefix: 'axiom:',
         concurrency: 8,
         limiter: { max: 50, duration: 60000 },
     }

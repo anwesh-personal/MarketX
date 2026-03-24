@@ -5,6 +5,7 @@ import { processWorkflowExecution } from '../processors/workflow/workflow-proces
 
 const worker = new Worker(QueueName.WORKFLOW_EXECUTION, processWorkflowExecution, {
     connection: redisConfig,
+    prefix: 'axiom:',
     concurrency: 10, // Higher concurrency for workflow execution
     limiter: {
         max: 20,

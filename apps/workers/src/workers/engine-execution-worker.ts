@@ -261,6 +261,7 @@ const worker = new Worker<EngineExecutionJob, EngineExecutionResult>(
     processEngineExecution,
     {
         connection: getRedisConnectionOptions(),
+        prefix: 'axiom:',
         concurrency: 2,
         limiter: {
             max: 10,

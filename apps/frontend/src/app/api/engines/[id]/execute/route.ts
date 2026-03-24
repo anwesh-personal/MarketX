@@ -39,7 +39,8 @@ const getRedisConfig = () => {
 };
 
 const engineQueue = new Queue('engine-execution', {
-    connection: getRedisConfig()
+    connection: getRedisConfig(),
+    prefix: 'axiom:',
 });
 
 // ============================================================================
