@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { getTransactionalEmailService } from '@/services/email/TransactionalEmailService';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// POST - Send password reset email
+// POST - Generate password reset link + send via configured provider
 export async function POST(request: NextRequest) {
     try {
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
 
         const body = await request.json();
         const { email } = body;
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Email required' }, { status: 400 });
         }
 
-        // Generate password reset link
+        // Generate password reset link via Supabase Auth
         const { data, error } = await supabase.auth.admin.generateLink({
             type: 'recovery',
             email,
@@ -37,18 +38,29 @@ export async function POST(request: NextRequest) {
         if (error) {
             console.error('Password reset error:', error);
             return NextResponse.json(
-                { error: `Failed to send reset email: ${error.message}` },
+                { error: `Failed to generate reset link: ${error.message}` },
                 { status: 500 }
             );
         }
 
-        console.log('✅ Password reset email sent to:', email);
-        console.log('📧 Reset link (if email fails):', data.properties.action_link);
+        const resetLink = data.properties.action_link;
 
+        // Send via configured system email provider (if available)
+        const txEmail = getTransactionalEmailService();
+        const sendResult = await txEmail.send('password_reset', email, {
+            email,
+            reset_link: resetLink,
+            expiry_hours: '24',
+        }, { sentBy: admin.id });
+
+        // Always return the link as fallback (for manual sharing)
         return NextResponse.json({
-            message: 'Password reset email sent successfully',
-            // Include link for manual sharing if needed
-            reset_link: data.properties.action_link,
+            message: sendResult.success
+                ? 'Password reset email sent successfully'
+                : 'Reset link generated (email delivery may have failed)',
+            reset_link: resetLink,
+            email_sent: sendResult.success,
+            email_error: sendResult.error || null,
         });
     } catch (error) {
         console.error('Password reset POST error:', error);
