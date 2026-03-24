@@ -2,35 +2,24 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-    Send, Settings, TestTube, Loader2, Check, X,
-    RefreshCw, Mail, FileText, Clock, AlertTriangle,
-    CheckCircle, ChevronDown, ChevronUp, Eye, Edit3,
-    Activity, Server, Zap,
+    Send, Settings, TestTube, Loader2, FileText, Clock,
+    AlertTriangle, CheckCircle, RefreshCw, Server,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useSuperadminAuth } from '@/lib/useSuperadminAuth'
-import { SystemEmailConfig } from './SystemEmailConfig'
 import { TemplateList } from './TemplateList'
 import { SendLogs } from './SendLogs'
 import { TestSendModal } from './TestSendModal'
 import { TemplateEditor } from './TemplateEditor'
 
-// ── Types ──────────────────────────────────────────
+// ── Types ────────────────────────────────────
 
-interface Config {
-    providerId: string | null
-    providerType: string | null
+interface SmtpStatus {
+    isConfigured: boolean
+    host: string | null
+    fromEmail: string | null
     fromName: string
-    fromAddress: string
-    replyTo: string | null
     appName: string
-    provider: {
-        id: string
-        display_name: string
-        provider_type: string
-        is_active: boolean
-        health_status: string
-    } | null
 }
 
 interface Template {
@@ -42,12 +31,6 @@ interface Template {
     created_at: string; updated_at: string
 }
 
-interface Provider {
-    id: string; display_name: string
-    provider_type: string; is_active: boolean
-    health_status: string; scope: string
-}
-
 interface LogEntry {
     id: string; template_slug: string; recipient: string
     subject: string; provider_type: string | null
@@ -55,19 +38,18 @@ interface LogEntry {
     error: string | null; sent_at: string
 }
 
-export type { Config, Template, Provider, LogEntry }
+export type { SmtpStatus, Template, LogEntry }
 
-// ── Page ───────────────────────────────────────────
+// ── Page ─────────────────────────────────────
 
 export default function SystemEmailPage() {
     const { fetchWithAuth } = useSuperadminAuth()
     const [loading, setLoading] = useState(true)
-    const [config, setConfig] = useState<Config | null>(null)
+    const [smtp, setSmtp] = useState<SmtpStatus | null>(null)
     const [templates, setTemplates] = useState<Template[]>([])
-    const [providers, setProviders] = useState<Provider[]>([])
     const [logs, setLogs] = useState<LogEntry[]>([])
     const [stats, setStats] = useState({ total: 0, sent: 0, failed: 0 })
-    const [tab, setTab] = useState<'config' | 'templates' | 'logs'>('config')
+    const [tab, setTab] = useState<'templates' | 'logs'>('templates')
     const [showTestModal, setShowTestModal] = useState(false)
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
 
@@ -75,12 +57,11 @@ export default function SystemEmailPage() {
         try {
             const res = await fetchWithAuth('/api/superadmin/system-email')
             const data = await res.json()
-            if (data.config) setConfig(data.config)
+            if (data.smtp) setSmtp(data.smtp)
             if (data.templates) setTemplates(data.templates)
-            if (data.available_providers) setProviders(data.available_providers)
             if (data.recent_logs) setLogs(data.recent_logs)
             if (data.stats) setStats(data.stats)
-        } catch { toast.error('Failed to load system email config') }
+        } catch { toast.error('Failed to load') }
         finally { setLoading(false) }
     }, [fetchWithAuth])
 
@@ -104,7 +85,7 @@ export default function SystemEmailPage() {
                         <h1 className="text-3xl font-bold font-display text-textPrimary">System Email</h1>
                     </div>
                     <p className="text-textSecondary ml-1 max-w-2xl">
-                        Configure transactional emails — password resets, welcome emails, invitations. All templates are editable. Uses your configured email providers.
+                        Internal transactional emails — password resets, welcome, invitations, alerts. Uses the SMTP configured in Settings → Email. Completely separate from client email providers.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -117,13 +98,24 @@ export default function SystemEmailPage() {
                 </div>
             </div>
 
+            {/* SMTP Status Banner */}
+            {smtp && !smtp.isConfigured && (
+                <div className="p-4 rounded-xl bg-warning/5 border border-warning/20 flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0" />
+                    <div>
+                        <p className="text-sm font-medium text-warning">SMTP Not Configured</p>
+                        <p className="text-xs text-textSecondary mt-0.5">Go to <strong>Settings → Email</strong> to configure SMTP host, port, credentials, and from address.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Templates', value: templates.length, icon: FileText, color: 'text-accent' },
+                    { label: 'Templates', value: templates.filter(t => t.is_active).length, icon: FileText, color: 'text-accent' },
                     { label: 'Emails Sent', value: stats.sent, icon: CheckCircle, color: 'text-success' },
                     { label: 'Failed', value: stats.failed, icon: AlertTriangle, color: 'text-error' },
-                    { label: 'Provider', value: config?.provider?.display_name || 'Not set', icon: Server, color: config?.provider ? 'text-success' : 'text-warning' },
+                    { label: 'SMTP', value: smtp?.isConfigured ? smtp.host : 'Not set', icon: Server, color: smtp?.isConfigured ? 'text-success' : 'text-warning' },
                 ].map(s => (
                     <div key={s.label} className="premium-card !p-4 flex items-center gap-4">
                         <s.icon className={`w-8 h-8 ${s.color} flex-shrink-0`} />
@@ -138,8 +130,7 @@ export default function SystemEmailPage() {
             {/* Tabs */}
             <div className="flex border-b border-border">
                 {([
-                    { id: 'config' as const, label: 'Configuration', icon: Settings },
-                    { id: 'templates' as const, label: 'Templates', icon: FileText },
+                    { id: 'templates' as const, label: 'Email Templates', icon: FileText },
                     { id: 'logs' as const, label: 'Send Log', icon: Clock },
                 ]).map(t => (
                     <button key={t.id} onClick={() => setTab(t.id)}
@@ -149,15 +140,7 @@ export default function SystemEmailPage() {
                 ))}
             </div>
 
-            {/* Tab Content */}
-            {tab === 'config' && config && (
-                <SystemEmailConfig
-                    config={config}
-                    providers={providers}
-                    fetchWithAuth={fetchWithAuth}
-                    onSaved={load}
-                />
-            )}
+            {/* Content */}
             {tab === 'templates' && (
                 <TemplateList
                     templates={templates}
@@ -169,9 +152,9 @@ export default function SystemEmailPage() {
             {tab === 'logs' && <SendLogs logs={logs} />}
 
             {/* Modals */}
-            {showTestModal && config && (
+            {showTestModal && smtp && (
                 <TestSendModal
-                    config={config}
+                    smtp={smtp}
                     fetchWithAuth={fetchWithAuth}
                     onClose={() => setShowTestModal(false)}
                     onSent={load}

@@ -1,35 +1,34 @@
 /**
  * TRANSACTIONAL EMAIL SERVICE
  * ===========================
- * Sends system/transactional emails using whatever provider is configured
- * in superadmin. Templates come from the database, not from code.
+ * Sends INTERNAL system/transactional emails (password resets, welcome,
+ * invites, notifications). Completely independent of the Email Providers
+ * system (which is for customer campaign sending via MailWizz/SES/etc).
  *
- * Usage:
- *   const txEmail = new TransactionalEmailService()
- *   await txEmail.send('password_reset', 'user@example.com', {
- *     reset_link: 'https://...',
- *     email: 'user@example.com',
- *   })
+ * SMTP config uses the EXISTING keys in config_table that are already
+ * managed from Superadmin → Settings → Email tab:
+ *   smtp_host, smtp_port, smtp_username, smtp_password, smtp_from_email
  *
- * Zero hardcoded content. Provider, templates, from name/address — all from DB.
+ * Templates come from system_email_templates table — fully editable
+ * from the Settings → System Email tab.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
-import { getEmailProviderAdapter } from '@/services/email/EmailProviderAdapter'
-import type { ProviderConfig, SendEmailResult } from '@/services/email/EmailProviderAdapter'
+import nodemailer from 'nodemailer'
 import { decryptSecret } from '@/lib/secrets'
 
-// ============================================================================
-// TYPES
-// ============================================================================
+// ── Types ─────────────────────────────────────────
 
-export interface SystemEmailConfig {
-    providerId: string | null
-    providerType: string | null
+export interface SystemSmtpConfig {
+    host: string
+    port: number
+    username: string
+    password: string
+    fromEmail: string
     fromName: string
-    fromAddress: string
     replyTo: string | null
     appName: string
+    isConfigured: boolean
 }
 
 export interface EmailTemplate {
@@ -39,11 +38,17 @@ export interface EmailTemplate {
     subject: string
     html_body: string
     text_body: string | null
-    variables: Array<{ name: string; required: boolean; description?: string; default?: string }>
+    variables: Array<{
+        name: string
+        required: boolean
+        description?: string
+        default?: string
+    }>
     is_active: boolean
+    category: string
 }
 
-export interface SendTransactionalResult {
+export interface SendResult {
     success: boolean
     messageId?: string
     error?: string
@@ -52,9 +57,7 @@ export interface SendTransactionalResult {
     logId?: string
 }
 
-// ============================================================================
-// SERVICE
-// ============================================================================
+// ── Service ───────────────────────────────────────
 
 export class TransactionalEmailService {
     private supabase: SupabaseClient
@@ -62,317 +65,188 @@ export class TransactionalEmailService {
     constructor() {
         const url = process.env.NEXT_PUBLIC_SUPABASE_URL
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-        if (!url || !key) throw new Error('Supabase credentials not configured')
+        if (!url || !key) throw new Error('Missing Supabase credentials')
         this.supabase = createClient(url, key)
     }
 
-    // ── Load system email config from config_table ─────────────────────
-
-    async getSystemEmailConfig(): Promise<SystemEmailConfig> {
+    /** Load SMTP config from existing config_table keys */
+    async getSmtpConfig(): Promise<SystemSmtpConfig> {
         const keys = [
-            'system_email_provider_id',
-            'system_email_from_name',
-            'system_email_from_address',
-            'system_email_reply_to',
+            'smtp_host', 'smtp_port', 'smtp_username',
+            'smtp_password', 'smtp_from_email',
+            'system_email_from_name', 'system_email_reply_to',
             'app_name',
         ]
-
         const { data: rows } = await this.supabase
             .from('config_table')
             .select('key, value')
             .in('key', keys)
 
-        const configMap: Record<string, any> = {}
+        const c: Record<string, any> = {}
         for (const row of rows || []) {
-            configMap[row.key] = row.value?.value ?? null
+            c[row.key] = row.value?.value ?? null
         }
 
+        const host = c['smtp_host'] || ''
+        const pw = c['smtp_password'] || ''
+
         return {
-            providerId: configMap['system_email_provider_id'] || null,
-            providerType: null, // resolved below if providerId set
-            fromName: configMap['system_email_from_name'] || 'Market Writer',
-            fromAddress: configMap['system_email_from_address'] || 'noreply@marketwriter.io',
-            replyTo: configMap['system_email_reply_to'] || null,
-            appName: configMap['app_name'] || 'Market Writer',
+            host,
+            port: parseInt(c['smtp_port']) || 587,
+            username: c['smtp_username'] || '',
+            password: decryptSecret(pw),
+            fromEmail: c['smtp_from_email'] || '',
+            fromName: c['system_email_from_name'] || c['app_name'] || 'Market Writer',
+            replyTo: c['system_email_reply_to'] || null,
+            appName: c['app_name'] || 'Market Writer',
+            isConfigured: Boolean(host && c['smtp_from_email']),
         }
     }
 
-    // ── Load a template by slug ─────────────────────────────────────────
+    /** Create nodemailer transport */
+    private createTransport(cfg: SystemSmtpConfig) {
+        const secure = cfg.port === 465
+        return nodemailer.createTransport({
+            host: cfg.host,
+            port: cfg.port,
+            secure,
+            auth: cfg.username
+                ? { user: cfg.username, pass: cfg.password }
+                : undefined,
+            tls: { rejectUnauthorized: true },
+            connectionTimeout: 10_000,
+            greetingTimeout: 10_000,
+            socketTimeout: 30_000,
+        })
+    }
 
+    /** Test SMTP connection */
+    async testConnection(): Promise<{
+        success: boolean
+        error?: string
+        latencyMs?: number
+    }> {
+        const cfg = await this.getSmtpConfig()
+        if (!cfg.isConfigured) {
+            return { success: false, error: 'SMTP not configured in Settings → Email' }
+        }
+        const t0 = Date.now()
+        try {
+            const t = this.createTransport(cfg)
+            await t.verify()
+            t.close()
+            return { success: true, latencyMs: Date.now() - t0 }
+        } catch (e: any) {
+            return { success: false, error: e.message, latencyMs: Date.now() - t0 }
+        }
+    }
+
+    /** Get template by slug */
     async getTemplate(slug: string): Promise<EmailTemplate | null> {
-        const { data, error } = await this.supabase
+        const { data } = await this.supabase
             .from('system_email_templates')
             .select('*')
             .eq('slug', slug)
             .eq('is_active', true)
             .single()
-
-        if (error || !data) return null
-        return data as EmailTemplate
+        return data as EmailTemplate | null
     }
 
-    // ── List all templates ──────────────────────────────────────────────
-
+    /** List all templates */
     async listTemplates(): Promise<EmailTemplate[]> {
         const { data } = await this.supabase
             .from('system_email_templates')
             .select('*')
             .order('category')
             .order('name')
-
         return (data || []) as EmailTemplate[]
     }
 
-    // ── Resolve variables in a string ───────────────────────────────────
-
-    private resolveVariables(template: string, variables: Record<string, string>): string {
-        return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            return variables[key] !== undefined ? variables[key] : match
-        })
+    /** Resolve {{variables}} */
+    private resolve(tpl: string, vars: Record<string, string>): string {
+        return tpl.replace(/\{\{(\w+)\}\}/g, (m, k) =>
+            vars[k] !== undefined ? vars[k] : m
+        )
     }
 
-    // ── Build and configure the provider adapter ───────────────────────
-
-    private async buildAdapter(config: SystemEmailConfig) {
-        if (!config.providerId) {
-            return null
-        }
-
-        // Load provider config from DB
-        const { data: provider } = await this.supabase
-            .from('email_provider_configs')
-            .select('*')
-            .eq('id', config.providerId)
-            .eq('is_active', true)
-            .single()
-
-        if (!provider) {
-            console.error(`[TransactionalEmail] Provider ${config.providerId} not found or inactive`)
-            return null
-        }
-
-        const adapter = getEmailProviderAdapter(provider.provider_type)
-        if (!adapter) {
-            console.error(`[TransactionalEmail] No adapter for provider type: ${provider.provider_type}`)
-            return null
-        }
-
-        // Build provider config — decrypt secrets
-        const adapterConfig: ProviderConfig = {
-            apiKey: decryptSecret(provider.api_key) || undefined,
-            apiSecret: decryptSecret(provider.api_secret) || undefined,
-            baseUrl: provider.api_base_url || undefined,
-            fromEmail: config.fromAddress,
-            fromName: config.fromName,
-            webhookSecret: provider.webhook_secret || undefined,
-            extra: {
-                smtp_host: provider.smtp_host,
-                smtp_port: provider.smtp_port,
-                smtp_username: decryptSecret(provider.smtp_username),
-                smtp_password: decryptSecret(provider.smtp_password),
-                smtp_encryption: provider.smtp_encryption,
-            },
-        }
-
-        adapter.configure(adapterConfig)
-        config.providerType = provider.provider_type
-
-        return { adapter, providerType: provider.provider_type }
-    }
-
-    // ── SEND ────────────────────────────────────────────────────────────
-
+    /** Send a transactional email */
     async send(
-        templateSlug: string,
+        slug: string,
         recipient: string,
         variables: Record<string, string>,
-        options?: {
-            /** Override from name for this send */
-            fromName?: string
-            /** Override from address for this send */
-            fromAddress?: string
-            /** Admin ID if triggered by superadmin */
-            sentBy?: string
-        }
-    ): Promise<SendTransactionalResult> {
+        opts?: { fromName?: string; fromAddress?: string; sentBy?: string }
+    ): Promise<SendResult> {
         try {
-            // 1. Load config
-            const config = await this.getSystemEmailConfig()
+            const cfg = await this.getSmtpConfig()
+            const tpl = await this.getTemplate(slug)
 
-            // 2. Load template
-            const template = await this.getTemplate(templateSlug)
-            if (!template) {
-                return {
-                    success: false,
-                    error: `Template "${templateSlug}" not found or inactive`,
-                    templateSlug,
-                    recipient,
-                }
+            if (!tpl) {
+                return { success: false, error: `Template "${slug}" not found or inactive`, templateSlug: slug, recipient }
             }
 
-            // 3. Inject system variables (always available)
-            const allVariables: Record<string, string> = {
-                app_name: config.appName,
+            // Merge system + caller + default vars
+            const vars: Record<string, string> = {
+                app_name: cfg.appName,
                 year: new Date().getFullYear().toString(),
                 ...variables,
             }
-
-            // Apply defaults from template variable definitions
-            for (const varDef of template.variables || []) {
-                if (allVariables[varDef.name] === undefined && varDef.default) {
-                    allVariables[varDef.name] = varDef.default
-                }
+            for (const v of tpl.variables || []) {
+                if (vars[v.name] === undefined && v.default) vars[v.name] = v.default
             }
 
-            // 4. Resolve template
-            const resolvedSubject = this.resolveVariables(template.subject, allVariables)
-            const resolvedHtml = this.resolveVariables(template.html_body, allVariables)
-            const resolvedText = template.text_body
-                ? this.resolveVariables(template.text_body, allVariables)
-                : undefined
+            const subject = this.resolve(tpl.subject, vars)
+            const html = this.resolve(tpl.html_body, vars)
+            const text = tpl.text_body ? this.resolve(tpl.text_body, vars) : undefined
 
-            // 5. Build provider
-            const adapterResult = await this.buildAdapter(config)
-            if (!adapterResult) {
-                // Log the failure
-                await this.logSend({
-                    template_id: template.id,
-                    template_slug: templateSlug,
-                    recipient,
-                    subject: resolvedSubject,
-                    provider_id: null,
-                    provider_type: null,
-                    status: 'failed',
-                    error: 'No email provider configured or provider inactive. Configure one in Superadmin → Email Providers, then set it in System Email settings.',
-                    variables: allVariables,
-                    sent_by: options?.sentBy || null,
+            if (!cfg.isConfigured) {
+                await this.log({ template_id: tpl.id, template_slug: slug, recipient, subject, status: 'failed', error: 'SMTP not configured. Go to Settings → Email.', variables: vars, sent_by: opts?.sentBy || null })
+                return { success: false, error: 'SMTP not configured. Set it up in Settings → Email.', templateSlug: slug, recipient }
+            }
+
+            const transport = this.createTransport(cfg)
+            const fromName = opts?.fromName || cfg.fromName
+            const fromAddr = opts?.fromAddress || cfg.fromEmail
+
+            try {
+                const info = await transport.sendMail({
+                    from: `"${fromName}" <${fromAddr}>`,
+                    to: recipient,
+                    replyTo: cfg.replyTo || undefined,
+                    subject, html, text,
                 })
-
-                return {
-                    success: false,
-                    error: 'No system email provider configured. Set one in Superadmin → Settings → System Email.',
-                    templateSlug,
-                    recipient,
-                }
+                const logId = await this.log({ template_id: tpl.id, template_slug: slug, recipient, subject, status: 'sent', message_id: info.messageId, variables: vars, sent_by: opts?.sentBy || null })
+                console.log(`✅ [SystemEmail] "${slug}" → ${recipient} (${info.messageId})`)
+                return { success: true, messageId: info.messageId, templateSlug: slug, recipient, logId }
+            } catch (err: any) {
+                await this.log({ template_id: tpl.id, template_slug: slug, recipient, subject, status: 'failed', error: err.message, variables: vars, sent_by: opts?.sentBy || null })
+                return { success: false, error: err.message, templateSlug: slug, recipient }
+            } finally {
+                transport.close()
             }
-
-            // 6. Send
-            const result: SendEmailResult = await adapterResult.adapter.sendEmail({
-                to: recipient,
-                subject: resolvedSubject,
-                htmlBody: resolvedHtml,
-                textBody: resolvedText,
-                fromName: options?.fromName || config.fromName,
-                fromEmail: options?.fromAddress || config.fromAddress,
-                replyTo: config.replyTo || undefined,
-            })
-
-            // 7. Log
-            const logId = await this.logSend({
-                template_id: template.id,
-                template_slug: templateSlug,
-                recipient,
-                subject: resolvedSubject,
-                provider_id: config.providerId,
-                provider_type: adapterResult.providerType,
-                status: result.success ? 'sent' : 'failed',
-                message_id: result.messageId || null,
-                error: result.error || null,
-                variables: allVariables,
-                sent_by: options?.sentBy || null,
-            })
-
-            if (!result.success) {
-                console.error(`[TransactionalEmail] Send failed: ${result.error}`)
-            } else {
-                console.log(`✅ [TransactionalEmail] Sent "${templateSlug}" to ${recipient} (${result.messageId})`)
-            }
-
-            return {
-                success: result.success,
-                messageId: result.messageId,
-                error: result.error,
-                templateSlug,
-                recipient,
-                logId,
-            }
-
-        } catch (error: any) {
-            console.error(`[TransactionalEmail] Error sending "${templateSlug}":`, error.message)
-            return {
-                success: false,
-                error: error.message,
-                templateSlug,
-                recipient,
-            }
+        } catch (e: any) {
+            return { success: false, error: e.message, templateSlug: slug, recipient }
         }
     }
 
-    // ── Send to multiple recipients ─────────────────────────────────────
-
-    async sendBatch(
-        templateSlug: string,
-        recipients: Array<{ email: string; variables: Record<string, string> }>,
-        options?: { sentBy?: string }
-    ): Promise<SendTransactionalResult[]> {
-        const results: SendTransactionalResult[] = []
+    /** Batch send */
+    async sendBatch(slug: string, recipients: Array<{ email: string; variables: Record<string, string> }>, opts?: { sentBy?: string }): Promise<SendResult[]> {
+        const results: SendResult[] = []
         for (const r of recipients) {
-            const result = await this.send(templateSlug, r.email, r.variables, {
-                sentBy: options?.sentBy,
-            })
-            results.push(result)
+            results.push(await this.send(slug, r.email, r.variables, { sentBy: opts?.sentBy }))
         }
         return results
     }
 
-    // ── Log ─────────────────────────────────────────────────────────────
-
-    private async logSend(data: {
-        template_id: string | null
-        template_slug: string
-        recipient: string
-        subject: string
-        provider_id: string | null
-        provider_type: string | null
-        status: string
-        message_id?: string | null
-        error?: string | null
-        variables?: Record<string, string> | null
-        sent_by?: string | null
-    }): Promise<string | undefined> {
+    private async log(d: { template_id: string | null; template_slug: string; recipient: string; subject: string; status: string; message_id?: string | null; error?: string | null; variables?: Record<string, string> | null; sent_by?: string | null }): Promise<string | undefined> {
         try {
-            const { data: row } = await this.supabase
-                .from('system_email_logs')
-                .insert({
-                    template_id: data.template_id,
-                    template_slug: data.template_slug,
-                    recipient: data.recipient,
-                    subject: data.subject,
-                    provider_id: data.provider_id,
-                    provider_type: data.provider_type,
-                    status: data.status,
-                    message_id: data.message_id || null,
-                    error: data.error || null,
-                    variables: data.variables || null,
-                    sent_by: data.sent_by || null,
-                })
-                .select('id')
-                .single()
-
+            const { data: row } = await this.supabase.from('system_email_logs').insert({ template_id: d.template_id, template_slug: d.template_slug, recipient: d.recipient, subject: d.subject, provider_id: null, provider_type: 'smtp', status: d.status, message_id: d.message_id || null, error: d.error || null, variables: d.variables || null, sent_by: d.sent_by || null }).select('id').single()
             return row?.id
-        } catch (e) {
-            console.error('[TransactionalEmail] Failed to log send:', e)
-            return undefined
-        }
+        } catch { return undefined }
     }
 }
 
-// Singleton for reuse across API routes
-let _instance: TransactionalEmailService | null = null
-
+let _inst: TransactionalEmailService | null = null
 export function getTransactionalEmailService(): TransactionalEmailService {
-    if (!_instance) {
-        _instance = new TransactionalEmailService()
-    }
-    return _instance
+    if (!_inst) _inst = new TransactionalEmailService()
+    return _inst
 }
