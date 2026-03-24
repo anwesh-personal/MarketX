@@ -103,7 +103,7 @@ export function SuperadminPanel({
     return (
         <section
             className={cn(
-                'group relative overflow-hidden rounded-[calc(var(--radius-xl)*1.6)] border border-border/80',
+                'group relative overflow-x-hidden rounded-[calc(var(--radius-xl)*1.6)] border border-border/80',
                 'bg-surface/85 backdrop-blur-xl transition-all duration-[var(--duration-normal)]',
                 'hover:-translate-y-[1px] hover:border-borderHover',
                 className
