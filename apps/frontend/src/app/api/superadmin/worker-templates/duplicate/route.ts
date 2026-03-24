@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * POST /api/superadmin/worker-templates/duplicate
@@ -7,6 +8,14 @@ import { createClient } from '@/lib/supabase/server';
  */
 export async function POST(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient();
         const { template_id, new_name } = await request.json();
 

@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,14 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { data: deployments, error } = await supabase
             .from('worker_deployments')
             .select(`
@@ -54,7 +63,15 @@ export async function POST(request: NextRequest) {
             server_ip,
             port,
             ssh_user,
-            ssh_key_encrypted,
+            ssh_k
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ey_encrypted,
             env_config,
             worker_config,
             auto_restart,
@@ -147,7 +164,15 @@ export async function PATCH(request: NextRequest) {
             .update(updates)
             .eq('id', id)
             .select(`
-        *,
+        *
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+,
         template:worker_templates(*)
       `)
             .single()
@@ -188,7 +213,15 @@ export async function DELETE(request: NextRequest) {
 
         if (deployment && deployment.status === 'running') {
             return NextResponse.json(
-                { error: 'Cannot delete running deployment. Stop it first.' },
+                { error: 'Cannot delete running deployment. Stop
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ it first.' },
                 { status: 400 }
             )
         }

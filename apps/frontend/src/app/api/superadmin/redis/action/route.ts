@@ -5,11 +5,20 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const WORKER_API_URL = process.env.WORKER_API_URL || 'http://localhost:3100'
 
 export async function POST(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const body = await request.json()
         const { queueName, action } = body
 

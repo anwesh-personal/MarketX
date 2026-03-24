@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,14 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         // Mark dead workers first
         await supabase.rpc('mark_dead_workers')
 
@@ -52,7 +61,15 @@ export async function POST(request: NextRequest) {
 
         // Validate required fields
         if (!worker_type || !hostname) {
-            return NextResponse.json(
+         
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+   return NextResponse.json(
                 { error: 'Missing required fields: worker_type, hostname' },
                 { status: 400 }
             )
@@ -114,7 +131,15 @@ export async function PATCH(request: NextRequest) {
 
         if (status) {
             const validStatuses = ['active', 'idle', 'dead']
-            if (!validStatuses.includes(status)) {
+   
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+         if (!validStatuses.includes(status)) {
                 return NextResponse.json(
                     { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
                     { status: 400 }
@@ -169,7 +194,15 @@ export async function DELETE(request: NextRequest) {
         console.error('Error unregistering worker:', error)
         return NextResponse.json(
             { error: error.message },
-            { status: 500 }
+            { stat
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+us: 500 }
         )
     }
 }

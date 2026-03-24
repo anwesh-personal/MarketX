@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,14 @@ const supabase = createClient(
 // GET - List all organizations
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { data: orgs, error } = await supabase
             .from('organizations')
             .select(`
@@ -51,7 +60,15 @@ export async function POST(request: NextRequest) {
 
         // Validate required fields
         if (!name || !slug) {
-            return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
+            return NextRespons
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+e.json({ error: 'Name and slug are required' }, { status: 400 });
         }
 
         // Check if slug already exists

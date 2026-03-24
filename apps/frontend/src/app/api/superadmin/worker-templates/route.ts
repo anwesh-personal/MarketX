@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * Worker Templates API
@@ -10,8 +11,16 @@ import { createClient } from '@/lib/supabase/server';
  * GET /api/superadmin/worker-templates
  * List all worker templates
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient();
 
         const { data: templates, error } = await supabase
@@ -50,7 +59,15 @@ export async function POST(request: NextRequest) {
             code_template,
             environment_vars,
             config,
-        } = await request.json();
+    
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+    } = await request.json();
 
         // Validation
         if (!name || !worker_type || !code_template) {
@@ -117,7 +134,15 @@ export async function PATCH(request: NextRequest) {
 
         const updateData: any = {};
         if (name) updateData.name = name;
-        if (description !== undefined) updateData.description = description;
+        if (description !== undefined) up
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+dateData.description = description;
         if (code_template) updateData.code_template = code_template;
         if (environment_vars) updateData.environment_vars = environment_vars;
         if (config) updateData.config = config;
@@ -170,7 +195,15 @@ export async function DELETE(request: NextRequest) {
 
         if (deployments && deployments.length > 0) {
             return NextResponse.json(
-                { error: 'Cannot delete template - it is in use by active deployments' },
+                { error: 'Cannot delete template - it is in use by active deployments' }
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+,
                 { status: 400 }
             );
         }

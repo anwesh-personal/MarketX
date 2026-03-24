@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBootstrapClient } from '@/lib/vps/bootstrapClient';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * PM2 Control API
@@ -13,6 +14,14 @@ import { getBootstrapClient } from '@/lib/vps/bootstrapClient';
  */
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const searchParams = request.nextUrl.searchParams;
         const server_id = searchParams.get('server_id');
 
@@ -44,7 +53,15 @@ export async function POST(request: NextRequest) {
 
         if (!action || !process_name) {
             return NextResponse.json(
-                { error: 'action and process_name required' },
+                { error: 'action and process_name req
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+uired' },
                 { status: 400 }
             );
         }

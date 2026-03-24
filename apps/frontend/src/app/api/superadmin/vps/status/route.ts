@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBootstrapClient } from '@/lib/vps/bootstrapClient';
 import { createClient } from '@/lib/supabase/server';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * Real-time Worker Status API
@@ -10,6 +11,14 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const searchParams = request.nextUrl.searchParams;
         const server_id = searchParams.get('server_id');
 

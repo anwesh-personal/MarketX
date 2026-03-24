@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeploymentProvider } from '@/lib/workers/deploymentProvider';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * GET /api/superadmin/workers/logs
@@ -7,6 +8,14 @@ import { getDeploymentProvider } from '@/lib/workers/deploymentProvider';
  */
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { searchParams } = new URL(request.url);
         const workerName = searchParams.get('workerName') || '';
 

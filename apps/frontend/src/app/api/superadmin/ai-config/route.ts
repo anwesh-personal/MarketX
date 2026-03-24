@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,8 +8,16 @@ const supabase = createClient(
 );
 
 // GET - Load AI config
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { data, error } = await supabase
             .from('system_configs')
             .select('value')
@@ -35,7 +44,15 @@ export async function POST(request: NextRequest) {
             .from('system_configs')
             .upsert({
                 key: 'ai_providers',
-                value: config,
+                valu
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+e: config,
                 updated_at: new Date().toISOString(),
             });
 

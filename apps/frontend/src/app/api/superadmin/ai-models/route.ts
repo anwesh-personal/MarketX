@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,14 @@ const supabase = createClient(
 // GET - List all AI models
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { searchParams } = new URL(request.url);
         const provider = searchParams.get('provider');
         const is_active = searchParams.get('is_active');
@@ -50,7 +59,15 @@ export async function POST(request: NextRequest) {
             model_name,
             key_name,
             input_cost_per_million,
-            output_cost_per_million,
+            output_co
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+st_per_million,
             context_window_tokens,
             tokens_per_page,
             max_output_tokens,
@@ -138,7 +155,15 @@ export async function PATCH(request: NextRequest) {
             .update(updates)
             .eq('id', id)
             .select()
-            .single();
+            
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+.single();
 
         if (error) throw error;
 
@@ -172,7 +197,15 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({
                 success: true,
                 deleted: data?.length || 0,
-                message: `Deleted ${data?.length || 0} untested seed models`
+                message: `Delet
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ed ${data?.length || 0} untested seed models`
             });
         }
 

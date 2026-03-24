@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDeploymentProvider } from '@/lib/workers/deploymentProvider';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * POST /api/superadmin/workers/action
@@ -7,6 +8,14 @@ import { getDeploymentProvider } from '@/lib/workers/deploymentProvider';
  */
 export async function POST(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { action, workerName } = await request.json();
 
         if (!action) {

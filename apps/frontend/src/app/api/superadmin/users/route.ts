@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,14 @@ const supabase = createClient(
 // GET - List all users across all organizations
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { data: users, error } = await supabase
             .from('users')
             .select(`
@@ -53,6 +62,14 @@ export async function POST(request: NextRequest) {
             org_id,
             role = 'member',
             can_upload_kb = false,
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
             can_trigger_runs = false,
             can_view_analytics = true,
             can_manage_team = false,
@@ -234,7 +251,15 @@ export async function PATCH(request: NextRequest) {
         if (new_password) {
             if (new_password.length < 8) {
                 return NextResponse.json(
-                    { error: 'Password must be at least 8 characters' },
+                    { error: 'Pa
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ssword must be at least 8 characters' },
                     { status: 400 }
                 );
             }
@@ -309,7 +334,15 @@ export async function DELETE(request: NextRequest) {
                 { error: `Failed to delete user: ${authError.message}` },
                 { status: 500 }
             );
-        }
+  
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+      }
 
         // Also delete from users table (in case cascade didn't work)
         await supabase.from('users').delete().eq('id', userId);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { calculateCost } from '@/lib/ai/costCalculator';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * AI Usage Logging API
@@ -13,6 +14,14 @@ import { calculateCost } from '@/lib/ai/costCalculator';
  */
 export async function POST(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient();
         const {
             provider_id,
@@ -126,7 +135,15 @@ export async function GET(request: NextRequest) {
         const searchParams = request.nextUrl.searchParams;
 
         const organization_id = searchParams.get('organization_id');
-        const user_id = searchParams.get('user_id');
+        const user_id = searchParams
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+.get('user_id');
         const provider = searchParams.get('provider');
         const limit = parseInt(searchParams.get('limit') || '100');
         const offset = parseInt(searchParams.get('offset') || '0');

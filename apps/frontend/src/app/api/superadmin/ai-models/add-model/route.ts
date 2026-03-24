@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { testModel, getModelCostInfo, formatModelName } from '@/lib/ai-providers';
 import { decryptSecret } from '@/lib/secrets';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * Add and test a single model
@@ -11,6 +12,14 @@ import { decryptSecret } from '@/lib/secrets';
 
 export async function POST(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.SUPABASE_SERVICE_ROLE_KEY!

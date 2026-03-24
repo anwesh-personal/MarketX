@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +20,14 @@ export async function GET(
     context: RouteContext
 ) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const { id } = await context.params;
 
         const { data: org, error } = await supabase
@@ -76,6 +85,14 @@ export async function PATCH(
     context: RouteContext
 ) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const { id } = await context.params;
         const updates = await request.json();
 
@@ -129,7 +146,7 @@ export async function PATCH(
         if (filteredUpdates.plan) {
             await supabase.from('license_transactions').insert({
                 org_id: id,
-                admin_id: null, // TODO: Add superadmin ID when auth is implemented
+                admin_id: admin.id,
                 transaction_type: 'plan_changed',
                 from_plan: existingOrg?.plan || null,
                 to_plan: filteredUpdates.plan,
@@ -158,6 +175,14 @@ export async function DELETE(
     context: RouteContext
 ) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const { id } = await context.params;
 
         // Soft delete - set status to suspended
@@ -176,7 +201,7 @@ export async function DELETE(
         // Log deletion
         await supabase.from('license_transactions').insert({
             org_id: id,
-            admin_id: null, // TODO: Add superadmin ID when auth is implemented
+            admin_id: admin.id,
             transaction_type: 'suspended',
             from_plan: org.plan || null,
             to_plan: org.plan || null,

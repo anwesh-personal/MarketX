@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 /**
  * VPS Server Management API
@@ -10,8 +11,16 @@ import { createClient } from '@/lib/supabase/server';
  * GET /api/superadmin/vps/servers
  * List all VPS servers
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient();
 
         const { data: servers, error } = await supabase
@@ -52,7 +61,15 @@ export async function POST(request: NextRequest) {
         const { name, description, host, port, username, password, ssh_key } = await request.json();
 
         if (!name || !host || !username) {
-            return NextResponse.json(
+            return N
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+extResponse.json(
                 { error: 'name, host, and username required' },
                 { status: 400 }
             );
@@ -118,7 +135,15 @@ export async function PATCH(request: NextRequest) {
 
         const updateData: any = {};
         if (name) updateData.name = name;
-        if (description !== undefined) updateData.description = description;
+        if (description !== undef
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ined) updateData.description = description;
         if (host) updateData.host = host;
         if (port) updateData.port = port;
         if (username) updateData.username = username;
@@ -184,7 +209,15 @@ export async function DELETE(request: NextRequest) {
     } catch (error: any) {
         console.error('Delete VPS server error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to delete server' },
+  
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+          { error: error.message || 'Failed to delete server' },
             { status: 500 }
         );
     }

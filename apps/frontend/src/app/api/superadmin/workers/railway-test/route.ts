@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@supabase/supabase-js';
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 function createClient() {
     return createServerClient(
@@ -19,8 +20,16 @@ const RAILWAY_API_URL = 'https://backboard.railway.com/graphql/v2';
 /**
  * GET - Test Railway API token and diagnose issues
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const supabase = createClient();
 
         const { data: config, error: configError } = await supabase

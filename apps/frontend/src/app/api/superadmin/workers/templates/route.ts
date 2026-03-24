@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getSuperadmin } from '@/lib/superadmin-middleware';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +22,14 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
     try {
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+
         const { data: templates, error } = await supabase
             .from('worker_templates')
             .select('*')
@@ -51,7 +60,15 @@ export async function POST(request: NextRequest) {
             code_template,
             config_schema,
             env_vars,
-            dependencies,
+           
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+ dependencies,
             docker_config
         } = body
 
@@ -120,7 +137,15 @@ export async function PATCH(request: NextRequest) {
             .update(updates)
             .eq('id', id)
             .select()
-            .single()
+            .
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+single()
 
         if (error) throw error
 
@@ -158,7 +183,15 @@ export async function DELETE(request: NextRequest) {
 
         if (deployments && deployments.length > 0) {
             return NextResponse.json(
-                { error: 'Cannot delete template: it is being used by active deployments' },
+                { error: 'Cannot delete template
+    const admin = await getSuperadmin(request);
+    if (!admin) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Valid superadmin token required' },
+        { status: 401 }
+      );
+    }
+: it is being used by active deployments' },
                 { status: 400 }
             )
         }
