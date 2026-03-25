@@ -82,7 +82,6 @@ type OrganizationRow = {
     id: string
     name: string | null
     status?: string | null
-    is_active?: boolean | null
     plan?: string | null
     created_at?: string | null
 }
@@ -241,10 +240,6 @@ function buildBuckets(range: AnalyticsRange, now = new Date()): Bucket[] {
 }
 
 function isActiveOrganization(org: OrganizationRow) {
-    if (typeof org.is_active === 'boolean') {
-        return org.is_active
-    }
-
     return (org.status || '').toLowerCase() === 'active'
 }
 
@@ -374,7 +369,7 @@ export async function fetchAnalyticsMetrics() {
     const thirtyDaysAgo = addDays(now, -30)
 
     const [orgsResult, usersResult, runsTodayResult, runsMonthResult, runsThirtyResult, usageResult, kbsResult] = await Promise.all([
-        supabase.from('organizations').select('id, name, status, is_active, plan, created_at'),
+        supabase.from('organizations').select('id, name, status, plan, created_at'),
         supabase.from('users').select('id'),
         supabase
             .from('engine_run_logs')
@@ -532,7 +527,7 @@ export async function fetchLicenseStats() {
             .select('id, transaction_type, from_plan, to_plan, price_usd, created_at'),
         supabase
             .from('organizations')
-            .select('id, status, is_active, plan, created_at'),
+            .select('id, status, plan, created_at'),
     ])
 
     if (transactionsResult.error) throw transactionsResult.error

@@ -55,20 +55,20 @@ export async function GET(request: NextRequest) {
 // POST - Create new organization
 export async function POST(request: NextRequest) {
     try {
+        const admin = await getSuperadmin(request);
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized', message: 'Valid superadmin token required' },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
         const { name, slug, plan = 'hobby', owner_email } = body;
 
         // Validate required fields
         if (!name || !slug) {
-            return NextRespons
-    const admin = await getSuperadmin(request);
-    if (!admin) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Valid superadmin token required' },
-        { status: 401 }
-      );
-    }
-e.json({ error: 'Name and slug are required' }, { status: 400 });
+            return NextResponse.json({ error: 'Name and slug are required' }, { status: 400 });
         }
 
         // Check if slug already exists
