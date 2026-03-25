@@ -280,7 +280,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 agentId = newAgent.id
             }
 
-            createdBrainAgents.push({ role: agentConfig.role, id: agentId })
+            createdBrainAgents.push({ role: agentConfig.role, id: agentId! })
         }
 
         // Primary brain agent = first agent marked is_primary, or first agent
@@ -336,7 +336,165 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             return NextResponse.json({ error: 'Failed to create engine deployment' }, { status: 500 })
         }
 
-        // ── 8. Audit log ─────────────────────────────────────────
+        // ── 8. Clone agent templates → org_agents ──────────────
+        // Look up agent template assignments for this brain + merge with
+        // resolved bundle agents to create fully-linked org_agents rows.
+        const createdOrgAgents: { slug: string; id: string; brain_agent_id: string | null }[] = []
+
+        // Fetch agent templates assigned to this brain (if brain exists)
+        let templatesByRole: Record<string, any> = {}
+        if (brainTemplate.id) {
+            const { data: assignments } = await supabase
+                .from('brain_agent_assignments')
+                .select('*, agent_templates(*)')
+                .eq('brain_template_id', brainTemplate.id)
+                .eq('is_enabled', true)
+                .order('priority')
+
+            for (const assign of (assignments || []) as any[]) {
+                const tmpl = assign.agent_templates
+                if (tmpl) {
+                    templatesByRole[tmpl.slug] = tmpl
+                }
+            }
+        }
+
+        for (const agentConfig of resolvedAgents) {
+            const roleSlug = (agentConfig.role || agentConfig.name || 'agent')
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+            // Find the matching brain_agents row we just created
+            const matchingBrainAgent = createdBrainAgents.find(
+                ba => ba.role === agentConfig.role
+            )
+
+            // Find the source agent template (if one was assigned to the brain)
+            const sourceTemplate = templatesByRole[roleSlug] || null
+
+            const orgAgentData = {
+                org_id,
+                user_id: assigned_user_id || null,
+                agent_template_id: sourceTemplate?.id || null,
+                engine_instance_id: engineInstance.id,
+                brain_agent_id: matchingBrainAgent?.id || null,
+
+                // Identity
+                slug: roleSlug,
+                name: agentConfig.name || sourceTemplate?.name || agentConfig.role,
+                description: agentConfig.description || sourceTemplate?.description || null,
+                avatar_emoji: sourceTemplate?.avatar_emoji || '🤖',
+                avatar_color: sourceTemplate?.avatar_color || 'primary',
+                category: sourceTemplate?.category || 'general',
+                product_target: sourceTemplate?.product_target || 'market_writer',
+
+                // Prompts — bundle config takes precedence over template
+                system_prompt: agentConfig.prompts?.foundation
+                    || sourceTemplate?.system_prompt || '',
+                persona_prompt: agentConfig.prompts?.persona
+                    || sourceTemplate?.persona_prompt || null,
+                instruction_prompt: sourceTemplate?.instruction_prompt || null,
+                guardrails_prompt: agentConfig.prompts?.guardrails
+                    || sourceTemplate?.guardrails_prompt || null,
+
+                // LLM config — bundle config takes precedence
+                preferred_provider: agentConfig.llm?.provider
+                    || sourceTemplate?.preferred_provider || defaultLlm.provider,
+                preferred_model: agentConfig.llm?.model
+                    || sourceTemplate?.preferred_model || defaultLlm.model,
+                temperature: agentConfig.llm?.temperature
+                    ?? sourceTemplate?.temperature ?? 0.7,
+                max_tokens: agentConfig.llm?.maxTokens
+                    ?? sourceTemplate?.max_tokens ?? 4096,
+
+                // Capabilities
+                tools_enabled: agentConfig.tools
+                    || sourceTemplate?.tools_enabled || [],
+                skills: sourceTemplate?.skills || [],
+
+                // Brain integration
+                can_access_brain: sourceTemplate?.can_access_brain ?? true,
+                can_write_to_brain: sourceTemplate?.can_write_to_brain ?? false,
+                has_own_kb: sourceTemplate?.has_own_kb ?? false,
+                kb_min_confidence: sourceTemplate?.kb_min_confidence ?? 0.6,
+
+                // Behavior
+                max_turns: agentConfig.max_turns
+                    || sourceTemplate?.max_turns || 10,
+                requires_approval: sourceTemplate?.requires_approval ?? false,
+
+                // Status
+                status: 'active',
+                is_active: true,
+                deployed_at: new Date().toISOString(),
+            }
+
+            const { data: orgAgent, error: orgAgentErr } = await supabase
+                .from('org_agents')
+                .insert(orgAgentData)
+                .select('id, slug')
+                .single()
+
+            if (orgAgentErr) {
+                console.error(`org_agents clone error (${roleSlug}):`, orgAgentErr)
+                continue
+            }
+
+            createdOrgAgents.push({
+                slug: orgAgent.slug,
+                id: orgAgent.id,
+                brain_agent_id: matchingBrainAgent?.id || null,
+            })
+
+            // Clone agent template KB entries → org_agent_kb
+            if (sourceTemplate?.id && sourceTemplate.has_own_kb) {
+                const { data: kbEntries } = await supabase
+                    .from('agent_template_kb')
+                    .select('title, content, content_type, tags, priority')
+                    .eq('agent_template_id', sourceTemplate.id)
+                    .eq('is_active', true)
+
+                if (kbEntries && kbEntries.length > 0) {
+                    const kbRows = kbEntries.map((entry: any) => ({
+                        org_agent_id: orgAgent.id,
+                        org_id,
+                        title: entry.title,
+                        content: entry.content,
+                        content_type: entry.content_type,
+                        tags: entry.tags,
+                        priority: entry.priority,
+                        is_active: true,
+                        source: 'template_clone',
+                    }))
+
+                    const { error: kbErr } = await supabase
+                        .from('org_agent_kb')
+                        .insert(kbRows)
+
+                    if (kbErr) {
+                        console.error(`org_agent_kb clone error (${roleSlug}):`, kbErr)
+                    }
+                }
+            }
+        }
+
+        // Enrich snapshot with org_agents info
+        ;(enrichedSnapshot as any).org_agents = createdOrgAgents
+
+        // Update engine_instances snapshot with org_agents
+        await supabase
+            .from('engine_instances')
+            .update({
+                snapshot: enrichedSnapshot,
+                config: {
+                    bundle_snapshot: enrichedSnapshot,
+                    flowConfig: { nodes, edges },
+                    brain_agent_id: primaryBrainAgentId,
+                    org_agents: createdOrgAgents,
+                },
+            })
+            .eq('id', engineInstance.id)
+
+        // ── 9. Audit log ─────────────────────────────────────────
         await supabase
             .from('engine_bundle_deployments')
             .insert({
@@ -356,13 +514,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             engine_instance_id: engineInstance.id,
             api_key: apiKey,   // shown once — admin must copy this
             brain_agents: createdBrainAgents,
+            org_agents: createdOrgAgents,
             primary_brain_agent_id: primaryBrainAgentId,
             org_id,
             org_name: org.name,
             agents_deployed: resolvedAgents.length,
+            org_agents_deployed: createdOrgAgents.length,
             workflow_template_id: workflowTemplate.id,
             workflow_name: workflowTemplate.name ?? null,
-            message: `Engine "${bundle.name}" deployed to "${org.name}" with ${resolvedAgents.length} agent(s). Workflow "${workflowTemplate.name ?? workflowTemplate.id}" snapshotted.`,
+            message: `Engine "${bundle.name}" deployed to "${org.name}" with ${resolvedAgents.length} agent(s) and ${createdOrgAgents.length} org agent(s). Workflow "${workflowTemplate.name ?? workflowTemplate.id}" snapshotted.`,
         }, { status: 201 })
 
     } catch (error: any) {
