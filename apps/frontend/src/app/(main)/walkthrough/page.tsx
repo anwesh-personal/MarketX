@@ -1,28 +1,30 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Play, Pause, SkipForward, SkipBack, RotateCcw, X, ChevronRight, ExternalLink } from 'lucide-react'
+import { Play, Pause, SkipForward, SkipBack, RotateCcw, ChevronRight, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { MEMBER_SLIDES, type MemberSlide } from './memberSlides'
 
+/* ── Feature card with bounce icon ── */
 function FeatureCard({ f, i, color }: { f: { icon: string; label: string; desc: string }; i: number; color: string }) {
     return (
         <motion.div initial={{ opacity: 0, y: 16, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.3 + i * 0.15, type: 'spring', stiffness: 300, damping: 22 }}
-            className="p-4 rounded-2xl bg-background border border-border/60 hover:border-opacity-100 transition-all group cursor-default"
+            transition={{ delay: 0.3 + i * 0.12, type: 'spring', stiffness: 300, damping: 22 }}
+            className="p-3 rounded-xl bg-background border border-border/60 transition-all group cursor-default"
             style={{ borderColor: `${color}20` }}>
             <div className="flex items-start gap-3">
-                <motion.div animate={{ rotate: [0, 8, -8, 0] }} transition={{ delay: 0.5 + i * 0.15, duration: 0.5 }}
-                    className="text-2xl flex-shrink-0 mt-0.5">{f.icon}</motion.div>
-                <div>
-                    <div className="text-sm font-bold text-textPrimary mb-1">{f.label}</div>
-                    <div className="text-xs text-textSecondary leading-relaxed">{f.desc}</div>
+                <motion.div animate={{ rotate: [0, 8, -8, 0] }} transition={{ delay: 0.5 + i * 0.12, duration: 0.5 }}
+                    className="text-xl flex-shrink-0 mt-0.5">{f.icon}</motion.div>
+                <div className="min-w-0">
+                    <div className="text-xs font-bold text-textPrimary mb-0.5">{f.label}</div>
+                    <div className="text-[11px] text-textSecondary leading-relaxed">{f.desc}</div>
                 </div>
             </div>
         </motion.div>
     )
 }
 
+/* ── Slide content renderer ── */
 function SlideView({ slide }: { slide: MemberSlide }) {
     const router = useRouter()
     const isBookend = slide.id === 'welcome' || slide.id === 'outro'
@@ -30,20 +32,27 @@ function SlideView({ slide }: { slide: MemberSlide }) {
     if (isBookend) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                <motion.div animate={{ scale: [1, 1.15, 1], rotate: [0, 8, -8, 0] }}
                     transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                    className="text-8xl mb-8">{slide.icon}</motion.div>
+                    className="text-7xl mb-6">{slide.icon}</motion.div>
                 <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    className="text-3xl font-black text-textPrimary mb-4 tracking-tight">{slide.title}</motion.h2>
-                <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                    className="text-sm text-textSecondary max-w-md leading-relaxed">{slide.narration}</motion.p>
+                    className="text-2xl font-black text-textPrimary mb-3 tracking-tight">{slide.title}</motion.h2>
+                <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                    className="text-sm text-textSecondary max-w-lg leading-relaxed mb-3">{slide.narration}</motion.p>
+                {slide.why && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }}
+                        className="max-w-md text-xs leading-relaxed px-4 py-3 rounded-xl border border-border/50"
+                        style={{ background: `${slide.color}08`, color: 'var(--color-text-secondary)' }}>
+                        💡 <span className="italic">{slide.why}</span>
+                    </motion.div>
+                )}
                 {slide.id === 'outro' && (
                     <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/kb-manager')}
-                        className="mt-8 px-6 py-3 rounded-2xl bg-accent text-white font-bold text-sm flex items-center gap-2"
+                        className="mt-6 px-6 py-3 rounded-2xl bg-accent text-white font-bold text-sm flex items-center gap-2"
                         style={{ boxShadow: '0 8px 32px rgba(99,102,241,0.3)' }}>
-                        Upload Your First KB <ChevronRight size={16} />
+                        Get Started <ChevronRight size={16} />
                     </motion.button>
                 )}
             </div>
@@ -51,25 +60,47 @@ function SlideView({ slide }: { slide: MemberSlide }) {
     }
 
     return (
-        <div className="flex flex-col h-full">
-            <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-4 mb-2">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
-                    style={{ background: `${slide.color}12`, boxShadow: `0 0 24px ${slide.color}15` }}>{slide.icon}</div>
-                <div className="flex-1">
-                    <h3 className="text-xl font-black text-textPrimary">{slide.title}</h3>
+        <div className="flex flex-col h-full overflow-y-auto hide-scrollbar">
+            {/* Header: step badge + title + link */}
+            <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-2">
+                {slide.step && (
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                        style={{ background: slide.color }}>
+                        {slide.step}
+                    </div>
+                )}
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                    style={{ background: `${slide.color}12` }}>{slide.icon}</div>
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-black text-textPrimary truncate">{slide.title}</h3>
                     {slide.route && (
                         <button onClick={() => router.push(slide.route!)}
-                            className="text-xs font-bold flex items-center gap-1 mt-1 transition-colors" style={{ color: slide.color }}>
-                            Go to page <ExternalLink size={10} />
+                            className="text-[11px] font-bold flex items-center gap-1 transition-colors" style={{ color: slide.color }}>
+                            Open this page <ExternalLink size={9} />
                         </button>
                     )}
                 </div>
             </motion.div>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}
-                className="text-sm text-textSecondary leading-relaxed mb-5 italic px-1">"{slide.narration}"</motion.p>
+
+            {/* Narration */}
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                className="text-xs text-textSecondary leading-relaxed mb-2 px-0.5">
+                {slide.narration}
+            </motion.p>
+
+            {/* Why box */}
+            {slide.why && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                    className="text-[11px] leading-relaxed px-3 py-2 rounded-lg border border-border/40 mb-3"
+                    style={{ background: `${slide.color}06` }}>
+                    <span className="font-bold" style={{ color: slide.color }}>Why this matters:</span>{' '}
+                    <span className="text-textSecondary">{slide.why}</span>
+                </motion.div>
+            )}
+
+            {/* Feature cards grid */}
             {slide.features && (
-                <div className="grid gap-3 flex-1">
+                <div className="grid grid-cols-2 gap-2 flex-1">
                     {slide.features.map((f, i) => <FeatureCard key={i} f={f} i={i} color={slide.color} />)}
                 </div>
             )}
@@ -77,6 +108,7 @@ function SlideView({ slide }: { slide: MemberSlide }) {
     )
 }
 
+/* ── Main walkthrough player ── */
 export default function MemberWalkthroughPage() {
     const [cur, setCur] = useState(0)
     const [playing, setPlaying] = useState(true)
@@ -110,15 +142,25 @@ export default function MemberWalkthroughPage() {
     }, [next, prev])
 
     return (
-        <div className="max-w-3xl mx-auto py-8">
+        <div className="max-w-3xl mx-auto py-6">
+            {/* Title */}
+            <div className="text-center mb-6">
+                <h1 className="text-2xl font-black text-textPrimary tracking-tight mb-1">MarketWriter Guide</h1>
+                <p className="text-sm text-textSecondary">Step-by-step walkthrough · {total} slides · ~{MEMBER_SLIDES.reduce((a, s) => a + s.duration, 0)}s</p>
+            </div>
+
             <div className="rounded-3xl bg-surface border border-border overflow-hidden" style={{ boxShadow: '0 16px 64px rgba(0,0,0,0.08)' }}>
                 {/* Top bar */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-surface/90 backdrop-blur-sm">
                     <div className="flex items-center gap-2 text-xs text-textTertiary">
-                        <span className="font-black" style={{ color: sl.color }}>{cur + 1}</span>
-                        <span>/</span><span>{total}</span>
-                        <span className="mx-2 text-border">|</span>
-                        <span className="font-medium">{sl.title}</span>
+                        {sl.step ? (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black text-white" style={{ background: sl.color }}>
+                                Step {sl.step}/7
+                            </span>
+                        ) : (
+                            <span className="font-bold" style={{ color: sl.color }}>{cur + 1}/{total}</span>
+                        )}
+                        <span className="font-medium text-textSecondary">{sl.title}</span>
                     </div>
                     <div className="text-xs text-textTertiary font-mono tabular-nums">{Math.ceil((sl.duration * (100 - progress)) / 100)}s</div>
                 </div>
@@ -130,12 +172,12 @@ export default function MemberWalkthroughPage() {
 
                 {/* Dots */}
                 <div className="flex justify-center gap-1.5 py-3">
-                    {MEMBER_SLIDES.map((_, i) => (
-                        <button key={i} onClick={() => goTo(i)}
+                    {MEMBER_SLIDES.map((s, i) => (
+                        <button key={i} onClick={() => goTo(i)} title={s.title}
                             className="rounded-full transition-all duration-300"
                             style={{
                                 width: i === cur ? 20 : 8, height: 8,
-                                background: i === cur ? sl.color : 'var(--color-border)',
+                                background: i === cur ? sl.color : i < cur ? `${sl.color}60` : 'var(--color-border)',
                                 boxShadow: i === cur ? `0 0 10px ${sl.color}40` : 'none',
                                 borderRadius: 999,
                             }} />
@@ -143,7 +185,7 @@ export default function MemberWalkthroughPage() {
                 </div>
 
                 {/* Content */}
-                <div className="px-8 pb-6" style={{ minHeight: 420 }}>
+                <div className="px-6 pb-5" style={{ minHeight: 440 }}>
                     <AnimatePresence mode="wait">
                         <motion.div key={sl.id}
                             initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }}
@@ -175,6 +217,20 @@ export default function MemberWalkthroughPage() {
                         <SkipForward size={14} />
                     </button>
                 </div>
+            </div>
+
+            {/* Quick-jump nav */}
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {MEMBER_SLIDES.filter(s => s.step).map(s => (
+                    <button key={s.id} onClick={() => goTo(MEMBER_SLIDES.indexOf(s))}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-border/50 bg-surface hover:bg-surfaceHover transition-colors flex items-center gap-1.5"
+                        style={{ color: s.color }}>
+                        <span className="w-4 h-4 rounded text-[9px] text-white flex items-center justify-center" style={{ background: s.color }}>
+                            {s.step}
+                        </span>
+                        {s.title.replace(/^Step \d: /, '')}
+                    </button>
+                ))}
             </div>
         </div>
     )
