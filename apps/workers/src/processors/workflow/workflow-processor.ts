@@ -499,18 +499,14 @@ async function executeNode(
                     const agentProvider = orgAgent.preferred_provider || brainAgent?.preferred_provider || 'anthropic';
                     const agentModel = orgAgent.preferred_model || brainAgent?.preferred_model || undefined;
 
-                    // 7. Call AI via existing aiService (uses org's API keys via engine context)
-                    const agentAiResult: AICallResult = await aiService.call(userPrompt, {
+                    // 7. Call AI via unified provider chain (org BYOK → platform keys)
+                    const agentAiResult: AICallResult = await aiService.callWithOrgContext(orgId, userPrompt, {
                         provider: agentProvider,
                         model: agentModel,
                         temperature: temperatureOverride ?? orgAgent.temperature ?? 0.7,
                         maxTokens: maxTokensOverride ?? orgAgent.max_tokens ?? 4096,
                         systemPrompt: systemPromptParts.join('\n\n'),
                         tier: job.data.tier,
-                        engineContext: job.data.options?.engineId ? {
-                            engineId: job.data.options.engineId,
-                            orgId,
-                        } : undefined,
                     });
 
                     content = {

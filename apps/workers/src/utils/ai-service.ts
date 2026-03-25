@@ -15,12 +15,13 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseConfig } from '../config/supabase';
+import { decryptSecret } from './secrets';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'perplexity';
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'perplexity' | 'mistral' | 'xai';
 
 export interface AIModel {
     provider: AIProvider;
@@ -250,7 +251,9 @@ class AIService {
             openai: 'gpt-4o-mini',
             anthropic: 'claude-3-5-sonnet-20241022',
             google: 'gemini-1.5-flash',
-            perplexity: 'llama-3.1-sonar-large-128k-online'
+            perplexity: 'llama-3.1-sonar-large-128k-online',
+            mistral: 'gpt-4o-mini',  // mistral uses OpenAI-compat endpoint
+            xai: 'gpt-4o-mini',      // xai uses OpenAI-compat endpoint
         };
 
         return AI_MODELS[defaults[provider]];
@@ -585,6 +588,172 @@ class AIService {
      */
     getAvailableProviders(): AIProvider[] {
         return Array.from(this.apiKeys.keys());
+    }
+
+    // ========================================================================
+    // UNIFIED PROVIDER RESOLUTION (Phase 3)
+    // Mirrors: apps/frontend/src/services/ai/AIProviderService.ts
+    //   Chain: engine BYOK → org BYOK → platform keys
+    // ========================================================================
+
+    /**
+     * Resolve the ordered provider chain for an org.
+     * Returns decrypted API keys in priority order.
+     */
+    async resolveProviderChain(
+        orgId: string,
+        preferredProvider?: string
+    ): Promise<Array<{ provider: string; apiKey: string; model?: string }>> {
+        // Fetch org-specific BYOK keys
+        const { data: orgKeys } = await supabase
+            .from('ai_providers')
+            .select('provider, api_key, selected_model, priority, failures')
+            .eq('org_id', orgId)
+            .eq('is_active', true)
+            .is('auto_disabled_at', null)
+            .not('api_key', 'is', null)
+            .order('priority', { ascending: true })
+            .order('failures', { ascending: true });
+
+        // Fetch platform-level keys
+        const { data: platformKeys } = await supabase
+            .from('ai_providers')
+            .select('provider, api_key, selected_model, priority, failures')
+            .is('org_id', null)
+            .eq('is_active', true)
+            .is('auto_disabled_at', null)
+            .not('api_key', 'is', null)
+            .order('priority', { ascending: true })
+            .order('failures', { ascending: true });
+
+        const allRows = [...(orgKeys ?? []), ...(platformKeys ?? [])].map(row => ({
+            provider: row.provider,
+            apiKey: decryptSecret(row.api_key),
+            model: row.selected_model || undefined,
+        }));
+
+        // Put preferred provider first
+        const chain: typeof allRows = [];
+
+        if (preferredProvider) {
+            const preferred = allRows.find(r => r.provider === preferredProvider);
+            if (preferred) chain.push(preferred);
+        }
+
+        for (const row of allRows) {
+            if (preferredProvider && row.provider === preferredProvider) continue;
+            chain.push(row);
+        }
+
+        return chain;
+    }
+
+    /**
+     * Call AI with org-aware provider resolution.
+     * Uses the same chain as the frontend: org keys → platform keys.
+     * Falls back through providers on failure (not auth errors).
+     */
+    async callWithOrgContext(
+        orgId: string,
+        prompt: string,
+        options: AICallOptions = {}
+    ): Promise<AICallResult> {
+        if (!this.initialized) await this.initialize();
+
+        const chain = await this.resolveProviderChain(
+            orgId,
+            options.provider
+        );
+
+        if (chain.length === 0) {
+            // Fall back to the legacy loadApiKeys approach
+            console.warn(`[AIService] No org/platform keys for org ${orgId}, using legacy keys`);
+            return this.call(prompt, options);
+        }
+
+        let lastError: Error | null = null;
+
+        for (const link of chain) {
+            try {
+                const provider = link.provider as AIProvider;
+                const modelId = options.model || link.model || this.getDefaultModel(provider)?.modelId;
+
+                if (!modelId) {
+                    continue; // No model available for this provider
+                }
+
+                console.log(`🔐 [AIService] Trying ${provider}/${modelId} for org ${orgId}`);
+
+                const startTime = Date.now();
+                let result: AICallResult;
+
+                switch (provider) {
+                    case 'openai':
+                        result = await this.callOpenAI(prompt, modelId, link.apiKey, options);
+                        break;
+                    case 'anthropic':
+                        result = await this.callAnthropic(prompt, modelId, link.apiKey, options);
+                        break;
+                    case 'google':
+                        result = await this.callGoogle(prompt, modelId, link.apiKey, options);
+                        break;
+                    case 'perplexity':
+                        result = await this.callPerplexity(prompt, modelId, link.apiKey, options);
+                        break;
+                    default:
+                        // For now, xai/mistral use OpenAI-compatible API
+                        result = await this.callOpenAI(prompt, modelId, link.apiKey, options);
+                        break;
+                }
+
+                result.durationMs = Date.now() - startTime;
+                const model = AI_MODELS[modelId];
+                if (model) {
+                    result.cost = this.calculateCost(model, result.tokens.input, result.tokens.output);
+                }
+
+                console.log(`✅ [AIService] ${provider}/${modelId} for org ${orgId}: ${result.tokens.total} tokens, $${result.cost.toFixed(6)}`);
+                return result;
+            } catch (error: any) {
+                lastError = error;
+                console.error(`[AIService] Provider ${link.provider} failed:`, error.message);
+
+                // Auth errors: stop immediately, don't try other keys
+                if (error.message?.includes('401') || error.message?.includes('403')) {
+                    throw error;
+                }
+
+                continue;
+            }
+        }
+
+        throw lastError || new Error(`All providers failed for org ${orgId}`);
+    }
+
+    /**
+     * Convenience method for agent node execution.
+     * Takes an org_agent's preferred provider/model and resolves through the full chain.
+     */
+    async callForAgent(
+        orgId: string,
+        prompt: string,
+        agentConfig: {
+            preferredProvider?: string;
+            preferredModel?: string;
+            temperature?: number;
+            maxTokens?: number;
+            systemPrompt?: string;
+        },
+        tier: string = 'pro'
+    ): Promise<AICallResult> {
+        return this.callWithOrgContext(orgId, prompt, {
+            provider: agentConfig.preferredProvider as AIProvider || undefined,
+            model: agentConfig.preferredModel || undefined,
+            temperature: agentConfig.temperature,
+            maxTokens: agentConfig.maxTokens,
+            systemPrompt: agentConfig.systemPrompt,
+            tier: tier as any,
+        });
     }
 }
 
