@@ -36,6 +36,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     const [isReady, setIsReady] = useState(false);
 
     const navigation = [
+        { name: 'Walkthrough', href: '/walkthrough', icon: BookOpen, group: 'Guide', highlight: true },
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
         { name: 'Portal', href: '/portal', icon: BarChart3, group: 'Overview' },
         { name: 'Writer Studio', href: '/writer', icon: Zap, group: 'Content' },
@@ -45,7 +46,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { name: 'Learning Loop', href: '/learning', icon: Brain, group: 'Brain' },
         { name: 'Analytics', href: '/analytics', icon: BarChart3, group: 'Insights' },
         { name: 'Settings', href: '/settings', icon: Settings, group: 'Insights' },
-        { name: 'Walkthrough', href: '/walkthrough', icon: BookOpen, group: 'Guide' },
     ];
 
     // Check authentication
@@ -129,7 +129,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     `}>
                         <nav className="flex-1 py-md px-sm overflow-y-auto hide-scrollbar space-y-6">
                             {(() => {
-                                const groups = ['Overview', 'Content', 'Brain', 'Insights', 'Guide'];
+                                const groups = ['Guide', 'Overview', 'Content', 'Brain', 'Insights'];
                                 return groups.map((group) => {
                                     const items = navigation.filter(item => item.group === group);
                                     if (items.length === 0) return null;
@@ -139,21 +139,35 @@ export default function MainLayout({ children }: MainLayoutProps) {
                                             {items.map((item) => {
                                                 const Icon = item.icon;
                                                 const isActive = pathname === item.href || pathname?.startsWith(item.href + '/');
+                                                const isHighlight = (item as any).highlight;
                                                 return (
                                                     <Link
                                                         key={item.name}
                                                         href={item.href}
                                                         className={`nav-item sidebar-item ${isActive ? 'sidebar-item-active' : ''}`}
+                                                        style={isHighlight && !isActive ? {
+                                                            background: 'rgba(var(--color-accent-rgb, 99,102,241), 0.06)',
+                                                            borderColor: 'rgba(var(--color-accent-rgb, 99,102,241), 0.2)',
+                                                            borderWidth: '1px',
+                                                            borderStyle: 'solid',
+                                                            borderRadius: 'var(--radius-lg)',
+                                                        } : undefined}
                                                     >
                                                         <div className={`
                                                             flex items-center justify-center w-8 h-8
                                                             rounded-[var(--radius-md)]
                                                             transition-all duration-[var(--duration-fast)]
-                                                            ${isActive ? 'bg-accent text-onAccent shadow-md' : 'bg-surface border border-border text-textSecondary group-hover:border-borderHover'}
+                                                            ${isActive ? 'bg-accent text-onAccent shadow-md' : isHighlight ? 'bg-accent/20 text-accent' : 'bg-surface border border-border text-textSecondary group-hover:border-borderHover'}
                                                         `}>
                                                             <Icon className="w-4 h-4" />
                                                         </div>
-                                                        <span className="flex-1 font-medium">{item.name}</span>
+                                                        <span className={`flex-1 font-medium ${isHighlight && !isActive ? 'text-accent' : ''}`}>{item.name}</span>
+                                                        {isHighlight && !isActive && (
+                                                            <div className="relative flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
+                                                            </div>
+                                                        )}
                                                     </Link>
                                                 );
                                             })}

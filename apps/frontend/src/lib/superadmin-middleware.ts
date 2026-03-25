@@ -98,20 +98,57 @@ export async function getSuperadmin(request: NextRequest): Promise<SuperadminCon
 }
 
 /**
+ * Custom error class for authentication failures.
+ * Thrown by requireSuperadmin so that generic catch(error) blocks
+ * can detect it and return the correct 401 status instead of 500.
+ */
+export class SuperadminAuthError extends Error {
+    status: number
+    constructor(message = 'Unauthorized - Valid superadmin token required') {
+        super(message)
+        this.name = 'SuperadminAuthError'
+        this.status = 401
+    }
+}
+
+/**
  * Require superadmin authentication.
- * Returns admin context or throws 401 response.
+ * Returns admin context or throws SuperadminAuthError (a real Error, not a Response).
  */
 export async function requireSuperadmin(request: NextRequest): Promise<SuperadminContext> {
     const admin = await getSuperadmin(request)
 
     if (!admin) {
-        throw NextResponse.json(
-            { error: 'Unauthorized - Valid superadmin token required' },
-            { status: 401 }
-        )
+        throw new SuperadminAuthError()
     }
 
     return admin
+}
+
+/**
+ * Helper for catch blocks: if the error is a SuperadminAuthError,
+ * return a proper 401 JSON response. Otherwise return null so the
+ * caller can handle it as a normal error.
+ *
+ * Usage in API routes:
+ *   catch (error: any) {
+ *       const authErr = handleAuthError(error)
+ *       if (authErr) return authErr
+ *       // ... normal error handling
+ *   }
+ */
+export function handleAuthError(error: any): NextResponse | null {
+    if (error instanceof SuperadminAuthError) {
+        return NextResponse.json(
+            { error: error.message },
+            { status: error.status }
+        )
+    }
+    // Also catch legacy Response throws (backwards compat)
+    if (error instanceof Response) {
+        return error as unknown as NextResponse
+    }
+    return null
 }
 
 /**

@@ -27,10 +27,11 @@ export async function GET(request: NextRequest) {
             })),
         });
     } catch (error: any) {
+        if (error instanceof Response) return error;
         console.error('Error fetching AI providers:', error);
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            { error: error.message || 'Internal server error' },
+            { status: error.status || 500 }
         );
     }
 }
@@ -106,10 +107,11 @@ export async function POST(request: NextRequest) {
             }
         });
     } catch (error: any) {
+        if (error instanceof Response) return error;
         console.error('Error creating AI provider:', error);
         return NextResponse.json(
             { error: error.message || 'Failed to create AI provider' },
-            { status: 500 }
+            { status: error.status || 500 }
         );
     }
 }
@@ -149,10 +151,11 @@ export async function PATCH(request: NextRequest) {
             provider: data ? { ...data, api_key: maskSecret(data.api_key), has_api_key: Boolean(data.api_key) } : null,
         });
     } catch (error: any) {
+        if (error instanceof Response) return error;
         console.error('Error updating AI provider:', error);
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            { error: error.message || 'Internal server error' },
+            { status: error.status || 500 }
         );
     }
 }
@@ -180,10 +183,11 @@ export async function DELETE(request: NextRequest) {
 
         return NextResponse.json({ success: true });
     } catch (error: any) {
+        if (error instanceof Response) return error;
         console.error('Error deleting AI provider:', error);
         return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
+            { error: error.message || 'Internal server error' },
+            { status: error.status || 500 }
         );
     }
 }

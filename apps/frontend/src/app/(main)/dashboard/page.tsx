@@ -54,6 +54,10 @@ export default function DashboardPage() {
     const [userId, setUserId] = useState('');
     const [orgId, setOrgId] = useState('');
     const [orgName, setOrgName] = useState('');
+    const [walkthroughDismissed, setWalkthroughDismissed] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('mw_walkthrough_dismissed') === '1';
+    });
 
     useEffect(() => {
         checkAuth();
@@ -249,6 +253,42 @@ export default function DashboardPage() {
                             className="btn btn-sm px-4 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition-colors flex items-center gap-1.5">
                             <Sparkles className="w-3 h-3" /> Continue Setup
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Walkthrough Guide Banner */}
+            {!walkthroughDismissed && (
+                <div className="relative overflow-hidden rounded-2xl border border-accent/20 p-4 sm:p-5 animate-fade-in"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.06) 50%, rgba(236,72,153,0.04) 100%)',
+                    }}>
+                    {/* Grid pattern */}
+                    <div className="absolute inset-0 opacity-[0.03]" style={{
+                        backgroundImage: 'linear-gradient(var(--color-accent) 1px, transparent 1px), linear-gradient(90deg, var(--color-accent) 1px, transparent 1px)',
+                        backgroundSize: '32px 32px',
+                    }} />
+                    <div className="relative flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-accent/15 flex items-center justify-center text-2xl flex-shrink-0">
+                                🚀
+                            </div>
+                            <div>
+                                <p className="font-bold text-textPrimary text-sm mb-0.5">New to MarketWriter? Start here.</p>
+                                <p className="text-xs text-textSecondary">Take a 2-minute walkthrough to understand how everything works — step by step.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            <Link href="/walkthrough"
+                                className="px-5 py-2.5 rounded-xl bg-accent text-white text-xs font-bold flex items-center gap-2 hover:bg-accent/90 transition-colors shadow-md"
+                                style={{ boxShadow: '0 4px 20px rgba(99,102,241,0.3)' }}>
+                                <Sparkles className="w-3.5 h-3.5" /> Start Walkthrough
+                            </Link>
+                            <button onClick={() => { setWalkthroughDismissed(true); localStorage.setItem('mw_walkthrough_dismissed', '1'); }}
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-textTertiary hover:text-textPrimary hover:bg-surface transition-colors">
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
