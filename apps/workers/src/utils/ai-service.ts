@@ -32,6 +32,10 @@ export interface AIModel {
     outputCostPer1K: number;
 }
 
+/**
+ * @deprecated Use `callWithOrgContext()` instead, which resolves keys from ai_providers.
+ * This interface is kept for backward compat with engine-execution-worker.
+ */
 export interface EngineApiKeyContext {
     engineId: string;
     orgId?: string;
@@ -52,6 +56,7 @@ export interface AICallOptions {
     stopSequences?: string[];
     userId?: string;
     tier?: 'hobby' | 'pro' | 'enterprise';
+    /** @deprecated Use `callWithOrgContext()` instead */
     engineContext?: EngineApiKeyContext;
 }
 
@@ -260,7 +265,9 @@ class AIService {
     }
 
     /**
-     * MAIN CALL METHOD - Universal AI caller
+     * LEGACY CALL METHOD — uses startup-loaded API keys (no org context).
+     * @deprecated For new code, prefer `callWithOrgContext()` which resolves org BYOK → platform keys.
+     * This method is still used by non-agent workflow nodes and engine-execution-worker.
      */
     async call(prompt: string, options: AICallOptions = {}): Promise<AICallResult> {
         // Ensure initialized
