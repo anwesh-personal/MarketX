@@ -65,6 +65,27 @@ export function useFeatureGate(featureKey: keyof PortalFeatures) {
       })
       .catch(() => {
         if (cancelled) return
+        // Network error — don't lock the user out. Default to enterprise-open.
+        const fallback: PortalConfig = {
+          tier: 'enterprise',
+          features: {
+            can_view_metrics: true,
+            can_chat_brain: true,
+            can_train_brain: true,
+            can_write_emails: true,
+            can_feed_brain: true,
+            can_access_flow_builder: true,
+            can_view_kb: true,
+            can_export_data: true,
+            can_manage_satellites: true,
+            can_view_agent_decisions: true,
+            max_brain_chats_per_day: 999,
+            max_kb_uploads: 100,
+            max_custom_flows: 50,
+          },
+          partner_id: '',
+        }
+        setConfig(fallback)
         setLoading(false)
       })
 
@@ -73,8 +94,9 @@ export function useFeatureGate(featureKey: keyof PortalFeatures) {
     }
   }, [])
 
-  const allowed = config ? Boolean(config.features[featureKey]) : false
-  const tier = config?.tier ?? 'basic'
+  // If config loaded: use it. If still loading: allow (no flash of UpgradeWall).
+  const allowed = config ? Boolean(config.features[featureKey]) : true
+  const tier = config?.tier ?? 'enterprise'
 
   return { allowed, loading, tier, features: config?.features ?? null }
 }
