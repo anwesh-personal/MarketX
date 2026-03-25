@@ -17,6 +17,7 @@ import {
     ChevronRight,
     Zap,
     Sparkles,
+    BookOpen,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { createClient } from '@/lib/supabase/client';
@@ -44,6 +45,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { name: 'Learning Loop', href: '/learning', icon: Brain, group: 'Brain' },
         { name: 'Analytics', href: '/analytics', icon: BarChart3, group: 'Insights' },
         { name: 'Settings', href: '/settings', icon: Settings, group: 'Insights' },
+        { name: 'Walkthrough', href: '/walkthrough', icon: BookOpen, group: 'Guide' },
     ];
 
     // Check authentication
@@ -127,7 +129,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     `}>
                         <nav className="flex-1 py-md px-sm overflow-y-auto hide-scrollbar space-y-6">
                             {(() => {
-                                const groups = ['Overview', 'Content', 'Brain', 'Insights'];
+                                const groups = ['Overview', 'Content', 'Brain', 'Insights', 'Guide'];
                                 return groups.map((group) => {
                                     const items = navigation.filter(item => item.group === group);
                                     if (items.length === 0) return null;
