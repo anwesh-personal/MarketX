@@ -24,7 +24,8 @@ export type V2NodeCategory =
     | 'output'
     | 'enricher'
     | 'transform'
-    | 'utility';
+    | 'utility'
+    | 'agent';
 
 /**
  * V2 Node Definition - for node palette and creation

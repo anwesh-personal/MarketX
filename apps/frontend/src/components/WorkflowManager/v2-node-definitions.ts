@@ -14,7 +14,8 @@ import {
     Globe as Globe2, Building, Users, Database, // Enricher
     Lock, RefreshCw, UserCog, // Transform
     Send as WebhookOut, HardDrive, Mail as MailOut, BarChart, // Output
-    GitBranch, Workflow, Repeat, Merge, Clock as ClockDelay, UserCheck, AlertTriangle, GitFork // Utility
+    GitBranch, Workflow, Repeat, Merge, Clock as ClockDelay, UserCheck, AlertTriangle, GitFork, // Utility
+    Bot, PenTool, Microscope, LayoutTemplate, UserPlus // Agent
 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
@@ -61,7 +62,8 @@ export type V2NodeCategory =
     | 'enricher'
     | 'transform'
     | 'output'
-    | 'utility';
+    | 'utility'
+    | 'agent';
 
 // ============================================================================
 // CATEGORY METADATA
@@ -120,6 +122,12 @@ export const V2_CATEGORY_META: Record<V2NodeCategory, {
         description: 'Flow control and logic',
         color: '#6366F1',
         gradient: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)'
+    },
+    agent: {
+        label: 'Agents',
+        description: 'AI agents with brain, personality & tools',
+        color: '#F97316',
+        gradient: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
     }
 };
 
@@ -720,12 +728,80 @@ const utilityNodes: V2NodeDefinition[] = [
 ];
 
 // ============================================================================
+// AGENT NODES
+// ============================================================================
+
+const agentNodes: V2NodeDefinition[] = [
+    {
+        id: 'nd-agent-email-writer',
+        nodeType: 'agent-email-writer',
+        category: 'agent',
+        name: 'Email Writer Agent',
+        description: 'Invoke the Email Writer agent with full brain context',
+        icon: PenTool,
+        color: '#F97316',
+        features: ['Brain-Powered', 'Personality', 'KB Access', 'Self-Learning'],
+        capabilities: ['Uses brain KB', 'Agent personality', 'Configurable per-node', 'Tracks output quality'],
+        defaultConfig: { agentTemplateId: '', agentSlug: 'email-writer', agentName: '', taskInstruction: '', inputMode: 'previous_output', customInputTemplate: '', outputVariable: 'emailDraft', temperatureOverride: null, maxTokensOverride: null },
+    },
+    {
+        id: 'nd-agent-researcher',
+        nodeType: 'agent-researcher',
+        category: 'agent',
+        name: 'Research Agent',
+        description: 'Invoke the Research agent to gather market intelligence',
+        icon: Microscope,
+        color: '#F97316',
+        features: ['Brain-Powered', 'Web Search', 'KB Write-Back', 'Data Synthesis'],
+        capabilities: ['Uses brain KB', 'Web research', 'Writes learnings to brain', 'Synthesizes data'],
+        defaultConfig: { agentTemplateId: '', agentSlug: 'researcher', agentName: '', taskInstruction: '', inputMode: 'previous_output', customInputTemplate: '', outputVariable: 'researchData', temperatureOverride: null, maxTokensOverride: null },
+    },
+    {
+        id: 'nd-agent-salescopy',
+        nodeType: 'agent-salescopy-writer',
+        category: 'agent',
+        name: 'Sales Copy Agent',
+        description: 'Invoke the Sales Copywriter agent for landing pages, CTAs',
+        icon: FileText,
+        color: '#F97316',
+        features: ['Brain-Powered', 'Conversion Focus', 'A/B Variants', 'Brand Voice'],
+        capabilities: ['Uses brain KB', 'Writes persuasive copy', 'Creates variants', 'Follows brand guide'],
+        defaultConfig: { agentTemplateId: '', agentSlug: 'salescopy-writer', agentName: '', taskInstruction: '', inputMode: 'previous_output', customInputTemplate: '', outputVariable: 'salesCopy', temperatureOverride: null, maxTokensOverride: null },
+    },
+    {
+        id: 'nd-agent-page-builder',
+        nodeType: 'agent-page-builder',
+        category: 'agent',
+        name: 'Page Builder Agent',
+        description: 'Invoke the Page Builder agent to create landing pages',
+        icon: LayoutTemplate,
+        color: '#F97316',
+        features: ['Brain-Powered', 'Responsive HTML', 'SEO Optimized', 'Template-Based'],
+        capabilities: ['Uses brain KB', 'Generates HTML', 'SEO metadata', 'Responsive design'],
+        defaultConfig: { agentTemplateId: '', agentSlug: 'page-builder', agentName: '', taskInstruction: '', inputMode: 'previous_output', customInputTemplate: '', outputVariable: 'pageContent', temperatureOverride: null, maxTokensOverride: null },
+    },
+    {
+        id: 'nd-agent-custom',
+        nodeType: 'agent-custom',
+        category: 'agent',
+        name: 'Custom Agent',
+        description: 'Invoke any agent from your catalog — pick from the dropdown',
+        icon: Bot,
+        color: '#F97316',
+        features: ['Any Agent', 'Brain-Powered', 'Full Config', 'Dynamic Selection'],
+        capabilities: ['Select any agent', 'Full brain access', 'Dynamic configuration', 'Pipeline integration'],
+        defaultConfig: { agentTemplateId: '', agentSlug: '', agentName: '', taskInstruction: '', inputMode: 'previous_output', customInputTemplate: '', outputVariable: 'agentOutput', temperatureOverride: null, maxTokensOverride: null },
+    },
+];
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
 export const V2_ALL_NODES: V2NodeDefinition[] = [
     ...triggerNodes,
     ...resolverNodes,
+    ...agentNodes,
     ...generatorNodes,
     ...validatorNodes,
     ...enricherNodes,
@@ -737,6 +813,7 @@ export const V2_ALL_NODES: V2NodeDefinition[] = [
 export const V2_NODES_BY_CATEGORY: Record<V2NodeCategory, V2NodeDefinition[]> = {
     trigger: triggerNodes,
     resolver: resolverNodes,
+    agent: agentNodes,
     generator: generatorNodes,
     validator: validatorNodes,
     enricher: enricherNodes,
@@ -748,6 +825,7 @@ export const V2_NODES_BY_CATEGORY: Record<V2NodeCategory, V2NodeDefinition[]> = 
 export const V2_CATEGORY_ORDER: V2NodeCategory[] = [
     'trigger',
     'resolver',
+    'agent',
     'generator',
     'validator',
     'enricher',

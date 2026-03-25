@@ -305,12 +305,244 @@ async function executeNode(
                 };
                 break;
 
-            default:
+            default: {
+                // ── AGENT NODE HANDLER ──────────────────────────────
+                // Any nodeType starting with 'agent-' invokes an org_agent
+                if (nodeType.startsWith('agent-')) {
+                    const agentConfig = node.data?.config || {};
+                    const agentSlug = agentConfig.agentSlug || nodeType.replace('agent-', '');
+                    const taskInstruction = agentConfig.taskInstruction || '';
+                    const inputMode = agentConfig.inputMode || 'previous_output';
+                    const customInputTemplate = agentConfig.customInputTemplate || '';
+                    const temperatureOverride = agentConfig.temperatureOverride;
+                    const maxTokensOverride = agentConfig.maxTokensOverride;
+
+                    const orgId = job.data.orgId;
+                    if (!orgId) {
+                        throw new Error(`Agent node "${nodeName}" requires an org context (orgId).`);
+                    }
+
+                    console.log(`    🤖 Agent node: loading org_agent "${agentSlug}" for org ${orgId}`);
+
+                    // 1. Load org_agent by slug + org_id
+                    const { data: orgAgent, error: orgAgentErr } = await supabase
+                        .from('org_agents')
+                        .select('*, brain_agents(*)')
+                        .eq('org_id', orgId)
+                        .eq('slug', agentSlug)
+                        .eq('is_active', true)
+                        .maybeSingle();
+
+                    if (orgAgentErr || !orgAgent) {
+                        // Fallback: try agent_templates directly (for workflows that haven't been deployed yet)
+                        console.warn(`    ⚠ org_agent "${agentSlug}" not found for org ${orgId}, trying agent_templates...`);
+                        const { data: templateAgent } = await supabase
+                            .from('agent_templates')
+                            .select('*')
+                            .eq('slug', agentSlug)
+                            .eq('is_active', true)
+                            .maybeSingle();
+
+                        if (!templateAgent) {
+                            throw new Error(`Agent "${agentSlug}" not found in org_agents or agent_templates`);
+                        }
+
+                        // Use template agent's config directly
+                        const systemPromptParts = [
+                            templateAgent.system_prompt,
+                            templateAgent.persona_prompt,
+                            templateAgent.guardrails_prompt,
+                            taskInstruction ? `\n\n### TASK INSTRUCTION FOR THIS STEP:\n${taskInstruction}` : '',
+                        ].filter(Boolean);
+
+                        let userPrompt = '';
+                        if (inputMode === 'previous_output') {
+                            const lastOutput = Object.values(pipelineData.nodeOutputs).pop();
+                            userPrompt = lastOutput?.content ? JSON.stringify(lastOutput.content) : JSON.stringify(pipelineData.userInput);
+                        } else if (inputMode === 'user_input') {
+                            userPrompt = JSON.stringify(pipelineData.userInput);
+                        } else if (inputMode === 'custom' && customInputTemplate) {
+                            userPrompt = customInputTemplate;
+                            // Resolve variables
+                            if (pipelineData.userInput) {
+                                for (const [key, value] of Object.entries(pipelineData.userInput)) {
+                                    userPrompt = userPrompt.replace(new RegExp(`\\{\\{\\s*input\\.${key}\\s*\\}\\}`, 'g'), String(value));
+                                }
+                            }
+                            if (Object.keys(pipelineData.nodeOutputs).length > 0) {
+                                const lastOutput = Object.values(pipelineData.nodeOutputs).pop();
+                                userPrompt = userPrompt.replace(/\{\{\s*previousOutput\s*\}\}/g, JSON.stringify(lastOutput?.content));
+                            }
+                        }
+
+                        const agentAiResult = await aiService.call(userPrompt, {
+                            provider: templateAgent.preferred_provider || 'anthropic',
+                            model: templateAgent.preferred_model || undefined,
+                            temperature: temperatureOverride ?? templateAgent.temperature ?? 0.7,
+                            maxTokens: maxTokensOverride ?? templateAgent.max_tokens ?? 4096,
+                            systemPrompt: systemPromptParts.join('\n\n'),
+                            tier: job.data.tier,
+                        });
+
+                        content = {
+                            text: agentAiResult.content,
+                            agentSlug,
+                            agentSource: 'agent_template',
+                            generated: true,
+                            provider: agentAiResult.provider,
+                            model: agentAiResult.model,
+                        };
+
+                        aiMetadata = {
+                            tokens: agentAiResult.tokens.total,
+                            cost: agentAiResult.cost,
+                            provider: agentAiResult.provider,
+                            model: agentAiResult.model,
+                            durationMs: agentAiResult.durationMs,
+                        };
+
+                        console.log(`    ✓ Agent "${agentSlug}" (template) generated ${agentAiResult.tokens.total} tokens`);
+                        break;
+                    }
+
+                    // 2. Build combined system prompt: brain context + agent prompts + task instruction
+                    const brainAgent = (orgAgent as any).brain_agents;
+
+                    const systemPromptParts = [
+                        // Brain personality and domain knowledge (if brain is linked)
+                        brainAgent?.foundation_prompt ? `### BRAIN FOUNDATION:\n${brainAgent.foundation_prompt}` : '',
+                        brainAgent?.persona_prompt ? `### BRAIN PERSONA:\n${brainAgent.persona_prompt}` : '',
+                        brainAgent?.domain_prompt ? `### BRAIN DOMAIN KNOWLEDGE:\n${brainAgent.domain_prompt}` : '',
+                        
+                        // Agent's own prompts (override/specialize the brain)
+                        orgAgent.system_prompt ? `### AGENT SYSTEM PROMPT:\n${orgAgent.system_prompt}` : '',
+                        orgAgent.persona_prompt ? `### AGENT PERSONA:\n${orgAgent.persona_prompt}` : '',
+                        orgAgent.instruction_prompt ? `### AGENT INSTRUCTIONS:\n${orgAgent.instruction_prompt}` : '',
+                        
+                        // Guardrails (brain + agent combined)
+                        brainAgent?.guardrails_prompt ? `### GUARDRAILS:\n${brainAgent.guardrails_prompt}` : '',
+                        orgAgent.guardrails_prompt ? `### AGENT GUARDRAILS:\n${orgAgent.guardrails_prompt}` : '',
+                        
+                        // Per-node task instruction
+                        taskInstruction ? `### TASK INSTRUCTION FOR THIS STEP:\n${taskInstruction}` : '',
+                    ].filter(Boolean);
+
+                    // 3. Load agent-specific KB (if agent has own KB)
+                    let agentKbContext = '';
+                    if (orgAgent.has_own_kb) {
+                        const { data: kbEntries } = await supabase
+                            .from('org_agent_kb')
+                            .select('title, content')
+                            .eq('org_agent_id', orgAgent.id)
+                            .eq('is_active', true)
+                            .order('priority', { ascending: false })
+                            .limit(10);
+
+                        if (kbEntries && kbEntries.length > 0) {
+                            agentKbContext = '\n\n### AGENT KNOWLEDGE BASE:\n' +
+                                kbEntries.map(e => `[${e.title}]\n${e.content}`).join('\n\n');
+                            systemPromptParts.push(agentKbContext);
+                        }
+                    }
+
+                    // 4. Add brain KB context if available
+                    if (pipelineData.kb && orgAgent.can_access_brain) {
+                        systemPromptParts.push(`### BRAIN KNOWLEDGE BASE:\n${JSON.stringify(pipelineData.kb)}`);
+                    }
+
+                    // 5. Build user prompt based on input mode
+                    let userPrompt = '';
+                    if (inputMode === 'previous_output') {
+                        const lastOutput = Object.values(pipelineData.nodeOutputs).pop();
+                        userPrompt = lastOutput?.content
+                            ? (typeof lastOutput.content === 'string' ? lastOutput.content : JSON.stringify(lastOutput.content))
+                            : JSON.stringify(pipelineData.userInput);
+                    } else if (inputMode === 'user_input') {
+                        userPrompt = JSON.stringify(pipelineData.userInput);
+                    } else if (inputMode === 'custom' && customInputTemplate) {
+                        userPrompt = customInputTemplate;
+                        // Resolve {{input.X}} variables
+                        if (pipelineData.userInput) {
+                            for (const [key, value] of Object.entries(pipelineData.userInput)) {
+                                userPrompt = userPrompt.replace(
+                                    new RegExp(`\\{\\{\\s*input\\.${key}\\s*\\}\\}`, 'g'),
+                                    String(value)
+                                );
+                            }
+                            userPrompt = userPrompt.replace(/\{\{\s*input\s*\}\}/g, JSON.stringify(pipelineData.userInput));
+                        }
+                        // Resolve {{previousOutput}}
+                        if (Object.keys(pipelineData.nodeOutputs).length > 0) {
+                            const lastOutput = Object.values(pipelineData.nodeOutputs).pop();
+                            userPrompt = userPrompt.replace(
+                                /\{\{\s*previousOutput\s*\}\}/g,
+                                typeof lastOutput?.content === 'string' ? lastOutput.content : JSON.stringify(lastOutput?.content)
+                            );
+                        }
+                        // Resolve {{kb}}
+                        if (pipelineData.kb) {
+                            userPrompt = userPrompt.replace(
+                                /\{\{\s*kb\s*\}\}/g,
+                                JSON.stringify(pipelineData.kb)
+                            );
+                        }
+                    }
+
+                    if (!userPrompt.trim()) {
+                        userPrompt = 'Execute your task based on the system instructions and available context.';
+                    }
+
+                    console.log(`    📝 Agent "${agentSlug}" prompt: ${userPrompt.substring(0, 100)}...`);
+                    console.log(`    🧠 System prompt parts: ${systemPromptParts.length}, Brain: ${!!brainAgent}, KB: ${orgAgent.has_own_kb}`);
+
+                    // 6. Resolve provider — agent preferred > brain preferred > platform default
+                    const agentProvider = orgAgent.preferred_provider || brainAgent?.preferred_provider || 'anthropic';
+                    const agentModel = orgAgent.preferred_model || brainAgent?.preferred_model || undefined;
+
+                    // 7. Call AI via existing aiService (uses org's API keys via engine context)
+                    const agentAiResult: AICallResult = await aiService.call(userPrompt, {
+                        provider: agentProvider,
+                        model: agentModel,
+                        temperature: temperatureOverride ?? orgAgent.temperature ?? 0.7,
+                        maxTokens: maxTokensOverride ?? orgAgent.max_tokens ?? 4096,
+                        systemPrompt: systemPromptParts.join('\n\n'),
+                        tier: job.data.tier,
+                        engineContext: job.data.options?.engineId ? {
+                            engineId: job.data.options.engineId,
+                            orgId,
+                        } : undefined,
+                    });
+
+                    content = {
+                        text: agentAiResult.content,
+                        agentSlug,
+                        agentId: orgAgent.id,
+                        agentSource: 'org_agent',
+                        brainAgentId: brainAgent?.id || null,
+                        generated: true,
+                        provider: agentAiResult.provider,
+                        model: agentAiResult.model,
+                    };
+
+                    aiMetadata = {
+                        tokens: agentAiResult.tokens.total,
+                        cost: agentAiResult.cost,
+                        provider: agentAiResult.provider,
+                        model: agentAiResult.model,
+                        durationMs: agentAiResult.durationMs,
+                    };
+
+                    console.log(`    ✓ Agent "${agentSlug}" generated ${agentAiResult.tokens.total} tokens ($${agentAiResult.cost.toFixed(6)})`);
+                    break;
+                }
+
+                // Truly unhandled node type
                 content = {
                     nodeType,
                     message: `Unhandled node type: ${nodeType}`,
                     config: node.data?.config,
                 };
+            }
         }
     } catch (error: any) {
         console.error(`  ✗ Node ${nodeName} failed:`, error.message);

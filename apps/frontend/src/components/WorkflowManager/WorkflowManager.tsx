@@ -174,6 +174,15 @@ const AI_REQUIRED_NODES = [
     'generate-llm'
 ];
 
+// Agent nodes - use AgentConfig (agent dropdown instead of LLM picker)
+const AGENT_NODES = [
+    'agent-email-writer',
+    'agent-researcher',
+    'agent-salescopy-writer',
+    'agent-page-builder',
+    'agent-custom',
+];
+
 // Node types that are resolvers
 const RESOLVER_NODES = [
     'resolve-icp',
@@ -303,12 +312,21 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
     const requiresAI = AI_REQUIRED_NODES.includes(node.data.nodeType);
     const isResolver = RESOLVER_NODES.includes(node.data.nodeType);
     const isTrigger = TRIGGER_NODES.includes(node.data.nodeType);
+    const isAgent = AGENT_NODES.includes(node.data.nodeType);
+
+    // Agent config state
+    const [agentConfig, setAgentConfig] = useState<Record<string, unknown>>(() => {
+        return (node.data.config || {}) as Record<string, unknown>;
+    });
 
     const handleSave = () => {
         try {
             let finalConfig: Record<string, any>;
 
-            if (isGenerator) {
+            if (isAgent) {
+                // Agent node - use agent config directly
+                finalConfig = { ...agentConfig };
+            } else if (isGenerator) {
                 // Generator node - use full generator config
                 const parsedAdvanced = showAdvancedJson ? JSON.parse(otherConfigJson) : {};
                 finalConfig = {
@@ -385,7 +403,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
     return (
         <div className="wm-config-modal-backdrop" onClick={onClose}>
-            <div className={`wm-config-modal ${(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`wm-config-modal ${(isAgent || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || requiresAI || isResolver || isTrigger) ? 'wm-config-modal-wide' : ''}`} onClick={(e) => e.stopPropagation()}>
                 <div className="wm-config-modal-header">
                     <div className="wm-config-modal-title">
                         <div
@@ -451,6 +469,17 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                                 nodeType={node.data.nodeType}
                                 config={validatorConfig as any}
                                 onChange={(newConfig) => setValidatorConfig(newConfig as unknown as ConfigState)}
+                            />
+                        </div>
+                    )}
+
+                    {/* Agent Config Section - Agent dropdown + task instruction */}
+                    {isAgent && (
+                        <div className="wm-config-agent-section">
+                            <AgentConfig
+                                nodeType={node.data.nodeType}
+                                config={agentConfig as any}
+                                onChange={(newConfig) => setAgentConfig(newConfig as unknown as ConfigState)}
                             />
                         </div>
                     )}
@@ -540,7 +569,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Advanced JSON Toggle for specialized nodes */}
-                    {(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) && (
+                    {(isAgent || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) && (
                         <div className="wm-config-field">
                             <label className="wm-config-toggle-label">
                                 <input
@@ -554,16 +583,16 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
                     )}
 
                     {/* Other Config JSON - Show for AI nodes, regular nodes, or advanced mode */}
-                    {(!isGenerator && !isValidator && !isOutput && !isEnricher && !isTransform && !isUtility && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
+                    {(!isAgent && !isGenerator && !isValidator && !isOutput && !isEnricher && !isTransform && !isUtility && !isResolver && !isTrigger || showAdvancedJson || requiresAI) && (
                         <div className="wm-config-field">
-                            <label>{(isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
+                            <label>{(isAgent || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger) ? 'Advanced Configuration (JSON)' : 'Additional Configuration (JSON)'}</label>
                             <textarea
                                 value={otherConfigJson}
                                 onChange={(e) => {
                                     setOtherConfigJson(e.target.value);
                                     setJsonError(null);
                                 }}
-                                rows={requiresAI || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger ? 4 : 8}
+                                rows={requiresAI || isAgent || isGenerator || isValidator || isOutput || isEnricher || isTransform || isUtility || isResolver || isTrigger ? 4 : 8}
                                 spellCheck={false}
                                 className={jsonError ? 'error' : ''}
                             />
@@ -588,6 +617,7 @@ function NodeConfigModal({ node, onClose, onSave }: NodeConfigModalProps) {
 
 // Import config components
 import { AIConfig } from './AIConfig';
+import { AgentConfig } from './AgentConfig';
 import { ResolverConfig } from './ResolverConfig';
 import { TriggerConfig } from './TriggerConfig';
 import { GeneratorConfig } from './GeneratorConfig';
