@@ -8,6 +8,7 @@ import { MWOverviewSection, MWOnboardingSection } from './SectionsMWFlow'
 import { MWContentSection, MWDeliverySection, MWLearningSection } from './SectionsMWOps'
 import { SuperadminGuide } from './SectionsSuperadmin'
 import { MemberGuide } from './SectionsMember'
+import { WalkthroughPlayer } from './WalkthroughPlayer'
 
 const GROUP_META: Record<string, { label: string; desc: string; icon: React.ReactNode; accent: string }> = {
     flow: { label: 'MarketWriter Flow', desc: 'How the product works end-to-end', icon: <Rocket size={18} />, accent: 'var(--color-accent)' },
@@ -180,6 +181,12 @@ export default function TutorialPage() {
                         })}
                     </motion.div>
                 </div>
+            </motion.div>
+
+            {/* Walkthrough Video */}
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
+                className="mb-12">
+                <WalkthroughPlayer />
             </motion.div>
 
             {/* Groups */}
