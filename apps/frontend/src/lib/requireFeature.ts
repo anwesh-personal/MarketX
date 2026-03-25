@@ -37,18 +37,27 @@ export type FeatureFlag =
   | 'can_manage_satellites'
   | 'can_view_agent_decisions'
 
-// Default features for the basic tier (when no portal config exists)
-const BASIC_TIER_DEFAULTS: Record<FeatureFlag, boolean> = {
+// Enterprise fallback — safest default so nobody is locked out
+const ENTERPRISE_DEFAULTS: Record<FeatureFlag, boolean> = {
   can_view_metrics: true,
-  can_chat_brain: false,
-  can_train_brain: false,
-  can_write_emails: false,
-  can_feed_brain: false,
-  can_access_flow_builder: false,
-  can_view_kb: false,
-  can_export_data: false,
-  can_manage_satellites: false,
-  can_view_agent_decisions: false,
+  can_chat_brain: true,
+  can_train_brain: true,
+  can_write_emails: true,
+  can_feed_brain: true,
+  can_access_flow_builder: true,
+  can_view_kb: true,
+  can_export_data: true,
+  can_manage_satellites: true,
+  can_view_agent_decisions: true,
+}
+
+const PLAN_TO_TIER_KEY: Record<string, string> = {
+  free: 'member_tier_basic',
+  starter: 'member_tier_basic',
+  basic: 'member_tier_basic',
+  pro: 'member_tier_medium',
+  medium: 'member_tier_medium',
+  enterprise: 'member_tier_enterprise',
 }
 
 interface GateAllowed {
@@ -97,7 +106,7 @@ export async function requireFeature(
   // ── 2. Org context ──────────────────────────────────────────────────────
   const { data: me } = await supabase
     .from('users')
-    .select('id, org_id, role')
+    .select('id, org_id, role, organization:organizations(plan)')
     .eq('id', user.id)
     .single()
 
@@ -127,9 +136,25 @@ export async function requireFeature(
     tier = portalConfig.tier || 'basic'
     allowed = Boolean(portalConfig[feature])
   } else {
-    // No portal config → fall back to basic tier defaults
-    tier = 'basic'
-    allowed = BASIC_TIER_DEFAULTS[feature] ?? false
+    // No portal config → derive from org's actual plan
+    const org = Array.isArray((me as any).organization) ? (me as any).organization[0] : (me as any).organization
+    const orgPlan = (org?.plan || 'enterprise').toLowerCase()
+    const tierKey = PLAN_TO_TIER_KEY[orgPlan] || 'member_tier_enterprise'
+    tier = tierKey.replace('member_tier_', '')
+
+    // Try config_table for tier defaults
+    const { data: tierConfig } = await supabase
+      .from('config_table')
+      .select('value')
+      .eq('key', tierKey)
+      .single()
+
+    if (tierConfig?.value && typeof tierConfig.value === 'object') {
+      allowed = Boolean((tierConfig.value as any)[feature])
+    } else {
+      // Absolute fallback: enterprise defaults (everything open)
+      allowed = ENTERPRISE_DEFAULTS[feature] ?? true
+    }
   }
 
   if (!allowed) {
