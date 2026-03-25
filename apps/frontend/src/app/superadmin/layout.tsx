@@ -155,6 +155,9 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Portal Tiers', href: '/superadmin/portal-tiers', icon: Shield, group: 'Infrastructure' },
         { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'Infrastructure' },
         { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'Infrastructure' },
+
+        // Reference
+        { name: 'Interactive Tutorial', href: '/superadmin/tutorial', icon: BookOpen, group: 'Reference' },
     ];
 
     return (
@@ -271,7 +274,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                 >
                     <nav className="flex-1 py-sm overflow-y-auto hide-scrollbar">
                         {(() => {
-                            const groups = ['Platform', 'MarketX OS', 'Automation', 'AI & Brain', 'Infrastructure'];
+                            const groups = ['Platform', 'MarketX OS', 'Automation', 'AI & Brain', 'Infrastructure', 'Reference'];
                             return groups.map((group) => {
                                 const items = navigation.filter(item => item.group === group);
                                 if (items.length === 0) return null;
