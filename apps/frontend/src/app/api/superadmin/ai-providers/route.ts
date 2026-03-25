@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { requireSuperadmin } from '@/lib/superadmin-middleware';
 import { encryptSecret, maskSecret, shouldPersistSecret } from '@/lib/secrets';
 
+export const dynamic = 'force-dynamic';
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -12,26 +14,42 @@ const supabase = createClient(
 export async function GET(request: NextRequest) {
     try {
         await requireSuperadmin(request);
+    } catch (authErr: any) {
+        if (authErr instanceof Response) return authErr;
+        console.error('[ai-providers GET] AUTH CRASH:', authErr?.message, authErr?.stack);
+        return NextResponse.json({ error: 'Auth failed: ' + (authErr?.message || 'unknown') }, { status: 401 });
+    }
+
+    try {
         const { data: providers, error } = await supabase
             .from('ai_providers')
             .select('id, provider, name, api_key, description, is_active, failures, usage_count, created_at')
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[ai-providers GET] SUPABASE ERROR:', JSON.stringify(error));
+            return NextResponse.json({ error: 'DB query failed: ' + error.message }, { status: 500 });
+        }
 
-        return NextResponse.json({
-            providers: (providers || []).map((provider) => ({
-                ...provider,
-                api_key: maskSecret(provider.api_key),
-                has_api_key: Boolean(provider.api_key),
-            })),
+        const result = (providers || []).map((provider) => {
+            try {
+                return {
+                    ...provider,
+                    api_key: maskSecret(provider.api_key),
+                    has_api_key: Boolean(provider.api_key),
+                };
+            } catch (maskErr: any) {
+                console.error('[ai-providers GET] MASK CRASH on provider', provider.id, ':', maskErr?.message, maskErr?.stack);
+                return { ...provider, api_key: '****', has_api_key: Boolean(provider.api_key) };
+            }
         });
+
+        return NextResponse.json({ providers: result });
     } catch (error: any) {
-        if (error instanceof Response) return error;
-        console.error('Error fetching AI providers:', error);
+        console.error('[ai-providers GET] UNEXPECTED CRASH:', error?.message, error?.stack);
         return NextResponse.json(
-            { error: error.message || 'Internal server error' },
-            { status: error.status || 500 }
+            { error: error?.message || 'Internal server error', stage: 'post-auth' },
+            { status: 500 }
         );
     }
 }
