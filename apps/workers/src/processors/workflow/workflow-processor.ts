@@ -375,8 +375,8 @@ async function executeNode(
                             }
                         }
 
-                        const agentAiResult = await aiService.call(userPrompt, {
-                            provider: templateAgent.preferred_provider || 'anthropic',
+                        const agentAiResult = await aiService.callWithOrgContext(orgId, userPrompt, {
+                            provider: templateAgent.preferred_provider || undefined,
                             model: templateAgent.preferred_model || undefined,
                             temperature: temperatureOverride ?? templateAgent.temperature ?? 0.7,
                             maxTokens: maxTokensOverride ?? templateAgent.max_tokens ?? 4096,
@@ -464,12 +464,21 @@ async function executeNode(
                             .limit(5);
 
                         if (recentLearnings && recentLearnings.length > 0) {
-                            const learningsText = recentLearnings.map(l => {
-                                const parsed = typeof l.content === 'string' ? JSON.parse(l.content) : l.content;
-                                return `• ${parsed.title}: ${parsed.description}${parsed.action_suggestion ? ` → ${parsed.action_suggestion}` : ''}`;
-                            }).join('\n');
+                            const learningsText = recentLearnings
+                                .map(l => {
+                                    try {
+                                        const parsed = typeof l.content === 'string' ? JSON.parse(l.content) : l.content;
+                                        return `• ${parsed.title}: ${parsed.description}${parsed.action_suggestion ? ` → ${parsed.action_suggestion}` : ''}`;
+                                    } catch {
+                                        return null; // Skip malformed entries
+                                    }
+                                })
+                                .filter(Boolean)
+                                .join('\n');
 
-                            systemPromptParts.push(`### RECENT LEARNINGS FROM CAMPAIGN DATA:\n${learningsText}`);
+                            if (learningsText) {
+                                systemPromptParts.push(`### RECENT LEARNINGS FROM CAMPAIGN DATA:\n${learningsText}`);
+                            }
                         }
 
                         // Also inject latest reflection (performance summary)
@@ -534,7 +543,7 @@ async function executeNode(
                     console.log(`    🧠 System prompt parts: ${systemPromptParts.length}, Brain: ${!!brainAgent}, KB: ${orgAgent.has_own_kb}`);
 
                     // 6. Resolve provider — agent preferred > brain preferred > platform default
-                    const agentProvider = orgAgent.preferred_provider || brainAgent?.preferred_provider || 'anthropic';
+                    const agentProvider = orgAgent.preferred_provider || brainAgent?.preferred_provider || undefined;
                     const agentModel = orgAgent.preferred_model || brainAgent?.preferred_model || undefined;
 
                     // 7. Call AI via unified provider chain (org BYOK → platform keys)

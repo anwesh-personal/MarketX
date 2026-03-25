@@ -20,7 +20,7 @@ import {
     Bot, Search, ChevronDown, AlertCircle, Loader2,
     Brain, Zap, MessageSquare, Info
 } from 'lucide-react';
-import { superadminFetch } from '@/lib/superadmin-auth';
+// No special auth needed — /api/agents is org-scoped, any authenticated user can access
 
 // ============================================================================
 // TYPES
@@ -118,7 +118,7 @@ export function AgentConfig({ nodeType, config, onChange }: AgentConfigProps) {
         const fetchAgents = async () => {
             try {
                 setLoading(true);
-                const response = await superadminFetch('/api/superadmin/agent-templates?active=true');
+                const response = await fetch('/api/agents');
                 if (response.ok) {
                     const data = await response.json();
                     setAgents(data.agents || data.data || []);

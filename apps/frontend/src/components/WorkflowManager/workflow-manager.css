@@ -6189,3 +6189,504 @@
         display: none;
     }
 }
+
+/* ============================================================================
+   AGENT CONFIG COMPONENT
+   Searchable agent selector for workflow nodes
+   ============================================================================ */
+
+.agent-config {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.agent-config-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 24px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+}
+
+.agent-config-loading .spin {
+    animation: wm-spin 1s linear infinite;
+}
+
+.agent-config-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.agent-config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.agent-config-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.agent-config-hint {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--color-text-tertiary);
+    font-size: 12px;
+}
+
+/* Selected Agent Display */
+.agent-config-selected {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.3s ease;
+}
+
+.agent-config-selected:hover {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.08);
+}
+
+.agent-config-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.agent-config-emoji {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.agent-config-selected-info strong {
+    display: block;
+    font-size: 14px;
+    color: var(--color-text-primary);
+}
+
+.agent-config-slug {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.agent-config-selected-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.agent-config-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.agent-config-badge.brain {
+    background: rgba(var(--color-accent-rgb), 0.1);
+    color: var(--color-accent);
+}
+
+.agent-config-badge.provider {
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.agent-config-selected-meta svg.rotated {
+    transform: rotate(180deg);
+}
+
+/* Select Button (no agent selected) */
+.agent-config-select-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--color-background);
+    border: 2px dashed var(--color-border);
+    border-radius: 12px;
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
+                transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.agent-config-select-btn:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: rgba(var(--color-accent-rgb), 0.03);
+    transform: translateY(-1px);
+}
+
+.agent-config-select-btn span {
+    flex: 1;
+    text-align: left;
+}
+
+/* Dropdown */
+.agent-config-dropdown {
+    background: color-mix(in srgb, var(--color-surface) 95%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(var(--color-shadow, 0 0 0), 0.15),
+                0 0 1px rgba(var(--color-shadow, 0 0 0), 0.1);
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.agent-config-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.agent-config-search input {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+}
+
+.agent-config-search input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.agent-config-search svg {
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+}
+
+.agent-config-dropdown-list {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Group */
+.agent-config-group {
+    margin-bottom: 4px;
+}
+
+.agent-config-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+}
+
+.agent-config-group-count {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: var(--color-surface-hover);
+    font-size: 10px;
+}
+
+/* Option */
+.agent-config-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.agent-config-option:hover {
+    background: var(--color-surface-hover);
+    transform: translateX(2px);
+}
+
+.agent-config-option.selected {
+    background: rgba(var(--color-accent-rgb), 0.08);
+    box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.agent-config-option-emoji {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.agent-config-option-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.agent-config-option-info strong {
+    display: block;
+    font-size: 13px;
+    color: var(--color-text-primary);
+}
+
+.agent-config-option-info span {
+    display: block;
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.agent-config-option-badges {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.agent-config-mini-badge {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+}
+
+.agent-config-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+}
+
+/* Textarea */
+.agent-config-textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.5;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.3s ease;
+}
+
+.agent-config-textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.1);
+}
+
+.agent-config-textarea-small {
+    min-height: 60px;
+}
+
+.agent-config-vars {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+}
+
+.agent-config-vars code {
+    padding: 2px 6px;
+    background: var(--color-surface-hover);
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+/* Input Mode Radio Group */
+.agent-config-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.agent-config-radio {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    transition: background 0.15s ease;
+}
+
+.agent-config-radio:hover {
+    background: var(--color-surface-hover);
+}
+
+.agent-config-radio input[type="radio"] {
+    accent-color: var(--color-accent);
+}
+
+/* Text Input */
+.agent-config-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    transition: border-color 0.2s ease;
+}
+
+.agent-config-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.1);
+}
+
+/* Toggle Label */
+.agent-config-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.agent-config-toggle-label input[type="checkbox"] {
+    accent-color: var(--color-accent);
+}
+
+/* Overrides */
+.agent-config-overrides {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--color-surface-hover);
+    border-radius: 10px;
+    margin-top: 8px;
+}
+
+.agent-config-override-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.agent-config-override-row label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.agent-config-override-row input[type="number"] {
+    width: 120px;
+    padding: 8px 12px;
+    font-size: 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    text-align: right;
+}
+
+.agent-config-override-row input[type="number"]:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+/* Info Card */
+.agent-config-info-card {
+    padding: 14px 16px;
+    background: rgba(var(--color-accent-rgb), 0.04);
+    border: 1px solid rgba(var(--color-accent-rgb), 0.12);
+    border-radius: 12px;
+}
+
+.agent-config-info-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(var(--color-accent-rgb), 0.1);
+}
+
+.agent-config-info-header span {
+    font-size: 20px;
+}
+
+.agent-config-info-header strong {
+    font-size: 14px;
+    color: var(--color-text-primary);
+}
+
+.agent-config-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.agent-config-info-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.agent-config-info-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-tertiary);
+}
+
+.agent-config-info-grid > div > span:last-child {
+    font-size: 13px;
+    color: var(--color-text-primary);
+}

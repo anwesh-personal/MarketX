@@ -610,11 +610,11 @@ class AIService {
     async resolveProviderChain(
         orgId: string,
         preferredProvider?: string
-    ): Promise<Array<{ provider: string; apiKey: string; model?: string }>> {
+    ): Promise<Array<{ id: string; provider: string; apiKey: string; model?: string }>> {
         // Fetch org-specific BYOK keys
         const { data: orgKeys } = await supabase
             .from('ai_providers')
-            .select('provider, api_key, selected_model, priority, failures')
+            .select('id, provider, api_key, selected_model, priority, failures')
             .eq('org_id', orgId)
             .eq('is_active', true)
             .is('auto_disabled_at', null)
@@ -625,7 +625,7 @@ class AIService {
         // Fetch platform-level keys
         const { data: platformKeys } = await supabase
             .from('ai_providers')
-            .select('provider, api_key, selected_model, priority, failures')
+            .select('id, provider, api_key, selected_model, priority, failures')
             .is('org_id', null)
             .eq('is_active', true)
             .is('auto_disabled_at', null)
@@ -634,6 +634,7 @@ class AIService {
             .order('failures', { ascending: true });
 
         const allRows = [...(orgKeys ?? []), ...(platformKeys ?? [])].map(row => ({
+            id: row.id,
             provider: row.provider,
             apiKey: decryptSecret(row.api_key),
             model: row.selected_model || undefined,
@@ -720,10 +721,17 @@ class AIService {
                 }
 
                 console.log(`✅ [AIService] ${provider}/${modelId} for org ${orgId}: ${result.tokens.total} tokens, $${result.cost.toFixed(6)}`);
+
+                // Track usage (non-blocking)
+                Promise.resolve(supabase.rpc('increment_provider_usage', { p_id: link.id })).catch(() => {});
+
                 return result;
             } catch (error: any) {
                 lastError = error;
                 console.error(`[AIService] Provider ${link.provider} failed:`, error.message);
+
+                // Track failure (non-blocking)
+                Promise.resolve(supabase.rpc('increment_provider_failure', { p_id: link.id })).catch(() => {});
 
                 // Auth errors: stop immediately, don't try other keys
                 if (error.message?.includes('401') || error.message?.includes('403')) {
