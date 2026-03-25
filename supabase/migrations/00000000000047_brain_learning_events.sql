@@ -79,7 +79,15 @@ ALTER TABLE brain_learning_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY brain_learning_events_service ON brain_learning_events
     FOR ALL USING (true) WITH CHECK (true);
 
--- Trigger for updated_at
+-- Trigger function for updated_at
+CREATE OR REPLACE FUNCTION ble_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER set_ble_updated_at
     BEFORE UPDATE ON brain_learning_events
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    FOR EACH ROW EXECUTE FUNCTION ble_set_updated_at();
