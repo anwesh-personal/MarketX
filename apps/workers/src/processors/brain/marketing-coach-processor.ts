@@ -284,7 +284,7 @@ export class MarketingCoachProcessor {
     }
 
     /**
-     * Save learnings to brain_memories and brain_reflections.
+     * Save learnings to brain_memories, brain_reflections, AND brain_learning_events.
      */
     private async saveLearnings(
         orgId: string,
@@ -306,6 +306,7 @@ export class MarketingCoachProcessor {
         let savedCount = 0
 
         for (const belief of topPerformers) {
+            // brain_memories (for agent prompt context)
             await this.pool.query(`
                 INSERT INTO brain_memories (org_id, agent_id, memory_type, content, source, importance, metadata)
                 VALUES ($1, $2, 'learning', $3, 'coach_analysis', $4, $5)
@@ -326,10 +327,32 @@ export class MarketingCoachProcessor {
                     reply_rate: belief.reply_rate,
                 })
             ])
+
+            // brain_learning_events (for audit trail + dashboards)
+            await this.pool.query(`
+                INSERT INTO brain_learning_events (org_id, brain_agent_id, event_type, title, description, source, belief_id, metrics, importance)
+                VALUES ($1, $2, 'insight', $3, $4, 'coach_analysis', $5, $6, $7)
+            `, [
+                orgId,
+                brainAgentId,
+                `High-performing angle: ${belief.angle ?? 'Unknown'}`,
+                `Achieved ${belief.booking_rate.toFixed(1)}% booking rate with ${belief.sends} sends. Recommend more content using this angle.`,
+                belief.belief_id,
+                JSON.stringify({
+                    booking_rate: belief.booking_rate,
+                    reply_rate: belief.reply_rate,
+                    click_rate: belief.click_rate,
+                    open_rate: belief.open_rate,
+                    sends: belief.sends,
+                }),
+                Math.min(0.95, 0.5 + (belief.sends / 100) * 0.1),
+            ])
+
             savedCount++
         }
 
         for (const belief of underperformers) {
+            // brain_memories (for agent prompt context)
             await this.pool.query(`
                 INSERT INTO brain_memories (org_id, agent_id, memory_type, content, source, importance, metadata)
                 VALUES ($1, $2, 'learning', $3, 'coach_analysis', $4, $5)
@@ -350,6 +373,27 @@ export class MarketingCoachProcessor {
                     reply_rate: belief.reply_rate,
                 })
             ])
+
+            // brain_learning_events (for audit trail + dashboards)
+            await this.pool.query(`
+                INSERT INTO brain_learning_events (org_id, brain_agent_id, event_type, title, description, source, belief_id, metrics, importance)
+                VALUES ($1, $2, 'warning', $3, $4, 'coach_analysis', $5, $6, $7)
+            `, [
+                orgId,
+                brainAgentId,
+                `Underperforming angle: ${belief.angle ?? 'Unknown'}`,
+                `Only ${belief.booking_rate.toFixed(1)}% booking rate with ${belief.sends} sends. Consider revising or reducing allocation.`,
+                belief.belief_id,
+                JSON.stringify({
+                    booking_rate: belief.booking_rate,
+                    reply_rate: belief.reply_rate,
+                    click_rate: belief.click_rate,
+                    open_rate: belief.open_rate,
+                    sends: belief.sends,
+                }),
+                0.6,
+            ])
+
             savedCount++
         }
 
@@ -377,10 +421,28 @@ export class MarketingCoachProcessor {
                     analysis_date: new Date().toISOString(),
                 })
             ])
+
+            // brain_learning_events: reflection record
+            await this.pool.query(`
+                INSERT INTO brain_learning_events (org_id, brain_agent_id, event_type, title, description, source, metrics, importance)
+                VALUES ($1, $2, 'reflection', $3, $4, 'coach_analysis', $5, $6)
+            `, [
+                orgId,
+                brainAgentId,
+                `Campaign Performance Summary`,
+                reflectionContent,
+                JSON.stringify({
+                    top_count: topPerformers.length,
+                    under_count: underperformers.length,
+                    analysis_date: new Date().toISOString(),
+                }),
+                0.8,
+            ])
+
             savedCount++
         }
 
-        console.log(`[MarketingCoach] Saved ${savedCount} learnings for org ${orgId}`)
+        console.log(`[MarketingCoach] Saved ${savedCount} learnings + events for org ${orgId}`)
 
         return savedCount
     }

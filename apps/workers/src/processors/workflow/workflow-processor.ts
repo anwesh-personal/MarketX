@@ -450,6 +450,44 @@ async function executeNode(
                         systemPromptParts.push(`### BRAIN KNOWLEDGE BASE:\n${JSON.stringify(pipelineData.kb)}`);
                     }
 
+                    // 4b. Inject brain learnings (from learning loop / marketing coach)
+                    // This is the self-healing loop: MailWizz stats → signal_event → coach → brain_memories → agent
+                    if (orgAgent.can_access_brain && brainAgent?.id) {
+                        const { data: recentLearnings } = await supabase
+                            .from('brain_memories')
+                            .select('content, importance, created_at')
+                            .eq('org_id', orgId)
+                            .eq('agent_id', brainAgent.id)
+                            .eq('memory_type', 'learning')
+                            .order('importance', { ascending: false })
+                            .order('created_at', { ascending: false })
+                            .limit(5);
+
+                        if (recentLearnings && recentLearnings.length > 0) {
+                            const learningsText = recentLearnings.map(l => {
+                                const parsed = typeof l.content === 'string' ? JSON.parse(l.content) : l.content;
+                                return `• ${parsed.title}: ${parsed.description}${parsed.action_suggestion ? ` → ${parsed.action_suggestion}` : ''}`;
+                            }).join('\n');
+
+                            systemPromptParts.push(`### RECENT LEARNINGS FROM CAMPAIGN DATA:\n${learningsText}`);
+                        }
+
+                        // Also inject latest reflection (performance summary)
+                        const { data: latestReflection } = await supabase
+                            .from('brain_reflections')
+                            .select('content')
+                            .eq('org_id', orgId)
+                            .eq('agent_id', brainAgent.id)
+                            .eq('reflection_type', 'performance_analysis')
+                            .order('created_at', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+
+                        if (latestReflection?.content) {
+                            systemPromptParts.push(`### LATEST CAMPAIGN PERFORMANCE SUMMARY:\n${latestReflection.content}`);
+                        }
+                    }
+
                     // 5. Build user prompt based on input mode
                     let userPrompt = '';
                     if (inputMode === 'previous_output') {
