@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const {
             email,
-            password,
             full_name,
             org_id,
             role = 'member',
@@ -76,9 +75,9 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Validate required fields
-        if (!email || !password || !org_id) {
+        if (!email || !org_id) {
             return NextResponse.json(
-                { error: 'Email, password, and organization are required' },
+                { error: 'Email and organization are required' },
                 { status: 400 }
             );
         }
@@ -87,14 +86,6 @@ export async function POST(request: NextRequest) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
-        }
-
-        // Validate password strength (min 8 chars)
-        if (password.length < 8) {
-            return NextResponse.json(
-                { error: 'Password must be at least 8 characters' },
-                { status: 400 }
-            );
         }
 
         // Check if organization exists
