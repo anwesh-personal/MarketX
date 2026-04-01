@@ -88,7 +88,7 @@ export default function UsersPage() {
             const session = localStorage.getItem('superadmin_session');
             if (!session) return;
 
-            const { token, adminId } = JSON.parse(session);
+            const { token } = JSON.parse(session);
 
             const response = await fetch('/api/superadmin/users/impersonate', {
                 method: 'POST',
@@ -99,18 +99,30 @@ export default function UsersPage() {
                 body: JSON.stringify({ user_id: user.id }),
             });
 
-            if (!response.ok) throw new Error('Impersonation failed');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || 'Impersonation failed');
+            }
 
             const data = await response.json();
 
-            localStorage.setItem('impersonation_mode', 'true');
-            localStorage.setItem('impersonation_id', data.impersonation_id);
-            localStorage.setItem('impersonation_admin_id', adminId);
+            // Store superadmin session so we can return later
+            sessionStorage.setItem('impersonation_superadmin_session', session);
+            sessionStorage.setItem('impersonation_target', JSON.stringify(data.user));
 
+            // Swap to impersonated user's real Supabase session
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            await supabase.auth.setSession({
+                access_token: data.access_token,
+                refresh_token: data.refresh_token,
+            });
+
+            // Open the main app as the impersonated user
             window.open('/', '_blank');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error impersonating user:', error);
-            alert('Failed to impersonate user');
+            alert(error.message || 'Failed to impersonate user');
         } finally {
             setImpersonating(null);
         }

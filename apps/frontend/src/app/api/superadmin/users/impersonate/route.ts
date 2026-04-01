@@ -1,18 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-if (!process.env.JWT_SECRET) {
-    throw new Error('FATAL: JWT_SECRET environment variable is not set.');
-}
-const JWT_SECRET = process.env.JWT_SECRET;
-
+/**
+ * POST /api/superadmin/users/impersonate
+ * 
+ * Generates a real Supabase Auth session for any user — no password needed.
+ * Uses the same proven pattern as Refinery Nexus:
+ *   1. generateLink({ type: 'magiclink' }) → get hashed OTP token
+ *   2. verifyOtp({ token_hash }) → create real access_token + refresh_token
+ *   3. Frontend swaps Supabase session client-side → instant login
+ *
+ * Fully audit-logged. Superadmin-only.
+ */
 export async function POST(request: NextRequest) {
     try {
         const admin = await getSuperadmin(request);
@@ -32,95 +37,106 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Get user details with org info
-        const { data: user, error: userError } = await supabase
-            .from('users')
-            .select(`
-                id,
-                email,
-                full_name,
-                role,
-                org_id,
-                is_active,
-                organizations:org_id (
-                    id,
-                    name,
-                    slug,
-                    plan,
-                    status
-                )
-            `)
-            .eq('id', user_id)
-            .single();
-
-        if (userError || !user) {
+        // 1. Get the target user from Supabase Auth
+        const { data: authUser, error: userErr } = await supabaseAdmin.auth.admin.getUserById(user_id);
+        if (userErr || !authUser.user) {
             return NextResponse.json(
-                { error: 'User not found' },
+                { error: `User lookup failed: ${userErr?.message || 'Not found'}` },
                 { status: 404 }
             );
         }
 
-        if (!user.is_active) {
+        const targetEmail = authUser.user.email;
+        if (!targetEmail) {
+            return NextResponse.json(
+                { error: 'User has no email associated' },
+                { status: 400 }
+            );
+        }
+
+        // 2. Get user profile for display info
+        const { data: profile } = await supabaseAdmin
+            .from('users')
+            .select('full_name, role, org_id, is_active, organizations:org_id (id, name, slug, plan)')
+            .eq('id', user_id)
+            .single();
+
+        if (profile && !profile.is_active) {
             return NextResponse.json(
                 { error: 'Cannot impersonate inactive user' },
                 { status: 400 }
             );
         }
 
-        const org = Array.isArray(user.organizations)
-            ? user.organizations[0]
-            : user.organizations;
+        // 3. Generate magic link → extract hashed OTP token
+        const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'magiclink',
+            email: targetEmail,
+        });
 
-        if (!org || org.status !== 'active') {
+        if (linkErr) {
             return NextResponse.json(
-                { error: 'User organization is not active' },
-                { status: 400 }
+                { error: `Link generation failed: ${linkErr.message}` },
+                { status: 500 }
             );
         }
 
-        // Create JWT token for the user (same as regular login)
-        const token = jwt.sign(
-            {
-                userId: user.id,
-                email: user.email,
-                orgId: org.id,
-                role: user.role,
-                type: 'user', // Regular user token (not superadmin)
-            },
-            JWT_SECRET,
-            { expiresIn: '8h' } // Impersonation session expires in 8 hours
-        );
+        if (!linkData.properties?.hashed_token) {
+            return NextResponse.json(
+                { error: 'No hashed_token in generated link' },
+                { status: 500 }
+            );
+        }
 
-        await supabase.from('audit_logs').insert({
+        // 4. Verify OTP server-side → creates a real Supabase session
+        const { data: sessionData, error: sessionErr } = await supabaseAdmin.auth.verifyOtp({
+            type: 'magiclink',
+            token_hash: linkData.properties.hashed_token,
+        });
+
+        if (sessionErr || !sessionData.session) {
+            return NextResponse.json(
+                { error: `Session creation failed: ${sessionErr?.message || 'No session returned'}` },
+                { status: 500 }
+            );
+        }
+
+        // 5. Audit log
+        await supabaseAdmin.from('audit_logs').insert({
             action: 'superadmin_impersonate',
-            user_id: user.id,
+            user_id: user_id,
             metadata: {
                 superadmin_id: admin.id,
                 superadmin_email: admin.email,
-                impersonated_user_id: user.id,
-                impersonated_email: user.email,
-                org_id: org.id,
-                org_name: org.name,
+                impersonated_user_id: user_id,
+                impersonated_email: targetEmail,
+                org_id: profile?.org_id,
                 timestamp: new Date().toISOString(),
             },
         });
 
+        // 6. Return real Supabase session tokens
+        const org = Array.isArray(profile?.organizations)
+            ? profile.organizations[0]
+            : profile?.organizations;
+
         return NextResponse.json({
             success: true,
-            token,
+            access_token: sessionData.session.access_token,
+            refresh_token: sessionData.session.refresh_token,
             user: {
-                id: user.id,
-                email: user.email,
-                full_name: user.full_name,
-                role: user.role,
+                id: user_id,
+                email: targetEmail,
+                full_name: profile?.full_name || targetEmail.split('@')[0],
+                role: profile?.role || 'member',
             },
-            organization: {
+            organization: org ? {
                 id: org.id,
                 name: org.name,
                 slug: org.slug,
                 plan: org.plan,
-            },
-            message: `Now impersonating ${user.email}`,
+            } : null,
+            message: `Now impersonating ${targetEmail}`,
         });
 
     } catch (error: any) {
@@ -132,6 +148,10 @@ export async function POST(request: NextRequest) {
     }
 }
 
+/**
+ * DELETE /api/superadmin/users/impersonate
+ * End impersonation — audit log only (frontend handles session swap back)
+ */
 export async function DELETE(request: NextRequest) {
     try {
         const admin = await getSuperadmin(request);
@@ -142,7 +162,7 @@ export async function DELETE(request: NextRequest) {
             );
         }
 
-        await supabase.from('audit_logs').insert({
+        await supabaseAdmin.from('audit_logs').insert({
             action: 'superadmin_end_impersonate',
             user_id: admin.id,
             metadata: {
