@@ -106,20 +106,18 @@ export default function UsersPage() {
 
             const data = await response.json();
 
-            // Store superadmin session so we can return later
-            sessionStorage.setItem('impersonation_superadmin_session', session);
-            sessionStorage.setItem('impersonation_target', JSON.stringify(data.user));
-
-            // Swap to impersonated user's real Supabase session
-            const { createClient } = await import('@/lib/supabase/client');
-            const supabase = createClient();
-            await supabase.auth.setSession({
+            // Store payload in localStorage for the landing page to consume
+            localStorage.setItem('impersonate_payload', JSON.stringify({
                 access_token: data.access_token,
                 refresh_token: data.refresh_token,
-            });
+                user: data.user,
+                organization: data.organization,
+                superadmin_session: session,
+            }));
 
-            // Open the main app as the impersonated user
-            window.open('/', '_blank');
+            // Open the animated landing page in a new tab
+            // It will setSession() in its own context, show animation, then redirect to /dashboard
+            window.open('/impersonate-landing', '_blank');
         } catch (error: any) {
             console.error('Error impersonating user:', error);
             alert(error.message || 'Failed to impersonate user');

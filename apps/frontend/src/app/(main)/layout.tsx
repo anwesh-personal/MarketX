@@ -20,6 +20,7 @@ import {
     BookOpen,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
+import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { createClient } from '@/lib/supabase/client';
 
 interface MainLayoutProps {
@@ -79,7 +80,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
     }
 
     return (
-        <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex flex-col">
+            {/* Impersonation Banner — above everything */}
+            <ImpersonationBanner />
+
+            <div className="flex-1 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
             {/* Outer App Shell (Floating Window Effect) */}
             <div className="w-full max-w-[1600px] h-[calc(100vh-4rem)] bg-surface border border-border rounded-[var(--radius-2xl)] shadow-float flex flex-col overflow-hidden relative">
                 
@@ -228,6 +233,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     </div>
                 </main>
                 </div>
+            </div>
             </div>
         </div>
     );
