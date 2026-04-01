@@ -280,8 +280,15 @@ export async function getBootstrapClient(serverId?: string): Promise<BootstrapCl
         .single();
 
     if (error || !server) {
-        // Fallback to RackNerd workers VPS
-        return new BootstrapClient('107.172.56.68', 3000);
+        // Fallback to env var — set WORKER_VPS_HOST in Vercel/production
+        const fallbackHost = process.env.WORKER_VPS_HOST;
+        if (!fallbackHost) {
+            throw new Error(
+                'No VPS servers configured. Add one in Superadmin → Infrastructure, ' +
+                'or set WORKER_VPS_HOST env var.'
+            );
+        }
+        return new BootstrapClient(fallbackHost, parseInt(process.env.WORKER_VPS_BOOTSTRAP_PORT || '3000'));
     }
 
     return new BootstrapClient(server.host, 3000);
