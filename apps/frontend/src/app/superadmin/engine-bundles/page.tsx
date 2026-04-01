@@ -107,15 +107,15 @@ const TIER_CLS: Record<string, string> = {
     quanta: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
 }
 const STATUS_CLS: Record<string, string> = {
-    active:   'bg-success/10 text-success border-success/20',
+    active:   'bg-surfaceElevated text-success border-border',
     draft:    'bg-muted/20 text-muted-foreground border-border',
-    archived: 'bg-error/10 text-error border-error/20',
+    archived: 'bg-surfaceElevated text-error border-border',
 }
 const INST_CLS: Record<string, string> = {
-    active:   'bg-success/10 text-success',
-    standby:  'bg-warning/10 text-warning',
+    active:   'bg-surfaceElevated text-success',
+    standby:  'bg-surfaceElevated text-warning',
     disabled: 'bg-muted/20 text-muted-foreground',
-    error:    'bg-error/10 text-error',
+    error:    'bg-surfaceElevated text-error',
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -333,7 +333,7 @@ function BundleCard({ bundle, isExpanded, instances, loadingInstances, onToggle,
                         {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                     {bundle.status !== 'archived' && (
-                        <button onClick={onArchive} className="btn btn-ghost btn-icon btn-sm text-error hover:bg-error/10">
+                        <button onClick={onArchive} className="btn btn-ghost btn-icon btn-sm text-error hover:bg-surfaceElevated">
                             <Archive className="w-4 h-4" />
                         </button>
                     )}
@@ -375,7 +375,7 @@ function BundleCard({ bundle, isExpanded, instances, loadingInstances, onToggle,
                                         <span className="text-textSecondary flex items-center gap-1"><Key className="w-3 h-3" /> {inst.api_key_mode}</span>
                                         <span className="text-textSecondary flex items-center gap-1"><Zap className="w-3 h-3" /> {inst.runs_total}</span>
                                         {inst.has_overrides && (
-                                            <span className="px-2 py-0.5 rounded-full bg-warning/10 text-warning flex items-center gap-1">
+                                            <span className="px-2 py-0.5 rounded-full bg-surfaceElevated text-warning flex items-center gap-1">
                                                 <Sliders className="w-3 h-3" /> overrides
                                             </span>
                                         )}
@@ -487,7 +487,7 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
 
     return (
         <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="create-bundle-title">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
+            <div className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -715,7 +715,7 @@ function AgentEditor({ agent, index, isExpanded, onToggle, onUpdate, onUpdateLlm
                                 <button
                                     key={tool.value}
                                     onClick={() => onToggleTool(tool.value)}
-                                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-all ${agent.tools.includes(tool.value) ? 'border-success/40 bg-success/5 text-textPrimary' : 'border-border text-textSecondary hover:border-border-hover'}`}
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm text-left transition-all ${agent.tools.includes(tool.value) ? 'border-borderHover bg-surface text-textPrimary' : 'border-border text-textSecondary hover:border-border-hover'}`}
                                 >
                                     <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${agent.tools.includes(tool.value) ? 'bg-success text-white' : 'bg-surfaceHover border border-border'}`}>
                                         {agent.tools.includes(tool.value) && <CheckCircle className="w-3 h-3" />}
@@ -871,10 +871,10 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
 
     return (
         <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="deploy-bundle-title">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out">
+            <div className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out">
                 <div className="flex items-center justify-between p-6 border-b border-border">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-success/10"><Rocket className="w-5 h-5 text-success" aria-hidden /></div>
+                        <div className="p-2 rounded-xl bg-surfaceElevated"><Rocket className="w-5 h-5 text-success" aria-hidden /></div>
                         <div>
                             <h2 id="deploy-bundle-title" className="text-xl font-bold text-textPrimary">Deploy Bundle</h2>
                             <p className="text-sm text-textSecondary">{bundle.name}</p>
@@ -887,7 +887,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                     /* ── Success screen ── */
                     <div className="p-6 space-y-5">
                         <div className="flex flex-col items-center text-center pb-2">
-                            <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-3">
+                            <div className="w-16 h-16 rounded-full bg-surfaceElevated flex items-center justify-center mb-3">
                                 <CheckCircle className="w-8 h-8 text-success" />
                             </div>
                             <h3 className="text-lg font-bold text-textPrimary">Deployed Successfully!</h3>
@@ -898,7 +898,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                         </div>
 
                         {/* API Key — shown ONCE */}
-                        <div className="p-4 rounded-xl bg-warning/5 border border-warning/30 space-y-3">
+                        <div className="p-4 rounded-xl bg-surface border border-border space-y-3">
                             <div className="flex items-center gap-2 text-warning text-sm font-semibold">
                                 <Key className="w-4 h-4" /> Engine API Key — copy now, shown once
                             </div>
@@ -965,7 +965,7 @@ function DeployModal({ bundle, organizations, fetchWithAuth, onClose, onDeployed
                         </div>
 
                         {form.api_key_mode !== 'platform' && (
-                            <div className="space-y-3 p-4 rounded-xl bg-warning/5 border border-warning/20">
+                            <div className="space-y-3 p-4 rounded-xl bg-surface border border-border">
                                 <p className="text-xs font-semibold text-warning flex items-center gap-2"><Key className="w-3.5 h-3.5" /> Client API Keys</p>
                                 <input type="password" value={form.byok_openai} onChange={e => setForm(f => ({ ...f, byok_openai: e.target.value }))} placeholder="OpenAI Key (sk-...)" className="input w-full font-mono text-sm" />
                                 <input type="password" value={form.byok_anthropic} onChange={e => setForm(f => ({ ...f, byok_anthropic: e.target.value }))} placeholder="Anthropic Key (sk-ant-...)" className="input w-full font-mono text-sm" />
@@ -1069,10 +1069,10 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
 
     return (
         <div className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="customize-instance-title">
-            <div className="bg-background border border-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
+            <div className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl transition-all duration-200 ease-out">
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-warning/10"><Sliders className="w-5 h-5 text-warning" aria-hidden /></div>
+                        <div className="p-2 rounded-xl bg-surfaceElevated"><Sliders className="w-5 h-5 text-warning" aria-hidden /></div>
                         <div>
                             <h2 id="customize-instance-title" className="text-xl font-bold text-textPrimary">Customize Instance</h2>
                             <p className="text-sm text-textSecondary">{instance.org_name || instance.org_id}{instance.assigned_user_email ? ` · ${instance.assigned_user_email}` : ''}</p>
@@ -1082,7 +1082,7 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    <div className="p-3 rounded-xl bg-info/5 border border-info/20 text-sm text-textSecondary flex items-start gap-2">
+                    <div className="p-3 rounded-xl bg-surface border border-border text-sm text-textSecondary flex items-start gap-2">
                         <AlertCircle className="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
                         Overrides are applied on top of the frozen snapshot. The master bundle is never touched.
                         Brain agents for this org are synced automatically on save.
@@ -1114,7 +1114,7 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
                                 <Bot className="w-4 h-4 text-accent" />
                                 {eff.name} — {eff.role}
                                 {draftOverrides?.agents?.[eff.role] && Object.keys(draftOverrides.agents[eff.role]).length > 0 && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-warning/10 text-warning">modified</span>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-surfaceElevated text-warning">modified</span>
                                 )}
                             </p>
 
@@ -1148,7 +1148,7 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
                                                     const newTools = granted ? eff.tools.filter(t => t !== tool.value) : [...eff.tools, tool.value]
                                                     updateAgentOverride(eff.role, { tools: newTools })
                                                 }}
-                                                className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all ${granted ? 'border-success/40 bg-success/5 text-textPrimary' : 'border-border text-textSecondary'}`}
+                                                className={`flex items-center gap-2 p-2.5 rounded-lg border text-sm transition-all ${granted ? 'border-borderHover bg-surface text-textPrimary' : 'border-border text-textSecondary'}`}
                                             >
                                                 <div className={`w-4 h-4 rounded flex items-center justify-center ${granted ? 'bg-success text-white' : 'bg-surfaceHover border border-border'}`}>
                                                     {granted && <CheckCircle className="w-3 h-3" />}
@@ -1226,7 +1226,7 @@ function Pill({ icon: Icon, label, color }: { icon: React.ElementType; label: st
 
 function ErrorBar({ message, inline }: { message: string; inline?: boolean }) {
     return (
-        <div className={`flex items-center gap-2 p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm ${inline ? '' : 'w-full'}`}>
+        <div className={`flex items-center gap-2 p-3 rounded-lg bg-surfaceElevated border border-border text-error text-sm ${inline ? '' : 'w-full'}`}>
             <AlertCircle className="w-4 h-4 flex-shrink-0" /> {message}
         </div>
     )

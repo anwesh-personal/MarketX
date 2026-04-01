@@ -18,10 +18,10 @@ interface EngineCardProps {
 
 export function StatusBadge({ status }: { status: EngineInstance['status'] }) {
     const styles = {
-        active: 'bg-success/10 text-success border-success/20',
-        standby: 'bg-warning/10 text-warning border-warning/20',
+        active: 'bg-surfaceElevated text-success border-border',
+        standby: 'bg-surfaceElevated text-warning border-border',
         disabled: 'bg-textTertiary/10 text-textTertiary border-textTertiary/20',
-        error: 'bg-error/10 text-error border-error/20'
+        error: 'bg-surfaceElevated text-error border-border'
     };
 
     const labels = {
@@ -68,7 +68,7 @@ export function EngineCard({
             group relative
             card overflow-hidden
             border border-border
-            hover:border-primary/40
+            hover:border-borderHover
             hover:shadow-[0_0_30px_var(--color-primary)/10]
             transition-all duration-300
         ">
@@ -84,7 +84,7 @@ export function EngineCard({
                 {/* Header */}
                 <div className="flex items-start justify-between mb-md">
                     <div className="flex items-center gap-sm">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <Server className="w-5 h-5 text-primary" />
                         </div>
                         <div>
@@ -147,7 +147,7 @@ export function EngineCard({
                                     <div className="border-t border-border my-xs" />
                                     <button
                                         onClick={() => { onDelete(engine.id); setShowMenu(false); }}
-                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-error hover:bg-error/10"
+                                        className="w-full flex items-center gap-sm px-md py-sm text-sm text-error hover:bg-surfaceElevated"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                         Delete
@@ -172,8 +172,8 @@ export function EngineCard({
                             className="
                                 w-full flex items-center gap-sm p-sm
                                 rounded-[var(--radius-md)]
-                                border border-dashed border-info/50
-                                bg-info/5 hover:bg-info/10
+                                border border-dashed border-borderHover
+                                bg-surface hover:bg-surfaceElevated
                                 transition-colors
                             "
                         >
@@ -248,9 +248,9 @@ export function EngineCard({
                                 className="
                                     flex items-center gap-xs
                                     px-sm py-xs
-                                    bg-success/10 text-success
+                                    bg-surfaceElevated text-success
                                     rounded-[var(--radius-md)]
-                                    hover:bg-success/20
+                                    hover:bg-surfaceElevated
                                     transition-colors
                                     text-xs font-medium
                                 "

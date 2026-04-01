@@ -58,7 +58,7 @@ const LIMITS = [
 
 const TIER_COLORS = {
   basic: 'bg-textTertiary/10 text-textTertiary',
-  medium: 'bg-info/10 text-info',
+  medium: 'bg-surfaceElevated text-info',
   enterprise: 'bg-accent/10 text-accent',
 }
 
@@ -167,7 +167,7 @@ export default function PortalTiersPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-md">
         <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-md flex items-center gap-md">
-          <div className="p-sm bg-primary/10 rounded-full text-primary">
+          <div className="p-sm bg-surfaceElevated rounded-full text-primary">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
@@ -185,7 +185,7 @@ export default function PortalTiersPage() {
           </div>
         </div>
         <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-md flex items-center gap-md">
-          <div className="p-sm bg-info/10 rounded-full text-info">
+          <div className="p-sm bg-surfaceElevated rounded-full text-info">
             <Shield className="w-5 h-5" />
           </div>
           <div>
@@ -234,7 +234,7 @@ export default function PortalTiersPage() {
 
                 return (
                   <React.Fragment key={c.id}>
-                    <tr className={`border-b border-border/50 ${isEditing ? 'bg-primary/5' : 'hover:bg-background/50'} transition-colors`}>
+                    <tr className={`border-b border-border/50 ${isEditing ? 'bg-surface' : 'hover:bg-background/50'} transition-colors`}>
                       <td className="py-md px-md align-top">
                         <div className="font-medium text-textPrimary">{c.partner?.name || 'Unknown'}</div>
                         <div className="text-xs text-textSecondary font-mono mt-0.5">{c.partner_id}</div>

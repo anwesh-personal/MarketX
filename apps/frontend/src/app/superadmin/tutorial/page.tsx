@@ -12,8 +12,8 @@ import { WalkthroughPlayer } from './WalkthroughPlayer'
 
 const GROUP_META: Record<string, { label: string; desc: string; icon: React.ReactNode; accent: string }> = {
     flow: { label: 'MarketWriter Flow', desc: 'How the product works end-to-end', icon: <Rocket size={18} />, accent: 'var(--color-accent)' },
-    superadmin: { label: 'Superadmin Reference', desc: 'Every admin page explained', icon: <Shield size={18} />, accent: '#f59e0b' },
-    member: { label: 'Member Portal', desc: 'What clients see & can do', icon: <Users size={18} />, accent: '#10b981' },
+    superadmin: { label: 'Superadmin Reference', desc: 'Every admin page explained', icon: <Shield size={18} />, accent: 'var(--color-warning)' },
+    member: { label: 'Member Portal', desc: 'What clients see & can do', icon: <Users size={18} />, accent: 'var(--color-success)' },
 }
 
 function Content({ id, c }: { id: string; c: string }) {
@@ -45,7 +45,7 @@ function Card({ s, idx, open, toggle }: { s: TutorialSection; idx: number; open:
             <motion.div
                 whileHover={{ y: -2 }}
                 onClick={toggle}
-                className="relative cursor-pointer rounded-2xl bg-surface border overflow-hidden transition-shadow duration-300"
+                className="relative cursor-pointer rounded-[var(--radius-lg)] bg-surface border overflow-hidden transition-shadow duration-300"
                 style={{
                     borderColor: open ? `${s.color}50` : 'var(--color-border)',
                     boxShadow: open ? `0 8px 32px ${s.color}12` : 'none',
@@ -62,7 +62,7 @@ function Card({ s, idx, open, toggle }: { s: TutorialSection; idx: number; open:
                     <motion.div
                         animate={{ scale: open ? 1.1 : 1, rotate: open ? 5 : 0 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-300"
+                        className="w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center flex-shrink-0 transition-all duration-300"
                         style={{
                             background: `${s.color}12`,
                             color: s.color,
@@ -134,7 +134,7 @@ export default function TutorialPage() {
             <motion.div ref={heroRef}
                 onMouseMove={e => { if (!heroRef.current) return; const r = heroRef.current.getBoundingClientRect(); setMousePos({ x: e.clientX - r.left, y: e.clientY - r.top }) }}
                 initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }}
-                className="relative px-8 py-20 text-center bg-surface rounded-3xl border border-border overflow-hidden mb-12"
+                className="relative px-8 py-20 text-center bg-surface rounded-[var(--radius-xl)] border border-border overflow-hidden mb-12"
             >
                 {/* Mouse spotlight */}
                 <div className="absolute pointer-events-none opacity-50" style={{

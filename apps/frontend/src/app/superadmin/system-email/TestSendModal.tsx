@@ -40,7 +40,7 @@ export function TestSendModal({ smtp, fetchWithAuth, onClose, onSent }: Props) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-overlay backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
-                className="bg-background border border-border rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+                className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-6 border-b border-border">
                     <div className="flex items-center gap-3">
                         <Send className="w-5 h-5 text-accent" />
@@ -50,7 +50,7 @@ export function TestSendModal({ smtp, fetchWithAuth, onClose, onSent }: Props) {
                 </div>
                 <div className="p-6 space-y-4">
                     {!smtp.isConfigured && (
-                        <div className="p-3 rounded-xl bg-warning/5 border border-warning/20 text-sm text-warning">
+                        <div className="p-3 rounded-xl bg-surface border border-border text-sm text-warning">
                             SMTP not configured. Set it up in Settings → Email first.
                         </div>
                     )}
@@ -64,7 +64,7 @@ export function TestSendModal({ smtp, fetchWithAuth, onClose, onSent }: Props) {
                         <p>SMTP: <strong className="text-textSecondary">{smtp.isConfigured ? smtp.host : 'Not configured'}</strong></p>
                     </div>
                     {result && (
-                        <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${result.success ? 'bg-success/5 border border-success/20 text-success' : 'bg-error/5 border border-error/20 text-error'}`}>
+                        <div className={`p-3 rounded-xl text-sm flex items-center gap-2 ${result.success ? 'bg-surface border border-border text-success' : 'bg-surface border border-border text-error'}`}>
                             {result.success ? <CheckCircle className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
                             {result.success ? 'Email sent successfully!' : result.error}
                         </div>

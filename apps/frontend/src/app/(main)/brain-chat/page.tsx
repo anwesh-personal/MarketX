@@ -272,25 +272,37 @@ export default function BrainChatPage() {
     }
 
     return (
-        <div className="relative flex flex-col h-screen bg-gradient-to-br from-background via-background to-muted/20 overflow-hidden">
-            <BrainBackground opacity={0.22} animation="float" className="z-0" />
+        <div className="relative flex flex-col h-full overflow-hidden" style={{ background: 'var(--gradient-subtle)' }}>
+            <BrainBackground opacity={0.18} animation="float" className="z-0" />
             {/* Header */}
-            <header className="relative z-10 border-b border-border/40 backdrop-blur-xl bg-background/80 sticky top-0">
+            <header className="relative z-10 flex-shrink-0 glass" style={{
+                borderBottom: '1px solid var(--color-border)',
+                position: 'sticky', top: 0,
+            }}>
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <Brain className="w-8 h-8 text-primary" />
-                            <Sparkles className="w-4 h-4 text-primary absolute -top-1 -right-1 animate-pulse" />
+                            <div className="absolute inset-0 rounded-[var(--radius-lg)]" style={{ background: 'var(--gradient-accent-glow)', filter: 'blur(12px)' }} />
+                            <div className="relative p-2.5 rounded-[var(--radius-lg)]" style={{
+                                background: 'rgba(var(--color-accent-rgb), 0.1)',
+                                border: '1px solid rgba(var(--color-accent-rgb), 0.2)',
+                            }}>
+                                <Brain className="w-7 h-7" style={{ color: 'var(--color-accent)' }} />
+                                <Sparkles className="w-3.5 h-3.5 absolute -top-1 -right-1 animate-pulse" style={{ color: 'var(--color-accent)' }} />
+                            </div>
                         </div>
 
-                        {/* Active brain (read-only — governed by org deployment) */}
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50">
+                        {/* Active brain runtime pill */}
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--radius-md)]" style={{
+                            background: 'var(--color-surface)',
+                            border: '1px solid var(--color-border)',
+                        }}>
                             <div>
-                                <h1 className="text-lg font-bold text-foreground">
+                                <h1 className="text-base font-bold" style={{ color: 'var(--color-text-primary)', fontFamily: 'var(--font-display)' }}>
                                     {activeRuntime?.name ?? (runtimeError ? 'No brain deployed' : 'Loading...')}
                                 </h1>
-                                <p className="text-xs text-muted-foreground text-left">
-                                    {activeRuntime?.templateVersion ? `v${activeRuntime.templateVersion}` : runtimeError ?? 'Your organization’s active brain'}
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                                    {activeRuntime?.templateVersion ? `v${activeRuntime.templateVersion}` : runtimeError ?? "Your organization\u2019s active brain"}
                                 </p>
                             </div>
                         </div>
@@ -301,19 +313,33 @@ export default function BrainChatPage() {
                         {conversationId && messages.length > 0 && (
                             <button
                                 onClick={() => setShowPushModal(true)}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[rgba(var(--color-accent-rgb),0.1)] hover:bg-[rgba(var(--color-accent-rgb),0.2)] text-accent transition-all duration-200 hover:scale-105 active:scale-95"
+                                className="flex items-center gap-2 px-4 py-2 rounded-[var(--radius-md)]"
+                                style={{
+                                    background: 'rgba(var(--color-accent-rgb), 0.08)',
+                                    border: '1px solid rgba(var(--color-accent-rgb), 0.15)',
+                                    color: 'var(--color-accent)',
+                                    transition: `all var(--duration-fast) var(--easing)`,
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--color-accent-rgb), 0.15)'; e.currentTarget.style.transform = `scale(var(--hover-scale))` }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(var(--color-accent-rgb), 0.08)'; e.currentTarget.style.transform = 'scale(1)' }}
                             >
                                 <Upload className="w-4 h-4" />
-                                <span className="text-sm font-medium">Push to Brain</span>
+                                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-weight-medium)' }}>Push to Brain</span>
                             </button>
                         )}
 
                         <button
                             onClick={() => router.push('/brain-control')}
-                            className="p-2 rounded-lg hover:bg-muted/50 transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="p-2 rounded-[var(--radius-md)]"
+                            style={{
+                                color: 'var(--color-text-secondary)',
+                                transition: `all var(--duration-fast) var(--easing)`,
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-surface-hover)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
                             title="Brain Settings"
                         >
-                            <Settings className="w-5 h-5 text-muted-foreground" />
+                            <Settings className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -322,7 +348,7 @@ export default function BrainChatPage() {
             {/* Push to Brain Modal */}
             {showPushModal && (
                 <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
-                    <div className="bg-background border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                    <div className="bg-background border border-border rounded-[var(--radius-lg)] p-6 w-full max-w-md shadow-2xl">
                         <h2 className="text-xl font-bold mb-4">Push Conversation to Brain</h2>
 
                         {pushSuccess ? (
@@ -343,7 +369,7 @@ export default function BrainChatPage() {
                                             key={brain.id}
                                             onClick={() => pushToBrain(brain.id)}
                                             disabled={pushing}
-                                            className="w-full p-4 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-left flex items-center justify-between"
+                                            className="w-full p-4 rounded-xl border border-border hover:border-borderHover hover:bg-surface transition-all text-left flex items-center justify-between"
                                         >
                                             <div>
                                                 <p className="font-medium">{brain.name}</p>
@@ -399,7 +425,7 @@ export default function BrainChatPage() {
                             onKeyDown={handleKeyDown}
                             placeholder={`Ask ${activeRuntime?.name ?? 'the brain'}... (Shift + Enter for new line)`}
                             rows={1}
-                            className="w-full resize-none rounded-2xl border border-border/60 bg-background/50 px-6 py-4 pr-14 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all duration-200 max-h-32 overflow-y-auto hover:bg-background/80"
+                            className="w-full resize-none rounded-[var(--radius-lg)] border border-border/60 bg-background/50 px-6 py-4 pr-14 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-borderHover transition-all duration-200 max-h-32 overflow-y-auto hover:bg-background/80"
                             disabled={isLoading}
                         />
                         <button

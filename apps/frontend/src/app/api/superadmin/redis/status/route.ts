@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@supabase/supabase-js'
 import { getSuperadmin } from '@/lib/superadmin-middleware'
+import { requireEnv } from '@/lib/require-env'
 
 // Use service role to read config
 function createClient() {
@@ -42,8 +43,8 @@ export async function GET(request: NextRequest) {
                 : `https://${config.railway_domain}`;
             workerApiUrl = domain;
         } else {
-            // VPS or fallback to localhost
-            workerApiUrl = process.env.WORKER_API_URL || 'http://localhost:3100';
+            // VPS — WORKER_API_URL must be configured
+            workerApiUrl = requireEnv('WORKER_API_URL');
         }
 
         // Fetch Redis info and queue stats in parallel

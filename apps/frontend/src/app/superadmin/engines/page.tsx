@@ -331,10 +331,10 @@ export default function EnginesPage() {
 
             {/* Error Display */}
             {error && (
-                <div className="flex items-center gap-sm p-md bg-error/10 border border-error/30 rounded-[var(--radius-lg)] text-error">
+                <div className="flex items-center gap-sm p-md bg-surfaceElevated border border-border rounded-[var(--radius-lg)] text-error">
                     <AlertCircle className="w-5 h-5" />
                     <span>{error}</span>
-                    <button onClick={() => setError(null)} className="ml-auto p-1 rounded hover:bg-error/20 text-error">
+                    <button onClick={() => setError(null)} className="ml-auto p-1 rounded hover:bg-surfaceElevated text-error">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -352,7 +352,7 @@ export default function EnginesPage() {
                     </div>
                 </div>
                 <div className="card flex items-center gap-md">
-                    <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
+                    <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                         <Activity className="w-5 h-5 text-success" />
                     </div>
                     <div>
@@ -361,7 +361,7 @@ export default function EnginesPage() {
                     </div>
                 </div>
                 <div className="card flex items-center gap-md">
-                    <div className="p-sm rounded-[var(--radius-md)] bg-info/10">
+                    <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                         <Zap className="w-5 h-5 text-info" />
                     </div>
                     <div>
@@ -370,7 +370,7 @@ export default function EnginesPage() {
                     </div>
                 </div>
                 <div className="card flex items-center gap-md">
-                    <div className="p-sm rounded-[var(--radius-md)] bg-warning/10">
+                    <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                         <AlertCircle className="w-5 h-5 text-warning" />
                     </div>
                     <div>

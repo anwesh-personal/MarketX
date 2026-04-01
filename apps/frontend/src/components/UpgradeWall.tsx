@@ -15,7 +15,7 @@ export function UpgradeWall({ feature, tier }: UpgradeWallProps) {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center max-w-md space-y-md">
-        <div className="mx-auto w-20 h-20 rounded-2xl bg-surfaceHover flex items-center justify-center">
+        <div className="mx-auto w-20 h-20 rounded-[var(--radius-lg)] bg-surfaceHover flex items-center justify-center">
           <Lock className="w-10 h-10 text-textTertiary" />
         </div>
 

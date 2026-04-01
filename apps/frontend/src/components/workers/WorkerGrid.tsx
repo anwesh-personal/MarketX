@@ -125,9 +125,9 @@ export function WorkerGrid({ serverId, autoRefresh, refreshInterval, onRefresh }
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'online': return 'text-success border-success/20 bg-success/5';
+            case 'online': return 'text-success border-border bg-surface';
             case 'stopped': return 'text-textTertiary border-border bg-surface';
-            case 'errored': return 'text-error border-error/20 bg-error/5';
+            case 'errored': return 'text-error border-border bg-surface';
             default: return 'text-textSecondary border-border bg-surface';
         }
     };
@@ -248,9 +248,9 @@ export function WorkerGrid({ serverId, autoRefresh, refreshInterval, onRefresh }
                                 </div>
                                 <span className={`
                                     text-xs font-medium px-sm py-xs rounded-[var(--radius-sm)]
-                                    ${worker.status === 'online' ? 'bg-success/20 text-success' :
+                                    ${worker.status === 'online' ? 'bg-surfaceElevated text-success' :
                                         worker.status === 'stopped' ? 'bg-surface text-textTertiary' :
-                                            'bg-error/20 text-error'}
+                                            'bg-surfaceElevated text-error'}
                                 `}>
                                     {worker.status.toUpperCase()}
                                 </span>
@@ -328,7 +328,7 @@ export function WorkerGrid({ serverId, autoRefresh, refreshInterval, onRefresh }
                                 <button
                                     onClick={() => handleAction('delete', worker.name)}
                                     disabled={actionLoading === worker.name}
-                                    className="btn btn-secondary btn-sm text-error hover:bg-error/10"
+                                    className="btn btn-secondary btn-sm text-error hover:bg-surfaceElevated"
                                     title="Delete"
                                 >
                                     <Trash2 className="w-3 h-3" />

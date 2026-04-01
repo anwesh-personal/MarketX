@@ -214,11 +214,11 @@ export default function AITestChat() {
     }
 
     return (
-        <div className="h-full flex flex-col bg-background rounded-2xl border border-border overflow-hidden">
+        <div className="h-full flex flex-col bg-background rounded-[var(--radius-lg)] border border-border overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-surfaceElevated flex items-center justify-center">
                         <MessageSquare className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -233,7 +233,7 @@ export default function AITestChat() {
                         whileTap={{ scale: 0.95 }}
                         onClick={testAllProviders}
                         disabled={isTesting}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors text-sm"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surfaceElevated hover:bg-surfaceElevated transition-colors text-sm"
                     >
                         {isTesting ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -281,7 +281,7 @@ export default function AITestChat() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.1 }}
                                         className={`p-3 rounded-xl border ${status.success
-                                            ? 'bg-success/10 border-success/30'
+                                            ? 'bg-surfaceElevated border-border'
                                             : 'bg-destructive/10 border-destructive/30'
                                             }`}
                                     >
@@ -385,7 +385,7 @@ export default function AITestChat() {
                                 <div className={`max-w-[80%] ${message.role === 'user'
                                     ? 'bg-primary text-primary-foreground'
                                     : 'bg-muted'
-                                    } rounded-2xl px-4 py-3`}
+                                    } rounded-[var(--radius-lg)] px-4 py-3`}
                                 >
                                     <div className="whitespace-pre-wrap">{message.content}</div>
 

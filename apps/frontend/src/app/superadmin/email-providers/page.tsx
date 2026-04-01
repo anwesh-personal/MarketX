@@ -36,9 +36,9 @@ const PROVIDERS: ProviderMeta[] = [
 const getMeta = (type: string) => PROVIDERS.find(p => p.value === type) ?? PROVIDERS[PROVIDERS.length - 1]
 
 const HEALTH: Record<string, { bg: string; text: string; label: string; dot: string }> = {
-    healthy:  { bg: 'bg-success/10', text: 'text-success', label: 'Healthy', dot: 'bg-success' },
-    degraded: { bg: 'bg-warning/10', text: 'text-warning', label: 'Degraded', dot: 'bg-warning' },
-    down:     { bg: 'bg-error/10', text: 'text-error', label: 'Down', dot: 'bg-error' },
+    healthy:  { bg: 'bg-surfaceElevated', text: 'text-success', label: 'Healthy', dot: 'bg-success' },
+    degraded: { bg: 'bg-surfaceElevated', text: 'text-warning', label: 'Degraded', dot: 'bg-warning' },
+    down:     { bg: 'bg-surfaceElevated', text: 'text-error', label: 'Down', dot: 'bg-error' },
     unknown:  { bg: 'bg-surface', text: 'text-textTertiary', label: 'Unknown', dot: 'bg-textTertiary' },
 }
 
@@ -334,7 +334,7 @@ export default function EmailProvidersPage() {
                                         setShowForm(true)
                                     }
                                 }}
-                                className={`p-4 rounded-xl border text-left transition-all group ${existing ? 'border-success/30 bg-success/5 cursor-default' : 'border-border hover:border-accent/40 hover:bg-accent/5 cursor-pointer'}`}
+                                className={`p-4 rounded-xl border text-left transition-all group ${existing ? 'border-border bg-surface cursor-default' : 'border-border hover:border-accent/40 hover:bg-accent/5 cursor-pointer'}`}
                             >
                                 <div className="flex items-center gap-3 mb-2">
                                     <span className="text-2xl">{pm.icon}</span>
@@ -401,7 +401,7 @@ function ProviderCard({ provider: p, isExpanded, onToggleExpand, isTesting, onTe
 
     return (
         <Reorder.Item value={p} className="list-none">
-            <div className={`premium-card !p-0 overflow-hidden transition-all duration-200 ${p.is_active ? 'border-success/20' : 'opacity-80'} ${isExpanded ? 'border-accent/30' : ''}`}>
+            <div className={`premium-card !p-0 overflow-hidden transition-all duration-200 ${p.is_active ? 'border-border' : 'opacity-80'} ${isExpanded ? 'border-accent/30' : ''}`}>
                 {/* Header row */}
                 <div className="flex items-center gap-3 px-5 py-4">
                     {/* Drag handle */}
@@ -435,7 +435,7 @@ function ProviderCard({ provider: p, isExpanded, onToggleExpand, isTesting, onTe
                             {health.label}
                         </span>
                         <button onClick={e => { e.stopPropagation(); onToggleActive() }}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${p.is_active ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-surface border border-border text-textTertiary hover:text-textPrimary'}`}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${p.is_active ? 'bg-surfaceElevated text-success hover:bg-surfaceElevated' : 'bg-surface border border-border text-textTertiary hover:text-textPrimary'}`}
                             title={p.is_active ? 'Click to deactivate' : 'Click to activate'}>
                             {p.is_active ? <><Power className="w-3 h-3" /> Active</> : <><PowerOff className="w-3 h-3" /> Off</>}
                         </button>
@@ -514,7 +514,7 @@ function ProviderCard({ provider: p, isExpanded, onToggleExpand, isTesting, onTe
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 pt-1">
                                     <button onClick={onTest} disabled={isTesting}
-                                        className="btn btn-sm flex items-center gap-1 bg-info/10 text-info hover:bg-info/20 transition-all disabled:opacity-50">
+                                        className="btn btn-sm flex items-center gap-1 bg-surfaceElevated text-info hover:bg-surfaceElevated transition-all disabled:opacity-50">
                                         {isTesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <TestTube className="w-3.5 h-3.5" />}
                                         Test Connection
                                     </button>
@@ -522,7 +522,7 @@ function ProviderCard({ provider: p, isExpanded, onToggleExpand, isTesting, onTe
                                         <Settings className="w-3.5 h-3.5" /> Edit
                                     </button>
                                     <div className="flex-1" />
-                                    <button onClick={onDelete} className="btn btn-ghost btn-sm text-error hover:bg-error/10 flex items-center gap-1">
+                                    <button onClick={onDelete} className="btn btn-ghost btn-sm text-error hover:bg-surfaceElevated flex items-center gap-1">
                                         <Trash2 className="w-3.5 h-3.5" /> Delete
                                     </button>
                                 </div>
@@ -554,7 +554,7 @@ function ProviderFormModal({ form, setForm, editingId, saving, orgs, onSubmit, o
             role="dialog" aria-modal="true">
             <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
                 transition={{ duration: 0.2 }}
-                className="bg-background border border-border rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+                className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -640,7 +640,7 @@ function ProviderFormModal({ form, setForm, editingId, saving, orgs, onSubmit, o
 
                     {tab === 'credentials' && (
                         <>
-                            <div className="p-3 rounded-xl bg-info/5 border border-info/20 text-sm text-textSecondary flex items-start gap-2">
+                            <div className="p-3 rounded-xl bg-surface border border-border text-sm text-textSecondary flex items-start gap-2">
                                 <Info className="w-4 h-4 text-info flex-shrink-0 mt-0.5" />
                                 {editingId ? 'Leave fields blank to keep existing secrets.' : 'Enter credentials for this provider.'}
                             </div>
@@ -777,7 +777,7 @@ function ProviderFormModal({ form, setForm, editingId, saving, orgs, onSubmit, o
 
 function Badge({ label, active }: { label: string; active?: boolean }) {
     return (
-        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${active ? 'bg-success/10 text-success' : 'bg-surface text-textTertiary'}`}>
+        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${active ? 'bg-surfaceElevated text-success' : 'bg-surface text-textTertiary'}`}>
             {label}
         </span>
     )

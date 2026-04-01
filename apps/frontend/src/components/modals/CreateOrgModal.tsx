@@ -98,7 +98,7 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
                 {/* Header */}
                 <div className="flex items-center justify-between mb-lg border-b border-border pb-md">
                     <div className="flex items-center gap-md">
-                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-surfaceElevated flex items-center justify-center">
                             <Building2 className="w-5 h-5 text-primary" />
                         </div>
                         <div>
@@ -117,7 +117,7 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
                 {/* Credentials Display (shown after owner creation) */}
                 {ownerProvisioned ? (
                     <div className="space-y-md">
-                        <div className="bg-success/10 border border-success rounded-[var(--radius-lg)] p-md">
+                        <div className="bg-surfaceElevated border border-success rounded-[var(--radius-lg)] p-md">
                             <div className="flex items-center gap-sm mb-sm">
                                 <CheckCircle className="w-5 h-5 text-success" />
                                 <h3 className="font-bold text-success">Owner Created Successfully</h3>
@@ -126,7 +126,7 @@ export default function CreateOrgModal({ isOpen, onClose, onSuccess }: CreateOrg
                                 No plaintext credentials are exposed. Complete first access through your secure password reset, invite, or onboarding flow.
                             </p>
                         </div>
-                        <div className="bg-warning/10 border border-warning rounded-[var(--radius-md)] p-sm">
+                        <div className="bg-surfaceElevated border border-warning rounded-[var(--radius-md)] p-sm">
                             <p className="text-warning text-sm font-medium">
                                 Use an explicit invite/reset step before the new owner attempts first login.
                             </p>

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const validCategories = ['foundation', 'persona', 'instruction', 'guardrails', 'domain', 'task', 'custom']
+        const validCategories = ['foundation', 'persona', 'instruction', 'guardrails', 'domain', 'task', 'output', 'analysis', 'optimization', 'compliance', 'custom']
         if (!validCategories.includes(category)) {
             return NextResponse.json(
                 { error: `Invalid category. Must be one of: ${validCategories.join(', ')}` },

@@ -349,7 +349,7 @@ export default function BrainTemplatePage() {
 
             {/* ── Identity Tab ── */}
             {tab === 'identity' && (
-                <div className="space-y-6 rounded-2xl border border-border/40 bg-background p-6">
+                <div className="space-y-6 rounded-[var(--radius-lg)] border border-border/40 bg-background p-6">
                     <h2 className="text-lg font-semibold">Template Identity</h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -389,8 +389,8 @@ export default function BrainTemplatePage() {
                                     onClick={() => setTier(t)}
                                     className={`flex flex-col items-center gap-1 p-4 rounded-xl border-2 transition-all text-sm font-medium ${
                                         tier === t
-                                            ? 'border-primary bg-primary/10 text-primary'
-                                            : 'border-border hover:border-primary/40'
+                                            ? 'border-primary bg-surfaceElevated text-primary'
+                                            : 'border-border hover:border-borderHover'
                                     }`}
                                 >
                                     <span className="capitalize font-bold">{t}</span>
@@ -418,7 +418,7 @@ export default function BrainTemplatePage() {
             {/* ── Prompts Tab ── */}
             {tab === 'prompts' && (
                 <div className="space-y-6">
-                    <div className="rounded-xl border border-warning/30 bg-warning-muted p-4 flex gap-3 text-sm">
+                    <div className="rounded-xl border border-border bg-warning-muted p-4 flex gap-3 text-sm">
                         <Shield className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                         <div>
                             <p className="font-semibold text-warning">Prompt Stack Rules</p>
@@ -435,7 +435,7 @@ export default function BrainTemplatePage() {
                         { key: 'persona',    label: 'Persona Prompt',    desc: 'Name, personality, communication style', locked: false, stateKey: personaLayerId, setter: setPersonaLayerId },
                         { key: 'guardrails', label: 'Guardrails Prompt', desc: 'Hard rules that override everything — always last', locked: true, stateKey: guardrailsLayerId, setter: setGuardrailsLayerId },
                     ] as const).map(layer => (
-                        <div key={layer.key} className="rounded-2xl border border-border/40 bg-background overflow-hidden">
+                        <div key={layer.key} className="rounded-[var(--radius-lg)] border border-border/40 bg-background overflow-hidden">
                             <div className="flex items-center justify-between p-5 border-b border-border/40">
                                 <div className="flex items-center gap-3">
                                     {layer.locked ? (
@@ -449,7 +449,7 @@ export default function BrainTemplatePage() {
                                     </div>
                                 </div>
                                 {layer.locked && (
-                                    <span className="text-xs bg-warning-muted text-warning border border-warning/20 px-2 py-0.5 rounded-full font-medium">
+                                    <span className="text-xs bg-warning-muted text-warning border border-border px-2 py-0.5 rounded-full font-medium">
                                         Locked from clients
                                     </span>
                                 )}
@@ -504,7 +504,7 @@ export default function BrainTemplatePage() {
 
             {/* ── Tools Tab ── */}
             {tab === 'tools' && (
-                <div className="space-y-4 rounded-2xl border border-border/40 bg-background p-6">
+                <div className="space-y-4 rounded-[var(--radius-lg)] border border-border/40 bg-background p-6">
                     <div className="flex items-center justify-between">
                         <h2 className="text-lg font-semibold">Default Tools</h2>
                         <span className="text-sm text-muted-foreground">{selectedTools.size} of {tools.length} selected</span>
@@ -534,8 +534,8 @@ export default function BrainTemplatePage() {
                                                         disabled
                                                             ? 'opacity-40 cursor-not-allowed border-border'
                                                             : active
-                                                            ? 'border-primary bg-primary/5'
-                                                            : 'border-border hover:border-primary/40'
+                                                            ? 'border-primary bg-surface'
+                                                            : 'border-border hover:border-borderHover'
                                                     }`}
                                                 >
                                                     <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
@@ -570,7 +570,7 @@ export default function BrainTemplatePage() {
 
             {/* ── RAG Config Tab ── */}
             {tab === 'rag' && (
-                <div className="space-y-6 rounded-2xl border border-border/40 bg-background p-6">
+                <div className="space-y-6 rounded-[var(--radius-lg)] border border-border/40 bg-background p-6">
                     <h2 className="text-lg font-semibold">RAG Configuration</h2>
                     <p className="text-sm text-muted-foreground">
                         These settings control how the Brain retrieves knowledge. Applied to all agents deployed from this template.
@@ -614,7 +614,7 @@ export default function BrainTemplatePage() {
 
             {/* ── Deploy Tab ── */}
             {tab === 'deploy' && (
-                <div className="space-y-6 rounded-2xl border border-border/40 bg-background p-6">
+                <div className="space-y-6 rounded-[var(--radius-lg)] border border-border/40 bg-background p-6">
                     <div className="flex items-center gap-3">
                         <Rocket className="w-6 h-6 text-primary" />
                         <h2 className="text-lg font-semibold">Deploy to Organisation</h2>
@@ -636,7 +636,7 @@ export default function BrainTemplatePage() {
                         </div>
                     )}
 
-                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm space-y-1">
+                    <div className="rounded-xl border border-border bg-surface p-4 text-sm space-y-1">
                         <p className="font-semibold">What deployment does:</p>
                         <ul className="list-disc list-inside text-muted-foreground space-y-1">
                             <li>Creates a <code className="text-xs bg-muted px-1 py-0.5 rounded">brain_agents</code> row — the live agent for this org</li>
@@ -660,7 +660,7 @@ export default function BrainTemplatePage() {
                     </FormField>
 
                     {deployResult && (
-                        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-success-muted border border-success/30 text-success text-sm">
+                        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-success-muted border border-border text-success text-sm">
                             <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
                             {deployResult}
                         </div>

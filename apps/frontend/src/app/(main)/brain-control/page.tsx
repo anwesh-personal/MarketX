@@ -137,7 +137,7 @@ export default function BrainControlPage() {
                         <div className="flex items-center gap-4">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-accent-secondary/10 blur-xl" />
-                                <div className="relative p-3 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20">
+                                <div className="relative p-3 rounded-[var(--radius-lg)] bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20">
                                     <Brain className="w-8 h-8 text-accent" />
                                 </div>
                             </div>
@@ -212,7 +212,7 @@ export default function BrainControlPage() {
                     </div>
 
                     {/* Brain Status */}
-                    <div className="mt-8 p-5 rounded-2xl bg-surface border border-border shadow-sm">
+                    <div className="mt-8 p-5 rounded-[var(--radius-lg)] bg-surface border border-border shadow-sm">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="relative flex h-2 w-2">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
@@ -354,7 +354,7 @@ function MetricCard({ label, value, change, icon: Icon, color, bg, index }: any)
         >
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-6">
-                    <div className={`w-12 h-12 rounded-2xl ${bg} flex items-center justify-center ${color} group-hover:scale-110 transition-transform duration-500`}>
+                    <div className={`w-12 h-12 rounded-[var(--radius-lg)] ${bg} flex items-center justify-center ${color} group-hover:scale-110 transition-transform duration-500`}>
                         <Icon className="w-6 h-6" />
                     </div>
                     <span className={`badge ${change.startsWith('+') ? 'badge-success' : 'badge-error'}`}>
@@ -760,8 +760,8 @@ function MemoryPalaceSection() {
                         >
                             <div className="flex items-start justify-between mb-2">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${embedding.source_type === 'kb' ? 'bg-[rgba(var(--color-accent-rgb),0.1)] text-accent' :
-                                    embedding.source_type === 'conversation' ? 'bg-success/10 text-success' :
-                                        'bg-warning/10 text-warning'
+                                    embedding.source_type === 'conversation' ? 'bg-surfaceElevated text-success' :
+                                        'bg-surfaceElevated text-warning'
                                     }`}>
                                     {embedding.source_type}
                                 </span>
@@ -787,7 +787,7 @@ function MemoryPalaceSection() {
             {/* Detail Modal */}
             {selectedEmbedding && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-background rounded-2xl border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-background rounded-[var(--radius-lg)] border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40 flex items-center justify-between">
                             <h3 className="text-xl font-bold">Embedding Details</h3>
                             <button
@@ -939,7 +939,7 @@ function AgentControlSection() {
                     {agents.map((agent) => (
                         <div
                             key={agent.id}
-                            className="relative overflow-hidden rounded-2xl border border-border/40 bg-background hover:shadow-xl transition-all duration-300"
+                            className="relative overflow-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background hover:shadow-xl transition-all duration-300"
                         >
                             <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-br ${agent.agent_type === 'writer' ? 'from-info/20 to-info/10' :
                                 agent.agent_type === 'analyst' ? 'from-accent/20 to-accent/10' :
@@ -1011,7 +1011,7 @@ function AgentControlSection() {
             {/* Edit Modal */}
             {isEditing && selectedAgent && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-background rounded-2xl border border-border/40 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-background rounded-[var(--radius-lg)] border border-border/40 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40">
                             <h3 className="text-2xl font-bold">Configure {selectedAgent.name}</h3>
                         </div>
@@ -1080,7 +1080,7 @@ function AgentControlSection() {
             {/* View Details Modal */}
             {selectedAgent && !isEditing && (
                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-background rounded-2xl border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="bg-background rounded-[var(--radius-lg)] border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                         <div className="p-6 border-b border-border/40 flex items-center justify-between">
                             <h3 className="text-xl font-bold">{selectedAgent.name} Details</h3>
                             <button
@@ -1312,8 +1312,8 @@ function TrainingCenterSection() {
                                     {feedbackData.map((feedback, i) => (
                                         <div key={i} className="p-4 rounded-xl border border-border/40 bg-background">
                                             <div className="flex items-start justify-between mb-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${feedback.rating > 0 ? 'bg-success/10 text-success' :
-                                                    feedback.rating < 0 ? 'bg-error/10 text-error' :
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${feedback.rating > 0 ? 'bg-surfaceElevated text-success' :
+                                                    feedback.rating < 0 ? 'bg-surfaceElevated text-error' :
                                                         'bg-muted text-muted-foreground'
                                                     }`}>
                                                     {feedback.rating > 0 ? '👍 Positive' : feedback.rating < 0 ? '👎 Negative' : 'Neutral'}
@@ -1396,7 +1396,7 @@ function TrainingCenterSection() {
                             {/* Add Pattern Modal */}
                             {showAddPattern && (
                                 <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                                    <div className="bg-background rounded-2xl border border-border/40 max-w-lg w-full">
+                                    <div className="bg-background rounded-[var(--radius-lg)] border border-border/40 max-w-lg w-full">
                                         <div className="p-6 border-b border-border/40">
                                             <h3 className="text-xl font-bold">Add Intent Pattern</h3>
                                         </div>
@@ -2028,7 +2028,7 @@ function ConfigurationSection() {
                                             <span className="text-xs text-muted-foreground">
                                                 {provider.capabilities?.join(', ')}
                                             </span>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
+                                            <span className={`px-2 py-0.5 rounded-full text-xs ${provider.is_active ? 'bg-surfaceElevated text-success' : 'bg-muted text-muted-foreground'
                                                 }`}>
                                                 {provider.is_active ? 'Active' : 'Inactive'}
                                             </span>

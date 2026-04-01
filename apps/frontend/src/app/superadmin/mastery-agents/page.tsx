@@ -52,6 +52,48 @@ const CATEGORIES = [
 
 const PIPELINE_STAGES = ['pre_send', 'post_reply', 'pre_extension', 'periodic', 'on_demand']
 
+const CATEGORY_GRADIENTS: Record<string, string> = {
+    contact: 'linear-gradient(135deg, rgba(var(--color-info-rgb), 0.35) 0%, rgba(var(--color-accent-rgb), 0.18) 50%, rgba(var(--color-info-rgb), 0.08) 100%)',
+    timing: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.35) 0%, rgba(var(--color-accent-rgb), 0.15) 50%, rgba(var(--color-warning-rgb), 0.08) 100%)',
+    angle: 'linear-gradient(135deg, rgba(148, 100, 255, 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(148, 100, 255, 0.08) 100%)',
+    pacing: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.3) 0%, rgba(var(--color-error-rgb), 0.18) 50%, rgba(var(--color-warning-rgb), 0.06) 100%)',
+    reply: 'linear-gradient(135deg, rgba(var(--color-info-rgb), 0.3) 0%, rgba(var(--color-accent-rgb), 0.22) 50%, rgba(var(--color-info-rgb), 0.08) 100%)',
+    buying_role: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(var(--color-accent-rgb), 0.06) 100%)',
+    buyer_stage: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.3) 0%, rgba(var(--color-success-rgb), 0.18) 50%, rgba(var(--color-warning-rgb), 0.06) 100%)',
+    uncertainty: 'linear-gradient(135deg, rgba(148, 100, 255, 0.3) 0%, rgba(var(--color-error-rgb), 0.18) 50%, rgba(148, 100, 255, 0.06) 100%)',
+    sequence: 'linear-gradient(135deg, rgba(var(--color-success-rgb), 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(var(--color-success-rgb), 0.06) 100%)',
+    custom: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.3) 0%, rgba(var(--color-info-rgb), 0.15) 50%, rgba(var(--color-accent-rgb), 0.06) 100%)',
+}
+
+const CATEGORY_EMOJI: Record<string, string> = {
+    contact: '🎯', timing: '⏱️', angle: '💬', pacing: '📡',
+    reply: '👁️', buying_role: '🔑', buyer_stage: '📈',
+    uncertainty: '💡', sequence: '🔗', custom: '⚙️',
+}
+
+const CATEGORY_SUBTITLE: Record<string, string> = {
+    contact: 'Contact & Suppress Logic',
+    timing: 'Timing & Activation Windows',
+    angle: 'Belief Angle Selection',
+    pacing: 'Delivery & Send Pacing',
+    reply: 'Response Interpretation',
+    buying_role: 'Persona & Role Detection',
+    buyer_stage: 'Journey Classification',
+    uncertainty: 'Uncertainty Resolution',
+    sequence: 'Sequence & Continuity',
+    custom: 'Custom Agent Logic',
+}
+
+const MODAL_TABS = ['overview', 'rules', 'knowledge', 'pipeline', 'test'] as const
+type ModalTab = typeof MODAL_TABS[number]
+const TAB_LABELS: Record<ModalTab, { icon: string; label: string }> = {
+    overview: { icon: '🧠', label: 'Overview' },
+    rules: { icon: '⚙️', label: 'Rules' },
+    knowledge: { icon: '📚', label: 'Knowledge' },
+    pipeline: { icon: '🔗', label: 'Pipeline' },
+    test: { icon: '▶️', label: 'Test' },
+}
+
 interface Agent {
     id: string
     agent_key: string
@@ -125,6 +167,8 @@ export default function MasteryAgentsPage() {
     const [testResult, setTestResult] = useState<any>(null)
     const [form, setForm] = useState(EMPTY_FORM)
     const [pendingDeleteAgent, setPendingDeleteAgent] = useState<Agent | null>(null)
+    const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null)
+    const [activeTab, setActiveTab] = useState<ModalTab>('overview')
 
     const load = useCallback(async (refreshing = false) => {
         if (refreshing) setIsRefreshing(true)
@@ -357,10 +401,11 @@ export default function MasteryAgentsPage() {
     return (
         <>
             <div className="space-y-lg">
+                {/* Compact Hero */}
                 <SuperadminPageHero
                     eyebrow="Decision Layer"
                     title="Mastery Agent Manager"
-                    description="Shape the platform’s decision-making fabric with bespoke agent definitions, pipeline hooks, test execution, and governance-aware editing."
+                    description="Shape the platform's decision-making fabric with bespoke agent definitions, pipeline hooks, test execution, and governance-aware editing."
                     actions={(
                         <>
                             <SuperadminButton icon={RefreshCw} onClick={() => load(true)}>
@@ -373,165 +418,235 @@ export default function MasteryAgentsPage() {
                     )}
                 >
                     <div className="flex flex-wrap gap-sm">
-                        <SuperadminBadge tone="primary"><Brain className="h-3.5 w-3.5" /> Orchestrated decision intelligence</SuperadminBadge>
-                        <SuperadminBadge tone="success"><Check className="h-3.5 w-3.5" /> {summary.active} active agents</SuperadminBadge>
-                        <SuperadminBadge tone="warning"><Workflow className="h-3.5 w-3.5" /> {summary.pipelineBound} pipeline-bound agents</SuperadminBadge>
+                        <SuperadminBadge tone="primary"><Brain className="h-3.5 w-3.5" /> {agents.length} agents</SuperadminBadge>
+                        <SuperadminBadge tone="success"><Check className="h-3.5 w-3.5" /> {summary.active} active</SuperadminBadge>
+                        <SuperadminBadge tone="warning"><Workflow className="h-3.5 w-3.5" /> {summary.pipelineBound} pipeline-bound</SuperadminBadge>
                     </div>
                 </SuperadminPageHero>
 
-                <div className="grid grid-cols-1 gap-md md:grid-cols-2 xl:grid-cols-4">
-                    <SuperadminMetricCard icon={Bot} label="Total Agents" value={String(agents.length)} hint="All mastery agent definitions" tone="primary" />
-                    <SuperadminMetricCard icon={Check} label="Active Agents" value={String(summary.active)} hint="Agents currently eligible for execution" tone="success" />
-                    <SuperadminMetricCard icon={Shield} label="System Agents" value={String(summary.system)} hint="Protected built-in behavior layers" tone="warning" />
-                    <SuperadminMetricCard icon={Target} label="Pipeline Agents" value={String(summary.pipelineBound)} hint="Agents wired into flow stages" tone="accent" />
+                {/* Category Filter */}
+                <div className="flex items-center gap-md">
+                    <SuperadminSegmentedControl
+                        value={filterCat}
+                        onChange={setFilterCat}
+                        options={[
+                            { value: 'all', label: `All ${agents.length}` },
+                            ...CATEGORIES.filter((c) => agents.some((a) => a.agent_category === c.value))
+                                .map((c) => ({
+                                    value: c.value,
+                                    label: `${c.label} ${agents.filter((a) => a.agent_category === c.value).length}`,
+                                })),
+                        ]}
+                    />
                 </div>
 
-                <SuperadminToolbar>
-                    <div className="flex flex-col gap-xs">
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-textTertiary">Category lens</p>
-                        <SuperadminSegmentedControl
-                            value={filterCat}
-                            onChange={setFilterCat}
-                            options={[
-                                { value: 'all', label: `All ${agents.length}` },
-                                ...CATEGORIES.filter((category) => agents.some((agent) => agent.agent_category === category.value))
-                                    .map((category) => ({
-                                        value: category.value,
-                                        label: `${category.label} ${agents.filter((agent) => agent.agent_category === category.value).length}`,
-                                    })),
-                            ]}
-                        />
-                    </div>
-                    <div className="text-sm text-textSecondary">
-                        Expanded cards expose live stats, test execution, and lifecycle controls. This is not a read-only registry.
-                    </div>
-                </SuperadminToolbar>
-
-                <SuperadminPanel
-                    title="Agent Registry"
-                    description="Inspect every decision agent, expand for internals, and take immediate action."
-                    tone="primary"
-                >
-                    {filteredAgents.length === 0 ? (
-                        <SuperadminEmptyState
-                            icon={Bot}
-                            title="No agents in this slice"
-                            description="Adjust the category lens or create a new agent definition."
-                        />
-                    ) : (
-                        <div className="space-y-sm">
-                            {filteredAgents.map((agent) => {
-                                const category = getCategoryMeta(agent.agent_category)
-                                const isExpanded = expandedId === agent.id
-
-                                return (
-                                    <div key={agent.id} className="rounded-[calc(var(--radius-lg)*1.25)] border border-border/70 bg-background/70">
-                                        <button
-                                            type="button"
-                                            onClick={() => setExpandedId(isExpanded ? null : agent.id)}
-                                            className="flex w-full items-center justify-between gap-md px-lg py-md text-left transition-all duration-[var(--duration-fast)] hover:bg-background"
-                                        >
-                                            <div className="flex min-w-0 items-start gap-md">
-                                                <div className={`mt-1 h-3 w-3 rounded-full ${agent.is_active ? 'bg-success' : 'bg-warning'}`} />
-                                                <div className="min-w-0">
-                                                    <div className="flex flex-wrap items-center gap-sm">
-                                                        <span className="text-sm font-semibold text-textPrimary">{agent.display_name}</span>
-                                                        <code className="rounded-full border border-border bg-surface px-sm py-xs text-xs text-textSecondary">{agent.agent_key}</code>
-                                                        <SuperadminBadge tone={category.tone}>{category.label}</SuperadminBadge>
-                                                        {agent.is_system && <SuperadminBadge tone="warning">System</SuperadminBadge>}
-                                                    </div>
-                                                    <div className="mt-xs flex flex-wrap items-center gap-sm text-xs text-textSecondary">
-                                                        <span>v{agent.version}</span>
-                                                        <span>{agent.decision_outputs.length} outputs</span>
-                                                        <span>{agent.scoring_rules.length} scoring rules</span>
-                                                        {agent.pipeline_stage && <span>{agent.pipeline_stage} #{agent.pipeline_order}</span>}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {isExpanded ? <ChevronUp className="h-4 w-4 text-textSecondary" /> : <ChevronDown className="h-4 w-4 text-textSecondary" />}
-                                        </button>
-
-                                        {isExpanded && (
-                                            <div className="border-t border-border px-lg py-md">
-                                                <div className="grid grid-cols-1 gap-md xl:grid-cols-[1.2fr_0.8fr]">
-                                                    <div className="space-y-md">
-                                                        {agent.description && (
-                                                            <div className="rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-surface px-md py-sm text-sm leading-relaxed text-textSecondary">
-                                                                {agent.description}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="grid grid-cols-1 gap-sm md:grid-cols-3">
-                                                            <MiniStat label="Decision Type" value={agent.decision_type || 'Unspecified'} />
-                                                            <MiniStat label="KB Types" value={agent.kb_object_types.join(', ') || 'None'} />
-                                                            <MiniStat label="Confidence Divisor" value={String(agent.confidence_divisor)} />
-                                                        </div>
-
-                                                        <div className="grid grid-cols-1 gap-sm md:grid-cols-3">
-                                                            <MiniStat label="Scoring Rules" value={String(agent.scoring_rules.length)} />
-                                                            <MiniStat label="Keyword Rules" value={String(agent.keyword_rules.length)} />
-                                                            <MiniStat label="Field Rules" value={String(agent.field_rules.length)} />
-                                                        </div>
-
-                                                        <div className="rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-surface p-md">
-                                                            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-textTertiary">Outputs</p>
-                                                            <div className="mt-sm flex flex-wrap gap-xs">
-                                                                {agent.decision_outputs.map((output) => (
-                                                                    <SuperadminBadge key={output} tone="primary">{output}</SuperadminBadge>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="space-y-md">
-                                                        {testingId === agent.id && (
-                                                            <div className="space-y-sm rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-surface p-md">
-                                                                <p className="text-sm font-semibold text-textPrimary">Agent Test Console</p>
-                                                                <textarea
-                                                                    value={testInput}
-                                                                    onChange={(event) => setTestInput(event.target.value)}
-                                                                    rows={5}
-                                                                    className="w-full resize-none rounded-[var(--radius-lg)] border border-border bg-background px-sm py-sm font-mono text-xs text-textPrimary focus:outline-none focus:ring-2 focus:ring-borderFocus"
-                                                                />
-                                                                <SuperadminButton tone="primary" icon={Play} onClick={() => handleTest(agent.agent_key)}>
-                                                                    Run Test
-                                                                </SuperadminButton>
-                                                                {testResult && (
-                                                                    <pre className="overflow-auto rounded-[var(--radius-lg)] border border-border bg-background px-sm py-sm text-xs text-textSecondary">
-                                                                        {JSON.stringify(testResult, null, 2)}
-                                                                    </pre>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex flex-wrap gap-sm">
-                                                            <SuperadminButton icon={Play} onClick={() => {
-                                                                setTestingId(testingId === agent.id ? null : agent.id)
-                                                                setTestResult(null)
-                                                            }}>
-                                                                {testingId === agent.id ? 'Close Test' : 'Test'}
-                                                            </SuperadminButton>
-                                                            <SuperadminButton icon={Settings} onClick={() => startEdit(agent)}>Edit</SuperadminButton>
-                                                            <SuperadminButton icon={Copy} onClick={() => handleDuplicate(agent)}>Duplicate</SuperadminButton>
-                                                            <SuperadminButton onClick={() => handleToggle(agent)}>
-                                                                {agent.is_active ? <><PowerOff className="h-4 w-4" />Deactivate</> : <><Power className="h-4 w-4" />Activate</>}
-                                                            </SuperadminButton>
-                                                            {!agent.is_system && (
-                                                                <SuperadminButton icon={Trash2} onClick={() => setPendingDeleteAgent(agent)}>
-                                                                    Delete
-                                                                </SuperadminButton>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
+                {/* Agent Grid */}
+                {filteredAgents.length === 0 ? (
+                    <SuperadminEmptyState
+                        icon={Bot}
+                        title="No agents in this slice"
+                        description="Adjust the category lens or create a new agent definition."
+                    />
+                ) : (
+                    <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {filteredAgents.map((agent) => {
+                            const category = getCategoryMeta(agent.agent_category)
+                            const emoji = CATEGORY_EMOJI[agent.agent_category] || '⚙️'
+                            const subtitle = CATEGORY_SUBTITLE[agent.agent_category] || agent.description || category.label
+                            return (
+                                <button
+                                    key={agent.id}
+                                    type="button"
+                                    onClick={() => { setSelectedAgent(agent); setActiveTab('overview'); setTestResult(null) }}
+                                    className="group relative overflow-hidden rounded-[var(--radius-xl)] bg-surface border border-border text-left transition-all duration-300 hover:-translate-y-1 hover:border-accent/30 hover:shadow-[var(--shadow-card-hover)] focus:outline-none cursor-pointer"
+                                >
+                                    {/* Image area — gradient placeholder */}
+                                    <div
+                                        className="relative h-44 w-full overflow-hidden"
+                                        style={{ background: CATEGORY_GRADIENTS[agent.agent_category] || CATEGORY_GRADIENTS.custom }}
+                                    >
+                                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-5xl opacity-50 drop-shadow-lg transition-transform duration-300 group-hover:scale-110">{emoji}</span>
+                                        </div>
+                                        <div className="absolute right-2.5 top-2.5">
+                                            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ background: 'var(--color-surface-elevated)', backdropFilter: 'blur(8px)' }}>
+                                                <span className={`h-1.5 w-1.5 rounded-full ${agent.is_active ? 'bg-success' : 'bg-warning'}`} style={agent.is_active ? { boxShadow: '0 0 6px var(--color-success)' } : {}} />
+                                                <span className="text-white">{agent.is_active ? 'Ready' : 'Paused'}</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                )
-                            })}
+
+                                    {/* Card body */}
+                                    <div style={{ padding: '6px 18px 18px' }} className="flex flex-col gap-2.5">
+                                        <div>
+                                            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.02em' }}>{emoji} {agent.display_name}</div>
+                                            <div style={{ fontSize: 11.5, color: 'var(--color-text-tertiary)', marginTop: 3, lineHeight: 1.4 }}>{subtitle}</div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 6, background: 'var(--color-glow)', color: 'var(--color-accent)', border: '1px solid rgba(var(--color-accent-rgb), 0.2)' }}>
+                                                {agent.scoring_rules.length} rules
+                                            </span>
+                                            <span style={{ fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 6, background: 'var(--color-surface-elevated)', color: 'var(--color-text-tertiary)', border: '1px solid var(--color-border)' }}>
+                                                {agent.decision_outputs.length} outputs
+                                            </span>
+                                        </div>
+                                    </div>
+                                </button>
+                            )
+                        })}
+                    </div>
+                )}
+
+
+                {/* Agent Detail Modal */}
+                {selectedAgent && (
+                    <div className="fixed inset-0 z-50 bg-overlay backdrop-blur-sm" onClick={() => setSelectedAgent(null)}>
+                        <div className="flex min-h-full items-center justify-center p-lg">
+                            <div
+                                className="w-full max-w-2xl rounded-[var(--radius-xl)] border border-border/30 bg-surface/90 shadow-[var(--shadow-xl)] backdrop-blur-xl"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {/* Modal Header — gradient hero */}
+                                <div className="relative overflow-hidden rounded-t-[calc(var(--radius-xl)*1.5)]" style={{ background: CATEGORY_GRADIENTS[selectedAgent.agent_category] || CATEGORY_GRADIENTS.custom }}>
+                                    <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 25% 35%, var(--color-accent) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+                                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface/60 to-transparent" />
+                                    <div className="relative flex items-center justify-between px-lg py-lg">
+                                        <div className="flex items-center gap-md">
+                                            <span className="text-4xl drop-shadow-sm">{CATEGORY_EMOJI[selectedAgent.agent_category] || '⚙️'}</span>
+                                            <div>
+                                                <h2 className="text-lg font-extrabold text-textPrimary uppercase tracking-wider">{selectedAgent.display_name}</h2>
+                                                <p className="text-xs text-textSecondary font-medium mt-0.5">{selectedAgent.description || getCategoryMeta(selectedAgent.agent_category).label}</p>
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={() => setSelectedAgent(null)} className="rounded-full p-1.5 text-textTertiary hover:bg-surface/50 hover:text-textPrimary transition-colors backdrop-blur-sm">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Tabs */}
+                                <div className="flex items-center gap-xs border-b border-border/30 px-lg">
+                                    {MODAL_TABS.map((tab) => (
+                                        <button
+                                            key={tab}
+                                            type="button"
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`flex items-center gap-xs px-sm py-sm text-xs font-semibold transition-colors border-b-2 ${activeTab === tab ? 'border-accent text-accent' : 'border-transparent text-textTertiary hover:text-textSecondary'}`}
+                                        >
+                                            <span>{TAB_LABELS[tab].icon}</span>
+                                            <span>{TAB_LABELS[tab].label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Tab Content */}
+                                <div className="max-h-[60vh] overflow-y-auto px-lg py-md space-y-md">
+                                    {activeTab === 'overview' && (
+                                        <>
+                                            {selectedAgent.description && (
+                                                <ModalSection icon="💬" title="Description">
+                                                    <p className="text-sm leading-relaxed text-textSecondary">{selectedAgent.description}</p>
+                                                </ModalSection>
+                                            )}
+                                            <ModalSection icon="🎯" title="Decision">
+                                                <div className="grid grid-cols-2 gap-sm">
+                                                    <MiniStat label="Type" value={selectedAgent.decision_type || 'Unspecified'} />
+                                                    <MiniStat label="Confidence Divisor" value={String(selectedAgent.confidence_divisor)} />
+                                                </div>
+                                                <div className="mt-sm flex flex-wrap gap-xs">
+                                                    {selectedAgent.decision_outputs.map((o) => (
+                                                        <SuperadminBadge key={o} tone="primary">{o}</SuperadminBadge>
+                                                    ))}
+                                                </div>
+                                            </ModalSection>
+                                            <ModalSection icon="📊" title="Status">
+                                                <div className="grid grid-cols-3 gap-sm">
+                                                    <MiniStat label="Version" value={`v${selectedAgent.version}`} />
+                                                    <MiniStat label="Scope" value={selectedAgent.scope} />
+                                                    <MiniStat label="Category" value={getCategoryMeta(selectedAgent.agent_category).label} />
+                                                </div>
+                                            </ModalSection>
+                                        </>
+                                    )}
+
+                                    {activeTab === 'rules' && (
+                                        <>
+                                            <ModalSection icon="📏" title="Scoring Rules">
+                                                <pre className="overflow-auto rounded-[var(--radius-lg)] bg-background/50 px-sm py-sm font-mono text-xs text-textSecondary max-h-48">{JSON.stringify(selectedAgent.scoring_rules, null, 2)}</pre>
+                                            </ModalSection>
+                                            <ModalSection icon="🔑" title="Keyword Rules">
+                                                <pre className="overflow-auto rounded-[var(--radius-lg)] bg-background/50 px-sm py-sm font-mono text-xs text-textSecondary max-h-48">{JSON.stringify(selectedAgent.keyword_rules, null, 2)}</pre>
+                                            </ModalSection>
+                                            <ModalSection icon="📋" title="Field Rules">
+                                                <pre className="overflow-auto rounded-[var(--radius-lg)] bg-background/50 px-sm py-sm font-mono text-xs text-textSecondary max-h-48">{JSON.stringify(selectedAgent.field_rules, null, 2)}</pre>
+                                            </ModalSection>
+                                        </>
+                                    )}
+
+                                    {activeTab === 'knowledge' && (
+                                        <>
+                                            <ModalSection icon="📚" title="Knowledge Base Config">
+                                                <div className="grid grid-cols-2 gap-sm">
+                                                    <MiniStat label="Object Types" value={selectedAgent.kb_object_types.join(', ') || 'None'} />
+                                                    <MiniStat label="Min Confidence" value={String(selectedAgent.kb_min_confidence)} />
+                                                    <MiniStat label="Max Objects" value={String(selectedAgent.kb_max_objects)} />
+                                                    <MiniStat label="Write Enabled" value={selectedAgent.kb_write_enabled ? 'Yes' : 'No'} />
+                                                </div>
+                                            </ModalSection>
+                                            <ModalSection icon="🔒" title="Locked Constraints">
+                                                <pre className="overflow-auto rounded-[var(--radius-lg)] bg-background/50 px-sm py-sm font-mono text-xs text-textSecondary max-h-48">{JSON.stringify(selectedAgent.locked_constraints, null, 2)}</pre>
+                                            </ModalSection>
+                                        </>
+                                    )}
+
+                                    {activeTab === 'pipeline' && (
+                                        <ModalSection icon="🔗" title="Pipeline Configuration">
+                                            <div className="grid grid-cols-2 gap-sm">
+                                                <MiniStat label="Stage" value={selectedAgent.pipeline_stage || 'Not assigned'} />
+                                                <MiniStat label="Order" value={String(selectedAgent.pipeline_order)} />
+                                                <MiniStat label="Fallback Output" value={selectedAgent.fallback_output || 'None'} />
+                                                <MiniStat label="System Agent" value={selectedAgent.is_system ? 'Yes' : 'No'} />
+                                            </div>
+                                        </ModalSection>
+                                    )}
+
+                                    {activeTab === 'test' && (
+                                        <ModalSection icon="▶️" title="Test Console">
+                                            <textarea
+                                                value={testInput}
+                                                onChange={(e) => setTestInput(e.target.value)}
+                                                rows={5}
+                                                className="w-full resize-none rounded-[var(--radius-lg)] border border-border/30 bg-background/50 px-sm py-sm font-mono text-xs text-textPrimary focus:outline-none focus:ring-2 focus:ring-borderFocus"
+                                                placeholder='{"contact": {...}}'
+                                            />
+                                            <SuperadminButton tone="primary" icon={Play} onClick={() => handleTest(selectedAgent.agent_key)} className="mt-sm">
+                                                Run Test
+                                            </SuperadminButton>
+                                            {testResult && (
+                                                <pre className="mt-sm overflow-auto rounded-[var(--radius-lg)] bg-background/50 px-sm py-sm font-mono text-xs text-textSecondary max-h-48">{JSON.stringify(testResult, null, 2)}</pre>
+                                            )}
+                                        </ModalSection>
+                                    )}
+                                </div>
+
+                                {/* Modal Actions */}
+                                <div className="flex items-center justify-between border-t border-border/30 px-lg py-md">
+                                    <div className="flex flex-wrap gap-xs">
+                                        <SuperadminButton icon={Settings} onClick={() => { setSelectedAgent(null); startEdit(selectedAgent) }}>Edit</SuperadminButton>
+                                        <SuperadminButton icon={Copy} onClick={() => { setSelectedAgent(null); handleDuplicate(selectedAgent) }}>Duplicate</SuperadminButton>
+                                        <SuperadminButton onClick={() => handleToggle(selectedAgent)}>
+                                            {selectedAgent.is_active ? <><PowerOff className="h-4 w-4" />Deactivate</> : <><Power className="h-4 w-4" />Activate</>}
+                                        </SuperadminButton>
+                                    </div>
+                                    {!selectedAgent.is_system && (
+                                        <SuperadminButton icon={Trash2} onClick={() => { setSelectedAgent(null); setPendingDeleteAgent(selectedAgent) }}>Delete</SuperadminButton>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    )}
-                </SuperadminPanel>
+                    </div>
+                )}
 
                 {error && (
                     <SuperadminErrorState
@@ -652,7 +767,7 @@ export default function MasteryAgentsPage() {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
     return (
-        <div className="rounded-[calc(var(--radius-lg)*1.1)] border border-border/70 bg-surface p-sm">
+        <div className="rounded-[calc(var(--radius-lg)*1.1)] bg-surface/30 p-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-textTertiary">{label}</p>
             <p className="mt-xs text-sm font-semibold text-textPrimary">{value}</p>
         </div>
@@ -714,10 +829,21 @@ function ToggleComposerRow({
             className="flex items-center justify-between rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-background/70 px-md py-md text-left"
         >
             <span className="text-sm font-medium text-textPrimary">{title}</span>
-            <div className={`inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-primary/15' : 'border-border bg-surface'}`}>
+            <div className={`inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-surfaceElevated' : 'border-border bg-surface'}`}>
                 <div className={`h-4 w-4 rounded-full transition-all ${checked ? 'translate-x-5 bg-primary' : 'translate-x-0 bg-textTertiary'}`} />
             </div>
         </button>
     )
 }
  
+
+function ModalSection({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+    return (
+        <div className="space-y-sm">
+            <p className="flex items-center gap-xs text-xs font-bold uppercase tracking-[0.2em] text-accent">
+                <span>{icon}</span> {title}
+            </p>
+            <div>{children}</div>
+        </div>
+    )
+}

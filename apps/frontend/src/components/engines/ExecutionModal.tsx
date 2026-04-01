@@ -44,7 +44,7 @@ export function ExecutionModal({
                 {/* Header */}
                 <div className="flex items-center justify-between p-lg border-b border-border">
                     <div className="flex items-center gap-sm">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <Rocket className="w-5 h-5 text-success" />
                         </div>
                         <div>
@@ -140,14 +140,14 @@ export function ExecutionModal({
 
                             {/* Status Message */}
                             {status === 'completed' && (
-                                <div className="flex items-center gap-sm p-md bg-success/10 border border-success/30 rounded-[var(--radius-lg)] text-success">
+                                <div className="flex items-center gap-sm p-md bg-surfaceElevated border border-border rounded-[var(--radius-lg)] text-success">
                                     <CheckCircle2 className="w-5 h-5" />
                                     <span className="font-medium">Execution completed successfully!</span>
                                 </div>
                             )}
 
                             {status === 'failed' && error && (
-                                <div className="flex items-start gap-sm p-md bg-error/10 border border-error/30 rounded-[var(--radius-lg)] text-error">
+                                <div className="flex items-start gap-sm p-md bg-surfaceElevated border border-border rounded-[var(--radius-lg)] text-error">
                                     <XCircle className="w-5 h-5 mt-0.5" />
                                     <div>
                                         <p className="font-medium">Execution failed</p>

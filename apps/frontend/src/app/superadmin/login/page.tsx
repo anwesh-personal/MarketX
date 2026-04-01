@@ -132,7 +132,7 @@ export default function SuperadminLogin() {
 
                         {/* Error Message */}
                         {error && (
-                            <div className="bg-error/10 border border-error text-error rounded-[var(--radius-md)] p-sm text-sm">
+                            <div className="bg-surfaceElevated border border-error text-error rounded-[var(--radius-md)] p-sm text-sm">
                                 {error}
                             </div>
                         )}

@@ -104,7 +104,7 @@ export default function EditUserModal({ isOpen, user, onClose, onSuccess }: Edit
                 {/* Header */}
                 <div className="flex items-center justify-between mb-lg border-b border-border pb-md">
                     <div className="flex items-center gap-md">
-                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-surfaceElevated flex items-center justify-center">
                             <Edit className="w-5 h-5 text-primary" />
                         </div>
                         <div>

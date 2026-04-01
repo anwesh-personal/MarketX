@@ -245,7 +245,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
 
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-md">
                     <div className="flex items-center gap-md">
-                        <div className="p-md rounded-[var(--radius-lg)] bg-primary/10">
+                        <div className="p-md rounded-[var(--radius-lg)] bg-surfaceElevated">
                             <Server className="w-8 h-8 text-primary" />
                         </div>
                         <div>
@@ -313,15 +313,15 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
                 {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-md animate-in fade-in duration-300">
                         {/* Stats Cards */}
-                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-primary/30 transition-colors">
+                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-border transition-colors">
                             <p className="text-textSecondary text-sm mb-xs">Total Runs</p>
                             <p className="text-3xl font-bold text-textPrimary">{engine.runs_total}</p>
                         </div>
-                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-primary/30 transition-colors">
+                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-border transition-colors">
                             <p className="text-textSecondary text-sm mb-xs">Runs Today</p>
                             <p className="text-3xl font-bold text-textPrimary">{engine.runs_today}</p>
                         </div>
-                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-primary/30 transition-colors">
+                        <div className="card p-lg bg-surface border border-border rounded-[var(--radius-lg)] hover:border-border transition-colors">
                             <p className="text-textSecondary text-sm mb-xs">Last Active</p>
                             <p className="text-lg font-medium text-textPrimary">
                                 {engine.last_run_at ? new Date(engine.last_run_at).toLocaleString() : 'Never'}
@@ -330,7 +330,7 @@ export default function EngineDetailsPage({ params }: { params: { id: string } }
 
                         {/* Error State */}
                         {engine.status === 'error' && engine.error_message && (
-                            <div className="col-span-full p-md bg-error/10 border border-error/30 rounded-[var(--radius-lg)] flex items-start gap-md">
+                            <div className="col-span-full p-md bg-surfaceElevated border border-border rounded-[var(--radius-lg)] flex items-start gap-md">
                                 <AlertCircle className="w-5 h-5 text-error mt-0.5" />
                                 <div>
                                     <h4 className="font-bold text-error">Engine Error</h4>

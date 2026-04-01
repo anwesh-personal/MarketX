@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Sparkles, Plus, Save, X, Loader2, AlertCircle, Link2 } from 'lucide-react'
+import { Sparkles, Plus, Save, X, Loader2, AlertCircle } from 'lucide-react'
 import { useSuperadminAuth } from '@/lib/useSuperadminAuth'
 import { SuperadminConfirmDialog } from '@/components/SuperAdmin/surfaces'
-import { PromptBlock, CATEGORIES, TARGET_TYPES } from './types'
+import { PromptBlock, CATEGORIES } from './types'
 import { PromptBlockCard } from './PromptBlockCard'
+import { PromptLightbox } from './PromptLightbox'
 
 export default function PromptStudioPage() {
     const { fetchWithAuth } = useSuperadminAuth()
@@ -17,13 +18,8 @@ export default function PromptStudioPage() {
     const [saving, setSaving] = useState(false)
     const [deleteId, setDeleteId] = useState<string | null>(null)
 
-    // Assignment modal
-    const [assignPromptId, setAssignPromptId] = useState<string | null>(null)
-    const [assignTargetType, setAssignTargetType] = useState('agent_template')
-    const [assignTargetId, setAssignTargetId] = useState('')
-    const [assignPriority, setAssignPriority] = useState(0)
-    const [assigning, setAssigning] = useState(false)
-    const [assignments, setAssignments] = useState<any[]>([])
+    // Lightbox
+    const [selectedPrompt, setSelectedPrompt] = useState<PromptBlock | null>(null)
 
     // Create form
     const [form, setForm] = useState({
@@ -47,13 +43,6 @@ export default function PromptStudioPage() {
 
     useEffect(() => { load() }, [load])
 
-    const loadAssignments = async (promptId: string) => {
-        const res = await fetchWithAuth(`/api/superadmin/prompt-studio/assignments?prompt_id=${promptId}`)
-        if (res.ok) {
-            const data = await res.json()
-            setAssignments(data.assignments ?? [])
-        }
-    }
 
     const handleCreate = async () => {
         if (!form.slug || !form.name || !form.content) return
@@ -88,36 +77,6 @@ export default function PromptStudioPage() {
         await load()
     }
 
-    const handleAssign = async () => {
-        if (!assignPromptId || !assignTargetId) return
-        setAssigning(true)
-        try {
-            const res = await fetchWithAuth('/api/superadmin/prompt-studio/assignments', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt_block_id: assignPromptId,
-                    target_type: assignTargetType,
-                    target_id: assignTargetId,
-                    priority: assignPriority,
-                }),
-            })
-            if (!res.ok) { const d = await res.json(); throw new Error(d.error) }
-            await loadAssignments(assignPromptId)
-        } catch (err: any) { setError(err.message) }
-        finally { setAssigning(false) }
-    }
-
-    const handleUnassign = async (assignmentId: string) => {
-        await fetchWithAuth(`/api/superadmin/prompt-studio/assignments?id=${assignmentId}`, { method: 'DELETE' })
-        if (assignPromptId) await loadAssignments(assignPromptId)
-    }
-
-    const openAssign = (promptId: string) => {
-        setAssignPromptId(promptId)
-        setAssignTargetId('')
-        loadAssignments(promptId)
-    }
-
     return (
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
@@ -138,7 +97,7 @@ export default function PromptStudioPage() {
             </div>
 
             {error && (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-error-muted border border-error/30 text-error text-sm">
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-error-muted border border-border text-error text-sm">
                     <AlertCircle className="w-4 h-4" />{error}
                     <button onClick={() => setError(null)} className="ml-auto"><X className="w-4 h-4" /></button>
                 </div>
@@ -160,7 +119,7 @@ export default function PromptStudioPage() {
 
             {/* Create Form */}
             {showCreate && (
-                <div className="rounded-2xl border-2 border-accent/30 bg-accent/5 p-6 space-y-4">
+                <div className="rounded-[var(--radius-lg)] border-2 border-accent/30 bg-accent/5 p-6 space-y-4">
                     <div className="flex items-center justify-between">
                         <h2 className="font-bold text-lg text-textPrimary">New Prompt Block</h2>
                         <button onClick={() => setShowCreate(false)} className="p-1 rounded-lg hover:bg-surfaceHover text-textSecondary">
@@ -213,73 +172,34 @@ export default function PromptStudioPage() {
                 </div>
             )}
 
-            {/* Prompt List */}
+            {/* Prompt Grid */}
             {loading ? (
                 <div className="flex items-center justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>
             ) : prompts.length === 0 ? (
-                <div className="text-center py-16 text-textSecondary">
+                <div className="text-center py-16 text-textSecondary border border-dashed border-border rounded-[var(--radius-lg)] bg-surface/50">
                     <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-30 text-accent" />
-                    <p>No prompt blocks yet. Create your first one.</p>
+                    <p className="font-medium text-textPrimary mb-1">No prompt blocks yet</p>
+                    <p className="text-sm">Create your first prompt block or seed the library with built-in templates.</p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     {prompts.map(p => (
-                        <PromptBlockCard key={p.id} block={p}
-                            onSave={handleSave} onDelete={setDeleteId} onAssign={openAssign} />
+                        <div key={p.id} onClick={() => setSelectedPrompt(p)} className="cursor-pointer">
+                            <PromptBlockCard block={p} />
+                        </div>
                     ))}
                 </div>
             )}
 
-            {/* Assignment Modal */}
-            {assignPromptId && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setAssignPromptId(null)}>
-                    <div className="bg-surface rounded-2xl border border-border max-w-lg w-full p-6 space-y-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h2 className="font-bold text-lg text-textPrimary flex items-center gap-2">
-                                <Link2 className="w-5 h-5 text-accent" /> Assign Prompt
-                            </h2>
-                            <button onClick={() => setAssignPromptId(null)} className="p-1 rounded-lg hover:bg-surfaceHover text-textSecondary">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-textPrimary">Target Type</label>
-                                <select value={assignTargetType} onChange={e => setAssignTargetType(e.target.value)} className="input text-sm">
-                                    {TARGET_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-textPrimary">Priority</label>
-                                <input type="number" value={assignPriority} onChange={e => setAssignPriority(Number(e.target.value))}
-                                    className="input text-sm" min={0} />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-textPrimary">Target ID (UUID)</label>
-                            <input value={assignTargetId} onChange={e => setAssignTargetId(e.target.value)}
-                                placeholder="Paste the brain_agent, org_agent, or template UUID" className="input text-sm font-mono" />
-                        </div>
-                        <button onClick={handleAssign} disabled={assigning || !assignTargetId}
-                            className="btn btn-primary w-full gap-2 text-sm disabled:opacity-50">
-                            {assigning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                            Assign
-                        </button>
-
-                        {assignments.length > 0 && (
-                            <div className="space-y-2 border-t border-border pt-4">
-                                <h3 className="text-sm font-semibold text-textPrimary">Current Assignments</h3>
-                                {assignments.map((a: any) => (
-                                    <div key={a.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-surfaceHover">
-                                        <span className="font-mono text-textSecondary">{a.target_type} → {a.target_id.slice(0, 8)}...</span>
-                                        <button onClick={() => handleUnassign(a.id)} className="text-error hover:underline">Remove</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+            {/* Lightbox Modal */}
+            {selectedPrompt && (
+                <PromptLightbox
+                    block={selectedPrompt}
+                    onClose={() => setSelectedPrompt(null)}
+                    onSave={async (id, updates) => { await handleSave(id, updates); await load() }}
+                    onDelete={(id) => { setDeleteId(id); setSelectedPrompt(null) }}
+                    fetchWithAuth={fetchWithAuth}
+                />
             )}
 
             <SuperadminConfirmDialog open={Boolean(deleteId)} title="Archive prompt block"

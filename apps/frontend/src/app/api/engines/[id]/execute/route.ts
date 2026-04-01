@@ -16,6 +16,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server';
 import { authenticateEngineApiKey } from '@/lib/engine-api-key-auth';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
+import { requireEnv } from '@/lib/require-env';
 
 // ============================================================================
 // REDIS/QUEUE CONFIGURATION
@@ -32,7 +33,7 @@ const getRedisConfig = () => {
         };
     }
     return {
-        host: process.env.REDIS_HOST || 'localhost',
+        host: requireEnv('REDIS_HOST'),
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
     };
@@ -47,8 +48,8 @@ const engineQueue = new Queue('engine-execution', {
 // SUPABASE CLIENT
 // ============================================================================
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL');
+const supabaseKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ============================================================================

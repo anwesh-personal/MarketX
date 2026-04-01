@@ -56,7 +56,7 @@ export function TemplateEditor({ template, fetchWithAuth, onClose, onSaved }: Pr
             <motion.div
                 initial={{ scale: 0.95, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
-                className="bg-background border border-border rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl"
+                className="bg-background border border-border rounded-[var(--radius-lg)] w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl"
             >
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">

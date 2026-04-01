@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 export type ThemeVariant = 'obsidian' | 'aurora' | 'ember' | 'arctic' | 'velvet';
 export type ThemeMode = 'day' | 'night';
@@ -97,25 +97,87 @@ function applyThemeToDOM(theme: Theme, skipTransition = false) {
     }
 }
 
+// ── Supabase persistence helpers ──────────────────────────────────────
+
+/** Get auth headers for the theme API (superadmin JWT if present) */
+function getThemeApiHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Superadmin JWT lives in localStorage
+    try {
+        const saSession = window.localStorage.getItem('superadmin_session');
+        if (saSession) {
+            const parsed = JSON.parse(saSession);
+            if (parsed?.token) {
+                headers['Authorization'] = `Bearer ${parsed.token}`;
+            }
+        }
+    } catch { /* ignore */ }
+    return headers;
+}
+
+async function loadThemeFromServer(): Promise<Theme | null> {
+    try {
+        const res = await fetch('/api/user/theme', {
+            headers: getThemeApiHeaders(),
+            credentials: 'include', // sends supabase auth cookies
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.theme && isValidTheme(data.theme)) {
+            return data.theme;
+        }
+    } catch { /* network error – fall back to localStorage */ }
+    return null;
+}
+
+async function saveThemeToServer(theme: Theme): Promise<void> {
+    try {
+        await fetch('/api/user/theme', {
+            method: 'POST',
+            headers: getThemeApiHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({ theme }),
+        });
+    } catch { /* silent – localStorage is the fallback */ }
+}
+
+// ── Provider ──────────────────────────────────────────────────────────
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [initialThemeState] = useState(getInitialThemeState);
     const [theme, setThemeState] = useState<Theme>(initialThemeState.theme);
     const [isLoading, setIsLoading] = useState(false);
     const [preferenceSource, setPreferenceSource] = useState<ThemePreferenceSource>(initialThemeState.preferenceSource);
 
+    const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const [variant, mode] = theme.split('-') as [ThemeVariant, ThemeMode];
 
+    // 1) On mount: resolve theme from localStorage first (instant), then check Supabase
     useEffect(() => {
         const clientThemeState = getClientThemeState();
         setThemeState(clientThemeState.theme);
         setPreferenceSource(clientThemeState.preferenceSource);
         applyThemeToDOM(clientThemeState.theme, true);
+
+        // Then async-load from server; if different from localStorage, update
+        loadThemeFromServer().then(serverTheme => {
+            if (serverTheme && serverTheme !== clientThemeState.theme) {
+                // Server theme wins (the persisted preference)
+                setThemeState(serverTheme);
+                setPreferenceSource('explicit');
+                applyThemeToDOM(serverTheme, true);
+                localStorage.setItem(STORAGE_KEY, serverTheme);
+            }
+        });
     }, []);
 
+    // 2) Keep DOM in sync
     useEffect(() => {
         applyThemeToDOM(theme, true);
     }, [theme]);
 
+    // 3) System preference listener
     useEffect(() => {
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         const handler = (e: MediaQueryListEvent) => {
@@ -130,11 +192,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         return () => mq.removeEventListener('change', handler);
     }, [preferenceSource, variant]);
 
+    // ── setTheme: save to localStorage immediately + debounce Supabase save ──
     const setTheme = useCallback((newTheme: Theme) => {
         applyThemeToDOM(newTheme);
         setThemeState(newTheme);
         setPreferenceSource('explicit');
+
+        // Instant: localStorage (so page-reload is instant)
         localStorage.setItem(STORAGE_KEY, newTheme);
+
+        // Debounced: Supabase (600ms – covers rapid theme/mode toggles)
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => {
+            saveThemeToServer(newTheme);
+        }, 600);
     }, []);
 
     const setVariant = useCallback((newVariant: ThemeVariant) => {
@@ -159,6 +230,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyThemeToDOM(systemTheme, true);
         setThemeState(systemTheme);
         setPreferenceSource('system');
+
+        // Also clear from server (set to null / remove preference)
+        // We save the system-derived theme so the server knows what was last used
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+        saveThemeToServer(systemTheme);
     }, [variant]);
 
     return (

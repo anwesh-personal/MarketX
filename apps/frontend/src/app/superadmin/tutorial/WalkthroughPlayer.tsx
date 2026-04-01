@@ -27,7 +27,7 @@ function SlideVisual({ slide }: { slide: WalkthroughSlide }) {
             {/* Top: title + icon */}
             <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+                <div className="w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center text-2xl"
                     style={{ background: `${slide.color}15`, boxShadow: `0 0 20px ${slide.color}20` }}>
                     {slide.icon}
                 </div>
@@ -131,10 +131,10 @@ export function WalkthroughPlayer() {
                 whileHover={{ scale: 1.04, y: -2 }}
                 whileTap={{ scale: 0.96 }}
                 onClick={() => { setIsOpen(true); setPlaying(true); setCurrent(0); setProgress(0) }}
-                className="group flex items-center gap-3 w-full p-5 rounded-2xl bg-surface border border-border hover:border-accent/40 transition-all cursor-pointer"
+                className="group flex items-center gap-3 w-full p-5 rounded-[var(--radius-lg)] bg-surface border border-border hover:border-accent/40 transition-all cursor-pointer"
                 style={{ boxShadow: '0 4px 24px var(--color-accent-muted, rgba(99,102,241,0.08))' }}
             >
-                <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                <div className="w-14 h-14 rounded-[var(--radius-lg)] bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
                     <Play size={24} className="text-accent ml-0.5" />
                 </div>
                 <div className="text-left flex-1">
@@ -157,7 +157,7 @@ export function WalkthroughPlayer() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.92 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                            className="relative w-full max-w-3xl bg-surface rounded-3xl border border-border overflow-hidden flex flex-col"
+                            className="relative w-full max-w-3xl bg-surface rounded-[var(--radius-xl)] border border-border overflow-hidden flex flex-col"
                             style={{ height: 'min(80vh, 600px)', boxShadow: '0 40px 100px rgba(0,0,0,0.3)' }}
                         >
                             {/* Top bar */}
@@ -222,7 +222,7 @@ export function WalkthroughPlayer() {
                                 <motion.button
                                     whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
                                     onClick={() => setPlaying(p => !p)}
-                                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white transition-all"
+                                    className="w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center text-white transition-all"
                                     style={{ background: slide.color, boxShadow: `0 4px 20px ${slide.color}40` }}
                                 >
                                     {playing ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}

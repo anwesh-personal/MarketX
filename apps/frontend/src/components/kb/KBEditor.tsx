@@ -157,7 +157,7 @@ export function KBEditor({
                     <FileEdit className="w-5 h-5 text-info" />
                     <span className="font-medium text-textPrimary">{kbName}</span>
                     {hasChanges && (
-                        <span className="text-xs bg-warning/20 text-warning px-2 py-0.5 rounded">
+                        <span className="text-xs bg-surfaceElevated text-warning px-2 py-0.5 rounded">
                             Unsaved
                         </span>
                     )}
@@ -275,7 +275,7 @@ export function KBEditor({
 
             {/* Error Banner */}
             {errors.length > 0 && (
-                <div className="bg-error/10 border-b border-error p-3">
+                <div className="bg-surfaceElevated border-b border-error p-3">
                     <div className="flex items-start gap-2">
                         <AlertCircle className="w-5 h-5 text-error shrink-0 mt-0.5" />
                         <div>

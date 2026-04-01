@@ -168,7 +168,7 @@ export function ExecutionHistory({ engineId }: ExecutionHistoryProps) {
 
                             {/* Error */}
                             {selectedRun.error && (
-                                <div className="p-md bg-error/10 border border-error/30 rounded text-error flex items-start gap-sm">
+                                <div className="p-md bg-surfaceElevated border border-border rounded text-error flex items-start gap-sm">
                                     <AlertCircle className="w-5 h-5 mt-0.5" />
                                     <pre className="whitespace-pre-wrap font-mono text-xs">{selectedRun.error}</pre>
                                 </div>

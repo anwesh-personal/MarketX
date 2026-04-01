@@ -227,7 +227,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                             <div className="
                                 w-8 h-8
                                 rounded-[var(--radius-md)]
-                                bg-primary/20
+                                bg-surfaceElevated
                                 flex items-center justify-center
                                 text-primary font-semibold text-sm
                             ">
@@ -246,7 +246,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                                 px-md py-sm
                                 text-textSecondary
                                 hover:text-error
-                                hover:bg-error/10
+                                hover:bg-surfaceElevated
                                 rounded-[var(--radius-lg)]
                                 transition-all duration-[var(--duration-fast)]
                                 active:scale-95
@@ -389,7 +389,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                                                 font-medium text-sm
                                                 transition-all
                                                 ${isActive
-                                                    ? 'bg-primary/10 text-primary'
+                                                    ? 'bg-surfaceElevated text-primary'
                                                     : 'text-textSecondary hover:text-textPrimary hover:bg-surfaceHover'
                                                 }
                                             `}

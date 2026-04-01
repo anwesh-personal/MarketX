@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { requireEnv } from '@/lib/require-env';
 import { getTransactionalEmailService } from '@/services/email/TransactionalEmailService';
 
 const supabase = createClient(
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
             type: 'recovery',
             email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password`,
+                redirectTo: `${requireEnv('NEXT_PUBLIC_APP_URL')}/auth/reset-password`,
             },
         });
 

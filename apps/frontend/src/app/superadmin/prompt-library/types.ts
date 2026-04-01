@@ -32,6 +32,10 @@ export const CATEGORIES = [
     { value: 'guardrails', label: 'Guardrails', emoji: '🛡️', color: 'warning' },
     { value: 'domain', label: 'Domain', emoji: '🧠', color: 'info' },
     { value: 'task', label: 'Task', emoji: '⚡', color: 'accent' },
+    { value: 'output', label: 'Output Format', emoji: '📐', color: 'success' },
+    { value: 'analysis', label: 'Analysis', emoji: '🔬', color: 'info' },
+    { value: 'optimization', label: 'Optimization', emoji: '🎯', color: 'warning' },
+    { value: 'compliance', label: 'Compliance', emoji: '⚖️', color: 'warning' },
     { value: 'custom', label: 'Custom', emoji: '✨', color: 'success' },
 ] as const
 

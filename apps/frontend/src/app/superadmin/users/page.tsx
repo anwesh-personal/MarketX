@@ -165,8 +165,8 @@ export default function UsersPage() {
     const getRoleBadgeColor = (role: string) => {
         switch (role) {
             case 'owner': return 'bg-accent/10 text-accent';
-            case 'admin': return 'bg-primary/10 text-primary';
-            case 'member': return 'bg-info/10 text-info';
+            case 'admin': return 'bg-surfaceElevated text-primary';
+            case 'member': return 'bg-surfaceElevated text-info';
             case 'viewer': return 'bg-textTertiary/10 text-textTertiary';
             default: return 'bg-textSecondary/10 text-textSecondary';
         }
@@ -293,7 +293,7 @@ export default function UsersPage() {
             </div>
 
             {/* Warning Banner */}
-            <div className="bg-warning/10 border border-warning rounded-[var(--radius-lg)] p-md flex items-start gap-sm">
+            <div className="bg-surfaceElevated border border-warning rounded-[var(--radius-lg)] p-md flex items-start gap-sm">
                 <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
                 <div>
                     <p className="text-warning font-medium mb-xs">
@@ -341,7 +341,7 @@ export default function UsersPage() {
                                     {/* User */}
                                     <td className="px-md py-sm">
                                         <div className="flex items-center gap-sm">
-                                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-full bg-surfaceElevated flex items-center justify-center">
                                                 <span className="text-primary font-medium">
                                                     {(user.full_name || user.email).charAt(0).toUpperCase()}
                                                 </span>
@@ -404,7 +404,7 @@ export default function UsersPage() {
                           flex items-center gap-xs
                           px-sm py-xs
                           text-primary
-                          hover:bg-primary/10
+                          hover:bg-surfaceElevated
                           rounded-[var(--radius-sm)]
                           transition-all
                           text-sm
@@ -429,7 +429,7 @@ export default function UsersPage() {
                           flex items-center gap-xs
                           px-sm py-xs
                           text-warning
-                          hover:bg-warning/10
+                          hover:bg-surfaceElevated
                           rounded-[var(--radius-sm)]
                           transition-all
                           text-sm

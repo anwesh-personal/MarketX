@@ -293,7 +293,7 @@ export default function KBManagerPage() {
                                     key={kb.id}
                                     onClick={() => selectKb(kb)}
                                     className={`w-full text-left p-3 rounded-lg transition ${selectedKb?.id === kb.id
-                                        ? 'bg-primary/10 border border-primary/30'
+                                        ? 'bg-surfaceElevated border border-border'
                                         : 'hover:bg-surfaceHover border border-transparent'
                                         }`}
                                 >
@@ -314,8 +314,8 @@ export default function KBManagerPage() {
                                                     {new Date(kb.updated_at).toLocaleDateString()}
                                                 </span>
                                                 <span className={`px-1.5 py-0.5 rounded ${kb.stage === 'embeddings-enabled'
-                                                    ? 'bg-success/20 text-success'
-                                                    : 'bg-warning/20 text-warning'
+                                                    ? 'bg-surfaceElevated text-success'
+                                                    : 'bg-surfaceElevated text-warning'
                                                     }`}>
                                                     v{kb.version || '1.0.0'}
                                                 </span>

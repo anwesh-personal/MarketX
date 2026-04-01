@@ -241,11 +241,11 @@ const LEARNING_PHASES = [
 ];
 
 const NODE_COLORS: Record<NodeType, { border: string; badge: string; line: string; glow: string; panel: string }> = {
-  CORE: { border: 'border-success/30 dark:border-success/55', badge: 'border-success/20 bg-success-muted text-success dark:border-success/30 dark:bg-success/12 dark:text-success', line: 'var(--color-success)', glow: 'shadow-[0_0_42px_rgba(var(--color-success-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-success-rgb),0.18)]', panel: 'from-success/5 via-success/2 to-transparent dark:from-success/14 dark:via-success/7 dark:to-transparent' },
-  ENGINE: { border: 'border-info/30 dark:border-info/55', badge: 'border-info/20 bg-info-muted text-info dark:border-info/30 dark:bg-info/12 dark:text-info', line: 'var(--color-info)', glow: 'shadow-[0_0_42px_rgba(var(--color-info-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-info-rgb),0.18)]', panel: 'from-info/5 via-info/2 to-transparent dark:from-info/14 dark:via-info/7 dark:to-transparent' },
+  CORE: { border: 'border-border dark:border-borderHover', badge: 'border-border bg-success-muted text-success dark:border-border dark:bg-surfaceElevated dark:text-success', line: 'var(--color-success)', glow: 'shadow-[0_0_42px_rgba(var(--color-success-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-success-rgb),0.18)]', panel: 'from-success/5 via-success/2 to-transparent dark:from-success/14 dark:via-success/7 dark:to-transparent' },
+  ENGINE: { border: 'border-border dark:border-borderHover', badge: 'border-border bg-info-muted text-info dark:border-border dark:bg-surfaceElevated dark:text-info', line: 'var(--color-info)', glow: 'shadow-[0_0_42px_rgba(var(--color-info-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-info-rgb),0.18)]', panel: 'from-info/5 via-info/2 to-transparent dark:from-info/14 dark:via-info/7 dark:to-transparent' },
   DATA: { border: 'border-accent/30 dark:border-accent/55', badge: 'border-accent/20 bg-accent/10 text-accent dark:border-accent/30 dark:bg-accent/12 dark:text-accent', line: 'var(--color-accent)', glow: 'shadow-[0_0_42px_rgba(var(--color-accent-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-accent-rgb),0.18)]', panel: 'from-accent/5 via-accent/2 to-transparent dark:from-accent/14 dark:via-accent/7 dark:to-transparent' },
-  RULE: { border: 'border-warning/30 dark:border-warning/55', badge: 'border-warning/20 bg-warning-muted text-warning dark:border-warning/30 dark:bg-warning/12 dark:text-warning', line: 'var(--color-warning)', glow: 'shadow-[0_0_42px_rgba(var(--color-warning-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-warning-rgb),0.18)]', panel: 'from-warning/5 via-warning/2 to-transparent dark:from-warning/14 dark:via-warning/7 dark:to-transparent' },
-  ECON: { border: 'border-error/30 dark:border-error/55', badge: 'border-error/20 bg-error-muted text-error dark:border-error/30 dark:bg-error/12 dark:text-error', line: 'var(--color-error)', glow: 'shadow-[0_0_42px_rgba(var(--color-error-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-error-rgb),0.18)]', panel: 'from-error/5 via-error/2 to-transparent dark:from-error/14 dark:via-error/7 dark:to-transparent' },
+  RULE: { border: 'border-border dark:border-borderHover', badge: 'border-border bg-warning-muted text-warning dark:border-border dark:bg-surfaceElevated dark:text-warning', line: 'var(--color-warning)', glow: 'shadow-[0_0_42px_rgba(var(--color-warning-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-warning-rgb),0.18)]', panel: 'from-warning/5 via-warning/2 to-transparent dark:from-warning/14 dark:via-warning/7 dark:to-transparent' },
+  ECON: { border: 'border-border dark:border-borderHover', badge: 'border-border bg-error-muted text-error dark:border-border dark:bg-surfaceElevated dark:text-error', line: 'var(--color-error)', glow: 'shadow-[0_0_42px_rgba(var(--color-error-rgb),0.12)] dark:shadow-[0_0_42px_rgba(var(--color-error-rgb),0.18)]', panel: 'from-error/5 via-error/2 to-transparent dark:from-error/14 dark:via-error/7 dark:to-transparent' },
 };
 
 const TREE_MAX_X = 1150;
@@ -435,7 +435,7 @@ export default function MarketXOsPage() {
                 setSelectedPhase(phase);
                 playSfx('click');
               }}
-              className={`w-full text-left rounded-[1.75rem] border p-5 transition-all ${selectedPhase.id === phase.id ? 'border-success/60 bg-success-muted shadow-[0_0_40px_rgba(var(--color-success-rgb),0.12)]' : `${colors.border} ${colors.panelSoft} hover:border-border`}`}
+              className={`w-full text-left rounded-[1.75rem] border p-5 transition-all ${selectedPhase.id === phase.id ? 'border-borderHover bg-success-muted shadow-[0_0_40px_rgba(var(--color-success-rgb),0.12)]' : `${colors.border} ${colors.panelSoft} hover:border-border`}`}
             >
               <div className='mb-3 flex items-center justify-between gap-3'>
                 <span className={`text-[10px] font-black uppercase tracking-[0.28em] ${selectedPhase.id === phase.id ? 'text-success' : colors.textMuted}`}>{phase.engine}</span>
@@ -476,7 +476,7 @@ export default function MarketXOsPage() {
               className={`p-8 rounded-[2.5rem] border-2 cursor-pointer transition-all ${
                 selectedAngle.id === angle.id
                   ? 'bg-success-muted border-success shadow-xl'
-                  : `${colors.border} bg-surfaceHover/5 hover:border-success/50`
+                  : `${colors.border} bg-surfaceHover/5 hover:border-borderHover`
               }`}
             >
               <h4 className='text-[10px] font-black text-success uppercase mb-3 tracking-[0.3em]'>
@@ -581,7 +581,7 @@ export default function MarketXOsPage() {
   const renderWorkflowView = () => (
     <motion.div key={selectedPhase.id} initial={{ opacity: 0, x: tabDirection * 32 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDirection * -24 }} className='mx-auto max-w-5xl space-y-8 lg:space-y-10'>
       <div className='space-y-5'>
-        <div className='inline-flex items-center gap-3 rounded-full border border-success/20 bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-success'>
+        <div className='inline-flex items-center gap-3 rounded-full border border-border bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.35em] text-success'>
           <Activity size={14} /> {selectedPhase.status}
         </div>
         <div className='flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
@@ -589,7 +589,7 @@ export default function MarketXOsPage() {
             <h2 className={`text-3xl sm:text-[2rem] font-black uppercase tracking-tight sm:text-[2.5rem] lg:text-[4.25rem] ${colors.heading}`}>{selectedPhase.title}</h2>
             <p className='mt-3 text-sm uppercase tracking-[0.34em] text-success/80'>{selectedPhase.engine}</p>
           </div>
-          <div className={`rounded-3xl border ${colors.border} ${colors.panelSoft} px-5 py-4 text-sm leading-relaxed ${colors.textMuted} lg:max-w-xs`}>
+          <div className={`rounded-[var(--radius-xl)] border ${colors.border} ${colors.panelSoft} px-5 py-4 text-sm leading-relaxed ${colors.textMuted} lg:max-w-xs`}>
             Phase {selectedPhase.id.replace('p', '')} controls one non-negotiable transition in the operating model.
           </div>
         </div>
@@ -605,7 +605,7 @@ export default function MarketXOsPage() {
           </div>
           <p className={`text-xl font-bold leading-relaxed sm:text-2xl lg:text-3xl ${colors.heading}`}>{selectedPhase.exit}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-success/20 bg-success-muted p-6 sm:p-8'>
+        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-border bg-success-muted p-6 sm:p-8'>
           <p className='mb-3 text-[10px] font-black uppercase tracking-[0.34em] text-success'>Phase Signal</p>
           <p className='text-sm leading-relaxed opacity-75 sm:text-base'>Each gate exists to stop premature scaling and protect belief integrity, deliverability, and economics.</p>
         </motion.div>
@@ -624,7 +624,7 @@ export default function MarketXOsPage() {
           </div>
         </motion.div>
 
-        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-warning/20 bg-warning-muted p-6 sm:p-8'>
+        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-border bg-warning-muted p-6 sm:p-8'>
           <h4 className='mb-4 text-[10px] font-black uppercase tracking-[0.34em] text-warning'>Guardrails</h4>
           <div className='space-y-4'>
             {selectedPhase.guardrails.map((guardrail) => (
@@ -642,7 +642,7 @@ export default function MarketXOsPage() {
   const renderTreeView = () => (
     <motion.div key='tree-view' initial={{ opacity: 0, x: tabDirection * 32 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDirection * -24 }} className='mx-auto max-w-[1420px] space-y-6 lg:space-y-8'>
       <div className='space-y-4'>
-        <p className='inline-flex items-center gap-2 rounded-full border border-success/20 bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
+        <p className='inline-flex items-center gap-2 rounded-full border border-border bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
           <GitGraph size={14} /> Structural Graph
         </p>
         <div className='flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
@@ -650,7 +650,7 @@ export default function MarketXOsPage() {
             <h2 className={`text-3xl sm:text-[2rem] font-black tracking-tight sm:text-[2.4rem] lg:text-[4rem] ${colors.heading}`}>System Tree</h2>
             <p className={`mt-3 max-w-3xl text-base leading-relaxed ${colors.textMuted}`}>The full graph remains intact, but it now adapts elegantly across mobile, tablet, and desktop with stronger motion, stronger hierarchy, and better inspection flows.</p>
           </div>
-          <div className={`rounded-3xl border ${colors.border} ${colors.panelSoft} p-4 text-right`}>
+          <div className={`rounded-[var(--radius-xl)] border ${colors.border} ${colors.panelSoft} p-4 text-right`}>
             <p className='text-[10px] font-black uppercase tracking-[0.3em] text-success'>Active Layer</p>
             <p className='mt-2 text-sm font-semibold'>{currentLayer.label}</p>
           </div>
@@ -664,7 +664,7 @@ export default function MarketXOsPage() {
             {Array.from({ length: 24 }, (_, index) => (
               <motion.span
                 key={`tree-particle-${index}`}
-                className='absolute rounded-full bg-info/30'
+                className='absolute rounded-full bg-surfaceHover'
                 style={{
                   left: `${(index * 11) % 100}%`,
                   top: `${(index * 17) % 100}%`,
@@ -846,7 +846,7 @@ export default function MarketXOsPage() {
               <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] ${NODE_COLORS[selectedTreeNode.type as NodeType].badge}`}>{selectedTreeNode.type}</div>
             </div>
           </div>
-          <div className={`rounded-2xl border ${colors.border} ${colors.panelSoft} px-4 py-3 text-sm ${colors.textMuted}`}>
+          <div className={`rounded-[var(--radius-lg)] border ${colors.border} ${colors.panelSoft} px-4 py-3 text-sm ${colors.textMuted}`}>
             <div className='text-[10px] font-black uppercase tracking-[0.24em] opacity-45'>Selection Path</div>
             <div className='mt-2 font-semibold'>{activeTabMeta.label} / {selectedTreeNode.label}</div>
           </div>
@@ -860,12 +860,12 @@ export default function MarketXOsPage() {
     <motion.div key='gemini-view' initial={{ opacity: 0, x: tabDirection * 32 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDirection * -24 }} className='mx-auto flex max-w-7xl flex-col gap-6 lg:gap-8'>
       <div className='flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
         <div>
-          <p className='mb-3 inline-flex items-center gap-2 rounded-full border border-success/20 bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
+          <p className='mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
             <Sparkles size={14} /> Gemini Copilot
           </p>
           <h2 className={`text-3xl sm:text-[2rem] font-black tracking-tight ${colors.heading} sm:text-[2.4rem] lg:text-[4rem]`}>Neural Cockpit</h2>
         </div>
-        <div className={`rounded-3xl border ${colors.border} ${colors.panelSoft} px-5 py-4 text-sm ${colors.textMuted}`}>Prompt Zara with operational context, reply payloads, or belief-generation instructions.</div>
+        <div className={`rounded-[var(--radius-xl)] border ${colors.border} ${colors.panelSoft} px-5 py-4 text-sm ${colors.textMuted}`}>Prompt Zara with operational context, reply payloads, or belief-generation instructions.</div>
       </div>
       <div className='grid gap-6 xl:grid-cols-[0.95fr_1.25fr]'>
         <div className='space-y-6'>
@@ -877,12 +877,12 @@ export default function MarketXOsPage() {
               onChange={(e) => setAiInput(e.target.value)}
             />
             <div className='mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2'>
-              <motion.button whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('brief')} disabled={aiLoading} className='rounded-2xl bg-success px-4 py-4 text-xs font-black uppercase tracking-[0.22em] text-textInverse shadow-lg disabled:opacity-50'>
+              <motion.button whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('brief')} disabled={aiLoading} className='rounded-[var(--radius-lg)] bg-success px-4 py-4 text-xs font-black uppercase tracking-[0.22em] text-textInverse shadow-lg disabled:opacity-50'>
                 <div className='flex items-center justify-center gap-2'>
                   <FileText size={16} /> Brief Architect
                 </div>
               </motion.button>
-              <motion.button whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('reply')} disabled={aiLoading} className={`rounded-2xl border ${colors.border} bg-surface/70 px-4 py-4 text-xs font-black uppercase tracking-[0.22em] text-textInverse disabled:opacity-50`}>
+              <motion.button whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('reply')} disabled={aiLoading} className={`rounded-[var(--radius-lg)] border ${colors.border} bg-surface/70 px-4 py-4 text-xs font-black uppercase tracking-[0.22em] text-textInverse disabled:opacity-50`}>
                 <div className='flex items-center justify-center gap-2'>
                   <Fingerprint size={16} /> Signal Classifier
                 </div>
@@ -893,14 +893,14 @@ export default function MarketXOsPage() {
             <h4 className='mb-4 text-[10px] font-black uppercase tracking-[0.34em] opacity-50'>Draft via Canonical Angles</h4>
             <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
               {ANGLES.map((angle) => (
-                <motion.button key={angle.id} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('angle', angle.name)} className={`rounded-2xl border ${colors.border} px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] transition-all hover:border-success/40 hover:bg-success/5`}>
+                <motion.button key={angle.id} whileHover={{ y: -2, scale: 1.01 }} whileTap={{ scale: 0.97 }} onClick={() => aiAction('angle', angle.name)} className={`rounded-[var(--radius-lg)] border ${colors.border} px-4 py-4 text-left text-xs font-black uppercase tracking-[0.2em] transition-all hover:border-borderHover hover:bg-surface`}>
                   {angle.name}
                 </motion.button>
               ))}
             </div>
           </motion.div>
         </div>
-        <motion.div whileHover={{ y: -2, scale: 1.01 }} className={`relative overflow-hidden rounded-[2rem] border ${aiLoading ? 'border-success/50' : colors.borderStrong} ${theme === 'dark' ? 'bg-background/55' : 'bg-background'} p-5 shadow-[0_30px_80px_rgba(var(--color-background-rgb),0.22)] sm:p-8`}>
+        <motion.div whileHover={{ y: -2, scale: 1.01 }} className={`relative overflow-hidden rounded-[2rem] border ${aiLoading ? 'border-borderHover' : colors.borderStrong} ${theme === 'dark' ? 'bg-background/55' : 'bg-background'} p-5 shadow-[0_30px_80px_rgba(var(--color-background-rgb),0.22)] sm:p-8`}>
           {aiLoading ? (
             <div className='space-y-4'>
               {Array.from({ length: 8 }, (_, index) => (
@@ -930,7 +930,7 @@ export default function MarketXOsPage() {
   const renderAnglesView = () => (
     <motion.div key={selectedAngle.id} initial={{ opacity: 0, x: tabDirection * 32 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDirection * -24 }} className='mx-auto max-w-5xl space-y-6 lg:space-y-8'>
       <div>
-        <p className='mb-3 inline-flex items-center gap-2 rounded-full border border-success/20 bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
+        <p className='mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-success-muted px-4 py-2 text-[10px] font-black uppercase tracking-[0.34em] text-success'>
           <Lightbulb size={14} /> BELIEF VECTOR: ACTIVE
         </p>
         <h2 className={`text-4xl font-black ${colors.heading} uppercase tracking-tighter sm:text-5xl lg:text-7xl`}>{selectedAngle.name}</h2>
@@ -944,7 +944,7 @@ export default function MarketXOsPage() {
           </div>
           <p className={`text-xl font-bold ${colors.heading} leading-snug`}>{selectedAngle.entryPoint}</p>
         </motion.div>
-        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-success/5 border-4 border-success/10'>
+        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-surface border-4 border-border'>
           <div className='mb-5 flex items-center gap-3 text-success'>
             <GitPullRequest size={32} />
             <h4 className='text-lg font-black uppercase tracking-[0.3em] opacity-40'>Usage</h4>
@@ -967,7 +967,7 @@ export default function MarketXOsPage() {
             <p>Champion / Challenger pairing</p>
           </div>
         </motion.div>
-        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-info/5 border-4 border-info/10'>
+        <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-surface border-4 border-border'>
           <h4 className='text-xs font-black uppercase tracking-[0.4em] text-info mb-6'>TESTING DOCTRINE</h4>
           <div className='space-y-4 text-lg font-bold opacity-90'>
             <p>One belief per flow</p>
@@ -978,7 +978,7 @@ export default function MarketXOsPage() {
           </div>
         </motion.div>
       </div>
-      <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-warning/5 border-4 border-warning/10 mb-20'>
+      <motion.div whileHover={{ y: -2, scale: 1.01 }} className='p-6 sm:p-8 lg:p-12 rounded-[2rem] lg:rounded-[3.5rem] bg-surface border-4 border-border mb-20'>
         <div className='mb-5 flex items-center gap-3 text-warning'>
           <ShieldAlert size={32} />
           <h4 className='text-lg font-black uppercase tracking-[0.3em] opacity-40'>Resonance Signal</h4>
@@ -1017,7 +1017,7 @@ export default function MarketXOsPage() {
       <div className='grid gap-8 lg:grid-cols-2'>
         <div className='space-y-5'>
           <div className='flex items-center gap-4'>
-            <div className='rounded-2xl border border-success/20 bg-success-muted p-4 text-success'>
+            <div className='rounded-[var(--radius-lg)] border border-border bg-success-muted p-4 text-success'>
               <Lock size={24} />
             </div>
             <h4 className='text-xl font-black uppercase tracking-[0.28em] text-success'>Hybrid Gating</h4>
@@ -1035,13 +1035,13 @@ export default function MarketXOsPage() {
         <div className='space-y-8'>
           <div>
             <div className='mb-5 flex items-center gap-4'>
-              <div className='rounded-2xl border border-success/20 bg-success-muted p-4 text-success'>
+              <div className='rounded-[var(--radius-lg)] border border-border bg-success-muted p-4 text-success'>
                 <ActivityIcon size={24} />
               </div>
               <h4 className='text-xl font-black uppercase tracking-[0.28em] text-success'>Signal Hierarchy</h4>
             </div>
             <div className='grid gap-5'>
-              <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-success/20 bg-success-muted p-6 sm:p-8'>
+              <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-border bg-success-muted p-6 sm:p-8'>
                 <p className='mb-5 text-[10px] font-black uppercase tracking-[0.34em] text-success underline decoration-success/40'>Primary (Actionable)</p>
                 <ul className='space-y-4 text-2xl font-black sm:text-3xl'>
                   <li>Booked Calls</li>
@@ -1049,7 +1049,7 @@ export default function MarketXOsPage() {
                   <li>Reply Quality</li>
                 </ul>
               </motion.div>
-              <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-warning/20 bg-warning-muted p-6 sm:p-8'>
+              <motion.div whileHover={{ y: -2, scale: 1.01 }} className='rounded-[2rem] border border-border bg-warning-muted p-6 sm:p-8'>
                 <p className='mb-5 text-[10px] font-black uppercase tracking-[0.34em] text-warning'>Secondary (Friction)</p>
                 <ul className='space-y-4 text-xl font-black opacity-85 sm:text-2xl'>
                   <li>Click-to-Reply</li>
@@ -1059,7 +1059,7 @@ export default function MarketXOsPage() {
             </div>
           </div>
           <div>
-            <h4 className='mb-5 border-b border-success/20 pb-4 text-xl font-black uppercase tracking-[0.4em] text-success'>Promotion Ladder</h4>
+            <h4 className='mb-5 border-b border-border pb-4 text-xl font-black uppercase tracking-[0.4em] text-success'>Promotion Ladder</h4>
             <div className='grid gap-4 sm:grid-cols-2'>
               {PROMOTION_STATES.map((state) => (
                 <motion.div key={state.state} whileHover={{ y: -2, scale: 1.01 }} className={`rounded-[1.75rem] border ${colors.borderStrong} ${colors.panel} p-5 shadow-xl`}>
@@ -1093,7 +1093,7 @@ export default function MarketXOsPage() {
             <p className='text-base leading-relaxed opacity-80 max-w-2xl'>{selectedAgent.task}</p>
           </div>
           <div className='flex flex-wrap gap-2'>
-            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full ${selectedAgent.phase === 1 ? 'bg-success-muted text-success border border-success/30' : 'bg-info-muted text-info border border-info/30'}`}>Phase {selectedAgent.phase}</span>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full ${selectedAgent.phase === 1 ? 'bg-success-muted text-success border border-border' : 'bg-info-muted text-info border border-border'}`}>Phase {selectedAgent.phase}</span>
             <span className='text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full bg-accent/10 text-accent border border-accent/30'>Writes → {selectedAgent.writes}</span>
           </div>
         </div>
@@ -1218,7 +1218,7 @@ export default function MarketXOsPage() {
           {['More Partners', 'More Signal', 'More Patterns', 'Better Priors', 'Better Acquisition Performance', 'More Partners'].map((step, index) => (
             <motion.div key={step} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.1 }}>
               {index > 0 && <div className='h-6 w-px bg-accent/30 mx-auto mb-4' />}
-              <div className={`rounded-[1.25rem] border ${index === 0 || index === 5 ? 'border-success/50 bg-success-muted' : 'border-accent/30 bg-accent/5'} px-8 py-3 text-center`}>
+              <div className={`rounded-[1.25rem] border ${index === 0 || index === 5 ? 'border-borderHover bg-success-muted' : 'border-accent/30 bg-accent/5'} px-8 py-3 text-center`}>
                 <span className={`text-sm font-black uppercase tracking-[0.15em] ${index === 0 || index === 5 ? 'text-success' : 'text-accent'}`}>{step}</span>
               </div>
             </motion.div>
@@ -1232,7 +1232,7 @@ export default function MarketXOsPage() {
   const renderSpecsView = () => (
     <motion.div key='specs-view' initial={{ opacity: 0, x: tabDirection * 32 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: tabDirection * -24 }} className='mx-auto max-w-7xl space-y-8 pb-12'>
       <div>
-        <p className={`mb-3 inline-flex items-center gap-2 rounded-full border border-success/20 bg-success-muted px-4 py-2 text-[12px] font-black uppercase tracking-[0.34em] text-success`}>
+        <p className={`mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-success-muted px-4 py-2 text-[12px] font-black uppercase tracking-[0.34em] text-success`}>
           <DatabaseZap size={14} /> Schema + Constraint Map
         </p>
         <h2 className={`text-4xl sm:text-[2.2rem] font-black tracking-tight ${colors.heading} sm:text-[2.7rem] lg:text-[4.5rem]`}>Engineering Spec</h2>
@@ -1300,7 +1300,7 @@ export default function MarketXOsPage() {
         {particleDots.map((dot) => (
           <motion.span
             key={dot.id}
-            className='absolute rounded-full bg-success/20'
+            className='absolute rounded-full bg-surfaceElevated'
             style={{ left: dot.left, top: dot.top, width: dot.size, height: dot.size }}
             animate={{ y: [0, -8, 0], opacity: [0.15, 0.45, 0.15] }}
             transition={{ duration: 6 + dot.delay, repeat: Infinity, ease: 'easeInOut', delay: dot.delay }}
@@ -1319,7 +1319,7 @@ export default function MarketXOsPage() {
             </div>
           </div>
           <div className='hidden min-w-0 flex-1 xl:flex xl:justify-center'>
-            <nav className={`flex max-w-full items-center gap-2 overflow-x-auto rounded-2xl border ${colors.border} ${theme === 'dark' ? 'bg-surfaceHover/5' : 'bg-surfaceHover/70'} p-1.5`}>
+            <nav className={`flex max-w-full items-center gap-2 overflow-x-auto rounded-[var(--radius-lg)] border ${colors.border} ${theme === 'dark' ? 'bg-surfaceHover/5' : 'bg-surfaceHover/70'} p-1.5`}>
               {navItems.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -1367,7 +1367,7 @@ export default function MarketXOsPage() {
                   key={tab.id}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => changeTab(tab.id)}
-                  className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${isActive ? theme === 'dark' ? 'border-success/50 bg-success/12 text-success' : 'border-success/40 bg-success/12 text-success' : `${colors.border} ${colors.textMuted}`}`}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${isActive ? theme === 'dark' ? 'border-borderHover bg-surfaceElevated text-success' : 'border-borderHover bg-surfaceElevated text-success' : `${colors.border} ${colors.textMuted}`}`}
                 >
                   <div className='flex items-center gap-2'>
                     <tab.Icon size={14} />
@@ -1404,7 +1404,7 @@ export default function MarketXOsPage() {
               <p className={`text-[10px] font-black uppercase tracking-[0.3em] text-success`}>Active Module</p>
               <h2 className={`mt-2 text-2xl font-black ${colors.heading}`}>{activeTabMeta.label}</h2>
             </div>
-            <div className={`rounded-2xl border ${colors.border} ${colors.panelSoft} px-4 py-3 text-sm ${colors.textMuted}`}>
+            <div className={`rounded-[var(--radius-lg)] border ${colors.border} ${colors.panelSoft} px-4 py-3 text-sm ${colors.textMuted}`}>
               Responsive shell active · desktop graph + mobile stack preserved.
             </div>
           </div>
@@ -1418,7 +1418,7 @@ export default function MarketXOsPage() {
           <div className='flex items-center gap-4'>
             <div className='relative flex items-center justify-center'>
               <div className='h-2 w-2 rounded-full bg-success shadow-[0_0_10px_rgba(var(--color-success-rgb),0.9)]' />
-              <div className='absolute h-4 w-4 rounded-full bg-success/20 animate-ping' />
+              <div className='absolute h-4 w-4 rounded-full bg-surfaceElevated animate-ping' />
             </div>
             <div>
               <p className='text-[10px] font-black uppercase tracking-[0.36em] text-success'>OS_CORE_READY</p>
@@ -1432,7 +1432,7 @@ export default function MarketXOsPage() {
                 <p className='text-[9px] font-black uppercase tracking-[0.34em] opacity-25'>Architect_ID</p>
                 <p className={`text-sm font-black tracking-tight text-textPrimary/90`}>Anwesh Rath</p>
               </div>
-              <div className='rounded-lg border border-border/10 p-2 transition-all hover:border-success/20'>
+              <div className='rounded-lg border border-border/10 p-2 transition-all hover:border-border'>
                 <Fingerprint size={14} className='text-success/50' />
               </div>
             </motion.div>
@@ -1504,7 +1504,7 @@ export default function MarketXOsPage() {
                           <button
                             key={`${link.from}-${link.to}`}
                             onClick={() => setSelectedTreeNode(otherNode)}
-                            className={`flex w-full items-center justify-between rounded-xl border ${colors.border} px-3 py-2 text-left text-xs font-semibold transition-all hover:border-success/40 hover:bg-success/5`}
+                            className={`flex w-full items-center justify-between rounded-xl border ${colors.border} px-3 py-2 text-left text-xs font-semibold transition-all hover:border-borderHover hover:bg-surface`}
                           >
                             <span>{otherNode.label}</span>
                             <ChevronRight size={14} className='opacity-50' />

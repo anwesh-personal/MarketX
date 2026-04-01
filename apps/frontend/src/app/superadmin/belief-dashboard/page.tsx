@@ -249,14 +249,14 @@ export default function BeliefDashboardPage() {
                             <div className="flex items-center gap-sm pt-sm border-t border-border">
                                 {selectedBelief.belief.status !== 'GW' && selectedBelief.belief.status !== 'PAUSED' && (
                                     <button onClick={() => handlePromote(selectedBelief.belief.id)} disabled={promoting}
-                                        className="flex items-center gap-xs bg-success/20 text-success px-md py-xs rounded-[var(--radius-md)] text-sm font-medium hover:bg-success/30 disabled:opacity-50 transition-all">
+                                        className="flex items-center gap-xs bg-surfaceElevated text-success px-md py-xs rounded-[var(--radius-md)] text-sm font-medium hover:bg-surfaceHover disabled:opacity-50 transition-all">
                                         {promoting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUp className="w-3.5 h-3.5" />}
                                         Promote (Gated)
                                     </button>
                                 )}
                                 {selectedBelief.belief.status !== 'GW' && selectedBelief.belief.status !== 'PAUSED' && (
                                     <button onClick={() => handlePromote(selectedBelief.belief.id, undefined, true)} disabled={promoting}
-                                        className="flex items-center gap-xs bg-warning/20 text-warning px-md py-xs rounded-[var(--radius-md)] text-sm hover:bg-warning/30 disabled:opacity-50 transition-all">
+                                        className="flex items-center gap-xs bg-surfaceElevated text-warning px-md py-xs rounded-[var(--radius-md)] text-sm hover:bg-surfaceHover disabled:opacity-50 transition-all">
                                         <Zap className="w-3.5 h-3.5" /> Force Promote
                                     </button>
                                 )}
@@ -268,7 +268,7 @@ export default function BeliefDashboardPage() {
                                 )}
                                 {selectedBelief.belief.status === 'PAUSED' && (
                                     <button onClick={() => handlePromote(selectedBelief.belief.id, 'TEST')} disabled={promoting}
-                                        className="flex items-center gap-xs bg-success/20 text-success px-md py-xs rounded-[var(--radius-md)] text-sm hover:bg-success/30 disabled:opacity-50 transition-all">
+                                        className="flex items-center gap-xs bg-surfaceElevated text-success px-md py-xs rounded-[var(--radius-md)] text-sm hover:bg-surfaceHover disabled:opacity-50 transition-all">
                                         <Play className="w-3.5 h-3.5" /> Resume to TEST
                                     </button>
                                 )}
@@ -292,7 +292,7 @@ export default function BeliefDashboardPage() {
                                                 {snap.snapshot?.checks && (
                                                     <div className="flex flex-wrap gap-xs">
                                                         {Object.entries(snap.snapshot.checks).map(([k, v]: [string, any]) => (
-                                                            <span key={k} className={`text-xs px-xs py-xxs rounded ${v.passed ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+                                                            <span key={k} className={`text-xs px-xs py-xxs rounded ${v.passed ? 'bg-surfaceElevated text-success' : 'bg-danger/10 text-danger'}`}>
                                                                 {k}: {typeof v.actual === 'number' ? v.actual.toFixed(3) : v.actual}/{v.threshold}
                                                             </span>
                                                         ))}

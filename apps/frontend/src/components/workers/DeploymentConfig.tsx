@@ -256,14 +256,14 @@ export function DeploymentConfig() {
                         cursor-pointer border-2 rounded-[var(--radius-lg)] p-lg
                         transition-all
                         ${selectedProvider === 'vps'
-                            ? 'border-primary bg-primary/5'
+                            ? 'border-primary bg-surface'
                             : 'border-border hover:border-border-hover'}
                     `}
                 >
                     <div className="flex items-start gap-md">
                         <div className={`
                             w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center
-                            ${selectedProvider === 'vps' ? 'bg-primary/20' : 'bg-surface'}
+                            ${selectedProvider === 'vps' ? 'bg-surfaceElevated' : 'bg-surface'}
                         `}>
                             <Server className={`w-6 h-6 ${selectedProvider === 'vps' ? 'text-primary' : 'text-textSecondary'}`} />
                         </div>
@@ -294,14 +294,14 @@ export function DeploymentConfig() {
                         cursor-pointer border-2 rounded-[var(--radius-lg)] p-lg
                         transition-all
                         ${selectedProvider === 'railway'
-                            ? 'border-primary bg-primary/5'
+                            ? 'border-primary bg-surface'
                             : 'border-border hover:border-border-hover'}
                     `}
                 >
                     <div className="flex items-start gap-md">
                         <div className={`
                             w-12 h-12 rounded-[var(--radius-md)] flex items-center justify-center
-                            ${selectedProvider === 'railway' ? 'bg-primary/20' : 'bg-surface'}
+                            ${selectedProvider === 'railway' ? 'bg-surfaceElevated' : 'bg-surface'}
                         `}>
                             <Cloud className={`w-6 h-6 ${selectedProvider === 'railway' ? 'text-primary' : 'text-textSecondary'}`} />
                         </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { requireEnv } from '@/lib/require-env';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
             type: 'invite',
             email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+                redirectTo: `${requireEnv('NEXT_PUBLIC_APP_URL')}/auth/callback`,
             },
         });
 

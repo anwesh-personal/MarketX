@@ -6,8 +6,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getSuperadmin } from '@/lib/superadmin-middleware';
+import { requireEnv } from '@/lib/require-env';
 
-const WORKER_API_URL = process.env.WORKER_API_URL || 'http://localhost:3100'
+const WORKER_API_URL = requireEnv('WORKER_API_URL')
 
 export async function POST(request: NextRequest) {
     try {

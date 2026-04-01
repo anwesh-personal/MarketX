@@ -51,14 +51,14 @@ interface AIProvider {
     is_active: boolean;
 }
 
-// Provider config with colors
+// Provider config — uses theme-aware accent for ALL providers (no garish per-provider colors)
 const PROVIDER_CONFIG: Record<string, { name: string; color: string; bgColor: string }> = {
-    openai: { name: 'OpenAI', color: 'text-success', bgColor: 'bg-success-muted' },
-    anthropic: { name: 'Anthropic', color: 'text-warning', bgColor: 'bg-warning-muted' },
-    google: { name: 'Google', color: 'text-info', bgColor: 'bg-info-muted' },
-    mistral: { name: 'Mistral', color: 'text-accent', bgColor: 'bg-accent/10' },
-    perplexity: { name: 'Perplexity', color: 'text-info', bgColor: 'bg-info-muted' },
-    xai: { name: 'xAI', color: 'text-textSecondary', bgColor: 'bg-surfaceHover' },
+    openai: { name: 'OpenAI', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
+    anthropic: { name: 'Anthropic', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
+    google: { name: 'Google', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
+    mistral: { name: 'Mistral', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
+    perplexity: { name: 'Perplexity', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
+    xai: { name: 'xAI', color: 'text-accent', bgColor: 'bg-[rgba(var(--color-accent-rgb),0.08)]' },
 };
 
 export default function AIModelsPage() {
@@ -407,21 +407,21 @@ export default function AIModelsPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-md">
-                <div className="bg-surface border border-border rounded-lg p-md">
+                <div className="premium-card">
                     <p className="text-xs text-textTertiary mb-xs">Total Models</p>
                     <p className="text-2xl font-bold text-textPrimary">{stats.total}</p>
                 </div>
-                <div className="bg-surface border border-success/30 rounded-lg p-md">
-                    <p className="text-xs text-success mb-xs">Active</p>
+                <div className="premium-card">
+                    <p className="text-xs text-textSecondary mb-xs">Active</p>
                     <p className="text-2xl font-bold text-success">{stats.active}</p>
                 </div>
-                <div className="bg-surface border border-info/30 rounded-lg p-md">
-                    <p className="text-xs text-info mb-xs">Tested & Working</p>
-                    <p className="text-2xl font-bold text-info">{stats.tested}</p>
+                <div className="premium-card">
+                    <p className="text-xs text-textSecondary mb-xs">Tested & Working</p>
+                    <p className="text-2xl font-bold text-accent">{stats.tested}</p>
                 </div>
-                <div className="bg-surface border border-accent/30 rounded-lg p-md">
-                    <p className="text-xs text-accent mb-xs">Providers</p>
-                    <p className="text-2xl font-bold text-accent">{stats.providers}</p>
+                <div className="premium-card">
+                    <p className="text-xs text-textSecondary mb-xs">Providers</p>
+                    <p className="text-2xl font-bold text-textPrimary">{stats.providers}</p>
                 </div>
             </div>
 
@@ -442,7 +442,7 @@ export default function AIModelsPage() {
                                         <button
                                             onClick={() => handleDiscoverModels(provider.id, provider.name)}
                                             disabled={isDiscovering === provider.id}
-                                            className={`flex items-center gap-xs px-sm py-xs ${config.bgColor} ${config.color} border border-current/20 rounded-lg hover:opacity-80 disabled:opacity-50 transition-all text-sm`}
+                                            className={`flex items-center gap-xs px-sm py-xs bg-[rgba(var(--color-accent-rgb),0.08)] text-accent border border-[rgba(var(--color-accent-rgb),0.15)] rounded-[var(--radius-md)] hover:bg-[rgba(var(--color-accent-rgb),0.15)] disabled:opacity-50 transition-all text-sm`}
                                         >
                                             {isDiscovering === provider.id ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -479,8 +479,8 @@ export default function AIModelsPage() {
                                                         key={m.model_id}
                                                         className={`p-sm border rounded-lg transition-all ${m.already_added
                                                             ? m.is_active
-                                                                ? 'bg-success-muted border-success/30'
-                                                                : 'bg-error-muted border-error/30'
+                                                                ? 'bg-success-muted border-border'
+                                                                : 'bg-error-muted border-border'
                                                             : 'bg-surface border-border hover:border-primary'
                                                             }`}
                                                     >
@@ -493,7 +493,7 @@ export default function AIModelsPage() {
                                                                 )}
                                                             </div>
                                                             {m.already_added ? (
-                                                                <span className={`text-xs px-xs py-0.5 rounded ${m.is_active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'
+                                                                <span className={`text-xs px-xs py-0.5 rounded ${m.is_active ? 'bg-surfaceElevated text-success' : 'bg-surfaceElevated text-error'
                                                                     }`}>
                                                                     {m.is_active ? 'Active' : 'Failed'}
                                                                 </span>
@@ -673,7 +673,7 @@ export default function AIModelsPage() {
                                                 <button
                                                     onClick={() => handleTestModel(model)}
                                                     disabled={isTesting === model.id}
-                                                    className="p-xs rounded bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-all"
+                                                    className="p-xs rounded bg-surfaceElevated text-primary hover:bg-surfaceElevated disabled:opacity-50 transition-all"
                                                     title="Test model"
                                                 >
                                                     {isTesting === model.id ? (
@@ -685,7 +685,7 @@ export default function AIModelsPage() {
                                                 <button
                                                     onClick={() => openPlayground(model)}
                                                     disabled={!model.is_active}
-                                                    className="p-xs rounded bg-info-muted text-info hover:bg-info/20 disabled:opacity-50 transition-all"
+                                                    className="p-xs rounded bg-info-muted text-info hover:bg-surfaceElevated disabled:opacity-50 transition-all"
                                                     title="Chat with model"
                                                 >
                                                     <MessageSquare className="w-3.5 h-3.5" />
@@ -693,7 +693,7 @@ export default function AIModelsPage() {
                                                 <button
                                                     onClick={() => handleToggleActive(model)}
                                                     className={`p-xs rounded transition-all ${model.is_active
-                                                        ? 'bg-success/10 text-success hover:bg-success/20'
+                                                        ? 'bg-surfaceElevated text-success hover:bg-surfaceElevated'
                                                         : 'bg-surface text-textTertiary hover:bg-surfaceHover'}`}
                                                     title={model.is_active ? 'Deactivate' : 'Activate'}
                                                 >

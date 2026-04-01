@@ -153,7 +153,7 @@ export function TemplateManager() {
 
                             <button
                                 onClick={() => handleDelete(template.id, template.name)}
-                                className="btn btn-secondary btn-sm text-error hover:bg-error/10"
+                                className="btn btn-secondary btn-sm text-error hover:bg-surfaceElevated"
                                 title="Delete"
                             >
                                 <Trash2 className="w-3 h-3" />

@@ -307,7 +307,7 @@ export default function SettingsPage() {
                                 onChange={(value) => updateConfig('enable_rate_limiting', value)}
                             />
                         </div>
-                        <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-warning/20 bg-warning/5 p-md">
+                        <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-border bg-surface p-md">
                             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-warning">Operational guidance</p>
                             <ul className="mt-md space-y-sm text-sm text-textSecondary">
                                 <li>Keep HTTPS enforced across all environments that handle platform traffic.</li>
@@ -432,7 +432,7 @@ function ToggleRow({
                 <p className="text-sm font-semibold text-textPrimary">{title}</p>
                 <p className="mt-xs text-sm leading-relaxed text-textSecondary">{description}</p>
             </div>
-            <div className={`mt-xs inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-primary/15' : 'border-border bg-surface'}`}>
+            <div className={`mt-xs inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-surfaceElevated' : 'border-border bg-surface'}`}>
                 <div className={`h-4 w-4 rounded-full transition-all ${checked ? 'translate-x-5 bg-primary' : 'translate-x-0 bg-textTertiary'}`} />
             </div>
         </button>

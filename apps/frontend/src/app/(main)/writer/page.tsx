@@ -20,14 +20,15 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import { useFeatureGate } from '@/lib/useFeatureGate';
 import { UpgradeWall } from '@/components/UpgradeWall';
+import EmailOutputViewer from '@/components/writer/EmailOutputViewer';
 
 interface Run {
     id: string;
     status: 'pending' | 'running' | 'completed' | 'failed';
     created_at: string;
     completed_at: string | null;
-    kb_name: string | null;
-    output_preview: string | null;
+    label: string | null;
+    execution_id: string | null;
 }
 
 export default function WriterPage() {
@@ -44,6 +45,19 @@ export default function WriterPage() {
         checkAuth();
     }, []);
 
+    // Poll for status changes every 5s when any run is still active
+    useEffect(() => {
+        const hasActive = runs.some(r => r.status === 'pending' || r.status === 'running');
+        if (!hasActive) return;
+
+        const interval = setInterval(async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await loadRuns(user.id, true);
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [runs]);
+
     const checkAuth = async () => {
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -55,41 +69,35 @@ export default function WriterPage() {
         await loadRuns(user.id);
     };
 
-    const loadRuns = async (userId: string) => {
+    const loadRuns = async (userId: string, silent = false) => {
         try {
-            setIsLoading(true);
+            if (!silent) setIsLoading(true);
 
             const { data: runsData } = await supabase
                 .from('runs')
-                .select(`
-                    id,
-                    status,
-                    created_at,
-                    completed_at,
-                    kb_id,
-                    knowledge_base:knowledge_bases(name)
-                `)
+                .select('id, status, created_at, completed_at, label, execution_id')
                 .eq('triggered_by', userId)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(50);
 
             setRuns(runsData?.map(r => ({
                 id: r.id,
-                status: r.status,
+                status: r.status as Run['status'],
                 created_at: r.created_at,
                 completed_at: r.completed_at,
-                kb_name: (r.knowledge_base as any)?.name || null,
-                output_preview: null, // TODO: Add output preview
+                label: (r as any).label || null,
+                execution_id: (r as any).execution_id || null,
             })) || []);
 
         } catch (error) {
             console.error('Failed to load runs:', error);
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     };
 
     const filteredRuns = runs.filter(run => {
-        const matchesSearch = run.kb_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = !searchQuery || run.label?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = filterStatus === 'all' || run.status === filterStatus;
         return matchesSearch && matchesStatus;
     });
@@ -170,7 +178,7 @@ export default function WriterPage() {
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                                 <div className="flex items-start gap-4">
                                     <div className={`
-                                        w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
+                                        w-12 h-12 rounded-[var(--radius-lg)] flex items-center justify-center flex-shrink-0
                                         ${run.status === 'completed' ? 'bg-success-muted text-success' :
                                             run.status === 'failed' ? 'bg-error-muted text-error' :
                                                 run.status === 'running' ? 'bg-warning-muted text-warning' :
@@ -183,7 +191,7 @@ export default function WriterPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-textPrimary mb-1 group-hover:text-accent transition-colors">
-                                            {run.kb_name || 'Untitled Run'}
+                                            {run.label || 'Email Generation Run'}
                                         </h3>
                                         <div className="flex items-center gap-4 text-sm text-textSecondary">
                                             <span className="flex items-center gap-1.5">
@@ -294,37 +302,15 @@ export default function WriterPage() {
             )}
             {/* Run Detail Modal */}
             {viewingRun && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-overlay backdrop-blur-sm" onClick={() => setViewingRun(null)} />
-                    <div className="relative z-10 w-full max-w-2xl max-h-[80vh] bg-surface border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-                            <div>
-                                <h2 className="font-bold text-textPrimary text-lg">Execution Output</h2>
-                                <p className="text-xs text-textTertiary">
-                                    Status: {viewingRun.execution?.status || viewingRun.run?.status || 'unknown'}
-                                    {viewingRun.execution?.completed_at && ` · Completed ${new Date(viewingRun.execution.completed_at).toLocaleString()}`}
-                                </p>
-                            </div>
-                            <button onClick={() => setViewingRun(null)} className="p-2 hover:bg-surfaceHover rounded-lg transition-colors">
-                                <XCircle className="w-5 h-5 text-textTertiary" />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-6">
-                            {viewingRun.execution?.error_message && (
-                                <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm">
-                                    {viewingRun.execution.error_message}
-                                </div>
-                            )}
-                            {viewingRun.execution?.output_data ? (
-                                <pre className="text-sm text-textSecondary whitespace-pre-wrap font-mono bg-background rounded-xl p-4 border border-border overflow-x-auto">
-                                    {JSON.stringify(viewingRun.execution.output_data, null, 2)}
-                                </pre>
-                            ) : (
-                                <p className="text-sm text-textTertiary text-center py-8">No output data available yet.</p>
-                            )}
-                        </div>
-                    </div>
-                </div>
+                <EmailOutputViewer
+                    outputData={viewingRun.execution?.output_data}
+                    onClose={() => setViewingRun(null)}
+                    runId={viewingRun.run?.id}
+                    runLabel={viewingRun.run?.label}
+                    status={viewingRun.execution?.status || viewingRun.run?.status}
+                    completedAt={viewingRun.execution?.completed_at}
+                    errorMessage={viewingRun.execution?.error_message}
+                />
             )}
         </div>
     );

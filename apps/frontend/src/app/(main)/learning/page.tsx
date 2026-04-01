@@ -78,7 +78,7 @@ export default function LearningLoopPage() {
                     <div className="flex items-center gap-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-accent-secondary/10 blur-xl" />
-                            <div className="relative p-3 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20">
+                            <div className="relative p-3 rounded-[var(--radius-lg)] bg-gradient-to-br from-accent/20 to-accent/5 border border-accent/20">
                                 <Brain className="w-8 h-8 text-accent" />
                             </div>
                         </div>
@@ -281,7 +281,7 @@ function DreamsView({ dreams }: { dreams: any[] }) {
                 <div key={dream.id} className="premium-card !p-5">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-info/10 flex items-center justify-center text-info">
+                            <div className="w-10 h-10 rounded-xl bg-surfaceElevated flex items-center justify-center text-info">
                                 <Sparkles className="w-5 h-5" />
                             </div>
                             <div>

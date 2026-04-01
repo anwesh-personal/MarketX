@@ -140,7 +140,7 @@ export function ChatInterface({
                         {message.role === 'assistant' && (
                             <div className="
                                 w-8 h-8 rounded-full shrink-0
-                                bg-primary/10 flex items-center justify-center
+                                bg-surfaceElevated flex items-center justify-center
                             ">
                                 <Bot className="w-4 h-4 text-primary" />
                             </div>
@@ -177,7 +177,7 @@ export function ChatInterface({
                     <div className="flex gap-md justify-start">
                         <div className="
                             w-8 h-8 rounded-full shrink-0
-                            bg-primary/10 flex items-center justify-center
+                            bg-surfaceElevated flex items-center justify-center
                         ">
                             <Bot className="w-4 h-4 text-primary" />
                         </div>
@@ -193,7 +193,7 @@ export function ChatInterface({
 
                 {error && (
                     <div className="
-                        bg-error/10 border border-error/30 rounded-[var(--radius-lg)]
+                        bg-surfaceElevated border border-border rounded-[var(--radius-lg)]
                         px-lg py-md text-error text-sm
                     ">
                         {error}

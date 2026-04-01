@@ -17,10 +17,10 @@ interface BrainTool {
 }
 
 const CAT_COLORS: Record<string, string> = {
-    generation: 'bg-warning-muted text-warning border-warning/20',
-    retrieval:  'bg-info-muted text-info border-info/20',
+    generation: 'bg-warning-muted text-warning border-border',
+    retrieval:  'bg-info-muted text-info border-border',
     analysis:   'bg-accent/10 text-accent border-accent/20',
-    action:     'bg-success-muted text-success border-success/20',
+    action:     'bg-success-muted text-success border-border',
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -140,7 +140,7 @@ export default function ToolRegistryPage() {
                                 </p>
                                 <div className="space-y-2">
                                     {catTools.map(tool => (
-                                        <div key={tool.name} className={`rounded-2xl border overflow-hidden transition-all ${tool.is_enabled ? 'border-border/40 bg-background' : 'border-border/20 bg-muted/20 opacity-60'}`}>
+                                        <div key={tool.name} className={`rounded-[var(--radius-lg)] border overflow-hidden transition-all ${tool.is_enabled ? 'border-border/40 bg-background' : 'border-border/20 bg-muted/20 opacity-60'}`}>
                                             <div className="flex items-center gap-4 p-4">
                                                 <button
                                                     onClick={() => setExpanded(expanded === tool.name ? null : tool.name)}

@@ -255,7 +255,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
             <div className="absolute inset-0 bg-overlay backdrop-blur-md" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative z-10 w-full max-w-3xl max-h-[90vh] bg-surface border border-border rounded-2xl shadow-xl flex flex-col overflow-hidden animate-scale-in">
+            <div className="relative z-10 w-full max-w-3xl max-h-[90vh] bg-surface border border-border rounded-[var(--radius-lg)] shadow-xl flex flex-col overflow-hidden animate-scale-in">
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
@@ -287,7 +287,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                 {/* Body (scrollable) */}
                 <div className="flex-1 overflow-y-auto px-6 py-6">
                     {error && (
-                        <div className="mb-4 p-3 bg-error/10 border border-error/20 rounded-xl text-error text-sm flex items-center gap-2">
+                        <div className="mb-4 p-3 bg-surfaceElevated border border-border rounded-xl text-error text-sm flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
                         </div>
                     )}
@@ -454,7 +454,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                                             <h3 className="font-bold text-textPrimary">{assignedBundle.name || 'MarketX Engine'}</h3>
                                             <p className="text-xs text-textTertiary">Your assigned engine bundle</p>
                                         </div>
-                                        <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-success/10 text-success border border-success/20">Active</span>
+                                        <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-surfaceElevated text-success border border-border">Active</span>
                                     </div>
                                 </div>
                             )}
@@ -472,7 +472,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                                                     <div className="font-semibold text-textPrimary text-sm">{agent.name}</div>
                                                     <div className="text-xs text-textTertiary">{agent.tier} · {agent.preferred_provider || 'default'} · {(agent.tools_granted || []).length} tools</div>
                                                 </div>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full ${agent.status === 'active' ? 'bg-success/10 text-success' : 'bg-surface text-textTertiary'}`}>{agent.status}</span>
+                                                <span className={`text-xs px-2 py-0.5 rounded-full ${agent.status === 'active' ? 'bg-surfaceElevated text-success' : 'bg-surface text-textTertiary'}`}>{agent.status}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -485,7 +485,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                             )}
 
                             {!assignedBundle && assignedAgents.length === 0 && (
-                                <div className="card p-5 border-warning/20 bg-warning/5 text-center">
+                                <div className="card p-5 border-border bg-surface text-center">
                                     <p className="text-sm text-textSecondary">No engine bundle deployed to your organization yet. Your admin needs to deploy one from the Superadmin panel.</p>
                                 </div>
                             )}
@@ -501,7 +501,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                         <div className="animate-fade-in">
                             {!isCompleting && !sampleEmail && (
                                 <div className="text-center py-6">
-                                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-[var(--radius-lg)] bg-gradient-to-br from-accent to-primary flex items-center justify-center">
                                         <Sparkles className="w-8 h-8 text-white" />
                                     </div>
                                     <h2 className="text-xl font-bold text-textPrimary mb-2">Ready to Activate Your Brain?</h2>
@@ -524,7 +524,7 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                             )}
                             {isCompleting && !sampleEmail && (
                                 <div className="text-center py-8">
-                                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-accent to-primary flex items-center justify-center animate-pulse">
+                                    <div className="w-16 h-16 mx-auto mb-4 rounded-[var(--radius-lg)] bg-gradient-to-br from-accent to-primary flex items-center justify-center animate-pulse">
                                         <Brain className="w-8 h-8 text-white" />
                                     </div>
                                     <h2 className="text-xl font-bold text-textPrimary mb-4">Initializing Your Brain...</h2>
@@ -540,17 +540,17 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                             {sampleEmail && (
                                 <div className="py-4">
                                     <div className="text-center mb-6">
-                                        <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-success to-accent flex items-center justify-center">
+                                        <div className="w-14 h-14 mx-auto mb-3 rounded-[var(--radius-lg)] bg-gradient-to-br from-success to-accent flex items-center justify-center">
                                             <Check className="w-7 h-7 text-white" />
                                         </div>
                                         <h2 className="text-xl font-bold text-textPrimary mb-1">Your Brain is Ready!</h2>
                                         <p className="text-sm text-textSecondary">Here's a sample using everything you taught it:</p>
                                     </div>
-                                    <div className="card p-5 border-success/30 bg-gradient-to-br from-success/5 to-transparent">
+                                    <div className="card p-5 border-border bg-gradient-to-br from-success/5 to-transparent">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Mail className="w-4 h-4 text-success" />
                                             <span className="text-sm font-semibold text-success">{aiGenerated ? 'AI-Generated Email' : 'Sample Email (Template)'}</span>
-                                            {!aiGenerated && <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/20">No AI provider configured yet</span>}
+                                            {!aiGenerated && <span className="text-[10px] px-2 py-0.5 rounded-full bg-surfaceElevated text-warning border border-border">No AI provider configured yet</span>}
                                         </div>
                                         <div className="text-sm text-textSecondary whitespace-pre-wrap leading-relaxed">{sampleEmail}</div>
                                     </div>
@@ -618,7 +618,7 @@ function ArrField({ label, items, placeholder, onChange, onAdd, onRemove }: {
                 {items.map((item, idx) => (
                     <div key={idx} className="flex gap-2">
                         <input className="input flex-grow" placeholder={placeholder} value={item} onChange={e => onChange(idx, e.target.value)} />
-                        {items.length > 1 && <button onClick={() => onRemove(idx)} className="p-2 text-textTertiary hover:text-error rounded-lg hover:bg-error/10"><X className="w-3.5 h-3.5" /></button>}
+                        {items.length > 1 && <button onClick={() => onRemove(idx)} className="p-2 text-textTertiary hover:text-error rounded-lg hover:bg-surfaceElevated"><X className="w-3.5 h-3.5" /></button>}
                     </div>
                 ))}
                 <button onClick={onAdd} className="flex items-center gap-1 text-xs text-accent hover:text-accent/80 py-0.5"><Plus className="w-3 h-3" /> Add</button>
@@ -630,7 +630,7 @@ function ArrField({ label, items, placeholder, onChange, onAdd, onRemove }: {
 function PLine({ label, done, active }: { label: string; done?: boolean; active?: boolean }) {
     return (
         <div className="flex items-center gap-2.5 text-sm">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-success/20' : active ? 'bg-accent/20 animate-pulse' : 'bg-surface border border-border'}`}>
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${done ? 'bg-surfaceElevated' : active ? 'bg-accent/20 animate-pulse' : 'bg-surface border border-border'}`}>
                 {done ? <Check className="w-3 h-3 text-success" /> : active ? <Loader2 className="w-3 h-3 text-accent animate-spin" /> : <div className="w-1 h-1 rounded-full bg-border" />}
             </div>
             <span className={done ? 'text-textPrimary' : active ? 'text-accent' : 'text-textTertiary'}>{label}</span>

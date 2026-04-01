@@ -408,7 +408,7 @@ function Modal({ info, onClose, dark }: { info: ModalInfo; onClose: () => void; 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 16 }}
           transition={{ type: 'spring', bounce: 0.18, duration: 0.4 }}
-          className={`relative w-full max-w-xl rounded-2xl border ${card} shadow-2xl overflow-hidden`}
+          className={`relative w-full max-w-xl rounded-[var(--radius-lg)] border ${card} shadow-2xl overflow-hidden`}
           onClick={e => e.stopPropagation()}
         >
           {/* Gradient accent top */}
@@ -591,7 +591,7 @@ function FlowGraph({ flowKey, onNodeClick, dark }: { flowKey: FlowKey; onNodeCli
               whileHover={{ scale: 1.08, boxShadow: `0 0 24px ${nodeGlow[node.type]}, 0 0 8px ${nodeGlow[node.type]}` }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-              className={`relative w-[120px] cursor-pointer rounded-2xl border-2 bg-gradient-to-br p-3 text-center flex-shrink-0 ${nodeColors[node.type]}`}
+              className={`relative w-[120px] cursor-pointer rounded-[var(--radius-lg)] border-2 bg-gradient-to-br p-3 text-center flex-shrink-0 ${nodeColors[node.type]}`}
             >
               {/* Pulse ring when active */}
               {activeNode === node.id && (
@@ -599,7 +599,7 @@ function FlowGraph({ flowKey, onNodeClick, dark }: { flowKey: FlowKey; onNodeCli
                   initial={{ scale: 1, opacity: 0.5 }}
                   animate={{ scale: 1.3, opacity: 0 }}
                   transition={{ duration: 0.8, repeat: Infinity }}
-                  className="absolute inset-0 rounded-2xl border-2 border-violet-400"
+                  className="absolute inset-0 rounded-[var(--radius-lg)] border-2 border-violet-400"
                 />
               )}
               <div className="text-2xl mb-1.5">{node.icon}</div>
@@ -851,7 +851,7 @@ export default function SystemMap() {
 
         {/* TODAY'S UPDATES BANNER */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className={`rounded-2xl border p-4 bg-gradient-to-r ${dark ? 'from-emerald-500/10 via-teal-500/10 to-blue-500/10 border-emerald-500/20' : 'from-emerald-50 via-teal-50 to-blue-50 border-emerald-200'}`}>
+          className={`rounded-[var(--radius-lg)] border p-4 bg-gradient-to-r ${dark ? 'from-emerald-500/10 via-teal-500/10 to-blue-500/10 border-emerald-500/20' : 'from-emerald-50 via-teal-50 to-blue-50 border-emerald-200'}`}>
           <div className="flex items-center gap-2 mb-3">
             <span className="text-base">⚡</span>
             <span className="text-sm font-bold text-emerald-400">Session Complete — 2026-03-13 · Commit 05b4aed</span>
@@ -876,7 +876,7 @@ export default function SystemMap() {
         <motion.div initial="hidden" animate="show" variants={stagger} className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {STATS.map(s => (
             <motion.div key={s.label} variants={fadeUp}
-              className={`rounded-2xl border ${card} p-4 hover:scale-[1.02] transition-transform`}>
+              className={`rounded-[var(--radius-lg)] border ${card} p-4 hover:scale-[1.02] transition-transform`}>
               <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center text-lg mb-3`}>{s.icon}</div>
               <div className="text-2xl font-black">{s.value}</div>
               <div className="text-xs font-semibold mt-0.5 leading-tight">{s.label}</div>
@@ -907,7 +907,7 @@ export default function SystemMap() {
             <motion.div key="ov" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
               {/* Completion bars */}
-              <div className={`rounded-2xl border ${card} p-5 space-y-4`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5 space-y-4`}>
                 <h2 className="text-xl font-bold">Completion by Layer</h2>
                 {COMPLETION_BARS.map(b => (
                   <div key={b.label} className="space-y-2">
@@ -921,7 +921,7 @@ export default function SystemMap() {
               </div>
 
               {/* 5-layer arch */}
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-6">Platform Architecture — 5 Layers</h2>
                 <p className={`text-base ${muted} -mt-3 mb-6`}>How MarketX is structured internally — from what users see down to where data lives.</p>
                 <div className="space-y-2.5">
@@ -965,7 +965,7 @@ export default function SystemMap() {
           {tab === 'Pages' && (
             <motion.div key="pg" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-1">User App — 11 Pages</h2>
                 <p className={`text-sm ${muted} mb-5`}>What logged-in users see and use every day.</p>
                 <p className={`text-xs ${muted} mb-4`}>Click any card for full details</p>
@@ -991,7 +991,7 @@ export default function SystemMap() {
                 </div>
               </div>
 
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-1">Superadmin — 18 Pages</h2>
                 <p className={`text-sm ${muted} mb-5`}>The control panel. Only platform operators have access — users never see this.</p>
                 <p className={`text-xs ${muted} mb-4`}>Click any card for full details</p>
@@ -1021,7 +1021,7 @@ export default function SystemMap() {
 
           {tab === 'Workers' && (
             <motion.div key="wk" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-xl font-bold">Worker System — 9 Workers</h2>
                   <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold ${dark ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-600'}`}>
@@ -1074,7 +1074,7 @@ export default function SystemMap() {
 
               <AnimatePresence mode="wait">
                 <motion.div key={flowTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-                  className={`rounded-2xl border ${card} p-5`}>
+                  className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                   <h2 className="text-xl font-bold mb-1">
                     {flowTab === 'writer' ? '✍️ Writer Run — Full Execution Chain' : flowTab === 'brain' ? '🧠 Brain Chat — Agentic Loop' : '⚡ Engine Run — Workflow Pipeline'}
                   </h2>
@@ -1088,7 +1088,7 @@ export default function SystemMap() {
           {tab === 'Roadmap' && (
             <motion.div key="rm" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
-              <div className={`rounded-2xl border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-purple-500/10 border-violet-500/20' : 'from-violet-50 to-purple-50 border-violet-200'}`}>
+              <div className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-purple-500/10 border-violet-500/20' : 'from-violet-50 to-purple-50 border-violet-200'}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🚦</span>
                   <div>
@@ -1098,7 +1098,7 @@ export default function SystemMap() {
                 </div>
               </div>
 
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-5">Launch Blockers — Honest Priority List</h2>
                 <div className="space-y-2.5">
                   {BLOCKERS.map((b, i) => (
@@ -1116,7 +1116,7 @@ export default function SystemMap() {
                 </div>
               </div>
 
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-5">Timeline to Live</h2>
                 <div className="space-y-3">
                   {[
@@ -1150,7 +1150,7 @@ export default function SystemMap() {
           {tab === 'vs Plan' && (
             <motion.div key="vp" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
-              <div className={`rounded-2xl border p-5 bg-gradient-to-r ${dark ? 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20' : 'from-emerald-50 to-teal-50 border-emerald-200'}`}>
+              <div className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-r ${dark ? 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20' : 'from-emerald-50 to-teal-50 border-emerald-200'}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🏆</span>
                   <div>
@@ -1160,7 +1160,7 @@ export default function SystemMap() {
                 </div>
               </div>
 
-              <div className={`rounded-2xl border ${card} overflow-hidden`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} overflow-hidden`}>
                 <div className={`grid grid-cols-3 gap-4 px-5 py-3 text-xs font-bold uppercase tracking-wide ${muted} border-b ${dark ? 'border-white/10' : 'border-slate-200'}`}>
                   <div>Aspect</div>
                   <div>Original Plan</div>
@@ -1179,7 +1179,7 @@ export default function SystemMap() {
                 ))}
               </div>
 
-              <div className={`rounded-2xl border ${card} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${card} p-5`}>
                 <h2 className="text-xl font-bold mb-4">Built Beyond Original Scope</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {[
@@ -1214,7 +1214,7 @@ export default function SystemMap() {
           {tab === 'SA Journey' && (
             <motion.div key="saj" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
-              <div className={`rounded-2xl border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-blue-500/10 border-violet-500/20' : 'from-violet-50 to-blue-50 border-violet-200'}`}>
+              <div className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-blue-500/10 border-violet-500/20' : 'from-violet-50 to-blue-50 border-violet-200'}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">👑</span>
                   <div>
@@ -1226,7 +1226,7 @@ export default function SystemMap() {
 
               {SUPERADMIN_JOURNEY.map((phase, pi) => (
                 <motion.div key={phase.phase} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: pi * 0.1 }}
-                  className={`rounded-2xl border p-5 bg-gradient-to-br ${phase.bg} ${phase.border}`}>
+                  className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-br ${phase.bg} ${phase.border}`}>
                   <div className="flex items-center gap-3 mb-5">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${phase.color} flex items-center justify-center text-xl flex-shrink-0`}>{phase.icon}</div>
                     <div>
@@ -1263,7 +1263,7 @@ export default function SystemMap() {
                 </motion.div>
               ))}
 
-              <div className={`rounded-2xl border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
                 <h3 className="text-lg font-bold mb-4">What Superadmin controls that users never see</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                   {[
@@ -1291,7 +1291,7 @@ export default function SystemMap() {
           {tab === 'User Journey' && (
             <motion.div key="uj" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-5">
 
-              <div className={`rounded-2xl border p-5 bg-gradient-to-r ${dark ? 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20' : 'from-emerald-50 to-teal-50 border-emerald-200'}`}>
+              <div className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-r ${dark ? 'from-emerald-500/10 to-teal-500/10 border-emerald-500/20' : 'from-emerald-50 to-teal-50 border-emerald-200'}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">🚀</span>
                   <div>
@@ -1304,7 +1304,7 @@ export default function SystemMap() {
               {/* Journey phases */}
               {USER_JOURNEY.map((phase, pi) => (
                 <motion.div key={phase.phase} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: pi * 0.09 }}
-                  className={`rounded-2xl border p-5 bg-gradient-to-br ${phase.bg} ${phase.border}`}>
+                  className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-br ${phase.bg} ${phase.border}`}>
                   <div className="flex items-center gap-3 mb-5">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${phase.color} flex items-center justify-center text-xl flex-shrink-0`}>{phase.icon}</div>
                     <div>
@@ -1334,7 +1334,7 @@ export default function SystemMap() {
               ))}
 
               {/* Before / After benefits */}
-              <div className={`rounded-2xl border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
+              <div className={`rounded-[var(--radius-lg)] border ${dark ? 'bg-white/[0.04] border-white/10' : 'bg-white border-slate-200'} p-5`}>
                 <h3 className="text-xl font-bold mb-2">Before MarketX vs After MarketX</h3>
                 <div className={`text-sm ${muted} mb-5`}>What changes for a sales or marketing professional the day they start using this platform</div>
 
@@ -1361,7 +1361,7 @@ export default function SystemMap() {
               </div>
 
               {/* Key insight */}
-              <div className={`rounded-2xl border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-fuchsia-500/10 border-violet-500/20' : 'from-violet-50 to-fuchsia-50 border-violet-200'}`}>
+              <div className={`rounded-[var(--radius-lg)] border p-5 bg-gradient-to-r ${dark ? 'from-violet-500/10 to-fuchsia-500/10 border-violet-500/20' : 'from-violet-50 to-fuchsia-50 border-violet-200'}`}>
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">💡</span>
                   <div>

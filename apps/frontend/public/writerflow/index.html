@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Axiom — Engine Architecture Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#252530;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#606078;
+  --accent:#6366f1;--accent2:#818cf8;--accent-glow:rgba(99,102,241,0.15);
+  --green:#10b981;--green-glow:rgba(16,185,129,0.15);
+  --amber:#f59e0b;--amber-glow:rgba(245,158,11,0.15);
+  --rose:#f43f5e;--rose-glow:rgba(244,63,94,0.15);
+  --cyan:#06b6d4;--cyan-glow:rgba(6,182,212,0.15);
+  --purple:#a855f7;--purple-glow:rgba(168,85,247,0.15);
+  --radius:8px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;line-height:1.6}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ─── Hero ─── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulse-glow 4s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{opacity:0.3;transform:translate(-50%,-50%) scale(1)}50%{opacity:0.6;transform:translate(-50%,-50%) scale(1.15)}}
+.hero h1{font-size:clamp(2.5rem,6vw,5rem);font-weight:900;letter-spacing:-0.04em;line-height:1.05;background:linear-gradient(135deg,#fff 0%,var(--accent2) 50%,var(--cyan) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;position:relative;z-index:1}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.4rem);color:var(--text2);max-width:700px;margin:1.5rem auto 0;position:relative;z-index:1;font-weight:300}
+.hero .badge-row{display:flex;gap:12px;margin-top:2rem;position:relative;z-index:1;flex-wrap:wrap;justify-content:center}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--border);background:var(--surface);backdrop-filter:blur(8px)}
+.badge.green{border-color:rgba(16,185,129,0.3);color:var(--green);background:var(--green-glow)}
+.badge.amber{border-color:rgba(245,158,11,0.3);color:var(--amber);background:var(--amber-glow)}
+.badge.purple{border-color:rgba(168,85,247,0.3);color:var(--purple);background:var(--purple-glow)}
+.badge.cyan{border-color:rgba(6,182,212,0.3);color:var(--cyan);background:var(--cyan-glow)}
+
+/* ─── Scroll indicator ─── */
+.scroll-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--text3);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;animation:bob 2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+.scroll-hint .arrow{width:20px;height:20px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg)}
+
+/* ─── Sections ─── */
+.section{max-width:1300px;margin:0 auto;padding:100px 32px}
+.section-title{font-size:clamp(1.6rem,3vw,2.4rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:12px}
+.section-sub{color:var(--text2);font-size:1.05rem;max-width:700px;margin-bottom:48px;font-weight:300}
+.section-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+.tag-accent{background:var(--accent-glow);color:var(--accent2);border:1px solid rgba(99,102,241,0.2)}
+.tag-green{background:var(--green-glow);color:var(--green);border:1px solid rgba(16,185,129,0.2)}
+.tag-amber{background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,158,11,0.2)}
+.tag-rose{background:var(--rose-glow);color:var(--rose);border:1px solid rgba(244,63,94,0.2)}
+.tag-cyan{background:var(--cyan-glow);color:var(--cyan);border:1px solid rgba(6,182,212,0.2)}
+.tag-purple{background:var(--purple-glow);color:var(--purple);border:1px solid rgba(168,85,247,0.2)}
+
+/* ─── Cards ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;position:relative;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);overflow:hidden}
+.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 8px 32px rgba(99,102,241,0.08)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity 0.3s}
+.card:hover::before{opacity:1}
+.card-title{font-size:1.1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.card-desc{color:var(--text2);font-size:0.9rem;line-height:1.7}
+.card-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+
+/* ─── Grid layouts ─── */
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+
+/* ─── Flow diagram ─── */
+.flow-container{position:relative;padding:60px 0}
+.flow-row{display:flex;align-items:center;justify-content:center;gap:0;margin:0 auto;max-width:1100px;flex-wrap:wrap}
+.flow-node{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 22px;text-align:center;min-width:160px;position:relative;cursor:default;transition:all 0.3s}
+.flow-node:hover{transform:scale(1.04);z-index:2}
+.flow-node .fn-emoji{font-size:24px;margin-bottom:6px}
+.flow-node .fn-title{font-weight:700;font-size:13px;margin-bottom:2px}
+.flow-node .fn-sub{font-size:11px;color:var(--text3)}
+.flow-arrow{width:48px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:20px;flex-shrink:0;position:relative}
+.flow-arrow::after{content:'→';font-size:24px;animation:arrow-pulse 2s ease-in-out infinite}
+@keyframes arrow-pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+.flow-down{display:flex;justify-content:center;padding:20px 0;color:var(--text3)}
+.flow-down::after{content:'↓';font-size:28px;animation:arrow-pulse 2s ease-in-out infinite}
+
+/* Colored borders for nodes */
+.fn-accent{border-color:rgba(99,102,241,0.4);box-shadow:0 0 20px var(--accent-glow)}
+.fn-accent:hover{border-color:var(--accent);box-shadow:0 0 30px var(--accent-glow)}
+.fn-green{border-color:rgba(16,185,129,0.4);box-shadow:0 0 20px var(--green-glow)}
+.fn-green:hover{border-color:var(--green);box-shadow:0 0 30px var(--green-glow)}
+.fn-amber{border-color:rgba(245,158,11,0.4);box-shadow:0 0 20px var(--amber-glow)}
+.fn-amber:hover{border-color:var(--amber);box-shadow:0 0 30px var(--amber-glow)}
+.fn-rose{border-color:rgba(244,63,94,0.4);box-shadow:0 0 20px var(--rose-glow)}
+.fn-rose:hover{border-color:var(--rose);box-shadow:0 0 30px var(--rose-glow)}
+.fn-cyan{border-color:rgba(6,182,212,0.4);box-shadow:0 0 20px var(--cyan-glow)}
+.fn-cyan:hover{border-color:var(--cyan);box-shadow:0 0 30px var(--cyan-glow)}
+.fn-purple{border-color:rgba(168,85,247,0.4);box-shadow:0 0 20px var(--purple-glow)}
+.fn-purple:hover{border-color:var(--purple);box-shadow:0 0 30px var(--purple-glow)}
+
+/* ─── Table ─── */
+.data-table{width:100%;border-collapse:collapse;font-size:14px}
+.data-table th{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.1em}
+.data-table td{padding:12px 16px;border-bottom:1px solid rgba(37,37,48,0.5)}
+.data-table tr:hover td{background:var(--surface2)}
+.data-table .col-emoji{width:40px;text-align:center;font-size:18px}
+
+/* ─── Tooltip panel ─── */
+.detail-panel{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-top:12px;font-size:13px;color:var(--text2);line-height:1.8;display:none}
+.detail-panel.active{display:block;animation:slideIn 0.3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.detail-panel code{background:rgba(99,102,241,0.1);color:var(--accent2);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+
+/* ─── Animations ─── */
+.fade-in{opacity:0;transform:translateY(30px);transition:all 0.8s cubic-bezier(0.4,0,0.2,1)}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+.stagger-1{transition-delay:0.1s}.stagger-2{transition-delay:0.2s}.stagger-3{transition-delay:0.3s}.stagger-4{transition-delay:0.4s}.stagger-5{transition-delay:0.5s}
+
+/* ─── Timeline ─── */
+.timeline{position:relative;padding-left:40px}
+.timeline::before{content:'';position:absolute;left:15px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,transparent,var(--accent),var(--green),var(--amber),var(--purple),transparent)}
+.timeline-item{position:relative;padding:20px 0}
+.timeline-dot{position:absolute;left:-33px;top:24px;width:14px;height:14px;border-radius:50%;border:2px solid;animation:dot-glow 3s ease-in-out infinite}
+@keyframes dot-glow{0%,100%{box-shadow:0 0 4px currentColor}50%{box-shadow:0 0 12px currentColor}}
+
+/* ─── Nav bar ─── */
+.topnav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,15,0.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;height:56px;gap:32px}
+.topnav .logo{font-weight:800;font-size:16px;letter-spacing:-0.03em;background:linear-gradient(135deg,#fff,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topnav a{color:var(--text2);font-size:13px;font-weight:500;text-decoration:none;transition:color 0.2s}
+.topnav a:hover{color:var(--text)}
+body{padding-top:56px}
+
+/* ─── Divider ─── */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0 auto;max-width:800px}
+
+/* ─── Responsive ─── */
+@media(max-width:768px){
+  .flow-row{flex-direction:column;gap:0}
+  .flow-arrow{transform:rotate(90deg);width:auto;padding:8px 0}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .section{padding:60px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="topnav">
+  <div class="logo">AXIOM</div>
+  <a href="#design-time">Design-Time</a>
+  <a href="#deploy">Deployment</a>
+  <a href="#runtime">Runtime</a>
+  <a href="#entities">Entities</a>
+  <a href="#writer-flow">Writer Flow</a>
+  <a href="#prompt-chain">Prompts</a>
+  <a href="#byok">BYOK</a>
+  <a href="#mastery">Mastery</a>
+  <a href="#phases">Plan</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Axiom Engine<br>Architecture</h1>
+  <p class="subtitle">The complete visual map of how Engine Bundles, Brain Agents, Workflows, Prompt Blocks, Mastery Agents, and BYOK key chains connect — from design-time to runtime execution.</p>
+  <div class="badge-row">
+    <span class="badge green">● 8 DB Entities</span>
+    <span class="badge amber">● 7 Unification Phases</span>
+    <span class="badge purple">● 10 Workers</span>
+    <span class="badge cyan">● 6 AI Providers</span>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll to explore</span>
+    <div class="arrow"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Design-Time -->
+<section class="section" id="design-time">
+  <span class="section-tag tag-accent">PHASE: DESIGN TIME</span>
+  <h2 class="section-title fade-in">The Blueprint Layer</h2>
+  <p class="section-sub fade-in">These entities are created by Superadmin. They define WHAT can be deployed. Nothing here touches a real org until deployment.</p>
+
+  <div class="grid-3 fade-in">
+    <div class="card" onclick="toggleDetail('dt-brain')">
+      <div class="card-title"><div class="card-icon" style="background:var(--accent-glow);color:var(--accent2)">🧠</div> Brain Template</div>
+      <div class="card-desc">Master AI config blueprint — providers, RAG settings, memory limits, prompt layers. The "DNA" of an org's intelligence.</div>
+      <div class="detail-panel" id="dt-brain">
+        <strong>Table:</strong> <code>brain_templates</code><br>
+        <strong>Key columns:</strong> name, version, config (JSON), pricing_tier, foundation_layer_id, persona_layer_id, guardrails_layer_id<br>
+        <strong>Contains:</strong> Provider config, RAG settings (topK, confidence, weights), memory config, rate limits, inline agent stubs<br>
+        <strong>Role:</strong> Cookie cutter — stamps out <code>brain_agents</code> at deploy time. Template is COPIED, never referenced at runtime.<br>
+        <strong>Prompt source:</strong> References <code>prompt_layers</code> table for foundation/persona/guardrails text
+      </div>
+    </div>
+
+    <div class="card" onclick="toggleDetail('dt-agent')">
+      <div class="card-title"><div class="card-icon" style="background:var(--green-glow);color:var(--green)">🤖</div> Agent Template</div>
+      <div class="card-desc">Reusable agent archetype — personality, prompts, model prefs, tools, skills. Interactive agents that chat, write, and communicate.</div>
+      <div class="detail-panel" id="dt-agent">
+        <strong>Table:</strong> <code>agent_templates</code><br>
+        <strong>Key columns:</strong> slug, name, system_prompt, persona_prompt, instruction_prompt, guardrails_prompt, preferred_model, tools_enabled, skills, category, product_target<br>
+        <strong>Categories:</strong> writer, research, learning, builder, general<br>
+        <strong>Products:</strong> market_writer, market_builder, market_coach, all<br>
+        <strong>Role:</strong> Another cookie cutter — gets cloned into <code>org_agents</code> at engine deployment. Can be linked to brain templates via <code>brain_agent_assignments</code>.
+      </div>
+    </div>
+
+    <div class="card" onclick="toggleDetail('dt-workflow')">
+      <div class="card-title"><div class="card-icon" style="background:var(--amber-glow);color:var(--amber)">⚡</div> Workflow Template</div>
+      <div class="card-desc">Visual orchestration graph — nodes and edges (ReactFlow compatible). Defines the execution sequence.</div>
+      <div class="detail-panel" id="dt-workflow">
+        <strong>Table:</strong> <code>workflow_templates</code><br>
+        <strong>Key columns:</strong> name, nodes (JSON[]), edges (JSON[]), status (draft/active/disabled)<br>
+        <strong>Example:</strong> "Email Nurture Flow" — nodes for ICP analysis → angle selection → email drafting → quality check<br>
+        <strong>Role:</strong> Frozen into engine snapshot at deploy. Workflow graph becomes the execution plan for the worker.
+      </div>
+    </div>
+
+    <div class="card" onclick="toggleDetail('dt-prompt')">
+      <div class="card-title"><div class="card-icon" style="background:var(--purple-glow);color:var(--purple)">📝</div> Prompt Block</div>
+      <div class="card-desc">Modular, reusable prompt components. Categories: foundation, persona, instruction, guardrails, domain, task, output, analysis, optimization, compliance.</div>
+      <div class="detail-panel" id="dt-prompt">
+        <strong>Table:</strong> <code>prompt_blocks</code><br>
+        <strong>Key columns:</strong> slug, name, category, content, tags, version, is_system<br>
+        <strong>Assignment:</strong> <code>prompt_assignments</code> links blocks to brain_agents, agent_templates, or org_agents<br>
+        <strong>Role:</strong> Composable prompt library. Blocks are APPENDED to base prompts at runtime — never replace. Think "plugins" for prompts.<br>
+        <strong>Currently:</strong> 15 seed prompts across 10 categories. Phase 3 of the plan wires these into runtime.
+      </div>
+    </div>
+
+    <div class="card" onclick="toggleDetail('dt-mastery')">
+      <div class="card-title"><div class="card-icon" style="background:var(--rose-glow);color:var(--rose)">🎯</div> Mastery Agent</div>
+      <div class="card-desc">Headless agent — intelligent but no UI. Runs silently in the pipeline making decisions (timing, angles, contact priority).</div>
+      <div class="detail-panel" id="dt-mastery">
+        <strong>Table:</strong> <code>mastery_agent_configs</code><br>
+        <strong>Key columns:</strong> agent_key, decision_type, decision_outputs, scoring_rules, keyword_rules, field_rules, pipeline_stage, pipeline_order<br>
+        <strong>Pipeline stages:</strong> pre_send, post_reply, pre_extension, periodic, on_demand<br>
+        <strong>Categories:</strong> contact, timing, angle, pacing, reply, buying_role, buyer_stage, uncertainty, sequence, custom<br>
+        <strong>Role:</strong> The invisible hand — shapes every outreach decision without user interaction. Rule-based scoring, not LLM calls (fast).
+      </div>
+    </div>
+
+    <div class="card" onclick="toggleDetail('dt-bundle')">
+      <div class="card-title"><div class="card-icon" style="background:var(--cyan-glow);color:var(--cyan)">📦</div> Engine Bundle</div>
+      <div class="card-desc">Deployable package: Brain Template + Workflow Template + Agent configs + LLM defaults + BYOK mode. This is WHAT gets deployed.</div>
+      <div class="detail-panel" id="dt-bundle">
+        <strong>Table:</strong> <code>engine_bundles</code><br>
+        <strong>Key columns:</strong> name, slug, brain_template_id, workflow_template_id, agents_config (JSON[]), default_llm (JSON), tier, email_provider_id, default_api_key_mode<br>
+        <strong>Agents config:</strong> Array of agent definitions — each with role, name, prompts, LLM overrides, tools, RAG settings<br>
+        <strong>Role:</strong> The master package. Everything needed to give an org a fully functional AI engine. Think "app template" for orgs.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Deployment -->
+<section class="section" id="deploy">
+  <span class="section-tag tag-green">PHASE: DEPLOYMENT</span>
+  <h2 class="section-title fade-in">The Stamping Process</h2>
+  <p class="section-sub fade-in">Superadmin deploys an Engine Bundle to an org. Templates get COPIED into live runtime rows. After this, templates are never referenced again.</p>
+
+  <div class="flow-container fade-in">
+    <div class="flow-row">
+      <div class="flow-node fn-cyan">
+        <div class="fn-emoji">📦</div>
+        <div class="fn-title">Engine Bundle</div>
+        <div class="fn-sub">Brain + Workflow + Agents</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-accent" style="background:var(--surface2);border-width:2px">
+        <div class="fn-emoji">🚀</div>
+        <div class="fn-title">Deploy to Org</div>
+        <div class="fn-sub">POST /engine-bundles/[id]/deploy</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-green">
+        <div class="fn-emoji">⚙️</div>
+        <div class="fn-title">Engine Instance</div>
+        <div class="fn-sub">Frozen snapshot + API key</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="fade-in" style="font-size:1.1rem;font-weight:700;margin:40px 0 20px;color:var(--text)">What Gets Created on Deploy</h3>
+  <div class="grid-2 fade-in">
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">🧠 brain_agents row(s)</div>
+      <div class="card-desc">One row per agent role. Prompts, RAG config, model prefs, tools — all <strong>COPIED</strong> from the template. The <code>template_id</code> field is kept for audit only.
+      <br><br><strong>Key:</strong> <code>foundation_prompt</code>, <code>persona_prompt</code>, <code>domain_prompt</code>, <code>guardrails_prompt</code> — these are the runtime prompts.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--green)">🤖 org_agents row(s)</div>
+      <div class="card-desc">One row per agent role. Full agent config — prompts, LLM settings, tools, skills, KB access. Links to both the <code>brain_agent</code> and the source <code>agent_template</code>.
+      <br><br><strong>Key:</strong> <code>engine_instance_id</code>, <code>brain_agent_id</code> — these link everything together.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">⚡ engine_instances row</div>
+      <div class="card-desc">The deployed engine. Contains a <strong>frozen snapshot</strong> of the entire bundle at deploy time — workflow nodes/edges, agent configs, LLM defaults, brain reference.
+      <br><br><strong>Key:</strong> <code>config.flowConfig</code> (workflow), <code>snapshot</code> (full audit), <code>api_key</code> (unique per deploy).</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--cyan)">🔑 API Key</div>
+      <div class="card-desc">Unique <code>axm_live_*</code> key generated per deployment. SHA-256 hashed in DB. Shown once to admin — must be copied.
+      <br><br><strong>Modes:</strong> <code>platform</code> (Axiom's keys) or <code>byok</code> (client's own keys from <code>ai_providers</code>).</div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px" class="fade-in">
+    <div class="card" style="border-color:rgba(244,63,94,0.3);background:rgba(244,63,94,0.03)">
+      <div class="card-title" style="color:var(--rose)">⚠️ Critical: Templates Die After Deploy</div>
+      <div class="card-desc">
+        The deploy code literally says: <code>// Prompt layers — copied as text (NOT referenced)</code><br><br>
+        Once deployed, the engine instance and brain_agents are the ONLY runtime truth. If you update a brain template, existing deployments are NOT affected. You must re-deploy to push changes. This is BY DESIGN — it prevents live systems from breaking when templates are edited.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Runtime -->
+<section class="section" id="runtime">
+  <span class="section-tag tag-amber">PHASE: RUNTIME EXECUTION</span>
+  <h2 class="section-title fade-in">The Execution Pipeline</h2>
+  <p class="section-sub fade-in">When a user triggers a Writer run (or any engine execution), this is the exact sequence that happens.</p>
+
+  <div class="timeline fade-in">
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--accent);border-color:var(--accent)"></div>
+      <div class="card">
+        <div class="card-title">1. Feature Gate Check</div>
+        <div class="card-desc"><code>requireFeature(req, 'can_write_emails')</code><br>Verifies the user's tier allows Writer access. Returns <code>orgId</code> and <code>userId</code>.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--green);border-color:var(--green)"></div>
+      <div class="card">
+        <div class="card-title">2. Engine Resolution <span class="badge green" style="font-size:10px">PHASE 1 — NEW</span></div>
+        <div class="card-desc"><code>requireActiveEngineRuntime(orgId, userId)</code><br>Finds the deployed <code>engine_instance</code> for this org. Loads workflow snapshot, brain agent, org agents, LLM config, BYOK mode. <strong>Replaces</strong> the old name-based workflow lookup and auto-create shortcut.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--cyan);border-color:var(--cyan)"></div>
+      <div class="card">
+        <div class="card-title">3. Context Assembly</div>
+        <div class="card-desc"><code>brainKBService.buildWriterContext(brainAgentId, orgId, ...)</code><br>Loads: KB content → ICP details → Beliefs → Offers. Plus user's custom instructions, angle, goal.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--purple);border-color:var(--purple)"></div>
+      <div class="card">
+        <div class="card-title">4. Prompt Stack Assembly <span class="badge purple" style="font-size:10px">PHASE 3 — NEW</span></div>
+        <div class="card-desc"><code>assemblePromptStack(brainAgentId, inlinePrompts)</code><br>Base prompts from brain_agent + modular prompt_blocks from Prompt Studio. Blocks are APPENDED by category. Foundation + Persona + Domain + Guardrails + Instructions.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--rose);border-color:var(--rose)"></div>
+      <div class="card">
+        <div class="card-title">5. Mastery Pre-Send <span class="badge amber" style="font-size:10px">PHASE 6 — NEW</span></div>
+        <div class="card-desc"><code>runMasteryPipeline('pre_send', orgId, input)</code><br>Headless mastery agents score the input: optimal angle, timing, contact priority. Enriches the input before workflow execution. Rule-based, sub-100ms.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--amber);border-color:var(--amber)"></div>
+      <div class="card">
+        <div class="card-title">6. Queue to Redis</div>
+        <div class="card-desc">Job queued to <code>engine-execution</code> with full payload: engine snapshot, prompt stack, KB context, ICP, beliefs, offer, mastery decisions, orgId (for BYOK), LLM config.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--green);border-color:var(--green)"></div>
+      <div class="card">
+        <div class="card-title">7. Worker Execution</div>
+        <div class="card-desc"><code>engine-execution-worker</code> on your server picks up the job. Executes workflow nodes using <code>aiService.callWithOrgContext(orgId, ...)</code> — resolves BYOK chain: org keys → platform keys. Real AI calls happen here.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--purple);border-color:var(--purple)"></div>
+      <div class="card">
+        <div class="card-title">8. Post-Reply Validation <span class="badge amber" style="font-size:10px">PHASE 7 — NEW</span></div>
+        <div class="card-desc">Mastery agents run post_reply checks: quality scoring, compliance, tone analysis. If quality is below threshold → self-healing retry (max 2 attempts). Gaps logged to <code>knowledge_gaps</code> for learning loop.</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot" style="color:var(--accent);border-color:var(--accent)"></div>
+      <div class="card">
+        <div class="card-title">9. Output Stored</div>
+        <div class="card-desc">Final output written to <code>engine_run_logs</code> (status: completed, tokens, cost, duration). Also updates the <code>runs</code> table for the user's Writer Studio view. Progress published via Redis Pub/Sub.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Entities -->
+<section class="section" id="entities">
+  <span class="section-tag tag-cyan">DATABASE MAP</span>
+  <h2 class="section-title fade-in">All 12 Tables Involved</h2>
+  <p class="section-sub fade-in">Every database table that participates in the engine lifecycle — from template creation to execution logs.</p>
+
+  <div class="fade-in" style="overflow-x:auto">
+    <table class="data-table">
+      <thead>
+        <tr><th></th><th>Table</th><th>Layer</th><th>Purpose</th><th>Created By</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="col-emoji">🧠</td><td><code>brain_templates</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>AI config blueprint — providers, RAG, memory, limits, prompt layers</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">🤖</td><td><code>agent_templates</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>Reusable agent archetype — prompts, model prefs, tools, skills</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">⚡</td><td><code>workflow_templates</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>Visual flow graph — nodes + edges for workflow execution</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">📝</td><td><code>prompt_blocks</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>Modular prompt components — composable, versioned, categorized</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">📦</td><td><code>engine_bundles</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>Deployable package — Brain + Workflow + Agents + LLM config</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">🎯</td><td><code>mastery_agent_configs</code></td><td><span class="badge" style="font-size:10px">Design</span></td><td>Headless decision agents — scoring rules, pipeline stages</td><td>Superadmin</td></tr>
+        <tr style="background:var(--surface2)"><td class="col-emoji">🧬</td><td><code>brain_agents</code></td><td><span class="badge green" style="font-size:10px">Runtime</span></td><td>Deployed brain instance — THE runtime prompt authority</td><td>Deploy</td></tr>
+        <tr style="background:var(--surface2)"><td class="col-emoji">🔧</td><td><code>org_agents</code></td><td><span class="badge green" style="font-size:10px">Runtime</span></td><td>Deployed org-level agent — full config per agent role</td><td>Deploy</td></tr>
+        <tr style="background:var(--surface2)"><td class="col-emoji">⚙️</td><td><code>engine_instances</code></td><td><span class="badge green" style="font-size:10px">Runtime</span></td><td>Deployed engine — frozen snapshot, API key, workflow graph</td><td>Deploy</td></tr>
+        <tr><td class="col-emoji">🔗</td><td><code>prompt_assignments</code></td><td><span class="badge purple" style="font-size:10px">Config</span></td><td>Links prompt blocks → agents. Composable prompt assembly.</td><td>Superadmin</td></tr>
+        <tr><td class="col-emoji">📊</td><td><code>engine_run_logs</code></td><td><span class="badge amber" style="font-size:10px">Telemetry</span></td><td>Execution log — status, tokens, cost, duration, output</td><td>Worker</td></tr>
+        <tr><td class="col-emoji">📜</td><td><code>runs</code></td><td><span class="badge amber" style="font-size:10px">Telemetry</span></td><td>User-facing run history — shown in Writer Studio</td><td>API</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Writer Flow -->
+<section class="section" id="writer-flow">
+  <span class="section-tag tag-rose">USER JOURNEY</span>
+  <h2 class="section-title fade-in">Market Writer — User Perspective</h2>
+  <p class="section-sub fade-in">What the member sees and does. The entire intelligence layer is invisible to them.</p>
+
+  <div class="flow-container fade-in">
+    <div class="flow-row">
+      <div class="flow-node fn-accent">
+        <div class="fn-emoji">👤</div>
+        <div class="fn-title">Login</div>
+        <div class="fn-sub">Auth + Org resolve</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-green">
+        <div class="fn-emoji">📊</div>
+        <div class="fn-title">Dashboard</div>
+        <div class="fn-sub">Overview of org</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-amber" style="border-width:2px">
+        <div class="fn-emoji">✍️</div>
+        <div class="fn-title">Writer Studio</div>
+        <div class="fn-sub">/writer — past runs</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-rose" style="border-width:2px">
+        <div class="fn-emoji">🚀</div>
+        <div class="fn-title">New Run</div>
+        <div class="fn-sub">/writer/new</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="fade-in" style="font-size:1.1rem;font-weight:700;margin:40px 0 20px">User Picks (on /writer/new)</h3>
+  <div class="grid-4 fade-in">
+    <div class="card">
+      <div class="card-title" style="font-size:14px">🎯 Target ICP</div>
+      <div class="card-desc" style="font-size:12px">From <code>icp</code> table. Required. Pain points, criteria, demographics.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px">📦 Offer</div>
+      <div class="card-desc" style="font-size:12px">From <code>offer</code> table. Optional. Value prop, primary promise.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px">🔄 Messaging Angle</div>
+      <div class="card-desc" style="font-size:12px">Problem Reframe, Social Proof, Direct Value, Curiosity Gap, Contrarian. <span style="color:var(--rose)">Currently hardcoded → Phase 5 moves to DB</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px">🎯 Campaign Goal</div>
+      <div class="card-desc" style="font-size:12px">Get Reply, Book Call, Educate. <span style="color:var(--rose)">Currently hardcoded → Phase 5 moves to DB</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px">#️⃣ Email Count</div>
+      <div class="card-desc" style="font-size:12px">3, 5, 7, or 10 emails in the sequence.</div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:14px">💬 Custom Instructions</div>
+      <div class="card-desc" style="font-size:12px">Free-text prompt — "focus on pricing", "mention Stripe case study", etc.</div>
+    </div>
+  </div>
+
+  <h3 class="fade-in" style="font-size:1.1rem;font-weight:700;margin:40px 0 20px">What Happens Behind the Scenes</h3>
+  <div class="grid-2 fade-in">
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);font-size:13px">📍 DB Tables READ During One Run</div>
+      <div class="card-desc" style="font-size:12px;line-height:2">
+        <code>users</code> → get org_id<br>
+        <code>engine_instances</code> → deployed engine<br>
+        <code>brain_agents</code> → prompt stack + RAG<br>
+        <code>org_agents</code> → per-agent config<br>
+        <code>prompt_blocks</code> → modular prompts<br>
+        <code>prompt_assignments</code> → what's assigned<br>
+        <code>kb_sections</code> + <code>kb_documents</code> → KB<br>
+        <code>icp</code> → customer profile<br>
+        <code>beliefs</code> → brand positioning<br>
+        <code>offer</code> → value prop<br>
+        <code>workflow_templates</code> → (from snapshot)<br>
+        <code>mastery_agent_configs</code> → headless agents<br>
+        <code>ai_providers</code> → BYOK key chain
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--text2);font-size:13px">✍️ DB Tables WRITTEN During One Run</div>
+      <div class="card-desc" style="font-size:12px;line-height:2">
+        <code>engine_run_logs</code> → execution record<br>
+        <code>runs</code> → user-facing history<br>
+        <code>knowledge_gaps</code> → learning loop (if quality low)<br>
+        <code>ai_provider_usage</code> → token/cost tracking
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Prompt Chain -->
+<section class="section" id="prompt-chain">
+  <span class="section-tag tag-purple">INTELLIGENCE LAYER</span>
+  <h2 class="section-title fade-in">The Prompt Assembly Chain</h2>
+  <p class="section-sub fade-in">How the final system prompt is built — layer by layer. This is what the LLM actually sees.</p>
+
+  <div class="fade-in" style="display:flex;flex-direction:column;gap:0;max-width:700px;margin:0 auto">
+    <div class="card" style="border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0">
+      <div class="card-title" style="font-size:14px;color:var(--accent2)">Layer 1 — Foundation Prompt</div>
+      <div class="card-desc" style="font-size:12px"><strong>Source:</strong> <code>brain_agents.foundation_prompt</code><br>"You are an expert email copywriter for [brand]. Your role is to..."<br><em>+ any foundation prompt_blocks appended</em></div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--green);border-radius:0 var(--radius) var(--radius) 0">
+      <div class="card-title" style="font-size:14px;color:var(--green)">Layer 2 — Persona Prompt</div>
+      <div class="card-desc" style="font-size:12px"><strong>Source:</strong> <code>brain_agents.persona_prompt</code><br>"Write like a confident, direct SaaS founder. No jargon. No fluff..."<br><em>+ any persona prompt_blocks appended</em></div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--cyan);border-radius:0 var(--radius) var(--radius) 0">
+      <div class="card-title" style="font-size:14px;color:var(--cyan)">Layer 3 — Domain Prompt</div>
+      <div class="card-desc" style="font-size:12px"><strong>Source:</strong> <code>brain_agents.domain_prompt</code><br>Industry-specific context: "In the B2B SaaS space, buyers expect..."<br><em>+ any domain prompt_blocks appended</em></div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--rose);border-radius:0 var(--radius) var(--radius) 0">
+      <div class="card-title" style="font-size:14px;color:var(--rose)">Layer 4 — Guardrails Prompt</div>
+      <div class="card-desc" style="font-size:12px"><strong>Source:</strong> <code>brain_agents.guardrails_prompt</code><br>"NEVER make false claims. NEVER promise results. NEVER defame competitors..."<br><em>+ any guardrails/compliance prompt_blocks appended</em></div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--purple);border-radius:0 var(--radius) var(--radius) 0">
+      <div class="card-title" style="font-size:14px;color:var(--purple)">Layer 5 — Instruction Blocks <span class="badge purple" style="font-size:10px">NEW via Prompt Studio</span></div>
+      <div class="card-desc" style="font-size:12px"><strong>Source:</strong> <code>prompt_blocks</code> (instruction, task, output, analysis, optimization categories)<br>Modular instructions: "Structure emails as PAS framework", "Include CTA in every email"</div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--amber);border-radius:0 var(--radius) var(--radius) 0;background:var(--surface2)">
+      <div class="card-title" style="font-size:14px;color:var(--amber)">Layer 6 — Runtime Context (injected per run)</div>
+      <div class="card-desc" style="font-size:12px">
+        <strong>KB Content:</strong> Brand voice, examples, reference material from <code>kb_sections</code><br>
+        <strong>ICP:</strong> Target customer pain points, demographics, criteria<br>
+        <strong>Beliefs:</strong> Brand positioning / belief frameworks from <code>beliefs</code><br>
+        <strong>Offer:</strong> Value prop, primary promise from <code>offer</code><br>
+        <strong>User Instructions:</strong> Free-text from the writer/new form<br>
+        <strong>Angle + Goal:</strong> Problem reframe, social proof, etc.
+      </div>
+    </div>
+    <div style="width:3px;height:16px;background:var(--border);margin-left:24px"></div>
+    <div class="card" style="border-left:3px solid var(--green);border-radius:0 var(--radius) var(--radius) 0;background:rgba(16,185,129,0.03);border-color:rgba(16,185,129,0.3)">
+      <div class="card-title" style="font-size:14px;color:var(--green)">✅ Final Assembled Prompt → LLM</div>
+      <div class="card-desc" style="font-size:12px">All layers concatenated. Sent to the AI provider via the BYOK chain. The LLM sees ONE unified system prompt, not separate layers.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- BYOK -->
+<section class="section" id="byok">
+  <span class="section-tag tag-cyan">API KEY RESOLUTION</span>
+  <h2 class="section-title fade-in">BYOK vs Platform-Managed</h2>
+  <p class="section-sub fade-in">The AI provider chain — how API keys are resolved for every LLM call.</p>
+
+  <div class="grid-2 fade-in">
+    <div class="card" style="border-color:rgba(6,182,212,0.3)">
+      <div class="card-title" style="color:var(--cyan)">🏢 Platform-Managed</div>
+      <div class="card-desc">
+        Engine deployed with <code>api_key_mode = 'platform'</code><br><br>
+        <strong>Key source:</strong> <code>ai_providers WHERE org_id IS NULL</code><br>
+        <strong>Who pays:</strong> Client pays Axiom → Axiom pays provider<br>
+        <strong>Control:</strong> Axiom manages keys, rate limits, failover<br>
+        <strong>Best for:</strong> SMBs who don't want to deal with API keys
+      </div>
+    </div>
+    <div class="card" style="border-color:rgba(168,85,247,0.3)">
+      <div class="card-title" style="color:var(--purple)">🔑 BYOK (Bring Your Own Key)</div>
+      <div class="card-desc">
+        Engine deployed with <code>api_key_mode = 'byok'</code><br><br>
+        <strong>Key source:</strong> <code>ai_providers WHERE org_id = orgId</code><br>
+        <strong>Who pays:</strong> Client pays provider directly<br>
+        <strong>Control:</strong> Client manages their own keys, models, limits<br>
+        <strong>Best for:</strong> Enterprise clients with existing AI contracts
+      </div>
+    </div>
+  </div>
+
+  <h3 class="fade-in" style="font-size:1.1rem;font-weight:700;margin:40px 0 20px">Resolution Chain (already implemented in worker)</h3>
+  <div class="flow-container fade-in">
+    <div class="flow-row">
+      <div class="flow-node fn-purple">
+        <div class="fn-emoji">🔑</div>
+        <div class="fn-title">Org BYOK Keys</div>
+        <div class="fn-sub">ai_providers WHERE org_id = ?</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-cyan">
+        <div class="fn-emoji">🏢</div>
+        <div class="fn-title">Platform Keys</div>
+        <div class="fn-sub">ai_providers WHERE org_id IS NULL</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-amber">
+        <div class="fn-emoji">🌐</div>
+        <div class="fn-title">Env Fallback</div>
+        <div class="fn-sub">OPENAI_API_KEY, etc.</div>
+      </div>
+      <div class="flow-arrow"></div>
+      <div class="flow-node fn-green" style="border-width:2px">
+        <div class="fn-emoji">✅</div>
+        <div class="fn-title">AI Call</div>
+        <div class="fn-sub">First working key wins</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fade-in" style="margin-top:20px">
+    <div class="card">
+      <div class="card-title" style="font-size:13px;color:var(--text2)">Supported Providers</div>
+      <div class="card-desc">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+          <span class="badge">OpenAI — GPT-4o, GPT-4o Mini, GPT-4 Turbo</span>
+          <span class="badge">Anthropic — Claude 3.5 Sonnet, Claude 3 Opus, Haiku</span>
+          <span class="badge">Google — Gemini 1.5 Pro, Flash</span>
+          <span class="badge">Perplexity — Sonar Large (search)</span>
+          <span class="badge">Mistral — via OpenAI-compat</span>
+          <span class="badge">xAI — via OpenAI-compat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Mastery -->
+<section class="section" id="mastery">
+  <span class="section-tag tag-rose">HEADLESS INTELLIGENCE</span>
+  <h2 class="section-title fade-in">Mastery Agents — The Invisible Hand</h2>
+  <p class="section-sub fade-in">They never talk. They never show UI. But they shape every decision behind the scenes.</p>
+
+  <div class="grid-2 fade-in">
+    <div class="card">
+      <div class="card-title" style="color:var(--rose)">🎯 Pre-Send Pipeline</div>
+      <div class="card-desc">Runs BEFORE the workflow executes. Makes decisions about:<br><br>
+        <strong>Angle Selection:</strong> Which messaging angle is optimal for this ICP?<br>
+        <strong>Timing:</strong> Best time to send based on engagement data<br>
+        <strong>Contact Priority:</strong> Which contacts should go first?<br>
+        <strong>Sequence Pacing:</strong> How many days between emails?<br><br>
+        <em>Rule-based scoring — sub-100ms execution. Not LLM calls.</em>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="color:var(--amber)">🔍 Post-Reply Pipeline</div>
+      <div class="card-desc">Runs AFTER the workflow completes. Quality gates:<br><br>
+        <strong>Quality Scoring:</strong> Does the output meet minimum standards?<br>
+        <strong>Compliance Check:</strong> Any forbidden patterns or false claims?<br>
+        <strong>Tone Analysis:</strong> Matches the brand voice from persona?<br>
+        <strong>Self-Healing:</strong> If quality < threshold → auto-retry (max 2)<br><br>
+        <em>Gaps logged to <code>knowledge_gaps</code> for the learning loop.</em>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="fade-in" style="font-size:1.1rem;font-weight:700;margin:40px 0 20px">Mastery Agent Categories</h3>
+  <div class="grid-4 fade-in">
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">📧 Contact</div><div class="card-desc" style="font-size:11px">Contact qualification scoring</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">⏰ Timing</div><div class="card-desc" style="font-size:11px">Optimal send timing</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">🔀 Angle</div><div class="card-desc" style="font-size:11px">Messaging angle selection</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">⏳ Pacing</div><div class="card-desc" style="font-size:11px">Sequence timing rules</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">↩️ Reply</div><div class="card-desc" style="font-size:11px">Reply intent detection</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">👤 Buying Role</div><div class="card-desc" style="font-size:11px">Decision-maker scoring</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">📊 Buyer Stage</div><div class="card-desc" style="font-size:11px">Funnel position detection</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">❓ Uncertainty</div><div class="card-desc" style="font-size:11px">Confidence scoring</div></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Phases -->
+<section class="section" id="phases">
+  <span class="section-tag tag-accent">IMPLEMENTATION PLAN</span>
+  <h2 class="section-title fade-in">7-Phase Unification Plan</h2>
+  <p class="section-sub fade-in">The roadmap to connect everything properly. Phase 1 must go first. No shortcuts.</p>
+
+  <div class="fade-in" style="display:flex;flex-direction:column;gap:16px">
+    <div class="card" style="border-left:4px solid var(--accent)">
+      <div class="card-title"><span style="background:var(--accent);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P1</span> Engine Instance Resolver</div>
+      <div class="card-desc">New service: <code>EngineInstanceResolver.ts</code>. Single source of truth for resolving the active deployed engine for any org. Every execution path goes through this. Returns full runtime: workflow, brain agent, org agents, LLM config, BYOK mode.</div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--green)">
+      <div class="card-title"><span style="background:var(--green);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P2</span> Rewire Writer Studio</div>
+      <div class="card-desc">Kill the shortcut. Writer goes through the deployed engine. No more hardcoded name lookups, no more phantom engine creation. If no engine is deployed → loud error. <strong>File:</strong> <code>/api/writer/execute/route.ts</code></div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--purple)">
+      <div class="card-title"><span style="background:var(--purple);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P3</span> Wire Prompt Blocks into Runtime</div>
+      <div class="card-desc">Make <code>prompt_blocks</code> + <code>prompt_assignments</code> affect agent behavior. Blocks are APPENDED to base brain prompts by category. Prompt Studio becomes the modular layer. Changes take effect without redeploying.</div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--cyan)">
+      <div class="card-title"><span style="background:var(--cyan);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P4</span> Wire BYOK into Engine Execution</div>
+      <div class="card-desc">Pipe <code>orgId</code> through to the worker so <code>callWithOrgContext()</code> resolves org BYOK → platform keys. The chain exists — just needs the org context threaded through.</div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--amber)">
+      <div class="card-title"><span style="background:var(--amber);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P5</span> Kill Hardcoded Constants</div>
+      <div class="card-desc">Move angle classes, flow goals, email defaults into <code>engine_bundles.config</code>. Writer /new reads from engine config via API instead of hardcoded arrays.</div>
+    </div>
+    <div class="card" style="border-left:4px solid var(--rose)">
+      <div class="card-title"><span style="background:var(--rose);color:white;padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P6</span> Mastery Agent Pipeline</div>
+      <div class="card-desc">Wire headless mastery agents into pre_send/post_reply stages. Before workflow: optimize angle/timing/priority. After workflow: quality check, compliance, tone analysis.</div>
+    </div>
+    <div class="card" style="border-left:4px solid #fff">
+      <div class="card-title"><span style="background:#fff;color:var(--bg);padding:2px 10px;border-radius:4px;font-size:12px;margin-right:8px">P7</span> Validation & Guardrails</div>
+      <div class="card-desc">Self-healing quality loop: if output quality < threshold → regenerate (max 2 attempts). Gaps logged to <code>knowledge_gaps</code> for learning loop. Strict grounding enforcement.</div>
+    </div>
+  </div>
+
+  <div class="fade-in" style="margin-top:40px">
+    <div class="card" style="border-color:rgba(99,102,241,0.3);background:rgba(99,102,241,0.03)">
+      <div class="card-title" style="color:var(--accent2)">📌 Dependency Order</div>
+      <div class="card-desc" style="font-size:13px;line-height:2">
+        <code>P1</code> → <code>P2</code> + <code>P3</code> (parallel) → <code>P4</code> + <code>P5</code> (parallel) → <code>P6</code> → <code>P7</code><br>
+        Phase 1 must be done first — everything depends on the Engine Instance Resolver.<br>
+        No schema changes needed. All existing tables stay. Just rewiring the connections.
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Workers -->
+<section class="section" id="workers">
+  <span class="section-tag tag-green">INFRASTRUCTURE</span>
+  <h2 class="section-title fade-in">Worker Fleet (Self-Hosted)</h2>
+  <p class="section-sub fade-in">All 10 workers running on your server. No Railway. No external dependencies.</p>
+
+  <div class="grid-3 fade-in">
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px;color:var(--green)">⚡ engine-execution</div><div class="card-desc" style="font-size:11px">Main workflow execution. Concurrency: 2, Rate: 10/min</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px;color:var(--amber)">🎯 mastery-agent</div><div class="card-desc" style="font-size:11px">Headless decision scoring. 16KB of rules engine</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px;color:var(--purple)">🔄 learning-loop</div><div class="card-desc" style="font-size:11px">Continuous improvement from knowledge gaps</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px;color:var(--cyan)">🧠 fine-tuning</div><div class="card-desc" style="font-size:11px">Model fine-tuning jobs. 16KB processor</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px;color:var(--rose)">💤 dream-state</div><div class="card-desc" style="font-size:11px">Background brain processing / reflection</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">⏰ scheduled-task</div><div class="card-desc" style="font-size:11px">Cron-like scheduled job execution</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">📊 analytics</div><div class="card-desc" style="font-size:11px">Async analytics computation</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">💬 conversation</div><div class="card-desc" style="font-size:11px">Async conversation processing</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">📚 kb-worker</div><div class="card-desc" style="font-size:11px">Knowledge base processing</div></div>
+    <div class="card" style="padding:16px"><div class="card-title" style="font-size:13px">⚡ workflow-execution</div><div class="card-desc" style="font-size:11px">Standalone workflow execution</div></div>
+  </div>
+</section>
+
+<div style="height:100px"></div>
+
+<!-- JavaScript -->
+<script>
+// ─── Toggle detail panels ───
+function toggleDetail(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isActive = el.classList.contains('active');
+  // Close all panels first
+  document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('active'));
+  // Toggle clicked one
+  if (!isActive) el.classList.add('active');
+}
+
+// ─── Intersection Observer for scroll animations ───
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// ─── Smooth nav scroll ───
+document.querySelectorAll('.topnav a').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+// ─── Active nav highlighting ───
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.topnav a');
+
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 100;
+    if (window.scrollY >= top) {
+      current = section.getAttribute('id');
+    }
+  });
+  navLinks.forEach(link => {
+    link.style.color = link.getAttribute('href') === '#' + current
+      ? '#818cf8'
+      : '';
+  });
+});
+
+// ─── Card hover tilt micro-interaction ───
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 30;
+    const rotateY = (centerX - x) / 30;
+    card.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-2px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+// ─── Flow node pulse on hover ───
+document.querySelectorAll('.flow-node').forEach(node => {
+  node.addEventListener('mouseenter', () => {
+    node.style.transform = 'scale(1.08)';
+    node.style.zIndex = '10';
+  });
+  node.addEventListener('mouseleave', () => {
+    node.style.transform = '';
+    node.style.zIndex = '';
+  });
+});
+
+// ─── Particle background for hero ───
+(function() {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0';
+  document.querySelector('.hero').appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+
+  function resize() {
+    w = canvas.width = canvas.offsetWidth;
+    h = canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5,
+      alpha: Math.random() * 0.3 + 0.05
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0) p.x = w;
+      if (p.x > w) p.x = 0;
+      if (p.y < 0) p.y = h;
+      if (p.y > h) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(129,140,248,${p.alpha})`;
+      ctx.fill();
+    });
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(99,102,241,${0.06 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ─── Typing effect for hero subtitle ───
+(function() {
+  const el = document.querySelector('.hero .subtitle');
+  if (!el) return;
+  const text = el.textContent;
+  el.textContent = '';
+  el.style.opacity = '1';
+  let i = 0;
+  function type() {
+    if (i < text.length) {
+      el.textContent += text[i];
+      i++;
+      setTimeout(type, 8);
+    }
+  }
+  setTimeout(type, 800);
+})();
+
+console.log('%c⚡ AXIOM ENGINE ARCHITECTURE', 'font-size:20px;color:#6366f1;font-weight:bold');
+console.log('%cProduction-grade flow visualization', 'color:#9090a8');
+</script>
+
+</body>
+</html>

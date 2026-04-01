@@ -71,8 +71,8 @@ export function CloneEngineModal({
                                             rounded-[var(--radius-lg)]
                                             border transition-all duration-[var(--duration-fast)]
                                             ${selectedTemplate === tmpl.id
-                                                ? 'border-primary bg-primary/5'
-                                                : 'border-border hover:border-primary/40'}
+                                                ? 'border-primary bg-surface'
+                                                : 'border-border hover:border-borderHover'}
                                         `}
                                     >
                                         <div className="flex items-center justify-between">

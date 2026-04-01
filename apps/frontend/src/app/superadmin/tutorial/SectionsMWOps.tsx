@@ -21,7 +21,7 @@ export function MWContentSection({ color }: { color: string }) {
                 ['Marketing Coach (coach)', 'Campaign metrics, rollup data', 'Performance analysis + brain_memories written back to Brain.'],
                 ['Generalist', 'Any query', 'Fallback for ad-hoc tasks — summaries, rewrites, etc.'],
             ]} />
-            <Tip icon={<Lightbulb size={14} />} color="#f59e0b">
+            <Tip icon={<Lightbulb size={14} />} color="var(--color-warning)">
                 Every LLM call logs: tokens used, cost, provider, model, response time, and the full prompt chain. This metadata is stored in workflow execution records for debugging and cost tracking.
             </Tip>
         </div>
@@ -76,7 +76,7 @@ export function MWLearningSection({ color }: { color: string }) {
                 ['Reply Quality', 'interested, clarification, objection, timing, referral, negative, noise', 'positive_reply_rate = (interested + referral) / total_replies'],
                 ['Conversion', 'bookings, shows, revenue_cents', 'booking_rate, show_rate, revenue_per_1k_sends'],
             ]} />
-            <Tip icon={<Lightbulb size={14} />} color="#f59e0b">
+            <Tip icon={<Lightbulb size={14} />} color="var(--color-warning)">
                 All rates are PostgreSQL GENERATED ALWAYS AS STORED columns — zero compute at read time. The database pre-calculates them on every INSERT/UPDATE.
             </Tip>
         </div>

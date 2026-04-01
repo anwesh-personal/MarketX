@@ -454,7 +454,7 @@ export default function AnalyticsPage() {
                                     className="flex items-center justify-between gap-sm rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-background/70 px-md py-sm"
                                 >
                                     <div className="flex items-center gap-sm">
-                                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-border bg-surface text-sm font-semibold text-textPrimary">
+                                        <div className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-lg)] border border-border bg-surface text-sm font-semibold text-textPrimary">
                                             {index + 1}
                                         </div>
                                         <div>
@@ -494,7 +494,7 @@ export default function AnalyticsPage() {
                             </p>
                         </div>
                         {error && (
-                            <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-warning/20 bg-warning/5 p-md text-sm text-textSecondary">
+                            <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-border bg-surface p-md text-sm text-textSecondary">
                                 Partial refresh issue: {error}
                             </div>
                         )}

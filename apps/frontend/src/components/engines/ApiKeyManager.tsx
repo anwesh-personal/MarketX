@@ -134,7 +134,7 @@ export function ApiKeyManager({ engineId }: ApiKeyManagerProps) {
 
             {/* Recently Created Key Alert */}
             {createdKey && (
-                <div className="p-md bg-success/10 border border-success/30 rounded-[var(--radius-lg)] space-y-sm">
+                <div className="p-md bg-surfaceElevated border border-border rounded-[var(--radius-lg)] space-y-sm">
                     <div className="flex items-start gap-sm">
                         <Check className="w-5 h-5 text-success mt-0.5" />
                         <div className="flex-1">
@@ -144,13 +144,13 @@ export function ApiKeyManager({ engineId }: ApiKeyManagerProps) {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-sm bg-background/50 p-sm rounded border border-success/20">
+                    <div className="flex items-center gap-sm bg-background/50 p-sm rounded border border-border">
                         <code className="flex-1 font-mono text-sm text-textPrimary break-all">
                             {createdKey}
                         </code>
                         <button
                             onClick={() => copyToClipboard(createdKey)}
-                            className="p-xs hover:bg-success/20 rounded text-success"
+                            className="p-xs hover:bg-surfaceElevated rounded text-success"
                         >
                             <Copy className="w-4 h-4" />
                         </button>
@@ -187,7 +187,7 @@ export function ApiKeyManager({ engineId }: ApiKeyManagerProps) {
                                 </div>
                                 <button
                                     onClick={() => handleDeleteKey(key.id)}
-                                    className="p-sm text-textTertiary hover:text-error hover:bg-error/10 rounded transition-colors"
+                                    className="p-sm text-textTertiary hover:text-error hover:bg-surfaceElevated rounded transition-colors"
                                     title="Revoke Key"
                                 >
                                     <Trash2 className="w-4 h-4" />

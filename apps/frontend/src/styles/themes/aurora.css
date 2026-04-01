@@ -83,11 +83,11 @@
     --spacing-xl: 3.5rem;
     --spacing-2xl: 5rem;
 
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
-    --radius-2xl: 32px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 2px;
@@ -120,53 +120,53 @@
 
 /* ========== NIGHT MODE ========== */
 :root[data-theme="aurora-night"] {
-    --color-primary: #E0F2FE;
-    --color-primary-hover: #BAE6FD;
-    --color-secondary: #94A3B8;
-    --color-accent: #00D4FF;
-    --color-accent-hover: #33DEFF;
+    --color-primary: #E4F9FF;
+    --color-primary-hover: #B8E8F5;
+    --color-secondary: #5CA8C8;
+    --color-accent: #00FFEE;
+    --color-accent-hover: #33FFF2;
     --color-accent-secondary: #FF2D78;
-    --color-background: #0B1120;
-    --color-surface: #111827;
-    --color-surface-hover: #1A2332;
-    --color-surface-elevated: #1E293B;
-    --color-text-primary: #E0F2FE;
-    --color-text-secondary: #7DD3FC;
-    --color-text-tertiary: #475569;
-    --color-text-inverse: #0B1120;
-    --color-border: #1E293B;
-    --color-border-hover: #334155;
-    --color-border-focus: #00D4FF;
-    --color-on-accent: #0F172A;
-    --color-primary-foreground: #0B1120;
-    --color-overlay: rgba(11, 17, 32, 0.9);
-    --color-shadow: rgba(0, 212, 255, 0.1);
-    --color-glow: rgba(0, 212, 255, 0.25);
+    --color-background: #06080F;
+    --color-surface: #0C1018;
+    --color-surface-hover: #161C28;
+    --color-surface-elevated: #101620;
+    --color-text-primary: #E4F9FF;
+    --color-text-secondary: #78a8be;
+    --color-text-tertiary: #2D5A72;
+    --color-text-inverse: #06080F;
+    --color-border: rgba(0, 255, 238, 0.07);
+    --color-border-hover: rgba(0, 255, 238, 0.14);
+    --color-border-focus: #00FFEE;
+    --color-on-accent: #060810;
+    --color-primary-foreground: #06080F;
+    --color-overlay: rgba(6, 8, 15, 0.9);
+    --color-shadow: rgba(0, 0, 0, 0.35);
+    --color-glow: rgba(0, 255, 238, 0.25);
 
     --color-success: #34D399;
     --color-success-muted: rgba(52, 211, 153, 0.12);
     --color-warning: #FBBF24;
     --color-warning-muted: rgba(251, 191, 36, 0.12);
-    --color-error: #F87171;
-    --color-error-muted: rgba(248, 113, 113, 0.12);
+    --color-error: #FF5C8D;
+    --color-error-muted: rgba(255, 92, 141, 0.12);
     --color-info: #60A5FA;
     --color-info-muted: rgba(96, 165, 250, 0.12);
-    --color-accent-rgb: 0, 212, 255;
+    --color-accent-rgb: 0, 255, 238;
     --color-accent-secondary-rgb: 255, 45, 120;
     --color-success-rgb: 52, 211, 153;
     --color-warning-rgb: 251, 191, 36;
-    --color-error-rgb: 248, 113, 113;
+    --color-error-rgb: 255, 92, 141;
     --color-info-rgb: 96, 165, 250;
-    --color-background-rgb: 11, 17, 32;
-    --color-surface-rgb: 17, 24, 39;
+    --color-background-rgb: 6, 8, 15;
+    --color-surface-rgb: 12, 16, 24;
 
-    --gradient-primary: linear-gradient(135deg, #00D4FF, #FF2D78);
-    --gradient-subtle: linear-gradient(180deg, #0B1120 0%, #0F1928 100%);
-    --gradient-surface: linear-gradient(180deg, #111827 0%, #151E30 100%);
-    --gradient-accent-glow: radial-gradient(circle, rgba(0,212,255,0.25) 0%, rgba(255,45,120,0.08) 50%, transparent 70%);
-    --glass-bg: rgba(17, 24, 39, 0.7);
-    --glass-border: rgba(0, 212, 255, 0.12);
-    --noise-opacity: 0.03;
+    --gradient-primary: linear-gradient(135deg, #00FFEE, #FF2D78);
+    --gradient-subtle: linear-gradient(180deg, #06080F 0%, #0A0E18 100%);
+    --gradient-surface: linear-gradient(180deg, #0C1018 0%, #101620 100%);
+    --gradient-accent-glow: radial-gradient(circle, rgba(0,255,238,0.2) 0%, rgba(255,45,120,0.06) 50%, transparent 70%);
+    --glass-bg: rgba(12, 16, 24, 0.78);
+    --glass-border: rgba(0, 255, 238, 0.09);
+    --noise-opacity: 0.025;
     --shine-angle: 45deg;
     --shine-opacity: 0.04;
 
@@ -196,33 +196,33 @@
     --spacing-xl: 3.5rem;
     --spacing-2xl: 5rem;
 
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 24px;
-    --radius-2xl: 32px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
     --radius-full: 9999px;
     --border-width: 1px;
     --border-width-thick: 2px;
-    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.4), 0 1px 4px -1px rgba(0, 212, 255, 0.08);
-    --shadow-md: 0 8px 24px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 212, 255, 0.12);
-    --shadow-lg: 0 16px 32px -8px rgba(0, 0, 0, 0.6), 0 8px 16px -4px rgba(0, 212, 255, 0.16);
-    --shadow-xl: 0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 12px 24px -6px rgba(0, 212, 255, 0.2);
-    --shadow-glow: 0 0 0 2px rgba(0, 212, 255, 0.4), 0 0 16px rgba(0, 212, 255, 0.3);
-    --shadow-glow-lg: 0 0 0 3px rgba(0, 212, 255, 0.5), 0 0 24px rgba(0, 212, 255, 0.4), 0 0 48px rgba(255, 45, 120, 0.15);
-    --shadow-card-hover: 0 24px 48px -12px rgba(0,212,255,0.3), 0 12px 24px rgba(0,0,0,0.5);
-    --shadow-inner: inset 0 2px 4px rgba(0,0,0,0.3);
-    --shadow-float: 0 32px 64px -16px rgba(0,212,255,0.4), 0 16px 32px -8px rgba(0,0,0,0.6);
+    --shadow-sm: 0 2px 8px rgba(0, 255, 238, 0.06), 0 1px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 6px 20px -4px rgba(0, 255, 238, 0.10), 0 4px 10px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 36px -8px rgba(0, 255, 238, 0.15), 0 6px 14px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 50px -12px rgba(0, 255, 238, 0.20), 0 10px 20px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 0 2px rgba(0, 255, 238, 0.35), 0 0 20px rgba(0, 255, 238, 0.20);
+    --shadow-glow-lg: 0 0 0 3px rgba(0, 255, 238, 0.45), 0 0 30px rgba(0, 255, 238, 0.30), 0 0 60px rgba(255, 45, 120, 0.10);
+    --shadow-card-hover: 0 20px 48px -12px rgba(0,255,238,0.22), 0 8px 20px rgba(0,0,0,0.45);
+    --shadow-inner: inset 0 2px 6px rgba(0,0,0,0.25);
+    --shadow-float: 0 30px 60px -16px rgba(0,255,238,0.30), 0 12px 28px rgba(0,0,0,0.5);
 
-    --duration-fast: 80ms;
-    --duration-normal: 150ms;
-    --duration-slow: 200ms;
+    --duration-fast: 100ms;
+    --duration-normal: 180ms;
+    --duration-slow: 280ms;
     --easing: cubic-bezier(0.4, 0, 0.2, 1);
     --easing-smooth: cubic-bezier(0.65, 0, 0.35, 1);
-    --easing-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
-    --hover-scale: 1.04;
+    --easing-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    --hover-scale: 1.03;
     --active-scale: 0.96;
-    --hover-lift: -2px;
+    --hover-lift: -3px;
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
 
@@ -230,3 +230,4 @@
     --sidebar-collapsed-width: 56px;
     --header-height: 56px;
 }
+

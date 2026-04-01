@@ -6,3 +6,20 @@
  */
 
 export { engineDeploymentService } from './engineDeploymentService'
+export {
+    getActiveEngineRuntime,
+    requireActiveEngineRuntime,
+    invalidateSystemDefaults,
+    EngineNotDeployedError,
+    EngineConfigError,
+    BrainAgentError,
+} from './EngineInstanceResolver'
+export type {
+    EngineRuntime,
+    EngineRuntimePromptStack,
+    EngineRuntimeOrgAgent,
+    EngineRuntimeLLM,
+    EngineRuntimeRAG,
+    EngineRuntimeSelfHealing,
+    EngineRuntimeWriterConfig,
+} from './EngineInstanceResolver'

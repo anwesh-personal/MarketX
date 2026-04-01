@@ -23,7 +23,8 @@ interface Offer {
     category: string
 }
 
-const ANGLE_CLASSES = [
+// Fallbacks only used if /api/writer/config fails
+const FALLBACK_ANGLES = [
     { value: 'problem_reframe', label: 'Problem Reframe', desc: 'Challenge how they see the problem' },
     { value: 'social_proof', label: 'Social Proof', desc: 'Show who else solved this' },
     { value: 'direct_value', label: 'Direct Value', desc: 'Lead with the outcome' },
@@ -31,11 +32,13 @@ const ANGLE_CLASSES = [
     { value: 'contrarian', label: 'Contrarian', desc: 'Challenge conventional wisdom' },
 ]
 
-const FLOW_GOALS = [
+const FALLBACK_GOALS = [
     { value: 'MEANINGFUL_REPLY', label: 'Get a Reply', desc: 'Optimize for conversation starters' },
     { value: 'BOOK_CALL', label: 'Book a Call', desc: 'Drive to calendar booking' },
     { value: 'EDUCATE', label: 'Educate', desc: 'Build awareness and trust first' },
 ]
+
+const FALLBACK_EMAIL_COUNTS = [3, 5, 7, 10]
 
 export default function NewRunPage() {
     const router = useRouter()
@@ -45,6 +48,9 @@ export default function NewRunPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [orgId, setOrgId] = useState('')
+    const [angleClasses, setAngleClasses] = useState(FALLBACK_ANGLES)
+    const [flowGoals, setFlowGoals] = useState(FALLBACK_GOALS)
+    const [emailCountOptions, setEmailCountOptions] = useState(FALLBACK_EMAIL_COUNTS)
 
     const [form, setForm] = useState({
         icp_id: '',
@@ -70,13 +76,29 @@ export default function NewRunPage() {
         if (!userData?.org_id) { setIsLoading(false); return }
         setOrgId(userData.org_id)
 
-        const [icpRes, offerRes] = await Promise.all([
-            supabase.from('icp').select('id, name, criteria, status').eq('partner_id', userData.org_id).eq('status', 'ACTIVE'),
-            supabase.from('offer').select('id, name, primary_promise, category').eq('partner_id', userData.org_id).eq('status', 'ACTIVE'),
+        // Load engine config + ICPs + offers in parallel
+        const [icpRes, offerRes, configRes] = await Promise.all([
+            supabase.from('icp').select('id, name, criteria, status').eq('partner_id', userData.org_id).eq('status', 'active'),
+            supabase.from('offer').select('id, name, primary_promise, category').eq('partner_id', userData.org_id).eq('status', 'active'),
+            fetch('/api/writer/config').then(r => r.json()).catch(() => null),
         ])
 
         setIcps(icpRes.data || [])
         setOffers(offerRes.data || [])
+
+        // Apply engine config if available
+        if (configRes?.config) {
+            const cfg = configRes.config
+            if (cfg.angleClasses?.length) {
+                setAngleClasses(cfg.angleClasses)
+                setForm(f => ({ ...f, angle_class: cfg.angleClasses[0].value }))
+            }
+            if (cfg.flowGoals?.length) {
+                setFlowGoals(cfg.flowGoals)
+                setForm(f => ({ ...f, flow_goal: cfg.flowGoals[0].value }))
+            }
+            if (cfg.emailCountOptions?.length) setEmailCountOptions(cfg.emailCountOptions)
+        }
 
         if (icpRes.data?.length) setForm(f => ({ ...f, icp_id: icpRes.data![0].id }))
         if (offerRes.data?.length) setForm(f => ({ ...f, offer_id: offerRes.data![0].id }))
@@ -141,7 +163,7 @@ export default function NewRunPage() {
             </div>
 
             {noICPs && (
-                <div className="card p-6 border-warning/30 bg-warning/5 flex items-start gap-4">
+                <div className="card p-6 border-border bg-surface flex items-start gap-4">
                     <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                     <div>
                         <h3 className="font-semibold text-textPrimary mb-1">No ICPs configured yet</h3>
@@ -218,7 +240,7 @@ export default function NewRunPage() {
                         <div>
                             <label className="block text-sm font-semibold text-textPrimary mb-2">Messaging Angle</label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {ANGLE_CLASSES.map(a => (
+                                {angleClasses.map(a => (
                                     <button key={a.value} type="button"
                                         onClick={() => setForm(f => ({ ...f, angle_class: a.value }))}
                                         className={`p-3 rounded-xl border text-left transition-all text-sm ${
@@ -239,7 +261,7 @@ export default function NewRunPage() {
                                 <label className="block text-sm font-semibold text-textPrimary mb-2">Emails in Sequence</label>
                                 <select className="input w-full" value={form.email_count}
                                     onChange={e => setForm(f => ({ ...f, email_count: Number(e.target.value) }))}>
-                                    {[3, 5, 7, 10].map(n => <option key={n} value={n}>{n} emails</option>)}
+                                    {emailCountOptions.map(n => <option key={n} value={n}>{n} emails</option>)}
                                 </select>
                             </div>
 
@@ -248,7 +270,7 @@ export default function NewRunPage() {
                                 <label className="block text-sm font-semibold text-textPrimary mb-2">Campaign Goal</label>
                                 <select className="input w-full" value={form.flow_goal}
                                     onChange={e => setForm(f => ({ ...f, flow_goal: e.target.value }))}>
-                                    {FLOW_GOALS.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
+                                    {flowGoals.map(g => <option key={g.value} value={g.value}>{g.label}</option>)}
                                 </select>
                             </div>
                         </div>

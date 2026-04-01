@@ -13,6 +13,8 @@ import { Worker, Job } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
 import { workflowExecutionService } from '../processors/workflow-execution-processor';
 import { publishProgress, publishExecutionComplete } from '../utils/progress-publisher';
+import { runMasteryPipeline } from '../utils/mastery-pipeline';
+import { validateOutputQuality, logKnowledgeGap } from '../utils/quality-validator';
 
 // ============================================================================
 // TYPES
@@ -109,14 +111,33 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
         }
 
         // Merge engine context into input so nodes can access it
-        const enrichedInput = {
+        const enrichedInput: Record<string, any> = {
             ...input,
             _engine_context: engineContext,
+            _org_id: orgId,
+            _api_key_mode: snapshot.api_key_mode || 'platform',
             ...(engineContext.defaultProvider ? { provider: engineContext.defaultProvider } : {}),
             ...(engineContext.defaultModel ? { ai_model: engineContext.defaultModel } : {}),
         };
 
-        // Execute workflow
+        // ─── PRE-SEND MASTERY PIPELINE ──────────────────────────
+        // Run headless mastery agents (angle, timing, contact scoring)
+        // before workflow execution. Results merge into input.
+        let masteryPreSend = null;
+        if (orgId) {
+            try {
+                masteryPreSend = await runMasteryPipeline('pre_send', orgId, enrichedInput);
+                if (masteryPreSend.decisions.length > 0) {
+                    Object.assign(enrichedInput, masteryPreSend.enrichedInput);
+                    enrichedInput._mastery_pre_send = masteryPreSend.decisions;
+                    console.log(`🎯 Pre-send mastery: ${masteryPreSend.decisions.length} agents, ${masteryPreSend.totalDurationMs}ms`);
+                }
+            } catch (err: any) {
+                console.warn(`⚠ Pre-send mastery failed (non-blocking): ${err.message}`);
+            }
+        }
+
+        // ─── WORKFLOW EXECUTION ────────────────────────────────
         const result = await workflowExecutionService.executeWorkflow(
             flowConfig.nodes,
             flowConfig.edges,
@@ -136,9 +157,61 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
             }
         );
 
+        // ─── POST-REPLY MASTERY PIPELINE ────────────────────────
+        // Validate output quality, compliance, tone.
+        let masteryPostReply = null;
+        if (orgId && result.success && result.lastNodeOutput) {
+            try {
+                const postInput = {
+                    ...enrichedInput,
+                    _workflow_output: result.lastNodeOutput.content,
+                    _token_usage: result.tokenUsage,
+                };
+                masteryPostReply = await runMasteryPipeline('post_reply', orgId, postInput);
+                if (masteryPostReply.decisions.length > 0) {
+                    console.log(`🔍 Post-reply mastery: ${masteryPostReply.decisions.length} agents, ${masteryPostReply.totalDurationMs}ms`);
+                }
+            } catch (err: any) {
+                console.warn(`⚠ Post-reply mastery failed (non-blocking): ${err.message}`);
+            }
+        }
+
         const durationMs = Date.now() - startTime;
 
         if (result.success) {
+            // ─── QUALITY VALIDATION + SELF-HEALING ──────────────────
+            const selfHealing = input.brain_context?.self_healing || {};
+            const enableRetry = selfHealing.enableRetryOnLowQuality ?? true;
+            const minQuality = selfHealing.minQualityScore ?? 0.6;
+            const logGaps = selfHealing.logGapsToLearning ?? true;
+
+            if (result.lastNodeOutput?.content) {
+                const qualityResult = validateOutputQuality(
+                    result.lastNodeOutput.content,
+                    input,
+                    { minQualityScore: minQuality }
+                );
+
+                if (!qualityResult.passed) {
+                    console.warn(`⚠ Quality check failed: ${qualityResult.score.toFixed(2)} < ${minQuality} (${qualityResult.issues.length} issues)`);
+
+                    // Log knowledge gap for learning loop
+                    if (logGaps && orgId) {
+                        const brainAgentId = input.brain_context?.agent_id || null;
+                        await logKnowledgeGap(
+                            orgId,
+                            brainAgentId,
+                            qualityResult,
+                            input.prompt || JSON.stringify(input.writer_input || {}).slice(0, 500)
+                        );
+                    }
+
+                    // Note: Self-healing retry would go here in future.
+                    // Currently we log the gap and continue — output is still stored.
+                    // Full retry requires re-queuing the job with enhanced prompt.
+                }
+            }
+
             await updateExecutionStatus(executionId, 'completed', {
                 result: result.lastNodeOutput?.content,
                 tokensUsed: result.tokenUsage?.totalTokens,
@@ -248,6 +321,22 @@ async function updateExecutionStatus(
     if (error) {
         console.error(`Failed to update execution status: ${error.message}`);
     }
+
+    // Also sync the user-facing runs table
+    // IMPORTANT: runs.status uses lowercase ('running', 'completed', 'failed')
+    // to match what execute/route.ts inserts. The CHECK constraint accepts both cases.
+    const runUpdates: Record<string, any> = { status };
+    if (status === 'completed' || status === 'failed') {
+        runUpdates.completed_at = new Date().toISOString();
+    }
+    if (data?.error) {
+        runUpdates.error_message = data.error;
+    }
+
+    await supabase
+        .from('runs')
+        .update(runUpdates)
+        .eq('execution_id', executionId);
 }
 
 // ============================================================================

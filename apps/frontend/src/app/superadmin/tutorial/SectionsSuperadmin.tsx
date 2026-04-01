@@ -53,7 +53,7 @@ export function SuperadminGuide({ color }: { color: string }) {
                 ['Settings', 'System settings: sending domains, DNS config, notification preferences.', 'Configure domains, verify DNS, set notification rules.'],
             ]} />
 
-            <Tip icon={<Lightbulb size={14} />} color="#f59e0b">
+            <Tip icon={<Lightbulb size={14} />} color="var(--color-warning)">
                 The core workflow is: create org → create brain/agent/workflow templates → package into Engine Bundle → deploy to org. Engine Bundles are the primary deployment mechanism.
             </Tip>
         </div>

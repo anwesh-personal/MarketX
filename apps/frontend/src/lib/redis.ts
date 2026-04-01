@@ -1,4 +1,5 @@
 import Redis from 'ioredis'
+import { requireEnv } from './require-env'
 
 // Lazy Redis connection - only created when actually accessed at runtime
 let _redisConnection: Redis | null = null
@@ -13,7 +14,7 @@ export function getRedisConnection(): Redis {
             })
         } else {
             _redisConnection = new Redis({
-                host: process.env.REDIS_HOST || 'localhost',
+                host: requireEnv('REDIS_HOST'),
                 port: parseInt(process.env.REDIS_PORT || '6379'),
                 password: process.env.REDIS_PASSWORD || undefined,
                 maxRetriesPerRequest: null,

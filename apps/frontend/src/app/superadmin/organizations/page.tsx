@@ -68,8 +68,8 @@ export default function OrganizationsPage() {
     const getPlanBadgeColor = (plan: string) => {
         switch (plan) {
             case 'free': return 'bg-textTertiary/10 text-textTertiary';
-            case 'starter': return 'bg-info/10 text-info';
-            case 'pro': return 'bg-primary/10 text-primary';
+            case 'starter': return 'bg-surfaceElevated text-info';
+            case 'pro': return 'bg-surfaceElevated text-primary';
             case 'enterprise': return 'bg-accent/10 text-accent';
             default: return 'bg-textSecondary/10 text-textSecondary';
         }
@@ -77,9 +77,9 @@ export default function OrganizationsPage() {
 
     const getStatusBadgeColor = (status: string) => {
         switch (status) {
-            case 'active': return 'bg-success/10 text-success';
-            case 'suspended': return 'bg-warning/10 text-warning';
-            case 'cancelled': return 'bg-error/10 text-error';
+            case 'active': return 'bg-surfaceElevated text-success';
+            case 'suspended': return 'bg-surfaceElevated text-warning';
+            case 'cancelled': return 'bg-surfaceElevated text-error';
             default: return 'bg-textSecondary/10 text-textSecondary';
         }
     };

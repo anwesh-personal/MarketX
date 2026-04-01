@@ -46,6 +46,11 @@ module.exports = {
                 glass: 'var(--glass-bg)',
                 'glass-border': 'var(--glass-border)',
             },
+            borderColor: {
+                DEFAULT: 'var(--color-border)',
+                border: 'var(--color-border)',
+                borderHover: 'var(--color-border-hover)',
+            },
             spacing: {
                 xs: 'var(--spacing-xs)',
                 sm: 'var(--spacing-sm)',

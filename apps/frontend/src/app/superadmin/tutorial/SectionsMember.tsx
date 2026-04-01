@@ -38,7 +38,7 @@ export function MemberGuide({ color }: { color: string }) {
             <H3 color={color}>How Gating Works</H3>
             <P>Every member page calls <code className="text-xs bg-surfaceHover px-1 rounded">useFeatureGate('feature_name')</code>. If the feature is disabled for their tier, they see an <code className="text-xs bg-surfaceHover px-1 rounded">{'<UpgradeWall />'}</code> component instead of the page content — showing what tier they need to unlock the feature.</P>
 
-            <Tip icon={<Lightbulb size={14} />} color="#f59e0b">
+            <Tip icon={<Lightbulb size={14} />} color="var(--color-warning)">
                 Clients start on basic (view-only metrics), upgrade to medium (brain chat + training), then enterprise (full AI writing + flow building + satellite management). This is the upsell path.
             </Tip>
         </div>

@@ -1,4 +1,5 @@
 import { Queue, QueueOptions } from 'bullmq'
+import { requireEnv } from './require-env'
 
 export enum QueueName {
     // Existing
@@ -31,7 +32,7 @@ const connectionOptions = (() => {
         }
     }
     return {
-        host: process.env.REDIS_HOST || 'localhost',
+        host: requireEnv('REDIS_HOST'),
         port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD || undefined,
     }

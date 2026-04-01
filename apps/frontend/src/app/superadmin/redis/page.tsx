@@ -274,7 +274,7 @@ export default function RedisManagementPage() {
                     </div>
                 </div>
             ) : !status ? (
-                <div className="rounded-2xl border border-border bg-surface p-12 text-center">
+                <div className="rounded-[var(--radius-lg)] border border-border bg-surface p-12 text-center">
                     <WifiOff className="w-16 h-16 text-error mx-auto mb-6 opacity-60" />
                     <h3 className="text-xl font-bold text-textPrimary mb-2">Failed to Connect</h3>
                     <p className="text-textSecondary mb-6">Could not connect to Redis. Check your configuration.</p>
@@ -289,16 +289,16 @@ export default function RedisManagementPage() {
                 <>
                     {/* Connection Status Card */}
                     <section className={cn(
-                        "p-6 rounded-2xl border",
+                        "p-6 rounded-[var(--radius-lg)] border",
                         status.connected
-                            ? "border-success/30 bg-success/5"
-                            : "border-error/30 bg-error/5"
+                            ? "border-border bg-surface"
+                            : "border-border bg-surface"
                     )}>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className={cn(
                                     "p-3 rounded-xl",
-                                    status.connected ? "bg-success/10" : "bg-error/10"
+                                    status.connected ? "bg-surfaceElevated" : "bg-surfaceElevated"
                                 )}>
                                     {status.connected
                                         ? <Wifi className="w-6 h-6 text-success" />
@@ -319,8 +319,8 @@ export default function RedisManagementPage() {
                                 <span className={cn(
                                     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium",
                                     status.connected
-                                        ? "bg-success/10 text-success"
-                                        : "bg-error/10 text-error"
+                                        ? "bg-surfaceElevated text-success"
+                                        : "bg-surfaceElevated text-error"
                                 )}>
                                     <span className={cn(
                                         "w-2 h-2 rounded-full",
@@ -486,10 +486,10 @@ function StatCard({ icon: Icon, label, value, variant }: StatCardProps) {
     const variants: Record<string, string> = {
         primary: 'bg-primary-500/10 text-primary-500 border-primary-500/20',
         secondary: 'bg-secondary-500/10 text-secondary-500 border-secondary-500/20',
-        success: 'bg-success/10 text-success border-success/20',
-        warning: 'bg-warning/10 text-warning border-warning/20',
-        error: 'bg-error/10 text-error border-error/20',
-        info: 'bg-info/10 text-info border-info/20',
+        success: 'bg-surfaceElevated text-success border-border',
+        warning: 'bg-surfaceElevated text-warning border-border',
+        error: 'bg-surfaceElevated text-error border-border',
+        info: 'bg-surfaceElevated text-info border-border',
         accent: 'bg-accent-500/10 text-accent-500 border-accent-500/20',
     }
 
@@ -515,9 +515,9 @@ function SummaryCard({ label, value, color }: SummaryCardProps) {
     const colors: Record<string, string> = {
         primary: 'from-primary-500/10 to-primary-500/5 border-primary-500/20 text-primary-500',
         accent: 'from-accent-500/10 to-accent-500/5 border-accent-500/20 text-accent-500',
-        success: 'from-success/10 to-success/5 border-success/20 text-success',
-        error: 'from-error/10 to-error/5 border-error/20 text-error',
-        warning: 'from-warning/10 to-warning/5 border-warning/20 text-warning',
+        success: 'from-success/10 to-success/5 border-border text-success',
+        error: 'from-error/10 to-error/5 border-border text-error',
+        warning: 'from-warning/10 to-warning/5 border-border text-warning',
     }
 
     return (
@@ -552,7 +552,7 @@ function QueueCard({ queue, onAction, onRetryJob, onViewDetails, isLoading }: Qu
     return (
         <div className={cn(
             "rounded-xl border bg-surface transition-all",
-            queue.isPaused ? "border-warning/40" : "border-border",
+            queue.isPaused ? "border-borderHover" : "border-border",
             "hover:border-primary-500/40 hover:shadow-lg"
         )}>
             {/* Header */}
@@ -561,7 +561,7 @@ function QueueCard({ queue, onAction, onRetryJob, onViewDetails, isLoading }: Qu
                     <div className="flex items-center gap-3">
                         <div className={cn(
                             "p-2 rounded-lg",
-                            queue.isPaused ? "bg-warning/10" : "bg-primary-500/10"
+                            queue.isPaused ? "bg-surfaceElevated" : "bg-primary-500/10"
                         )}>
                             <Zap className={cn(
                                 "w-5 h-5",
@@ -600,7 +600,7 @@ function QueueCard({ queue, onAction, onRetryJob, onViewDetails, isLoading }: Qu
                     <div className="text-xs text-textSecondary">Done</div>
                     <div className="text-xl font-bold text-textPrimary">{queue.completed}</div>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-error/10">
+                <div className="text-center p-3 rounded-lg bg-surfaceElevated">
                     <div className="text-xs text-textSecondary">Failed</div>
                     <div className="text-xl font-bold text-error">{queue.failed}</div>
                 </div>
@@ -681,7 +681,7 @@ function QueueCard({ queue, onAction, onRetryJob, onViewDetails, isLoading }: Qu
                     {expanded && (
                         <div className="px-4 pb-4 space-y-2">
                             {queue.recentJobs.filter(j => j.state === 'failed').slice(0, 3).map(job => (
-                                <div key={job.id} className="p-3 rounded-lg bg-error/5 border border-error/20">
+                                <div key={job.id} className="p-3 rounded-lg bg-surface border border-border">
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="font-mono text-xs text-textSecondary">{job.id}</span>
                                         <button
@@ -718,10 +718,10 @@ function ActionButton({ icon: Icon, label, onClick, variant, disabled }: ActionB
     const variants: Record<string, string> = {
         primary: 'border-primary-500/40 hover:bg-primary-500/10 text-primary-500',
         secondary: 'border-border hover:bg-surface-hover text-textSecondary',
-        success: 'border-success/40 hover:bg-success/10 text-success',
-        warning: 'border-warning/40 hover:bg-warning/10 text-warning',
-        error: 'border-error/40 hover:bg-error/10 text-error',
-        destructive: 'border-error/40 hover:bg-error/10 text-error',
+        success: 'border-borderHover hover:bg-surfaceElevated text-success',
+        warning: 'border-borderHover hover:bg-surfaceElevated text-warning',
+        error: 'border-borderHover hover:bg-surfaceElevated text-error',
+        destructive: 'border-borderHover hover:bg-surfaceElevated text-error',
     }
 
     return (
@@ -756,7 +756,7 @@ function QueueDetailModal({ queueName, queue, onClose, onRetryJob }: QueueDetail
             onClick={onClose}
         >
             <div
-                className="bg-surface rounded-2xl border border-border max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col animate-scale-in"
+                className="bg-surface rounded-[var(--radius-lg)] border border-border max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col animate-scale-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -787,15 +787,15 @@ function QueueDetailModal({ queueName, queue, onClose, onRetryJob }: QueueDetail
                         <div className="text-2xl font-bold text-accent-500">{queue.active}</div>
                         <div className="text-xs text-textSecondary">Active</div>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-success/10">
+                    <div className="text-center p-2 rounded-lg bg-surfaceElevated">
                         <div className="text-2xl font-bold text-success">{queue.completed}</div>
                         <div className="text-xs text-textSecondary">Completed</div>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-error/10">
+                    <div className="text-center p-2 rounded-lg bg-surfaceElevated">
                         <div className="text-2xl font-bold text-error">{queue.failed}</div>
                         <div className="text-xs text-textSecondary">Failed</div>
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-warning/10">
+                    <div className="text-center p-2 rounded-lg bg-surfaceElevated">
                         <div className="text-2xl font-bold text-warning">{queue.delayed}</div>
                         <div className="text-xs text-textSecondary">Delayed</div>
                     </div>
@@ -817,11 +817,11 @@ function QueueDetailModal({ queueName, queue, onClose, onRetryJob }: QueueDetail
                                         <span className="font-mono text-sm text-textPrimary">{job.id}</span>
                                         <span className={cn(
                                             "px-2 py-0.5 rounded-full text-xs font-medium",
-                                            job.state === 'completed' && "bg-success/10 text-success",
-                                            job.state === 'failed' && "bg-error/10 text-error",
+                                            job.state === 'completed' && "bg-surfaceElevated text-success",
+                                            job.state === 'failed' && "bg-surfaceElevated text-error",
                                             job.state === 'active' && "bg-accent-500/10 text-accent-500",
                                             job.state === 'waiting' && "bg-primary-500/10 text-primary-500",
-                                            job.state === 'delayed' && "bg-warning/10 text-warning"
+                                            job.state === 'delayed' && "bg-surfaceElevated text-warning"
                                         )}>
                                             {job.state}
                                         </span>
@@ -831,7 +831,7 @@ function QueueDetailModal({ queueName, queue, onClose, onRetryJob }: QueueDetail
                                         {job.finishedOn && ` • Finished: ${formatTimeAgo(job.finishedOn)}`}
                                     </div>
                                     {job.failedReason && (
-                                        <p className="text-sm text-error bg-error/5 p-2 rounded mt-2">{job.failedReason}</p>
+                                        <p className="text-sm text-error bg-surface p-2 rounded mt-2">{job.failedReason}</p>
                                     )}
                                     {job.state === 'failed' && (
                                         <button

@@ -519,7 +519,7 @@ export default function LicensesPage() {
                                     </p>
                                 </div>
                                 {error && (
-                                    <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-warning/20 bg-warning/5 p-md text-sm text-textSecondary">
+                                    <div className="rounded-[calc(var(--radius-lg)*1.25)] border border-border bg-surface p-md text-sm text-textSecondary">
                                         Partial refresh issue: {error}
                                     </div>
                                 )}

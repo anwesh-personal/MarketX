@@ -280,7 +280,7 @@ export default function IcpManagerPage() {
 
             {showCreate && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-2xl bg-background rounded-2xl border border-border max-h-[90vh] overflow-auto">
+                    <div className="w-full max-w-2xl bg-background rounded-[var(--radius-lg)] border border-border max-h-[90vh] overflow-auto">
                         <div className="p-5 border-b border-border flex items-center justify-between">
                             <h2 className="text-xl font-semibold">Create ICP</h2>
                             <button onClick={() => setShowCreate(false)} className="text-sm text-muted-foreground hover:text-foreground">Close</button>

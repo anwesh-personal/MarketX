@@ -102,10 +102,10 @@ const QUEUE_LABELS: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
     const map: Record<string, { cls: string; icon: React.ReactNode; label: string }> = {
-        ok:            { cls: 'bg-success/10 text-success border-success/20',   icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Connected' },
-        error:         { cls: 'bg-error/10 text-error border-error/20',         icon: <XCircle className="w-3.5 h-3.5" />,     label: 'Error' },
+        ok:            { cls: 'bg-surfaceElevated text-success border-border',   icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Connected' },
+        error:         { cls: 'bg-surfaceElevated text-error border-border',         icon: <XCircle className="w-3.5 h-3.5" />,     label: 'Error' },
         unconfigured:  { cls: 'bg-muted/20 text-textSecondary border-border',   icon: <Settings className="w-3.5 h-3.5" />,    label: 'Not Configured' },
-        testing:       { cls: 'bg-info/10 text-info border-info/20',            icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, label: 'Testing...' },
+        testing:       { cls: 'bg-surfaceElevated text-info border-border',            icon: <Loader2 className="w-3.5 h-3.5 animate-spin" />, label: 'Testing...' },
         untested:      { cls: 'bg-muted/20 text-textSecondary border-border',   icon: <Clock className="w-3.5 h-3.5" />,        label: 'Not Tested' },
     }
     const s = map[status] || map.untested
@@ -255,7 +255,7 @@ export default function InfrastructurePage() {
 
             {/* Errors */}
             {error && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/20 text-error text-sm">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-surfaceElevated border border-border text-error text-sm">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <span className="flex-1">{error}</span>
                     <button onClick={() => setError(null)}><X className="w-4 h-4" /></button>
@@ -281,7 +281,7 @@ function StatusCard({ label, status, detail, custom }: { label: string; status: 
     const isErr = status === 'error'
     return (
         <div className="premium-card !p-4 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOk ? 'bg-success/10' : isErr ? 'bg-error/10' : 'bg-muted/20'}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOk ? 'bg-surfaceElevated' : isErr ? 'bg-surfaceElevated' : 'bg-muted/20'}`}>
                 {isOk ? <Wifi className={`w-5 h-5 text-success`} /> : isErr ? <WifiOff className="w-5 h-5 text-error" /> : <Settings className="w-5 h-5 text-textTertiary" />}
             </div>
             <div className="min-w-0">
@@ -432,7 +432,7 @@ function RedisTab({ deployment, onSave, saving, testing, onTest, show, toggleSho
             </div>
 
             {deployment.redis_error && (
-                <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-error text-sm">{deployment.redis_error}</div>
+                <div className="p-3 rounded-lg bg-surfaceElevated border border-border text-error text-sm">{deployment.redis_error}</div>
             )}
 
             <div className="space-y-4">

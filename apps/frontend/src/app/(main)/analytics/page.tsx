@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
                 {/* Total Runs */}
                 <div className="card">
                     <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-primary/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <Zap className="w-5 h-5 text-primary" />
                         </div>
                     </div>
@@ -188,7 +188,7 @@ export default function AnalyticsPage() {
                 {/* Success Rate */}
                 <div className="card">
                     <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-success/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <CheckCircle className="w-5 h-5 text-success" />
                         </div>
                         <div className="flex items-center gap-xs text-sm font-medium text-success">
@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
                 {/* Avg Duration */}
                 <div className="card">
                     <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-info/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <Clock className="w-5 h-5 text-info" />
                         </div>
                     </div>
@@ -218,7 +218,7 @@ export default function AnalyticsPage() {
                 {/* Failed Runs */}
                 <div className="card">
                     <div className="flex items-start justify-between mb-md">
-                        <div className="p-sm rounded-[var(--radius-md)] bg-error/10">
+                        <div className="p-sm rounded-[var(--radius-md)] bg-surfaceElevated">
                             <XCircle className="w-5 h-5 text-error" />
                         </div>
                         {analytics && analytics.failed_runs > 0 && (

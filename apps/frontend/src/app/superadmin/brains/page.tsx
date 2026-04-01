@@ -283,7 +283,7 @@ export default function BrainManagementPage() {
 
             {/* Empty State */}
             {!isLoading && brains.length === 0 && (
-                <div className="rounded-2xl border-2 border-dashed border-border/60 bg-muted/20 p-16 text-center">
+                <div className="rounded-[var(--radius-lg)] border-2 border-dashed border-border/60 bg-muted/20 p-16 text-center">
                     <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-xl font-semibold mb-2">No Brain Templates</h3>
                     <p className="text-muted-foreground mb-6">
@@ -298,7 +298,7 @@ export default function BrainManagementPage() {
             {/* Create Brain Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-background rounded-2xl border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+                    <div className="bg-background rounded-[var(--radius-lg)] border border-border/40 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
                         <div className="p-6 border-b border-border/40">
                             <h2 className="text-2xl font-bold">Create Brain Template</h2>
                             <p className="text-muted-foreground mt-1">
@@ -394,7 +394,7 @@ export default function BrainManagementPage() {
 
 function StatCard({ label, value, icon: Icon, color }: any) {
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-br from-background to-muted/20 p-6 hover:shadow-xl transition-all duration-300">
+        <div className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-border/40 bg-gradient-to-br from-background to-muted/20 p-6 hover:shadow-xl transition-all duration-300">
             <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-10 blur-3xl`} />
             <div className="relative">
                 <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${color} bg-opacity-10 mb-4`}>
@@ -415,7 +415,7 @@ function StatCard({ label, value, icon: Icon, color }: any) {
 
 function BrainCard({ brain, getTierColor, getTierLabel, onSelect, onDelete }: any) {
     return (
-        <div className="group relative overflow-hidden rounded-2xl border border-border/40 bg-background hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
+        <div className="group relative overflow-hidden rounded-[var(--radius-lg)] border border-border/40 bg-background hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
             {/* Gradient Background */}
             <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-br ${getTierColor(brain.pricing_tier)} opacity-20`} />
 
@@ -427,7 +427,7 @@ function BrainCard({ brain, getTierColor, getTierLabel, onSelect, onDelete }: an
                         <div className="flex items-center gap-2 mb-2">
                             <h3 className="text-xl font-bold">{brain.name}</h3>
                             {brain.is_default && (
-                                <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs font-medium">
+                                <span className="px-2 py-0.5 rounded-full bg-surfaceElevated text-primary text-xs font-medium">
                                     Default
                                 </span>
                             )}
@@ -464,7 +464,7 @@ function BrainCard({ brain, getTierColor, getTierLabel, onSelect, onDelete }: an
                 <div className="flex gap-2 pt-4 border-t border-border/40">
                     <button
                         onClick={onSelect}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-all font-medium"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-surfaceElevated text-primary rounded-xl hover:bg-surfaceElevated transition-all font-medium"
                     >
                         <Edit2 className="w-4 h-4" />
                         Configure

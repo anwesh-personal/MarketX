@@ -22,7 +22,7 @@ export function MWOverviewSection({ color }: { color: string }) {
                 { title: '8. Run campaigns', desc: 'Workflows fire (manual/scheduled). Agents write emails/pages using KB + Brain + Prompts. Content dispatched via MailWizz.' },
                 { title: '9. Signals feed back', desc: 'MailWizz webhooks (open/click/reply/bounce/complaint) → signal_event → daily rollups → Coach analyzes → Brain learns.' },
             ]} />
-            <Tip icon={<Lightbulb size={14} />} color="#f59e0b">
+            <Tip icon={<Lightbulb size={14} />} color="var(--color-warning)">
                 The key insight: you build templates ONCE, then deploy to unlimited clients. Each client gets isolated copies. Changes to templates don't affect deployed instances — they're snapshots.
             </Tip>
         </div>

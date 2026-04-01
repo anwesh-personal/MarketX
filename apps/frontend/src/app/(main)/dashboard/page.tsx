@@ -259,9 +259,9 @@ export default function DashboardPage() {
 
             {/* Walkthrough Guide Banner */}
             {!walkthroughDismissed && (
-                <div className="relative overflow-hidden rounded-2xl border border-accent/20 p-4 sm:p-5 animate-fade-in"
+                <div className="relative overflow-hidden rounded-[var(--radius-lg)] border border-accent/20 p-4 sm:p-5 animate-fade-in"
                     style={{
-                        background: 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(139,92,246,0.06) 50%, rgba(236,72,153,0.04) 100%)',
+                        background: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.06) 0%, var(--color-surface-elevated) 100%)',
                     }}>
                     {/* Grid pattern */}
                     <div className="absolute inset-0 opacity-[0.03]" style={{
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                     }} />
                     <div className="relative flex items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-accent/15 flex items-center justify-center text-2xl flex-shrink-0">
+                            <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-accent/15 flex items-center justify-center text-2xl flex-shrink-0">
                                 🚀
                             </div>
                             <div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <Link href="/walkthrough"
                                 className="px-5 py-2.5 rounded-xl bg-accent text-white text-xs font-bold flex items-center gap-2 hover:bg-accent/90 transition-colors shadow-md"
-                                style={{ boxShadow: '0 4px 20px rgba(99,102,241,0.3)' }}>
+                                style={{ boxShadow: '0 4px 20px var(--color-glow)' }}>
                                 <Sparkles className="w-3.5 h-3.5" /> Start Walkthrough
                             </Link>
                             <button onClick={() => { setWalkthroughDismissed(true); localStorage.setItem('mw_walkthrough_dismissed', '1'); }}
@@ -431,9 +431,9 @@ export default function DashboardPage() {
                                     style={{ animationDelay: `${i * 50}ms` }}>
                                     <div className="flex items-center gap-3">
                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center
-                                            ${run.status === 'completed' ? 'bg-success/10 text-success' :
-                                              run.status === 'failed' ? 'bg-error/10 text-error' :
-                                              run.status === 'running' ? 'bg-warning/10 text-warning' :
+                                            ${run.status === 'completed' ? 'bg-surfaceElevated text-success' :
+                                              run.status === 'failed' ? 'bg-surfaceElevated text-error' :
+                                              run.status === 'running' ? 'bg-surfaceElevated text-warning' :
                                               'bg-surfaceHover text-textTertiary'}`}>
                                             {run.status === 'completed' ? <CheckCircle className="w-4 h-4" /> :
                                              run.status === 'failed' ? <X className="w-4 h-4" /> :
@@ -469,7 +469,7 @@ export default function DashboardPage() {
                 <div className="stat-card flex flex-col justify-between">
                     <div>
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-[var(--radius-md)] bg-error/10 flex items-center justify-center text-error">
+                            <div className="w-8 h-8 rounded-[var(--radius-md)] bg-surfaceElevated flex items-center justify-center text-error">
                                 <Activity className="w-4 h-4" />
                             </div>
                             <div className="stat-card-label">Failed Runs</div>
@@ -480,7 +480,7 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     {stats?.failed_runs ? (
-                        <Link href="/writer?status=failed" className="btn btn-ghost btn-sm w-full mt-4 border border-border text-textSecondary hover:text-error hover:border-error/30 transition-colors">
+                        <Link href="/writer?status=failed" className="btn btn-ghost btn-sm w-full mt-4 border border-border text-textSecondary hover:text-error hover:border-border transition-colors">
                             Review Errors
                         </Link>
                     ) : null}

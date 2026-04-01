@@ -258,9 +258,9 @@ export default function MasteryAgentsPage() {
             <p className={`text-sm mt-1 ${c.textMuted}`}>IIInfrastructure Acquisition Learning System — Complete Specification</p>
           </div>
           <div className='flex items-center gap-3 text-sm'>
-            <span className='px-3 py-1.5 rounded-full bg-success/10 text-success font-bold border border-success/20'>{totalControlPoints} Control Points</span>
+            <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-success font-bold border border-border'>{totalControlPoints} Control Points</span>
             <span className='px-3 py-1.5 rounded-full bg-accent/10 text-accent font-bold border border-accent/20'>9 Canonical Agents</span>
-            <span className='px-3 py-1.5 rounded-full bg-info/10 text-info font-bold border border-info/20'>3-Tier KB</span>
+            <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-info font-bold border border-border'>3-Tier KB</span>
           </div>
         </div>
       </header>
@@ -296,15 +296,15 @@ export default function MasteryAgentsPage() {
                 <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className='text-3xl font-black mb-3'>Acquisition Control Points</motion.h2>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className={`text-lg leading-relaxed max-w-3xl ${c.textMuted}`}>Every place where a decision changes downstream economics, conversion quality, learning quality, or scalability. <strong className={c.text}>10 domains. {totalControlPoints} control points. {tier1Count} Tier-1 critical.</strong></motion.p>
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className='flex flex-wrap gap-3 mt-5'>
-                  <span className='px-3 py-1.5 rounded-full bg-success/10 text-success text-sm font-bold border border-success/20'>Tier 1 — Critical ({tier1Count})</span>
-                  <span className='px-3 py-1.5 rounded-full bg-info/10 text-info text-sm font-bold border border-info/20'>Tier 2 — Supporting</span>
-                  <span className='px-3 py-1.5 rounded-full bg-warning/10 text-warning text-sm font-bold border border-warning/20'>Tier 3 — Specialized</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-success text-sm font-bold border border-border'>Tier 1 — Critical ({tier1Count})</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-info text-sm font-bold border border-border'>Tier 2 — Supporting</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-warning text-sm font-bold border border-border'>Tier 3 — Specialized</span>
                 </motion.div>
               </div>
               {CONTROL_POINT_DOMAINS.map((domain, dIdx) => {
                 const isExpanded = expandedDomain === domain.id;
                 return (
-                  <motion.div key={domain.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: dIdx * 0.05, type: 'spring', stiffness: 120, damping: 16 }} className={`rounded-2xl border-2 transition-all ${isExpanded ? `border-${domain.color}/40 shadow-lg` : `${c.border}`} ${c.surface} overflow-hidden`}>
+                  <motion.div key={domain.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: dIdx * 0.05, type: 'spring', stiffness: 120, damping: 16 }} className={`rounded-[var(--radius-lg)] border-2 transition-all ${isExpanded ? `border-${domain.color}/40 shadow-lg` : `${c.border}`} ${c.surface} overflow-hidden`}>
                     <button onClick={() => setExpandedDomain(isExpanded ? null : domain.id)} className='w-full text-left p-6 flex items-center justify-between gap-4 group'>
                       <div className='flex items-center gap-4'>
                         <motion.span whileHover={{ scale: 1.1, rotate: -3 }} className={`text-sm font-black w-10 h-10 rounded-xl bg-${domain.color}/10 text-${domain.color} border border-${domain.color}/20 flex items-center justify-center`}>{domain.domain}</motion.span>
@@ -323,7 +323,7 @@ export default function MasteryAgentsPage() {
                               <motion.div key={cp.id} initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: cpIdx * 0.04, type: 'spring', stiffness: 150, damping: 16 }} whileHover={{ y: -3, scale: 1.01 }} className={`rounded-xl border ${c.border} ${c.surfaceHover} p-5 transition-shadow hover:shadow-lg`}>
                                 <div className='flex items-start justify-between gap-3 mb-3'>
                                   <h4 className='font-bold text-base'>{cp.name}</h4>
-                                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${cp.tier === 1 ? 'bg-success/10 text-success border border-success/20' : cp.tier === 2 ? 'bg-info/10 text-info border border-info/20' : 'bg-warning/10 text-warning border border-warning/20'}`}>Tier {cp.tier}</span>
+                                  <span className={`text-[10px] font-black px-2.5 py-1 rounded-full flex-shrink-0 ${cp.tier === 1 ? 'bg-surfaceElevated text-success border border-border' : cp.tier === 2 ? 'bg-surfaceElevated text-info border border-border' : 'bg-surfaceElevated text-warning border border-border'}`}>Tier {cp.tier}</span>
                                 </div>
                                 <p className={`text-sm font-semibold mb-2 ${c.text}`}>&ldquo;{cp.question}&rdquo;</p>
                                 <p className={`text-sm leading-relaxed ${c.textMuted} mb-3`}>{cp.why}</p>
@@ -352,7 +352,7 @@ export default function MasteryAgentsPage() {
                 {CANONICAL_NINE.map((agent, idx) => {
                   const isOpen = expandedAgent === agent.id;
                   return (
-                    <motion.div key={agent.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05, type: 'spring', stiffness: 120, damping: 16 }} className={`rounded-2xl border-2 transition-all ${isOpen ? 'border-accent/40 shadow-xl' : c.border} ${c.surface} overflow-hidden`}>
+                    <motion.div key={agent.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05, type: 'spring', stiffness: 120, damping: 16 }} className={`rounded-[var(--radius-lg)] border-2 transition-all ${isOpen ? 'border-accent/40 shadow-xl' : c.border} ${c.surface} overflow-hidden`}>
                       <button onClick={() => setExpandedAgent(isOpen ? null : agent.id)} className='w-full text-left p-6 flex items-center justify-between gap-4 group'>
                         <div className='flex items-center gap-4'>
                           <motion.div whileHover={{ scale: 1.12, rotate: -5 }} className='w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0 border border-accent/20'>
@@ -372,7 +372,7 @@ export default function MasteryAgentsPage() {
                         {isOpen && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35 }} className='overflow-hidden'>
                             <div className='px-6 pb-6 space-y-5'>
-                              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`rounded-xl bg-warning/5 p-5 border border-warning/20`}>
+                              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={`rounded-xl bg-surface p-5 border border-border`}>
                                 <h4 className='text-xs font-black uppercase tracking-[0.2em] text-warning mb-2 flex items-center gap-2'><Award size={14} /> Performance Standard</h4>
                                 <p className='text-sm leading-relaxed'>{agent.standard}</p>
                               </motion.div>
@@ -396,7 +396,7 @@ export default function MasteryAgentsPage() {
                               </div>
                               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className='flex flex-wrap gap-3'>
                                 <span className='text-xs font-bold px-3 py-1.5 rounded-full bg-accent/10 text-accent border border-accent/20'>Writes → {agent.writes}</span>
-                                <span className='text-xs font-bold px-3 py-1.5 rounded-full bg-info/10 text-info border border-info/20'>Control: {agent.controlPoint}</span>
+                                <span className='text-xs font-bold px-3 py-1.5 rounded-full bg-surfaceElevated text-info border border-border'>Control: {agent.controlPoint}</span>
                               </motion.div>
                             </div>
                           </motion.div>
@@ -419,7 +419,7 @@ export default function MasteryAgentsPage() {
                 <h3 className='text-xl font-black mb-6'>The 5 Structural Layers</h3>
                 <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4'>
                   {FIVE_LAYERS.map((layer, idx) => (
-                    <motion.div key={layer.layer} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.1, type: 'spring', stiffness: 120, damping: 14 }} whileHover={{ y: -6, scale: 1.03 }} className={`rounded-2xl border ${c.border} ${c.surface} p-6 text-center transition-shadow hover:shadow-xl relative overflow-hidden`}>
+                    <motion.div key={layer.layer} initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.1, type: 'spring', stiffness: 120, damping: 14 }} whileHover={{ y: -6, scale: 1.03 }} className={`rounded-[var(--radius-lg)] border ${c.border} ${c.surface} p-6 text-center transition-shadow hover:shadow-xl relative overflow-hidden`}>
                       <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 4 + idx, repeat: Infinity, ease: 'easeInOut' }} className={`absolute -top-10 -right-10 w-24 h-24 rounded-full bg-${layer.color}/[0.06] blur-xl`} />
                       <motion.div whileHover={{ scale: 1.1, rotate: -5 }} className={`w-14 h-14 mx-auto rounded-xl bg-${layer.color}/10 flex items-center justify-center mb-4 border border-${layer.color}/20`}>
                         <layer.icon size={26} className={`text-${layer.color}`} />
@@ -432,7 +432,7 @@ export default function MasteryAgentsPage() {
                   ))}
                 </div>
               </div>
-              <div className={`rounded-2xl border ${c.border} ${c.surface} p-8`}>
+              <div className={`rounded-[var(--radius-lg)] border ${c.border} ${c.surface} p-8`}>
                 <h3 className='text-xl font-black mb-6'>Critical Design Rules</h3>
                 <div className='grid grid-cols-1 md:grid-cols-2 gap-5'>
                   {[
@@ -461,7 +461,7 @@ export default function MasteryAgentsPage() {
               </div>
               <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
                 {KB_SCOPES.map((ks, idx) => (
-                  <motion.div key={ks.scope} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.12, type: 'spring', stiffness: 100, damping: 14 }} whileHover={{ y: -6, scale: 1.02 }} className={`rounded-2xl border-2 border-${ks.color}/20 ${c.surface} p-6 transition-shadow hover:shadow-xl relative overflow-hidden`}>
+                  <motion.div key={ks.scope} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.12, type: 'spring', stiffness: 100, damping: 14 }} whileHover={{ y: -6, scale: 1.02 }} className={`rounded-[var(--radius-lg)] border-2 border-${ks.color}/20 ${c.surface} p-6 transition-shadow hover:shadow-xl relative overflow-hidden`}>
                     <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 6 + idx * 2, repeat: Infinity, ease: 'easeInOut' }} className={`absolute -top-16 -right-16 w-40 h-40 rounded-full bg-${ks.color}/[0.06] blur-[50px]`} />
                     <div className='relative'>
                       <div className='flex items-center gap-3 mb-4'>
@@ -482,7 +482,7 @@ export default function MasteryAgentsPage() {
                   </motion.div>
                 ))}
               </div>
-              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`rounded-2xl border ${c.border} ${c.surface} p-8`}>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`rounded-[var(--radius-lg)] border ${c.border} ${c.surface} p-8`}>
                 <h3 className='text-xl font-black mb-4'>Authority Resolution Order</h3>
                 <p className={`text-sm ${c.textMuted} mb-6`}>When an agent makes a decision, knowledge is consulted in this <strong className={c.text}>deterministic</strong> order — no exceptions:</p>
                 <div className='flex flex-col sm:flex-row items-center gap-3'>
@@ -516,7 +516,7 @@ export default function MasteryAgentsPage() {
                 <h3 className='text-xl font-black mb-6'>Knowledge Lifecycle States</h3>
                 <div className='grid grid-cols-2 sm:grid-cols-4 gap-4'>
                   {GOVERNANCE_LIFECYCLE.map((gs, idx) => (
-                    <motion.div key={gs.state} initial={{ opacity: 0, y: 16, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.07, type: 'spring', stiffness: 130, damping: 14 }} whileHover={{ y: -5, scale: 1.04 }} className={`rounded-2xl border ${c.border} ${c.surface} p-5 flex flex-col items-center text-center transition-shadow hover:shadow-xl relative overflow-hidden`}>
+                    <motion.div key={gs.state} initial={{ opacity: 0, y: 16, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: idx * 0.07, type: 'spring', stiffness: 130, damping: 14 }} whileHover={{ y: -5, scale: 1.04 }} className={`rounded-[var(--radius-lg)] border ${c.border} ${c.surface} p-5 flex flex-col items-center text-center transition-shadow hover:shadow-xl relative overflow-hidden`}>
                       <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 3, repeat: Infinity, delay: idx * 0.3 }} className={`w-14 h-14 rounded-xl bg-${gs.color}/10 flex items-center justify-center mb-3 border border-${gs.color}/20`}>
                         <gs.icon size={24} className={`text-${gs.color}`} />
                       </motion.div>
@@ -526,7 +526,7 @@ export default function MasteryAgentsPage() {
                   ))}
                 </div>
               </div>
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`rounded-2xl border ${c.border} ${c.surface} p-8`}>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`rounded-[var(--radius-lg)] border ${c.border} ${c.surface} p-8`}>
                 <h3 className='text-xl font-black mb-2'>Promotion Requirements</h3>
                 <p className={`text-sm ${c.textMuted} mb-6`}>A candidate-global object may be promoted only if <strong className='text-error'>ALL</strong> of the following are satisfied:</p>
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
@@ -545,7 +545,7 @@ export default function MasteryAgentsPage() {
                   ))}
                 </div>
               </motion.div>
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={`rounded-2xl border-2 border-error/20 bg-error/[0.03] p-6`}>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={`rounded-[var(--radius-lg)] border-2 border-border bg-error/[0.03] p-6`}>
                 <h3 className='text-lg font-black mb-4 text-error flex items-center gap-2'><Lock size={18} /> What Must NEVER Happen</h3>
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                   {[
@@ -571,18 +571,18 @@ export default function MasteryAgentsPage() {
                 <motion.h2 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className='text-3xl font-black mb-3'>The Network Effect — Compounding Moat</motion.h2>
                 <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className={`text-lg leading-relaxed max-w-3xl ${c.textMuted}`}>At scale, the system becomes <strong className={c.text}>harder and harder to compete against</strong>. Each partner contributes signal. Each campaign contributes signal. The network compounds intelligence through controlled local execution and governed global knowledge promotion.</motion.p>
               </div>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`rounded-2xl border-2 border-accent/20 ${c.surface} p-8 sm:p-12 relative overflow-hidden`}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className={`rounded-[var(--radius-lg)] border-2 border-accent/20 ${c.surface} p-8 sm:p-12 relative overflow-hidden`}>
                 <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 60, repeat: Infinity, ease: 'linear' }} className='absolute -top-20 -right-20 w-60 h-60 rounded-full border border-accent/10' />
-                <motion.div animate={{ rotate: [360, 0] }} transition={{ duration: 45, repeat: Infinity, ease: 'linear' }} className='absolute -bottom-16 -left-16 w-48 h-48 rounded-full border border-success/10' />
+                <motion.div animate={{ rotate: [360, 0] }} transition={{ duration: 45, repeat: Infinity, ease: 'linear' }} className='absolute -bottom-16 -left-16 w-48 h-48 rounded-full border border-border' />
                 <div className='relative flex flex-col items-center gap-0 py-4'>
                   {['More Partners', 'More Signal', 'More Patterns', 'Better Priors', 'Better Acquisition', 'More Partners'].map((step, i) => (
                     <motion.div key={`${step}-${i}`} initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.12, type: 'spring', stiffness: 100, damping: 12 }} className='flex flex-col items-center'>
                       {i > 0 && (
                         <motion.div initial={{ scaleY: 0 }} animate={{ scaleY: 1 }} transition={{ delay: 0.3 + i * 0.12 }} className='h-8 sm:h-10 w-px bg-gradient-to-b from-accent/40 to-accent/10 origin-top' />
                       )}
-                      <motion.div whileHover={{ scale: 1.08, y: -3 }} className={`rounded-2xl border-2 ${i === 0 || i === 5 ? 'border-success/50 bg-success/10 shadow-lg' : 'border-accent/20 bg-accent/5'} px-8 sm:px-12 py-4 sm:py-5 text-center transition-shadow hover:shadow-xl`}>
+                      <motion.div whileHover={{ scale: 1.08, y: -3 }} className={`rounded-[var(--radius-lg)] border-2 ${i === 0 || i === 5 ? 'border-borderHover bg-surfaceElevated shadow-lg' : 'border-accent/20 bg-accent/5'} px-8 sm:px-12 py-4 sm:py-5 text-center transition-shadow hover:shadow-xl`}>
                         <span className={`text-lg sm:text-xl font-black ${i === 0 || i === 5 ? 'text-success' : 'text-accent'}`}>{step}</span>
-                        {(i === 0 || i === 5) && <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className='absolute -inset-px rounded-2xl border border-success/30' />}
+                        {(i === 0 || i === 5) && <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className='absolute -inset-px rounded-[var(--radius-lg)] border border-border' />}
                       </motion.div>
                     </motion.div>
                   ))}
@@ -592,12 +592,12 @@ export default function MasteryAgentsPage() {
                 <h3 className='text-xl font-black mb-6'>The 3 Biggest Network-Effect Control Points</h3>
                 <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
                   {NETWORK_EFFECT_THREE.map((ne, idx) => (
-                    <motion.div key={ne.name} initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.5 + idx * 0.12, type: 'spring', stiffness: 100, damping: 14 }} whileHover={{ y: -6, scale: 1.02 }} className={`rounded-2xl border-2 ${c.borderStrong} ${c.surface} p-6 transition-shadow hover:shadow-xl relative overflow-hidden`}>
+                    <motion.div key={ne.name} initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: 0.5 + idx * 0.12, type: 'spring', stiffness: 100, damping: 14 }} whileHover={{ y: -6, scale: 1.02 }} className={`rounded-[var(--radius-lg)] border-2 ${c.borderStrong} ${c.surface} p-6 transition-shadow hover:shadow-xl relative overflow-hidden`}>
                       <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 5 + idx * 2, repeat: Infinity, ease: 'easeInOut' }} className='absolute -top-12 -right-12 w-32 h-32 rounded-full bg-accent/[0.05] blur-[40px]' />
                       <div className='relative'>
                         <h4 className='text-xl font-black mb-3 text-accent'>{ne.name}</h4>
                         <p className={`text-sm leading-relaxed ${c.textMuted} mb-5`}>{ne.why}</p>
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + idx * 0.1 }} className={`rounded-xl bg-success/5 p-4 border border-success/20`}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + idx * 0.1 }} className={`rounded-xl bg-surface p-4 border border-border`}>
                           <h5 className='text-xs font-black uppercase tracking-[0.2em] text-success mb-2 flex items-center gap-2'><Zap size={13} /> Compounds Into</h5>
                           <p className='text-sm leading-relaxed'>{ne.compounds}</p>
                         </motion.div>
@@ -615,11 +615,11 @@ export default function MasteryAgentsPage() {
                 <h2 className='text-3xl font-black mb-3'>Acquisition Learning System — 10-Phase Roadmap</h2>
                 <p className={`text-lg leading-relaxed max-w-3xl ${c.textMuted}`}>Build the memory and governance infrastructure <strong>before</strong> building agents. Without memory, agents become disconnected tools. Each phase gates the next — no skipping.</p>
                 <div className='flex flex-wrap gap-3 mt-5'>
-                  <span className='px-3 py-1.5 rounded-full bg-success/10 text-success text-sm font-bold border border-success/20'>Phases 1–2: Memory</span>
-                  <span className='px-3 py-1.5 rounded-full bg-info/10 text-info text-sm font-bold border border-info/20'>Phases 3–4: Agents</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-success text-sm font-bold border border-border'>Phases 1–2: Memory</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-info text-sm font-bold border border-border'>Phases 3–4: Agents</span>
                   <span className='px-3 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-bold border border-accent/20'>Phases 5–6: Learning</span>
-                  <span className='px-3 py-1.5 rounded-full bg-warning/10 text-warning text-sm font-bold border border-warning/20'>Phases 7–8: Network</span>
-                  <span className='px-3 py-1.5 rounded-full bg-error/10 text-error text-sm font-bold border border-error/20'>Phases 9–10: Moat</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-warning text-sm font-bold border border-border'>Phases 7–8: Network</span>
+                  <span className='px-3 py-1.5 rounded-full bg-surfaceElevated text-error text-sm font-bold border border-border'>Phases 9–10: Moat</span>
                 </div>
               </div>
 
@@ -642,7 +642,7 @@ export default function MasteryAgentsPage() {
                       <motion.button
                         onClick={() => setExpandedPhase(isOpen ? null : phase.phase)}
                         whileHover={{ x: 4 }}
-                        className={`w-full text-left rounded-2xl border ${isOpen ? `border-${phase.color}/40 shadow-lg` : c.border} ${c.surface} p-5 sm:p-6 transition-all`}
+                        className={`w-full text-left rounded-[var(--radius-lg)] border ${isOpen ? `border-${phase.color}/40 shadow-lg` : c.border} ${c.surface} p-5 sm:p-6 transition-all`}
                       >
                         <div className='flex items-center justify-between gap-3 mb-2'>
                           <div className='flex items-center gap-3 flex-wrap'>
@@ -667,7 +667,7 @@ export default function MasteryAgentsPage() {
                             transition={{ duration: 0.3 }}
                             className='overflow-hidden'
                           >
-                            <div className={`mt-3 rounded-2xl border ${c.border} ${c.surfaceHover} p-5 sm:p-6 space-y-5`}>
+                            <div className={`mt-3 rounded-[var(--radius-lg)] border ${c.border} ${c.surfaceHover} p-5 sm:p-6 space-y-5`}>
                               <div>
                                 <h4 className={`text-xs font-black uppercase tracking-[0.25em] mb-3 text-${phase.color} flex items-center gap-2`}><Cpu size={13} /> Technical Specification</h4>
                                 <p className={`text-sm leading-relaxed ${c.textMuted}`}>{phase.technical}</p>
@@ -713,7 +713,7 @@ export default function MasteryAgentsPage() {
                 })}
               </div>
 
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={`rounded-2xl border border-success/30 bg-success/5 p-6 sm:p-8 text-center`}>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={`rounded-[var(--radius-lg)] border border-border bg-surface p-6 sm:p-8 text-center`}>
                 <h3 className='text-xl font-black mb-3 text-success'>The Final Outcome</h3>
                 <p className={`text-base leading-relaxed max-w-2xl mx-auto ${c.text}`}>
                   If built correctly, III will operate a <strong>self-improving acquisition system</strong> where partners learn locally, the network learns globally, knowledge compounds, and performance improves with every new partner that joins.

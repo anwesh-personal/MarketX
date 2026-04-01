@@ -41,7 +41,7 @@ export default function LoginPage() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-info/5 animate-gradient" />
 
             {/* Floating Orbs */}
-            <div className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-float" />
+            <div className="absolute top-20 left-20 w-72 h-72 bg-surfaceElevated rounded-full blur-3xl animate-float" />
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/10 rounded-full blur-3xl animate-float-delayed" />
 
             {/* Login Card */}
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
                     {/* Error Alert */}
                     {error && (
-                        <div className="mb-md p-md bg-error/10 border border-error/20 rounded-[var(--radius-md)] text-error text-sm">
+                        <div className="mb-md p-md bg-surfaceElevated border border-border rounded-[var(--radius-md)] text-error text-sm">
                             {error}
                         </div>
                     )}

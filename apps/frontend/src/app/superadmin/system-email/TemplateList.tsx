@@ -65,7 +65,7 @@ export function TemplateList({ templates, onEdit, fetchWithAuth, onRefresh }: Pr
                                 <button
                                     onClick={() => toggleActive(t)}
                                     disabled={toggling === t.id}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${t.is_active ? 'bg-success/10 text-success hover:bg-success/20' : 'bg-surface border border-border text-textTertiary hover:text-textPrimary'}`}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${t.is_active ? 'bg-surfaceElevated text-success hover:bg-surfaceElevated' : 'bg-surface border border-border text-textTertiary hover:text-textPrimary'}`}
                                 >
                                     {toggling === t.id ? <Loader2 className="w-3 h-3 animate-spin" /> : t.is_active ? <Power className="w-3 h-3" /> : <PowerOff className="w-3 h-3" />}
                                     {t.is_active ? 'Active' : 'Inactive'}
@@ -89,7 +89,7 @@ export function TemplateList({ templates, onEdit, fetchWithAuth, onRefresh }: Pr
                                     <p className="text-xs font-semibold text-textSecondary uppercase tracking-wider mb-2">Variables</p>
                                     <div className="flex flex-wrap gap-2">
                                         {(t.variables || []).map(v => (
-                                            <span key={v.name} className={`text-xs px-2 py-1 rounded-lg font-mono ${v.required ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-surface text-textTertiary border border-border'}`}>
+                                            <span key={v.name} className={`text-xs px-2 py-1 rounded-lg font-mono ${v.required ? 'bg-surfaceElevated text-warning border border-border' : 'bg-surface text-textTertiary border border-border'}`}>
                                                 {'{{' + v.name + '}}'}{v.required && ' *'}
                                             </span>
                                         ))}

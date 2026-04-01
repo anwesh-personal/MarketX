@@ -50,8 +50,8 @@ function SlideView({ slide }: { slide: MemberSlide }) {
                     <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/kb-manager')}
-                        className="mt-6 px-6 py-3 rounded-2xl bg-accent text-white font-bold text-sm flex items-center gap-2"
-                        style={{ boxShadow: '0 8px 32px rgba(99,102,241,0.3)' }}>
+                        className="mt-6 px-6 py-3 rounded-[var(--radius-lg)] bg-accent text-white font-bold text-sm flex items-center gap-2"
+                        style={{ boxShadow: '0 8px 32px var(--color-glow)' }}>
                         Get Started <ChevronRight size={16} />
                     </motion.button>
                 )}
@@ -149,7 +149,7 @@ export default function MemberWalkthroughPage() {
                 <p className="text-sm text-textSecondary">Step-by-step walkthrough · {total} slides · ~{MEMBER_SLIDES.reduce((a, s) => a + s.duration, 0)}s</p>
             </div>
 
-            <div className="rounded-3xl bg-surface border border-border overflow-hidden" style={{ boxShadow: '0 16px 64px rgba(0,0,0,0.08)' }}>
+            <div className="rounded-[var(--radius-xl)] bg-surface border border-border overflow-hidden" style={{ boxShadow: 'var(--shadow-lg)' }}>
                 {/* Top bar */}
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border/50 bg-surface/90 backdrop-blur-sm">
                     <div className="flex items-center gap-2 text-xs text-textTertiary">
@@ -208,7 +208,7 @@ export default function MemberWalkthroughPage() {
                     </button>
                     <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                         onClick={() => setPlaying(p => !p)}
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg"
+                        className="w-14 h-14 rounded-[var(--radius-lg)] flex items-center justify-center text-white shadow-lg"
                         style={{ background: sl.color, boxShadow: `0 6px 24px ${sl.color}40` }}>
                         {playing ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
                     </motion.button>

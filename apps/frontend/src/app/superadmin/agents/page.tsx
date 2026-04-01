@@ -123,11 +123,11 @@ const TIERS = [
 ]
 
 const AVATAR_COLORS = [
-    { value: 'primary', label: 'Primary', class: 'bg-primary/20 text-primary border-primary/30' },
-    { value: 'success', label: 'Success', class: 'bg-success/20 text-success border-success/30' },
-    { value: 'warning', label: 'Warning', class: 'bg-warning/20 text-warning border-warning/30' },
+    { value: 'primary', label: 'Primary', class: 'bg-surfaceElevated text-primary border-border' },
+    { value: 'success', label: 'Success', class: 'bg-surfaceElevated text-success border-border' },
+    { value: 'warning', label: 'Warning', class: 'bg-surfaceElevated text-warning border-border' },
     { value: 'accent', label: 'Accent', class: 'bg-accent/20 text-accent border-accent/30' },
-    { value: 'info', label: 'Info', class: 'bg-info/20 text-info border-info/30' },
+    { value: 'info', label: 'Info', class: 'bg-surfaceElevated text-info border-border' },
 ]
 
 const EMPTY_FORM = {
@@ -606,7 +606,7 @@ export default function AgentTemplatesPage() {
                                             {/* Avatar */}
                                             <div className={`
                                                 flex h-14 w-14 shrink-0 items-center justify-center
-                                                rounded-2xl border text-2xl
+                                                rounded-[var(--radius-lg)] border text-2xl
                                                 ${getAvatarColorClass(agent.avatar_color)}
                                             `}>
                                                 {agent.avatar_emoji}
@@ -805,7 +805,7 @@ export default function AgentTemplatesPage() {
                                                 disabled={isToggling}
                                                 className={`shrink-0 rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${
                                                     tool.is_enabled
-                                                        ? 'border-success/50 bg-success/20 text-success hover:bg-success/30'
+                                                        ? 'border-borderHover bg-surfaceElevated text-success hover:bg-surfaceHover'
                                                         : 'border-border bg-surface text-textTertiary hover:bg-surfaceHover'
                                                 }`}
                                             >
@@ -1200,7 +1200,7 @@ function ToggleRow({
             className="flex items-center justify-between rounded-[calc(var(--radius-lg)*1.2)] border border-border/70 bg-background/70 px-md py-md text-left"
         >
             <span className="text-sm font-medium text-textPrimary">{title}</span>
-            <div className={`inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-primary/15' : 'border-border bg-surface'}`}>
+            <div className={`inline-flex h-6 w-11 rounded-full border p-1 transition-all ${checked ? 'border-primary bg-surfaceElevated' : 'border-border bg-surface'}`}>
                 <div className={`h-4 w-4 rounded-full transition-all ${checked ? 'translate-x-5 bg-primary' : 'translate-x-0 bg-textTertiary'}`} />
             </div>
         </button>

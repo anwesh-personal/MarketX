@@ -119,7 +119,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
                 {/* Header — pinned */}
                 <div className="flex items-center justify-between border-b border-border px-lg py-md flex-shrink-0">
                     <div className="flex items-center gap-md">
-                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-primary/10 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-surfaceElevated flex items-center justify-center">
                             <UserPlus className="w-5 h-5 text-primary" />
                         </div>
                         <div>
@@ -184,7 +184,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
 
                         {/* Info */}
                         <div className="col-span-2">
-                            <div className="bg-info/10 border border-info rounded-[var(--radius-md)] p-md">
+                            <div className="bg-surfaceElevated border border-info rounded-[var(--radius-md)] p-md">
                                 <p className="text-info text-sm font-medium">
                                     📧 An invite email will be sent to the user with a link to set their password.
                                 </p>

@@ -245,15 +245,20 @@ async function executeNode(
 
                 console.log(`    📝 Prompt: ${resolvedPrompt.substring(0, 100)}...`);
 
-                // Call AI service
-                const aiResult: AICallResult = await aiService.call(resolvedPrompt, {
+                // Call AI service — use org-aware BYOK chain when orgId is available
+                const orgId = job.data.orgId;
+                const aiCallOptions = {
                     provider,
                     model,
                     temperature,
                     maxTokens,
                     systemPrompt: systemPrompt || undefined,
                     tier: job.data.tier,
-                });
+                };
+
+                const aiResult: AICallResult = orgId
+                    ? await aiService.callWithOrgContext(orgId, resolvedPrompt, aiCallOptions)
+                    : await aiService.call(resolvedPrompt, aiCallOptions);
 
                 content = {
                     text: aiResult.content,
@@ -408,8 +413,9 @@ async function executeNode(
                     // Extract brain agent from the join
                     const brainAgent = (orgAgent as any).brain_agents;
 
-                    // 2. Load assigned prompt_blocks (Prompt Studio integration)
-                    //    If blocks are assigned, they replace inline prompts. If not, fallback to inline.
+                    // 2. Load assigned prompt_blocks for THIS org_agent only.
+                    //    Brain-level prompt assembly was already done at queue time
+                    //    (via PromptStackAssembler) and is available in pipelineData.userInput.brain_context.prompt_stack
                     const { data: assignedPrompts } = await supabase
                         .from('prompt_assignments')
                         .select('priority, prompt_blocks(category, content, variables)')
@@ -418,56 +424,53 @@ async function executeNode(
                         .eq('is_active', true)
                         .order('priority', { ascending: true });
 
-                    // Also check brain_agent assignments
-                    let brainPrompts: any[] = [];
-                    if (brainAgent?.id) {
-                        const { data: bp } = await supabase
-                            .from('prompt_assignments')
-                            .select('priority, prompt_blocks(category, content, variables)')
-                            .eq('target_type', 'brain_agent')
-                            .eq('target_id', brainAgent.id)
-                            .eq('is_active', true)
-                            .order('priority', { ascending: true });
-                        brainPrompts = bp ?? [];
-                    }
-
-                    const hasPromptBlocks = (assignedPrompts && assignedPrompts.length > 0) || brainPrompts.length > 0;
+                    const hasAgentBlocks = assignedPrompts && assignedPrompts.length > 0;
 
                     const systemPromptParts: string[] = [];
 
-                    if (hasPromptBlocks) {
-                        // Use Prompt Studio blocks — organized by category
-                        const allBlocks = [
-                            ...brainPrompts.map(a => ({ ...(a as any).prompt_blocks, source: 'brain' })),
-                            ...(assignedPrompts ?? []).map(a => ({ ...(a as any).prompt_blocks, source: 'agent' })),
-                        ];
-
-                        // Build prompt in category order
-                        const categoryOrder = ['foundation', 'persona', 'domain', 'instruction', 'guardrails', 'task', 'custom'];
-                        for (const cat of categoryOrder) {
-                            const blocks = allBlocks.filter(b => b?.category === cat);
-                            for (const block of blocks) {
-                                if (block?.content) {
-                                    const label = `${block.source?.toUpperCase()} ${cat.toUpperCase()}`;
-                                    systemPromptParts.push(`### ${label}:\n${block.content}`);
-                                }
-                            }
-                        }
-
-                        console.log(`    📝 Loaded ${allBlocks.length} prompt blocks from Prompt Studio`);
+                    // Use pre-assembled brain prompt stack from input (if available)
+                    const preAssembled = pipelineData.userInput?.brain_context?.prompt_stack;
+                    if (preAssembled) {
+                        if (preAssembled.foundation) systemPromptParts.push(`### BRAIN FOUNDATION:\n${preAssembled.foundation}`);
+                        if (preAssembled.persona) systemPromptParts.push(`### BRAIN PERSONA:\n${preAssembled.persona}`);
+                        if (preAssembled.domain) systemPromptParts.push(`### BRAIN DOMAIN:\n${preAssembled.domain}`);
+                        if (preAssembled.instructions) systemPromptParts.push(`### BRAIN INSTRUCTIONS:\n${preAssembled.instructions}`);
+                        console.log(`    📝 Using pre-assembled brain prompt stack from input`);
                     } else {
-                        // Fallback: use inline prompts from brain_agent + org_agent columns
+                        // Fallback: inline prompts from brain_agent row (no pre-assembly available)
                         if (brainAgent?.foundation_prompt) systemPromptParts.push(`### BRAIN FOUNDATION:\n${brainAgent.foundation_prompt}`);
                         if (brainAgent?.persona_prompt) systemPromptParts.push(`### BRAIN PERSONA:\n${brainAgent.persona_prompt}`);
                         if (brainAgent?.domain_prompt) systemPromptParts.push(`### BRAIN DOMAIN KNOWLEDGE:\n${brainAgent.domain_prompt}`);
-                        if (orgAgent.system_prompt) systemPromptParts.push(`### AGENT SYSTEM PROMPT:\n${orgAgent.system_prompt}`);
-                        if (orgAgent.persona_prompt) systemPromptParts.push(`### AGENT PERSONA:\n${orgAgent.persona_prompt}`);
-                        if (orgAgent.instruction_prompt) systemPromptParts.push(`### AGENT INSTRUCTIONS:\n${orgAgent.instruction_prompt}`);
-                        if (brainAgent?.guardrails_prompt) systemPromptParts.push(`### GUARDRAILS:\n${brainAgent.guardrails_prompt}`);
-                        if (orgAgent.guardrails_prompt) systemPromptParts.push(`### AGENT GUARDRAILS:\n${orgAgent.guardrails_prompt}`);
-
-                        console.log(`    📝 Using inline prompts (no Prompt Studio blocks assigned)`);
+                        console.log(`    📝 Using inline brain prompts (no pre-assembled stack)`);
                     }
+
+                    // Append org_agent-specific prompts (inline)
+                    if (orgAgent.system_prompt) systemPromptParts.push(`### AGENT SYSTEM PROMPT:\n${orgAgent.system_prompt}`);
+                    if (orgAgent.persona_prompt) systemPromptParts.push(`### AGENT PERSONA:\n${orgAgent.persona_prompt}`);
+                    if (orgAgent.instruction_prompt) systemPromptParts.push(`### AGENT INSTRUCTIONS:\n${orgAgent.instruction_prompt}`);
+
+                    // Append org_agent prompt blocks (per-agent, not brain-level)
+                    if (hasAgentBlocks) {
+                        const categoryOrder = ['foundation', 'persona', 'domain', 'instruction', 'guardrails', 'task', 'custom'];
+                        for (const cat of categoryOrder) {
+                            const blocks = (assignedPrompts ?? []).filter((a: any) => (a as any).prompt_blocks?.category === cat);
+                            for (const a of blocks) {
+                                const block = (a as any).prompt_blocks;
+                                if (block?.content) {
+                                    systemPromptParts.push(`### AGENT ${cat.toUpperCase()}:\n${block.content}`);
+                                }
+                            }
+                        }
+                        console.log(`    📝 Loaded ${assignedPrompts!.length} agent-specific prompt blocks`);
+                    }
+
+                    // Guardrails (brain + agent)
+                    if (preAssembled?.guardrails) {
+                        systemPromptParts.push(`### GUARDRAILS:\n${preAssembled.guardrails}`);
+                    } else if (brainAgent?.guardrails_prompt) {
+                        systemPromptParts.push(`### GUARDRAILS:\n${brainAgent.guardrails_prompt}`);
+                    }
+                    if (orgAgent.guardrails_prompt) systemPromptParts.push(`### AGENT GUARDRAILS:\n${orgAgent.guardrails_prompt}`);
 
                     // Per-node task instruction (always appended, regardless of source)
                     if (taskInstruction) {

@@ -245,7 +245,7 @@ export default function SystemEmailPage() {
 
                         {smtpTestResult && (
                             <div className={`mt-4 flex items-center gap-2 rounded-lg border p-3 text-sm ${
-                                smtpTestResult.success ? 'border-success/30 bg-success/5 text-success' : 'border-error/30 bg-error/5 text-error'
+                                smtpTestResult.success ? 'border-border bg-surface text-success' : 'border-border bg-surface text-error'
                             }`}>
                                 {smtpTestResult.success
                                     ? <><CheckCircle className="w-4 h-4" /> SMTP OK ({smtpTestResult.latencyMs}ms)</>

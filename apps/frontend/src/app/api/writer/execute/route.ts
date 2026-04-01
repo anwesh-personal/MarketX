@@ -2,34 +2,27 @@
  * POST /api/writer/execute
  *
  * Creates and queues a workflow-backed email job (Writer Studio).
- * Uses active brain runtime for the org with proper KB, ICP, and Belief context.
  *
- * Architecture:
- *   - Resolves active brain_agents for org via BrainRuntimeResolver
- *   - Loads KB content from kb_sections/kb_documents (Brain KB)
- *   - Loads ICP and Belief context from RS:OS tables (partner_id = org_id)
- *   - Queues job to engine-execution worker
+ * Architecture (Engine Unification — Phase 2):
+ *   1. Feature gate → get orgId, userId
+ *   2. requireActiveEngineRuntime(orgId, userId) → deployed engine with workflow, brain, LLM config
+ *   3. assemblePromptStack(brainAgentId, basePrompts) → base + prompt blocks
+ *   4. brainKBService.buildWriterContext → KB, ICP, beliefs, offer
+ *   5. Queue to engine-execution worker with FULL engine context
  *
- * Input:
- *   - prompt: User instruction for email generation
- *   - settings: Writer-specific settings (angle_class, email_count, flow_goal, etc.)
- *   - icp_id: Optional ICP to use (defaults to active ICP)
- *   - belief_id: Optional Belief to use
- *   - offer_id: Optional Offer to use
- *
- * Note: Legacy kb_id parameter is deprecated. Brain KB is now used automatically.
+ * BYOK: orgId is threaded through so the worker resolves org BYOK → platform keys.
+ * Workflow: from the deployed engine's frozen snapshot — NOT a name-based DB lookup.
+ * Engine: MUST be deployed via Engine Bundle. No auto-creation.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { Queue } from 'bullmq'
 import { randomUUID } from 'crypto'
-import { requireActiveBrainRuntime } from '@/services/brain/BrainRuntimeResolver'
+import { requireActiveEngineRuntime, EngineNotDeployedError, EngineConfigError, BrainAgentError } from '@/services/engine/EngineInstanceResolver'
+import { assemblePromptStack } from '@/services/brain/PromptStackAssembler'
 import { brainKBService } from '@/services/brain/BrainKBService'
 import { requireFeature } from '@/lib/requireFeature'
-
-// Redis config comes from DB (infra-config), falls back to env then localhost
 import { getRedisConnectionConfig } from '@/lib/infra-config'
 
 const supabaseService = createServiceClient(
@@ -37,7 +30,15 @@ const supabaseService = createServiceClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const DEFAULT_WRITER_TEMPLATE_NAME = 'Email Nurture Flow'
+// Lazy singleton — one Redis connection for the lifetime of the process
+let _engineQueue: Queue | null = null
+async function getEngineQueue(): Promise<Queue> {
+    if (!_engineQueue) {
+        const redisConnection = await getRedisConnectionConfig()
+        _engineQueue = new Queue('engine-execution', { connection: redisConnection, prefix: 'axiom:' })
+    }
+    return _engineQueue
+}
 
 interface WriterExecuteRequest {
     prompt?: string
@@ -50,31 +51,39 @@ interface WriterExecuteRequest {
     icp_id?: string
     belief_id?: string
     offer_id?: string
-    kb_id?: string
 }
 
 export async function POST(req: NextRequest) {
     try {
-        // Feature gate — enforce plan access
+        // ─── 1. Feature gate ────────────────────────────────────
         const gate = await requireFeature(req, 'can_write_emails')
         if (gate.denied) return gate.response
 
-        // gate already authenticated + resolved org
         const orgId = gate.orgId
+        const userId = gate.userId
 
-        const brainRuntime = await requireActiveBrainRuntime(orgId)
+        // ─── 2. Resolve deployed engine ─────────────────────────
+        const engineRuntime = await requireActiveEngineRuntime(orgId, userId)
 
+        // ─── 3. Parse request body ──────────────────────────────
         const body = await req.json().catch(() => ({})) as WriterExecuteRequest
-        const { 
-            prompt = '', 
+        const {
+            prompt = '',
             settings = {},
             icp_id,
             belief_id,
             offer_id,
         } = body
 
+        // ─── 4. Assemble prompt stack (base + prompt blocks) ────
+        const assembledPrompts = await assemblePromptStack(
+            engineRuntime.brainAgentId,
+            engineRuntime.promptStack
+        )
+
+        // ─── 5. Build writer context (KB + ICP + beliefs + offer)
         const writerContext = await brainKBService.buildWriterContext(
-            brainRuntime.agentId,
+            engineRuntime.brainAgentId,
             orgId,
             {
                 icpId: icp_id,
@@ -83,74 +92,9 @@ export async function POST(req: NextRequest) {
             }
         )
 
-        let template: { id: string; name: string; nodes: unknown; edges: unknown } | null = null
-        const { data: templateData, error: templateError } = await supabaseService
-            .from('workflow_templates')
-            .select('id, name, nodes, edges')
-            .eq('status', 'active')
-            .ilike('name', `%${DEFAULT_WRITER_TEMPLATE_NAME}%`)
-            .limit(1)
-            .maybeSingle()
-
-        if (!templateError && templateData) {
-            template = templateData as { id: string; name: string; nodes: unknown; edges: unknown }
-        }
-        if (!template) {
-            const { data: fallback } = await supabaseService
-                .from('workflow_templates')
-                .select('id, name, nodes, edges')
-                .eq('status', 'active')
-                .limit(1)
-                .maybeSingle()
-            if (!fallback) {
-                return NextResponse.json(
-                    { error: 'No active workflow template found. Contact admin to set up Email Nurture Flow.' },
-                    { status: 503 }
-                )
-            }
-            template = fallback as { id: string; name: string; nodes: unknown; edges: unknown }
-        }
-
-        const templateId = template.id
-
-        let { data: engine } = await supabaseService
-            .from('engine_instances')
-            .select('*')
-            .eq('template_id', templateId)
-            .eq('org_id', orgId)
-            .limit(1)
-            .maybeSingle()
-
-        if (!engine) {
-            const { data: newEngine, error: createErr } = await supabaseService
-                .from('engine_instances')
-                .insert({
-                    name: template.name,
-                    template_id: templateId,
-                    org_id: orgId,
-                    status: 'active',
-                    config: { 
-                        flowConfig: { 
-                            nodes: template.nodes, 
-                            edges: template.edges 
-                        },
-                        brain_agent_id: brainRuntime.agentId,
-                    },
-                })
-                .select()
-                .single()
-            if (createErr || !newEngine) {
-                console.error('Writer engine create error:', createErr)
-                return NextResponse.json(
-                    { error: 'Failed to create writer engine for org' },
-                    { status: 500 }
-                )
-            }
-            engine = newEngine
-        }
-
+        // ─── 6. Build execution input ───────────────────────────
         const executionId = randomUUID()
-        
+
         const input = {
             trigger: 'writer_studio',
             prompt,
@@ -161,30 +105,37 @@ export async function POST(req: NextRequest) {
                 offer_id: offer_id ?? writerContext.offer?.id ?? null,
             },
             brain_context: {
-                agent_id: brainRuntime.agentId,
-                agent_name: brainRuntime.name,
+                agent_id: engineRuntime.brainAgentId,
+                agent_name: engineRuntime.brainAgentName,
                 kb_content: writerContext.kb_content,
                 icp: writerContext.icp,
                 beliefs: writerContext.beliefs,
                 offer: writerContext.offer,
                 prompt_stack: {
-                    foundation: brainRuntime.prompt.foundation,
-                    persona: brainRuntime.prompt.persona,
-                    domain: brainRuntime.prompt.domain,
-                    guardrails: brainRuntime.prompt.guardrails,
+                    foundation: assembledPrompts.foundation,
+                    persona: assembledPrompts.persona,
+                    domain: assembledPrompts.domain,
+                    guardrails: assembledPrompts.guardrails,
+                    instructions: assembledPrompts.instructions,
                 },
-                rag_config: brainRuntime.rag,
+                prompt_blocks_used: assembledPrompts.blockNames,
+                rag_config: engineRuntime.rag,
+                api_key_mode: engineRuntime.apiKeyMode,
+                default_llm: engineRuntime.defaultLlm,
+                strict_grounding: engineRuntime.strictGrounding,
+                self_healing: engineRuntime.selfHealing,
             },
             icp_id: icp_id ?? writerContext.icp?.id ?? null,
             belief_id: belief_id ?? writerContext.beliefs[0]?.id ?? null,
             offer_id: offer_id ?? writerContext.offer?.id ?? null,
         }
 
+        // ─── 7. Create engine run log ───────────────────────────
         const { error: logErr } = await supabaseService
             .from('engine_run_logs')
             .insert({
                 id: executionId,
-                engine_id: engine.id,
+                engine_id: engineRuntime.engineInstanceId,
                 org_id: orgId,
                 input_data: input,
                 status: 'started',
@@ -199,73 +150,77 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        const engineWithFlow = {
-            ...engine,
-            config: {
-                ...engine.config,
-                flowConfig: engine.config?.flowConfig ?? { nodes: template.nodes, edges: template.edges },
-            },
-        }
+        // ─── 8. Queue to engine-execution worker ────────────────
+        const engineQueue = await getEngineQueue()
 
-        const redisConnection = await getRedisConnectionConfig()
-        const engineQueue = new Queue('engine-execution', { connection: redisConnection, prefix: 'axiom:' })
         await engineQueue.add('engine-execution', {
             executionId,
-            engineId: engine.id,
+            engineId: engineRuntime.engineInstanceId,
             engine: {
-                id: engineWithFlow.id,
-                name: engineWithFlow.name,
-                config: engineWithFlow.config,
-                status: engineWithFlow.status,
+                id: engineRuntime.engineInstanceId,
+                name: engineRuntime.engineName,
+                config: {
+                    flowConfig: {
+                        nodes: engineRuntime.workflowNodes,
+                        edges: engineRuntime.workflowEdges,
+                    },
+                    brain_agent_id: engineRuntime.brainAgentId,
+                    bundle_snapshot: engineRuntime.snapshot,
+                    org_agents: engineRuntime.orgAgents,
+                },
+                snapshot: engineRuntime.snapshot,
+                status: 'active',
             },
-            userId: gate.userId,
-            orgId: orgId,
+            userId,
+            orgId,
             input,
-            options: { 
-                tier: 'pro', 
-                timeout: 300000 
+            options: {
+                tier: 'pro',
+                timeout: 300000,
             },
         })
 
-        let runId: string | null = null
-        const runPayload = {
-            org_id: orgId,
-            triggered_by: gate.userId,
-            writer_input: settings,
-            status: 'running',
-            execution_id: executionId,
-        }
+        // ─── 9. Create user-facing run record ───────────────────
+        const angleLabel = settings.angle_class?.replace(/_/g, ' ')?.replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Custom'
+        const goalLabel = settings.flow_goal?.replace(/_/g, ' ')?.replace(/\b\w/g, (c: string) => c.toUpperCase()) || ''
+        const emailCount = settings.email_count ?? 5
+        const runLabel = `${angleLabel} · ${emailCount} emails${goalLabel ? ` · ${goalLabel}` : ''}`
+
         const { data: run, error: runErr } = await supabaseService
             .from('runs')
-            .insert(runPayload as any)
+            .insert({
+                org_id: orgId,
+                triggered_by: userId,
+                writer_input: settings,
+                status: 'running',
+                execution_id: executionId,
+                engine_instance_id: engineRuntime.engineInstanceId,
+                label: runLabel,
+                settings: settings,
+            } as any)
             .select('id')
             .single()
+
+        const runId = run?.id ?? null
         if (runErr) {
-            const withoutExecution = { 
-                org_id: runPayload.org_id, 
-                triggered_by: runPayload.triggered_by, 
-                writer_input: runPayload.writer_input, 
-                status: runPayload.status 
-            }
-            const { data: run2 } = await supabaseService
-                .from('runs')
-                .insert(withoutExecution as any)
-                .select('id')
-                .single()
-            if (run2) runId = run2.id
-        } else if (run) {
-            runId = run.id
+            console.warn('Writer run record creation failed:', runErr.message)
         }
 
+        // ─── 10. Return response ────────────────────────────────
         return NextResponse.json({
             success: true,
             executionId,
             runId,
             status: 'started',
-            message: 'Writer job queued with Brain context. Use executionId to poll status.',
+            message: 'Writer job queued via deployed engine. Use executionId to poll status.',
             context: {
-                brain_agent_id: brainRuntime.agentId,
-                brain_agent_name: brainRuntime.name,
+                engine_instance_id: engineRuntime.engineInstanceId,
+                engine_name: engineRuntime.engineName,
+                bundle_id: engineRuntime.bundleId,
+                brain_agent_id: engineRuntime.brainAgentId,
+                brain_agent_name: engineRuntime.brainAgentName,
+                api_key_mode: engineRuntime.apiKeyMode,
+                prompt_blocks_count: assembledPrompts.blockCount,
                 icp_id: input.icp_id,
                 belief_id: input.belief_id,
                 offer_id: input.offer_id,
@@ -274,6 +229,27 @@ export async function POST(req: NextRequest) {
         })
     } catch (error: any) {
         console.error('Writer execute error:', error)
+
+        // Return specific error codes for engine-related failures
+        if (error instanceof EngineNotDeployedError) {
+            return NextResponse.json(
+                { error: error.message, code: error.code },
+                { status: 503 }
+            )
+        }
+        if (error instanceof EngineConfigError) {
+            return NextResponse.json(
+                { error: error.message, code: error.code },
+                { status: 503 }
+            )
+        }
+        if (error instanceof BrainAgentError) {
+            return NextResponse.json(
+                { error: error.message, code: error.code },
+                { status: 503 }
+            )
+        }
+
         return NextResponse.json(
             { error: error.message || 'Internal server error' },
             { status: 500 }

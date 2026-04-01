@@ -27,7 +27,7 @@ export function NodeLightbox({ isOpen, onClose, data }: Props) {
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
                         onClick={e => e.stopPropagation()}
-                        className="relative w-full max-w-lg bg-surface rounded-2xl border overflow-hidden"
+                        className="relative w-full max-w-lg bg-surface rounded-[var(--radius-lg)] border overflow-hidden"
                         style={{ borderColor: `${data.color}40`, boxShadow: `0 24px 80px ${data.color}15` }}
                     >
                         {/* Header */}

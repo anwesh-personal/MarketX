@@ -74,37 +74,38 @@ const PROVIDER_CATALOG: Array<{
     icon: typeof Bot
     tagline: string
 }> = [
-    { id: 'openai', name: 'OpenAI', shortName: 'GPT', tone: 'success', icon: Sparkles, tagline: 'GPT-4o, o1, o3 & DALL-E' },
-    { id: 'anthropic', name: 'Anthropic', shortName: 'Claude', tone: 'warning', icon: ShieldCheck, tagline: 'Claude 3.5 & Opus' },
-    { id: 'google', name: 'Google', shortName: 'Gemini', tone: 'info', icon: BrainCircuit, tagline: 'Gemini Pro & Flash' },
+    { id: 'openai', name: 'OpenAI', shortName: 'GPT', tone: 'accent', icon: Sparkles, tagline: 'GPT-4o, o1, o3 & DALL-E' },
+    { id: 'anthropic', name: 'Anthropic', shortName: 'Claude', tone: 'accent', icon: ShieldCheck, tagline: 'Claude 3.5 & Opus' },
+    { id: 'google', name: 'Google', shortName: 'Gemini', tone: 'accent', icon: BrainCircuit, tagline: 'Gemini Pro & Flash' },
     { id: 'mistral', name: 'Mistral', shortName: 'Mistral', tone: 'accent', icon: Rocket, tagline: 'Large, Medium & Codestral' },
-    { id: 'perplexity', name: 'Perplexity', shortName: 'Sonar', tone: 'info', icon: Wand2, tagline: 'Sonar Large & Online' },
-    { id: 'xai', name: 'xAI', shortName: 'Grok', tone: 'primary', icon: Zap, tagline: 'Grok-2 & Grok-2 Mini' },
+    { id: 'perplexity', name: 'Perplexity', shortName: 'Sonar', tone: 'accent', icon: Wand2, tagline: 'Sonar Large & Online' },
+    { id: 'xai', name: 'xAI', shortName: 'Grok', tone: 'accent', icon: Zap, tagline: 'Grok-2 & Grok-2 Mini' },
 ]
 
+// Unified tone — all providers share the theme accent. Status colors (success/error) only used for state indicators.
 const TONE_MAP: Record<ProviderTone, {
     dot: string; bg: string; border: string; text: string
     glowRgb: string; iconBg: string; gradientFrom: string
 }> = {
     success: {
-        dot: 'bg-success', bg: 'bg-success/8', border: 'border-success/20', text: 'text-success',
-        glowRgb: 'var(--color-success-rgb)', iconBg: 'bg-success/12', gradientFrom: 'from-success/10',
+        dot: 'bg-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.06)]', border: 'border-[rgba(var(--color-accent-rgb),0.12)]', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-[rgba(var(--color-accent-rgb),0.1)]', gradientFrom: 'from-accent/10',
     },
     warning: {
-        dot: 'bg-warning', bg: 'bg-warning/8', border: 'border-warning/20', text: 'text-warning',
-        glowRgb: 'var(--color-warning-rgb)', iconBg: 'bg-warning/12', gradientFrom: 'from-warning/10',
+        dot: 'bg-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.06)]', border: 'border-[rgba(var(--color-accent-rgb),0.12)]', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-[rgba(var(--color-accent-rgb),0.1)]', gradientFrom: 'from-accent/10',
     },
     info: {
-        dot: 'bg-info', bg: 'bg-info/8', border: 'border-info/20', text: 'text-info',
-        glowRgb: 'var(--color-info-rgb)', iconBg: 'bg-info/12', gradientFrom: 'from-info/10',
+        dot: 'bg-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.06)]', border: 'border-[rgba(var(--color-accent-rgb),0.12)]', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-[rgba(var(--color-accent-rgb),0.1)]', gradientFrom: 'from-accent/10',
     },
     accent: {
-        dot: 'bg-accent', bg: 'bg-accent/8', border: 'border-accent/20', text: 'text-accent',
-        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-accent/12', gradientFrom: 'from-accent/10',
+        dot: 'bg-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.06)]', border: 'border-[rgba(var(--color-accent-rgb),0.12)]', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-[rgba(var(--color-accent-rgb),0.1)]', gradientFrom: 'from-accent/10',
     },
     primary: {
-        dot: 'bg-primary', bg: 'bg-primary/8', border: 'border-primary/20', text: 'text-primary',
-        glowRgb: 'var(--color-primary-rgb)', iconBg: 'bg-primary/12', gradientFrom: 'from-primary/10',
+        dot: 'bg-accent', bg: 'bg-[rgba(var(--color-accent-rgb),0.06)]', border: 'border-[rgba(var(--color-accent-rgb),0.12)]', text: 'text-accent',
+        glowRgb: 'var(--color-accent-rgb)', iconBg: 'bg-[rgba(var(--color-accent-rgb),0.1)]', gradientFrom: 'from-accent/10',
     },
 }
 
@@ -276,10 +277,10 @@ export default function AIProvidersPage() {
                 actions={
                     <div className="flex items-center gap-sm">
                         <div className="flex gap-sm text-xs">
-                            <span className="rounded-full border border-success/20 bg-success/8 px-sm py-xs font-semibold text-success">
+                            <span className="rounded-full border border-border bg-surfaceElevated px-sm py-xs font-semibold text-accent">
                                 {stats.activeKeys} keys
                             </span>
-                            <span className="rounded-full border border-info/20 bg-info/8 px-sm py-xs font-semibold text-info">
+                            <span className="rounded-full border border-border bg-surfaceElevated px-sm py-xs font-semibold text-textSecondary">
                                 {stats.activeModels} models
                             </span>
                         </div>
@@ -379,7 +380,7 @@ function ProviderCard({
     return (
         <div
             className={cn(
-                'group relative flex flex-col overflow-hidden rounded-[calc(var(--radius-xl)*1.5)] border transition-all duration-[var(--duration-normal)]',
+                'group relative flex flex-col overflow-hidden rounded-[var(--radius-xl)] border transition-all duration-[var(--duration-normal)]',
                 isExpanded
                     ? 'md:col-span-2 xl:col-span-3 border-borderHover bg-surface/90 backdrop-blur-xl'
                     : 'border-border/60 bg-surface/70 backdrop-blur-lg hover:border-borderHover hover:-translate-y-[2px]',
@@ -392,15 +393,15 @@ function ProviderCard({
         >
             {/* Top gradient accent line */}
             <div
-                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] opacity-80"
+                className="pointer-events-none absolute inset-x-0 top-0 h-px"
                 style={{
-                    background: `linear-gradient(90deg, transparent, rgba(${tone.glowRgb}, 0.6), transparent)`,
+                    background: `linear-gradient(90deg, transparent 10%, rgba(${tone.glowRgb}, 0.5) 50%, transparent 90%)`,
                 }}
             />
 
             {/* Background gradient orb */}
             <div
-                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-30 blur-3xl transition-opacity duration-[var(--duration-slow)] group-hover:opacity-50"
+                className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-15 blur-3xl transition-opacity duration-[var(--duration-slow)] group-hover:opacity-30"
                 style={{ background: `rgba(${tone.glowRgb}, 0.15)` }}
             />
 
@@ -411,11 +412,10 @@ function ProviderCard({
             >
                 {/* Icon */}
                 <div className={cn(
-                    'flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-[calc(var(--radius-xl)*1.2)] border transition-all duration-[var(--duration-normal)]',
-                    tone.border, tone.iconBg,
-                    isExpanded && 'scale-110',
+                    'flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-border bg-surfaceElevated transition-all duration-[var(--duration-normal)]',
+                    isExpanded && 'scale-105 border-borderHover shadow-[var(--shadow-glow)]',
                 )}>
-                    <Icon className={cn('h-6 w-6', tone.text)} />
+                    <Icon className="h-5 w-5 text-accent" />
                 </div>
 
                 {/* Provider info */}
@@ -435,7 +435,7 @@ function ProviderCard({
                                 <span className={cn(
                                     'inline-flex items-center gap-xxs rounded-full border px-sm py-xxs text-xs font-semibold',
                                     activeKeys > 0
-                                        ? 'border-success/20 bg-success/8 text-success'
+                                        ? 'border-border bg-surfaceElevated text-accent'
                                         : 'border-border bg-background/60 text-textTertiary',
                                 )}>
                                     <span className={cn('h-1.5 w-1.5 rounded-full', activeKeys > 0 ? 'bg-success' : 'bg-textTertiary')} />
@@ -481,7 +481,7 @@ function ProviderCard({
                                     className={cn(
                                         'flex items-center gap-xxs rounded-[var(--radius-lg)] px-sm py-xs text-xs font-medium transition-all duration-[var(--duration-fast)]',
                                         isAdding
-                                            ? 'bg-error/10 text-error hover:bg-error/15'
+                                            ? 'bg-surfaceElevated text-error hover:bg-surfaceElevated'
                                             : 'border border-border bg-surface text-textSecondary hover:bg-surfaceHover hover:text-textPrimary',
                                     )}>
                                     {isAdding ? <><X className="h-3 w-3" /> Cancel</> : <><Plus className="h-3 w-3" /> Add key</>}
@@ -517,7 +517,7 @@ function ProviderCard({
                                             className={cn(
                                                 'flex flex-wrap items-center gap-sm rounded-[var(--radius-lg)] border px-md py-sm transition-all duration-[var(--duration-fast)]',
                                                 key.is_active
-                                                    ? 'border-success/15 bg-success/4 hover:bg-success/8'
+                                                    ? 'border-border bg-surfaceElevated hover:bg-surfaceHover'
                                                     : 'border-border/60 bg-background/40 hover:bg-background/60',
                                             )}>
                                             <CircleDot className={cn('h-3.5 w-3.5 flex-shrink-0', key.is_active ? 'text-success' : 'text-textTertiary')} />
@@ -529,7 +529,7 @@ function ProviderCard({
                                                 {key.is_active ? 'Deactivate' : 'Activate'}
                                             </button>
                                             <button onClick={() => onDelete(key.id)}
-                                                className="rounded-[var(--radius-md)] p-xs text-textTertiary transition-all hover:bg-error/10 hover:text-error">
+                                                className="rounded-[var(--radius-md)] p-xs text-textTertiary transition-all hover:bg-surfaceElevated hover:text-error">
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
                                         </div>
@@ -590,9 +590,9 @@ function ModelCard({ model, providerId, tone, isTesting, onTest }: {
 
     return (
         <div className={cn(
-            'group/model relative overflow-hidden rounded-[var(--radius-xl)] border px-md py-sm transition-all duration-[var(--duration-fast)]',
-            'hover:-translate-y-px hover:shadow-[var(--shadow-sm)]',
-            model.is_active ? `${colors.border} ${colors.bg}` : 'border-border/50 bg-background/40',
+            'group/model relative overflow-hidden rounded-[var(--radius-lg)] border px-md py-sm transition-all duration-[var(--duration-fast)]',
+            'hover:-translate-y-px hover:shadow-[var(--shadow-sm)] hover:border-borderHover',
+            model.is_active ? 'border-border bg-surfaceElevated' : 'border-border/50 bg-background/40',
             model.is_deprecated && 'opacity-50',
         )}>
             <div className="flex items-start justify-between gap-xs">

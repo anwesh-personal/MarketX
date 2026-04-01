@@ -19,6 +19,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { requireEnv } from '@/lib/require-env'
 import { createClient } from '@supabase/supabase-js'
 import { Queue } from 'bullmq'
 import { getEmailProviderAdapter } from '@/services/email/EmailProviderAdapter'
@@ -34,7 +35,7 @@ function getRedisConfig() {
     const u = new URL(process.env.REDIS_URL)
     return { host: u.hostname, port: parseInt(u.port, 10) || 6379, password: u.password || undefined }
   }
-  return { host: process.env.REDIS_HOST || 'localhost', port: 6379 }
+  return { host: requireEnv('REDIS_HOST'), port: 6379 }
 }
 
 function getLearningQueue(): Queue | null {

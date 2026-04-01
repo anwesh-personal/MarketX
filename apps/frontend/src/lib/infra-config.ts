@@ -125,15 +125,15 @@ export async function getInfraConfig(bypassCache = false): Promise<InfraConfig> 
         } else if (d.active_target === 'dedicated' && d.dedicated_host) {
             workerApiUrl = `http://${d.dedicated_host}:3100`
         } else {
-            workerApiUrl = 'http://localhost:3100'
+            throw new Error(
+                'FATAL: Cannot determine Worker API URL. ' +
+                'Set active_target in worker_deployment_config, or set WORKER_API_URL env var.'
+            )
         }
     }
 
-    // Build Redis URL — DB first, then env, then localhost fallback
+    // Build Redis URL — DB first, then env. No silent fallbacks.
     let redisUrl: string | null = d.redis_url || process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL || null
-    if (!redisUrl && d.active_target === 'local') {
-        redisUrl = 'redis://localhost:6379'
-    }
 
     const vps = vpsResult.data
 
@@ -192,8 +192,10 @@ export async function getRedisConnectionConfig() {
     const config = await getInfraConfig()
 
     if (!config.redisUrl && !config.redisPassword) {
-        // Localhost fallback for local dev
-        return { host: 'localhost', port: 6379 }
+        throw new Error(
+            'FATAL: Redis is not configured. ' +
+            'Set redis_url in worker_deployment_config, or set REDIS_URL / REDIS_HOST env vars.'
+        )
     }
 
     if (config.redisUrl) {
@@ -216,7 +218,10 @@ export async function getRedisConnectionConfig() {
         }
     }
 
-    return { host: 'localhost', port: 6379 }
+    throw new Error(
+        'FATAL: Redis URL could not be parsed and no fallback is available. ' +
+        'Check your redis_url in worker_deployment_config or REDIS_URL env var.'
+    )
 }
 
 // ── AI key getter ─────────────────────────────────────────────

@@ -242,7 +242,7 @@ export default function PlatformConfigPage() {
             </div>
 
             {dirtyCount > 0 && (
-                <div className="bg-warning/10 border border-warning/30 rounded-[var(--radius-md)] px-md py-sm flex items-center gap-sm">
+                <div className="bg-surfaceElevated border border-border rounded-[var(--radius-md)] px-md py-sm flex items-center gap-sm">
                     <AlertTriangle className="w-4 h-4 text-warning" />
                     <span className="text-sm text-warning">{dirtyCount} unsaved change(s). Click &quot;Save All&quot; or save individual configs.</span>
                 </div>
@@ -295,7 +295,7 @@ export default function PlatformConfigPage() {
                                                 const isMultiline = display.includes('\n');
 
                                                 return (
-                                                    <tr key={cfg.key} className={`border-t border-border ${isDirty ? 'bg-primary/5' : 'hover:bg-background/50'}`}>
+                                                    <tr key={cfg.key} className={`border-t border-border ${isDirty ? 'bg-surface' : 'hover:bg-background/50'}`}>
                                                         <td className="px-lg py-sm">
                                                             <code className="text-xs text-textPrimary font-mono">{cfg.key}</code>
                                                         </td>
@@ -332,7 +332,7 @@ export default function PlatformConfigPage() {
                                                             <div className="flex items-center justify-end gap-xs">
                                                                 {isDirty && (
                                                                     <button onClick={() => handleSaveOne(cfg)} disabled={saving}
-                                                                        className="p-xs bg-success/20 text-success rounded hover:bg-success/30 transition-all" title="Save this config">
+                                                                        className="p-xs bg-surfaceElevated text-success rounded hover:bg-surfaceHover transition-all" title="Save this config">
                                                                         <Check className="w-3.5 h-3.5" />
                                                                     </button>
                                                                 )}
