@@ -174,7 +174,7 @@ export async function getDeploymentProvider(): Promise<DeploymentProvider> {
 
     const { data: config, error } = await supabase
         .from('worker_deployment_config')
-        .select('active_provider, vps_server_id')
+        .select('active_target, vps_server_id')
         .single();
 
     if (error || !config) {
@@ -183,7 +183,7 @@ export async function getDeploymentProvider(): Promise<DeploymentProvider> {
         return new VPSDeploymentProvider(bootstrap);
     }
 
-    if (config.active_provider === 'railway') {
+    if (config.active_target === 'railway') {
         const railwayClient = await getRailwayClient();
         if (railwayClient && railwayClient.isConfigured()) {
             return new RailwayDeploymentProvider(railwayClient);

@@ -280,8 +280,8 @@ export async function getBootstrapClient(serverId?: string): Promise<BootstrapCl
         .single();
 
     if (error || !server) {
-        // Fallback to Lekhika's server
-        return new BootstrapClient('103.190.93.28', 3000);
+        // Fallback to RackNerd workers VPS
+        return new BootstrapClient('107.172.56.68', 3000);
     }
 
     return new BootstrapClient(server.host, 3000);
