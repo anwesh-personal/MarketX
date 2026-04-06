@@ -108,10 +108,9 @@ async function processScheduledTask(job: Job<ScheduledTaskJob>) {
 
         case 'analytics_rollup': {
             await analyticsQueue.add('scheduled_analytics_rollup', {
-                rollupType: payload.rollupType || 'daily',
+                type: 'daily-rollup',
                 orgId,
                 date: payload.date || new Date().toISOString().split('T')[0],
-                triggeredBy: 'scheduler',
             });
             console.log(`✅ [ScheduledTask] analytics_rollup dispatched for org=${orgId}`);
             break;

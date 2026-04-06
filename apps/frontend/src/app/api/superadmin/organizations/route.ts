@@ -106,6 +106,22 @@ export async function POST(request: NextRequest) {
 
         if (orgError) throw orgError;
 
+        // ── Auto-create partner row (1:1 with org) ──────────────────────
+        // The partner table is the root FK for the entire belief/signal/
+        // satellite/dispatch pipeline. Without it, no campaigns can run.
+        const { error: partnerError } = await supabase
+            .from('partner')
+            .insert({
+                id: org.id,          // PK = org.id (1:1 mapping)
+                legal_name: name,
+                status: 'active',
+            });
+
+        if (partnerError) {
+            console.error('⚠️ Failed to create partner row:', partnerError.message);
+            // Non-fatal: log but don't block org creation
+        }
+
         let ownerCreated = false;
 
         // Create owner user if email provided

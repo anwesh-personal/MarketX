@@ -517,8 +517,8 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                                         ))}
                                     </div>
                                     <button onClick={completeOnboarding}
-                                        className="btn px-8 py-3 bg-gradient-to-r from-accent to-primary text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg hover:shadow-glow-lg">
-                                        <Rocket className="w-5 h-5 inline mr-2" /> Activate My Brain
+                                        className="btn btn-accent-gradient px-8 py-3 rounded-xl shadow-lg text-base">
+                                        <Rocket className="w-5 h-5" /> Activate My Brain
                                     </button>
                                 </div>
                             )}
@@ -577,12 +577,12 @@ export default function OnboardingModal({ isOpen, onClose, onComplete, userId, o
                             <span className="text-xs text-textTertiary">{pct}% complete</span>
                             {step < 5 ? (
                                 <button onClick={nextStep} disabled={!canProceed()}
-                                    className="btn px-5 py-2 bg-gradient-to-r from-accent to-primary text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md text-sm flex items-center gap-1.5">
+                                    className="btn btn-accent-gradient px-5 py-2 rounded-xl shadow-md">
                                     Continue <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                             ) : (
                                 <button onClick={nextStep}
-                                    className="btn px-5 py-2 bg-gradient-to-r from-accent to-primary text-white font-semibold rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-md text-sm flex items-center gap-1.5">
+                                    className="btn btn-accent-gradient px-5 py-2 rounded-xl shadow-md">
                                     <Sparkles className="w-3.5 h-3.5" /> Activate Brain
                                 </button>
                             )}

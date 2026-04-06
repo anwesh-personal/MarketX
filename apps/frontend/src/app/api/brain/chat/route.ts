@@ -265,7 +265,7 @@ async function buildSystemPromptFromRuntime(
 ): Promise<{ systemPrompt: string; gapDetected: boolean; gapConfidence: number }> {
     const [rag, memories, constitutionRules] = await Promise.all([
         retrievePromptRag(orgId, userId, runtime.brainConfigForRAG, query),
-        retrievePromptMemories(orgId, userId),
+        retrievePromptMemories(orgId, userId, runtime.agentId),
         loadConstitutionRules(orgId)
     ])
 
@@ -312,10 +312,12 @@ async function retrievePromptRag(
     }
 }
 
-async function retrievePromptMemories(orgId: string, userId: string): Promise<MemoryItem[]> {
+async function retrievePromptMemories(orgId: string, userId: string, brainAgentId?: string): Promise<MemoryItem[]> {
     try {
         const supabase = createClient()
-        const { data, error } = await supabase
+
+        // 1. User-level memories (conversation context, push-to-brain extracts)
+        const userMemoryPromise = supabase
             .from('user_memory')
             .select('value, memory_type, confidence, access_count')
             .eq('org_id', orgId)
@@ -324,17 +326,57 @@ async function retrievePromptMemories(orgId: string, userId: string): Promise<Me
             .order('access_count', { ascending: false })
             .limit(10)
 
-        if (error || !data) {
-            return []
+        // 2. Brain-level memories (coach learnings from campaign data)
+        //    This is the self-healing loop closure:
+        //    MailWizz → signal_event → coach → brain_memories → chat prompt
+        const brainMemoryPromise = brainAgentId
+            ? supabase
+                .from('brain_memories')
+                .select('content, memory_type, importance, created_at')
+                .eq('org_id', orgId)
+                .eq('agent_id', brainAgentId)
+                .eq('memory_type', 'learning')
+                .order('importance', { ascending: false })
+                .order('created_at', { ascending: false })
+                .limit(5)
+            : Promise.resolve({ data: null, error: null })
+
+        const [userResult, brainResult] = await Promise.all([userMemoryPromise, brainMemoryPromise])
+
+        const memories: MemoryItem[] = []
+
+        // Map user memories
+        if (userResult.data) {
+            for (const row of userResult.data) {
+                memories.push({
+                    content: row.value || '',
+                    memory_type: row.memory_type || 'context',
+                    importance: typeof row.confidence === 'number'
+                        ? row.confidence
+                        : Math.min(1, (row.access_count || 0) / 10)
+                })
+            }
         }
 
-        return data.map(row => ({
-            content: row.value || '',
-            memory_type: row.memory_type || 'context',
-            importance: typeof row.confidence === 'number'
-                ? row.confidence
-                : Math.min(1, (row.access_count || 0) / 10)
-        }))
+        // Map brain memories (coach learnings)
+        if (brainResult.data) {
+            for (const row of brainResult.data) {
+                let displayContent = ''
+                try {
+                    const parsed = typeof row.content === 'string' ? JSON.parse(row.content) : row.content
+                    displayContent = `${parsed.title}: ${parsed.description}${parsed.action_suggestion ? ` → ${parsed.action_suggestion}` : ''}`
+                } catch {
+                    displayContent = typeof row.content === 'string' ? row.content : JSON.stringify(row.content)
+                }
+                memories.push({
+                    content: displayContent,
+                    memory_type: 'learning',
+                    importance: typeof row.importance === 'number' ? row.importance : 0.7
+                })
+            }
+        }
+
+        return memories
     } catch (error) {
         console.error('Prompt memory retrieval failed:', error)
         return []

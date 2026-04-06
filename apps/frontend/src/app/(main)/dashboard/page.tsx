@@ -250,7 +250,7 @@ export default function DashboardPage() {
                             <span className="text-xs font-mono text-textTertiary">{onboardingPct}%</span>
                         </div>
                         <button onClick={() => setShowOnboarding(true)}
-                            className="btn btn-sm px-4 py-1.5 bg-accent text-white rounded-lg text-xs font-semibold hover:bg-accent/90 transition-colors flex items-center gap-1.5">
+                            className="btn btn-primary btn-sm rounded-lg flex items-center gap-1.5">
                             <Sparkles className="w-3 h-3" /> Continue Setup
                         </button>
                     </div>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                             <Link href="/walkthrough"
-                                className="px-5 py-2.5 rounded-xl bg-accent text-white text-xs font-bold flex items-center gap-2 hover:bg-accent/90 transition-colors shadow-md"
+                                className="btn btn-primary rounded-xl flex items-center gap-2 shadow-md"
                                 style={{ boxShadow: '0 4px 20px var(--color-glow)' }}>
                                 <Sparkles className="w-3.5 h-3.5" /> Start Walkthrough
                             </Link>

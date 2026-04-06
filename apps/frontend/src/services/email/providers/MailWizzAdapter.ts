@@ -14,10 +14,10 @@ import type {
 
 const EVENT_MAP: Record<string, CanonicalEventType> = {
   subscribe:        'send',
-  delivery:         'send',
+  delivery:         'delivery',
   open:             'open',
   click:            'click',
-  unsubscribe:      'complaint',
+  unsubscribe:      'unsubscribe',
   complaint:        'complaint',
   bounce:           'bounce',
   hard_bounce:      'bounce',
@@ -92,49 +92,56 @@ export class MailWizzAdapter implements EmailProviderAdapter {
 
   async sendBulk(params: BulkSendParams): Promise<BulkSendResult> {
     try {
-      // 1. Create a list (or reuse) with recipients
-      const listRes = await this.mwPost('/lists', {
-        general: { name: `${params.campaignName} — ${Date.now()}`, displayName: params.campaignName },
-        defaults: { fromEmail: params.fromEmail || this.fromEmail, fromName: params.fromName || this.fromName, replyTo: params.fromEmail || this.fromEmail, subject: params.subject },
-        notifications: { subscribe: 'no', unsubscribe: 'no' },
-      })
-      const listUid = listRes.data?.list?.list_uid
-      if (!listUid) throw new Error('Failed to create MailWizz list')
+      // MailWizz Campaign Create API: POST /campaigns
+      // Expects form-encoded with campaign[...] nested params.
+      // The list should ALREADY exist (pushed by Refinery).
+      // MarketWriter creates the CAMPAIGN against that list.
+      const listUid = params.meta?.listUid as string
+      if (!listUid) throw new Error('listUid is required — Refinery must push the list first')
 
-      // 2. Bulk subscribe recipients with tracking custom fields
-      const subscribers = params.recipients.map(r => ({
-        EMAIL: r.email,
-        FNAME: r.firstName || '',
-        LNAME: r.lastName  || '',
-        ORG_ID:    params.trackingTags?.orgId    || '',
-        BELIEF_ID: params.trackingTags?.beliefId || '',
-        ICP_ID:    params.trackingTags?.icpId    || '',
-        OFFER_ID:  params.trackingTags?.offerId  || '',
-        BRIEF_ID:  params.trackingTags?.briefId  || '',
-        ...r.customFields,
-      }))
-      await this.mwPost(`/lists/${listUid}/subscribers/import`, { subscribers })
+      const sendAt = params.scheduledAt
+        ? new Date(params.scheduledAt).toISOString().replace('T', ' ').slice(0, 19)
+        : new Date().toISOString().replace('T', ' ').slice(0, 19)
 
-      // 3. Create + send campaign
-      const campRes = await this.mwPost('/campaigns', {
-        name:        params.campaignName,
-        type:        'regular',
-        status:      params.scheduledAt ? 'paused' : 'sending',
-        send_at:     params.scheduledAt || new Date().toISOString(),
-        from_name:   params.fromName  || this.fromName,
-        from_email:  params.fromEmail || this.fromEmail,
-        reply_to:    params.fromEmail || this.fromEmail,
-        subject:     params.subject,
-        list_uid:    listUid,
-        template:    { content: params.htmlBody },
-        options: { url_tracking: 'yes', open_tracking: 'yes' },
-      })
+      const campaignData: Record<string, any> = {
+        name:       params.campaignName,
+        type:       'regular',
+        from_name:  params.fromName  || this.fromName,
+        from_email: params.fromEmail || this.fromEmail,
+        subject:    params.subject,
+        reply_to:   params.fromEmail || this.fromEmail,
+        send_at:    sendAt,
+        list_uid:   listUid,
+        template: {
+          content:         params.htmlBody,
+          inline_css:      'yes',
+          auto_plain_text: 'yes',
+        },
+        options: {
+          url_tracking:     'yes',
+          plain_text_email: 'yes',
+        },
+      }
+
+      // Optional: segment within the list
+      if (params.meta?.segmentUid) {
+        campaignData.segment_uid = params.meta.segmentUid as string
+      }
+
+      // Optional: assign specific delivery servers (satellite mapping)
+      if (params.meta?.deliveryServerIds) {
+        const ids = params.meta.deliveryServerIds as number[]
+        ids.forEach((id, i) => {
+          campaignData[`delivery_servers[${i}]`] = id
+        })
+      }
+
+      const campRes = await this.mwPost('/campaigns', campaignData)
 
       return {
         success: campRes.status === 'success',
-        campaignId: campRes.data?.campaign?.campaign_uid,
+        campaignId: campRes.campaign_uid || campRes.data?.campaign_uid,
         queued: params.recipients.length,
-        raw: campRes,
       }
     } catch (e: any) {
       return { success: false, error: e.message }
@@ -211,39 +218,113 @@ export class MailWizzAdapter implements EmailProviderAdapter {
     }
   }
 
-  // ─── HTTP helpers ────────────────────────────────────────────────────────
+  // ─── CAMPAIGN CONTROL ──────────────────────────────────────────────────
 
-  private async mwGet(path: string) {
+  async pauseCampaign(campaignUid: string): Promise<{ success: boolean }> {
+    const res = await this.mwPatch(`/campaigns/${campaignUid}`, { status: 'paused' })
+    return { success: res.status === 'success' }
+  }
+
+  async unpauseCampaign(campaignUid: string): Promise<{ success: boolean }> {
+    const res = await this.mwPatch(`/campaigns/${campaignUid}`, { status: 'sending' })
+    return { success: res.status === 'success' }
+  }
+
+  async getDeliveryServers(): Promise<{ id: number; name: string }[]> {
+    const res = await this.mwGet('/delivery-servers')
+    const records = res.data?.records || []
+    return records.map((r: any) => ({ id: r.server_id, name: r.name || r.hostname }))
+  }
+
+  async getLists(): Promise<{ listUid: string; name: string; subscriberCount: number }[]> {
+    const res = await this.mwGet('/lists', { per_page: '100' })
+    const records = res.data?.records || []
+    return records.map((r: any) => ({
+      listUid: r.general?.list_uid || r.list_uid,
+      name: r.general?.name || r.name,
+      subscriberCount: Number(r.subscribers_count || 0),
+    }))
+  }
+
+  // ─── HTTP helpers ────────────────────────────────────────────────────────
+  // MailWizz API requires:
+  //   1. Form-encoded body (NOT JSON)
+  //   2. HMAC-SHA256 signature of the sorted params
+  //   3. X-MW-PUBLIC-KEY header for identification
+
+  private buildFormData(obj: Record<string, any>, prefix = ''): URLSearchParams {
+    const params = new URLSearchParams()
+    const flatten = (src: Record<string, any>, pfx: string) => {
+      for (const [k, v] of Object.entries(src)) {
+        const key = pfx ? `${pfx}[${k}]` : k
+        if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+          flatten(v, key)
+        } else if (v != null) {
+          params.append(key, String(v))
+        }
+      }
+    }
+    flatten(obj, prefix)
+    return params
+  }
+
+  private sign(method: string, path: string, params: URLSearchParams): string {
+    // Sort params alphabetically and build signing string
+    const sorted = [...params.entries()].sort(([a], [b]) => a.localeCompare(b))
+    const paramStr = sorted.map(([k, v]) => `${k}=${v}`).join('&')
+    const sigBase = `${method.toUpperCase()}\n${path}\n${paramStr}`
+    return crypto.createHmac('sha256', this.apiSecret).update(sigBase).digest('hex')
+  }
+
+  private headers(method: string, path: string, params: URLSearchParams): Record<string, string> {
     const timestamp = Math.floor(Date.now() / 1000)
-    const sig = crypto.createHmac('sha256', this.apiSecret)
-      .update(`GET\n${path}\n${timestamp}`).digest('hex')
-    const res = await fetch(`${this.baseUrl}/api/v1${path}`, {
-      headers: {
-        'X-MW-PUBLIC-KEY': this.apiKey,
-        'X-MW-TIMESTAMP':  String(timestamp),
-        'X-MW-REMOTE-ADDR': '127.0.0.1',
-        'X-MW-SIGNATURE':   sig,
-        'Content-Type':     'application/json',
-      },
+    params.append('timestamp', String(timestamp))
+    return {
+      'X-MW-PUBLIC-KEY': this.apiKey,
+      'X-MW-TIMESTAMP': String(timestamp),
+      'X-MW-REMOTE-ADDR': '127.0.0.1',
+      'X-MW-SIGNATURE': this.sign(method, path, params),
+    }
+  }
+
+  private async mwGet(path: string, query: Record<string, string> = {}) {
+    const params = new URLSearchParams(query)
+    const hdrs = this.headers('GET', path, params)
+    const qs = params.toString()
+    const url = `${this.baseUrl}/api${path}${qs ? '?' + qs : ''}`
+    const res = await fetch(url, { headers: { ...hdrs, 'Content-Type': 'application/x-www-form-urlencoded' } })
+    return res.json()
+  }
+
+  private async mwPost(path: string, body: Record<string, any>) {
+    const params = this.buildFormData(body)
+    const hdrs = this.headers('POST', path, params)
+    const res = await fetch(`${this.baseUrl}/api${path}`, {
+      method: 'POST',
+      headers: { ...hdrs, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
     })
     return res.json()
   }
 
-  private async mwPost(path: string, body: unknown) {
-    const timestamp = Math.floor(Date.now() / 1000)
-    const bodyStr = JSON.stringify(body)
-    const sig = crypto.createHmac('sha256', this.apiSecret)
-      .update(`POST\n${path}\n${timestamp}\n${bodyStr}`).digest('hex')
-    const res = await fetch(`${this.baseUrl}/api/v1${path}`, {
-      method: 'POST',
-      headers: {
-        'X-MW-PUBLIC-KEY': this.apiKey,
-        'X-MW-TIMESTAMP':  String(timestamp),
-        'X-MW-REMOTE-ADDR': '127.0.0.1',
-        'X-MW-SIGNATURE':   sig,
-        'Content-Type':     'application/json',
-      },
-      body: bodyStr,
+  private async mwPut(path: string, body: Record<string, any>) {
+    const params = this.buildFormData(body)
+    const hdrs = this.headers('PUT', path, params)
+    const res = await fetch(`${this.baseUrl}/api${path}`, {
+      method: 'PUT',
+      headers: { ...hdrs, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    })
+    return res.json()
+  }
+
+  private async mwPatch(path: string, body: Record<string, any> = {}) {
+    const params = this.buildFormData(body)
+    const hdrs = this.headers('PATCH', path, params)
+    const res = await fetch(`${this.baseUrl}/api${path}`, {
+      method: 'PATCH',
+      headers: { ...hdrs, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
     })
     return res.json()
   }

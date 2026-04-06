@@ -54,6 +54,36 @@ export async function recomputeBeliefConfidence(input: ConfidenceRunInput) {
 
     if (eventsError) throw eventsError
 
+    // Load reply classifications from mastery agent (reply_meaning decisions).
+    // brain_decisions.input_snapshot contains { beliefId }, decision is one of:
+    //   'negative_hard', 'soft_no', 'positive', 'question', 'neutral'
+    const negativeDecisions = new Set(['negative_hard', 'soft_no'])
+    const positiveDecisions = new Set(['positive', 'question'])
+
+    let replyClassifications = new Map<string, 'positive' | 'negative'>()
+
+    if (input.orgId) {
+        const { data: decisions } = await supabase
+            .from('brain_decisions')
+            .select('decision, input_snapshot')
+            .eq('org_id', input.orgId)
+            .eq('agent_type', 'reply_meaning')
+            .gte('created_at', since)
+
+        if (decisions) {
+            for (const d of decisions) {
+                const beliefId = (d.input_snapshot as any)?.beliefId
+                if (!beliefId) continue
+                if (negativeDecisions.has(d.decision)) {
+                    replyClassifications.set(beliefId, 'negative')
+                } else if (positiveDecisions.has(d.decision)) {
+                    replyClassifications.set(beliefId, 'positive')
+                }
+                // 'neutral' replies are excluded from both counts (no impact on score)
+            }
+        }
+    }
+
     const counters = new Map<string, { sends: number; positiveReplies: number; negativeReplies: number; bookings: number }>()
     for (const b of beliefs) {
         counters.set(b.id, { sends: 0, positiveReplies: 0, negativeReplies: 0, bookings: 0 })
@@ -65,9 +95,14 @@ export async function recomputeBeliefConfidence(input: ConfidenceRunInput) {
         if (e.event_type === 'send') entry.sends += 1
         if (e.event_type === 'booking' || e.event_type === 'show') entry.bookings += 1
         if (e.event_type === 'reply') {
-            const isNegative = false
-            if (isNegative) entry.negativeReplies += 1
-            else entry.positiveReplies += 1
+            // Use mastery agent classification if available, else default to positive
+            // (safe default: most replies to cold outbound are neutral-to-positive)
+            const classification = replyClassifications.get(e.belief_id)
+            if (classification === 'negative') {
+                entry.negativeReplies += 1
+            } else {
+                entry.positiveReplies += 1
+            }
         }
         if (e.event_type === 'bounce' || e.event_type === 'complaint') entry.negativeReplies += 1
     }

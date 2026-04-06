@@ -220,7 +220,7 @@ export default function AIValidationPage() {
                     <button
                         onClick={testAllModels}
                         disabled={testingAll}
-                        className="flex items-center space-x-2 bg-info hover:bg-info/80 disabled:bg-surfaceHover text-textInverse px-4 py-2 rounded-lg transition-colors"
+                        className="btn btn-primary px-4 py-2 rounded-lg"
                     >
                         {testingAll ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -304,7 +304,7 @@ export default function AIValidationPage() {
                         <button
                             onClick={() => testProvider(selectedProvider)}
                             disabled={testingModel !== null}
-                            className="flex items-center space-x-1 bg-accent hover:bg-accent/80 disabled:bg-surfaceHover text-textInverse px-3 py-1.5 rounded-lg text-sm transition-colors"
+                            className="btn btn-primary btn-sm rounded-lg"
                         >
                             <Play className="w-3 h-3" />
                             <span>Test All {selectedProvider}</span>
@@ -419,7 +419,7 @@ export default function AIValidationPage() {
                                         <button
                                             onClick={() => testModel(model)}
                                             disabled={isTesting || testingAll}
-                                            className="flex items-center space-x-1 bg-info hover:bg-info/80 disabled:bg-surfaceHover text-textInverse px-3 py-1.5 rounded-lg text-sm transition-colors ml-auto"
+                                            className="btn btn-primary btn-sm rounded-lg ml-auto"
                                         >
                                             {isTesting ? (
                                                 <Loader2 className="w-3 h-3 animate-spin" />

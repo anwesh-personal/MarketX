@@ -37,18 +37,26 @@ interface PortalConfig {
   partner?: { id: string; name: string }
 }
 
-const ALL_FEATURES = [
-  { key: 'can_view_metrics', label: 'View Metrics' },
-  { key: 'can_chat_brain', label: 'Chat w/ Brain' },
-  { key: 'can_train_brain', label: 'Train Brain' },
-  { key: 'can_write_emails', label: 'Write Emails' },
-  { key: 'can_feed_brain', label: 'Feed Brain' },
-  { key: 'can_access_flow_builder', label: 'Flow Builder' },
-  { key: 'can_view_kb', label: 'View KB' },
-  { key: 'can_export_data', label: 'Export Data' },
-  { key: 'can_manage_satellites', label: 'Manage Satellites' },
-  { key: 'can_view_agent_decisions', label: 'View Decisions' },
+// Features that map to member-facing pages/capabilities
+const MEMBER_FEATURES = [
+  { key: 'can_view_metrics', label: 'Dashboard Stats', description: 'View campaign metrics on Dashboard' },
+  { key: 'can_write_emails', label: 'Writer Studio', description: 'Generate & push email content' },
+  { key: 'can_chat_brain', label: 'Brain Chat', description: 'Chat with the AI Brain' },
+  { key: 'can_feed_brain', label: 'Feed Brain', description: 'Push conversation insights to Brain' },
+  { key: 'can_export_data', label: 'Export Data', description: 'Export reports and analytics' },
 ] as const
+
+// Advanced features — only relevant when superadmin grants extra access
+const ADVANCED_FEATURES = [
+  { key: 'can_train_brain', label: 'Train Brain', description: 'Access Brain Control panel' },
+  { key: 'can_access_flow_builder', label: 'Flow Builder', description: 'Custom workflow builder' },
+  { key: 'can_view_kb', label: 'Knowledge Base', description: 'View/manage KB directly' },
+  { key: 'can_manage_satellites', label: 'Manage Satellites', description: 'Email satellite config' },
+  { key: 'can_view_agent_decisions', label: 'Agent Decisions', description: 'View mastery agent logs' },
+] as const
+
+// Combined for iteration (table display, granted count, etc.)
+const ALL_FEATURES = [...MEMBER_FEATURES, ...ADVANCED_FEATURES]
 
 const LIMITS = [
   { key: 'max_brain_chats_per_day', label: 'Daily Chats', min: 0 },
@@ -258,14 +266,27 @@ export default function PortalTiersPage() {
                       </td>
                       <td className="py-md px-md align-top">
                         {isEditing ? (
-                          <div className="flex flex-col gap-1.5 min-w-[300px]">
-                            {ALL_FEATURES.reduce((rows, f, i) => {
-                              if (i % 2 === 0) rows.push(ALL_FEATURES.slice(i, i + 2))
-                              return rows
-                            }, [] as any[]).map((pair, rowIndex) => (
-                              <div key={rowIndex} className="flex items-center gap-4">
-                                {pair.map((f: any) => (
-                                  <label key={f.key} className="flex items-center gap-2 cursor-pointer w-1/2">
+                          <div className="flex flex-col gap-3 min-w-[300px]">
+                            <div className="text-[10px] text-textTertiary uppercase font-semibold tracking-wider">Member Pages</div>
+                            <div className="flex flex-col gap-1.5">
+                              {MEMBER_FEATURES.map((f) => (
+                                <label key={f.key} className="flex items-center gap-2 cursor-pointer" title={f.description}>
+                                  <input
+                                    type="checkbox"
+                                    className="rounded border-border text-primary focus:ring-primary/50 focus:ring-offset-0 bg-background"
+                                    checked={Boolean(editState[f.key as keyof PortalConfig])}
+                                    onChange={() => handleToggleFeature(f.key as keyof PortalConfig)}
+                                  />
+                                  <span className="text-xs text-textPrimary">{f.label}</span>
+                                  <span className="text-[10px] text-textTertiary hidden sm:inline">— {f.description}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <div className="border-t border-border/50 pt-2">
+                              <div className="text-[10px] text-textTertiary uppercase font-semibold tracking-wider mb-1.5">Advanced Access</div>
+                              <div className="flex flex-col gap-1.5">
+                                {ADVANCED_FEATURES.map((f) => (
+                                  <label key={f.key} className="flex items-center gap-2 cursor-pointer opacity-70 hover:opacity-100 transition-opacity" title={f.description}>
                                     <input
                                       type="checkbox"
                                       className="rounded border-border text-primary focus:ring-primary/50 focus:ring-offset-0 bg-background"
@@ -276,7 +297,7 @@ export default function PortalTiersPage() {
                                   </label>
                                 ))}
                               </div>
-                            ))}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex gap-1 flex-wrap max-w-sm">

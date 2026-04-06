@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireSuperadmin } from '@/lib/superadmin-middleware';
+import { DEFAULT_BILLING_PLAN_PRICING } from '@/lib/config-defaults';
 
 /**
  * GET /api/superadmin/stats
@@ -15,11 +16,7 @@ export async function GET(request: NextRequest) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-        console.log('[STATS API] Environment check:', {
-            hasUrl: !!supabaseUrl,
-            hasKey: !!serviceKey,
-            urlPrefix: supabaseUrl?.substring(0, 20)
-        });
+
 
         if (!supabaseUrl || !serviceKey) {
             throw new Error(`Missing environment variables: ${!supabaseUrl ? 'SUPABASE_URL' : ''} ${!serviceKey ? 'SERVICE_KEY' : ''}`);
@@ -28,7 +25,7 @@ export async function GET(request: NextRequest) {
         // Create Supabase client with service role
         const supabase = createClient(supabaseUrl, serviceKey);
 
-        console.log('[STATS API] Starting stats fetch...');
+
 
         // Active Organizations (status = 'active')
         const { data: activeOrgsData, error: orgsError } = await supabase
@@ -36,7 +33,7 @@ export async function GET(request: NextRequest) {
             .select('id')
             .eq('status', 'active');
 
-        console.log('[STATS API] Active Orgs Query:', { count: activeOrgsData?.length, error: orgsError });
+
         if (orgsError) throw orgsError;
         const activeOrgs = activeOrgsData?.length || 0;
 
@@ -45,7 +42,7 @@ export async function GET(request: NextRequest) {
             .from('users')
             .select('id');
 
-        console.log('[STATS API] Total Users Query:', { count: usersData?.length, error: usersError });
+
         if (usersError) throw usersError;
         const totalUsers = usersData?.length || 0;
 
@@ -54,7 +51,7 @@ export async function GET(request: NextRequest) {
             .from('knowledge_bases')
             .select('id');
 
-        console.log('[STATS API] Total KBs Query:', { count: kbsData?.length, error: kbsError });
+
         if (kbsError) throw kbsError;
         const totalKbs = kbsData?.length || 0;
 
@@ -63,7 +60,7 @@ export async function GET(request: NextRequest) {
             .from('engine_run_logs')
             .select('id');
 
-        console.log('[STATS API] Total Runs Query:', { count: runsData?.length, error: runsError });
+
         if (runsError) throw runsError;
         const totalRuns = runsData?.length || 0;
 
@@ -110,7 +107,7 @@ export async function GET(request: NextRequest) {
         const firstDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        // MRR Calculation (sum of active org plans)
+        // MRR Calculation — read pricing from config_table (single source of truth)
         const { data: activeOrgPlans, error: licenseError } = await supabase
             .from('organizations')
             .select('id, plan')
@@ -118,16 +115,18 @@ export async function GET(request: NextRequest) {
 
         if (licenseError) throw licenseError;
 
-        // Calculate MRR based on plans
-        const planPricing: Record<string, number> = {
-            'free': 0,         // Free tier
-            'starter': 19,     // $19/month
-            'pro': 49,         // $49/month
-            'enterprise': 199, // $199/month
-        };
+        // Load DB-driven pricing, fall back to config-defaults
+        const { data: pricingConfig } = await supabase
+            .from('config_table')
+            .select('value')
+            .eq('key', 'billing_plan_pricing')
+            .single();
+
+        const planPricing: Record<string, number> =
+            pricingConfig?.value?.value || pricingConfig?.value || DEFAULT_BILLING_PLAN_PRICING;
 
         const mrr = (activeOrgPlans || []).reduce((sum, org) => {
-            const plan = org.plan || 'free';
+            const plan = (org.plan || 'free').toLowerCase();
             return sum + (planPricing[plan] || 0);
         }, 0);
 
@@ -145,7 +144,7 @@ export async function GET(request: NextRequest) {
             },
         };
 
-        console.log('[STATS API] Final stats to return:', finalStats);
+
 
         return NextResponse.json({
             success: true,

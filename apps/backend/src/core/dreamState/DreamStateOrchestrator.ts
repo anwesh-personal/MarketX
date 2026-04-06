@@ -845,12 +845,12 @@ export class DreamStateOrchestrator {
             const { rows: conversations } = await this.pool.query(convQuery, [orgId]);
             processed = conversations.length;
 
-            // 2. Generate summaries (simplified - in production use LLM)
+            // 2. Generate extractive summaries from message content
+            //    No LLM dependency — deterministic and safe for background processing
             for (const conv of conversations) {
                 try {
-                    // Get messages
                     const msgQuery = `
-                        SELECT content FROM messages 
+                        SELECT role, content FROM messages 
                         WHERE conversation_id = $1 
                         ORDER BY created_at 
                         LIMIT 20
@@ -858,8 +858,23 @@ export class DreamStateOrchestrator {
                     const { rows: messages } = await this.pool.query(msgQuery, [conv.id]);
 
                     if (messages.length > 0) {
-                        // Create simple summary (in production, use LLM)
-                        const summary = `Conversation with ${messages.length} messages`;
+                        // Extract topic from first user message, last user message
+                        const userMessages = messages.filter((m: any) => m.role === 'user');
+                        const assistantCount = messages.filter((m: any) => m.role === 'assistant').length;
+                        const firstUserMsg = userMessages[0]?.content?.slice(0, 120) || '';
+                        const lastUserMsg = userMessages.length > 1
+                            ? userMessages[userMessages.length - 1]?.content?.slice(0, 80) || ''
+                            : '';
+
+                        const parts = [
+                            `${messages.length} messages (${userMessages.length} user, ${assistantCount} assistant)`,
+                        ];
+                        if (firstUserMsg) parts.push(`Topic: ${firstUserMsg.replace(/\n/g, ' ').trim()}`);
+                        if (lastUserMsg && lastUserMsg !== firstUserMsg) {
+                            parts.push(`Last: ${lastUserMsg.replace(/\n/g, ' ').trim()}`);
+                        }
+
+                        const summary = parts.join('. ');
 
                         await this.pool.query(
                             `UPDATE conversations SET summary = $1 WHERE id = $2`,

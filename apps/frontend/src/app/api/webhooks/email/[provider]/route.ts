@@ -174,6 +174,62 @@ export async function POST(
     )
   }
 
+  // ── Auto-suppress contacts on bounce/complaint/unsubscribe ────────────
+  // Deliverability-critical: prevents re-sending to addresses that
+  // will generate more complaints and damage sender reputation.
+  // Unsubscribe suppression is legally required (CAN-SPAM, GDPR).
+  const suppressableEvents = eventsWithOrg.filter(
+    (e) => (e.type === 'bounce' || e.type === 'complaint' || e.type === 'unsubscribe') && e.email && e.orgId
+  )
+
+  if (suppressableEvents.length > 0) {
+    // 1. Insert into partner_contact_suppression (per-org suppression list)
+    const suppressionRows = suppressableEvents.map((evt) => ({
+      partner_id: evt.orgId!,
+      email: evt.email!.toLowerCase(),
+      domain: evt.email!.split('@')[1]?.toLowerCase() || null,
+      reason_code: evt.type === 'bounce' ? 'hard_bounce'
+                 : evt.type === 'complaint' ? 'spam_complaint'
+                 : 'unsubscribe_request',
+      source: evt.type as 'bounce' | 'complaint' | 'unsubscribe',
+    }))
+
+    // Use upsert with on_conflict to avoid duplicates — a contact may
+    // bounce multiple times across different campaigns
+    for (const row of suppressionRows) {
+      await supabase
+        .from('partner_contact_suppression')
+        .upsert(row, { onConflict: 'partner_id,email', ignoreDuplicates: true })
+        .then(({ error }) => {
+          if (error) console.warn('[webhook] suppression insert failed:', error.message)
+        })
+    }
+
+    // 2. Flag identity_pool records as suppressed
+    const emailsByOrg = new Map<string, string[]>()
+    for (const evt of suppressableEvents) {
+      const list = emailsByOrg.get(evt.orgId!) || []
+      list.push(evt.email!.toLowerCase())
+      emailsByOrg.set(evt.orgId!, list)
+    }
+
+    for (const [orgId, emails] of emailsByOrg) {
+      await supabase
+        .from('identity_pool')
+        .update({
+          is_suppressed: true,
+          suppression_reason: 'auto_webhook',
+        })
+        .eq('partner_id', orgId)
+        .in('email', emails)
+        .then(({ error }) => {
+          if (error) console.warn('[webhook] identity_pool suppression failed:', error.message)
+        })
+    }
+
+    console.log(`[webhook] Auto-suppressed ${suppressableEvents.length} contacts (bounce/complaint)`)
+  }
+
   const highValue = eventsWithOrg.filter((e) => ['reply', 'click', 'bounce'].includes(e.type))
   const orgIds = [...new Set(highValue.map((e) => e.orgId!))]
 

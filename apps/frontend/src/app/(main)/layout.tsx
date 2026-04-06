@@ -6,16 +6,12 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
     LayoutDashboard,
-    FileText,
-    Database,
-    BarChart3,
-    Brain,
     Settings,
     LogOut,
     Menu,
     X,
-    ChevronRight,
     Zap,
+    Mail,
     Sparkles,
     BookOpen,
 } from 'lucide-react';
@@ -35,26 +31,34 @@ export default function MainLayout({ children }: MainLayoutProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userEmail, setUserEmail] = useState('');
     const [isReady, setIsReady] = useState(false);
+    const [features, setFeatures] = useState<Record<string, boolean>>({});
 
-    const navigation = [
-        { name: 'Walkthrough', href: '/walkthrough', icon: BookOpen, group: 'Guide', highlight: true },
-        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Overview' },
-        { name: 'Portal', href: '/portal', icon: BarChart3, group: 'Overview' },
-        { name: 'Writer Studio', href: '/writer', icon: Zap, group: 'Content' },
-        { name: 'Knowledge Base', href: '/kb-manager', icon: Database, group: 'Content' },
-        { name: 'Brain Chat', href: '/brain-chat', icon: Sparkles, group: 'Brain' },
-        { name: 'Brain Control', href: '/brain-control', icon: Brain, group: 'Brain' },
-        { name: 'Learning Loop', href: '/learning', icon: Brain, group: 'Brain' },
-        { name: 'Analytics', href: '/analytics', icon: BarChart3, group: 'Insights' },
-        { name: 'Settings', href: '/settings', icon: Settings, group: 'Insights' },
+    // Nav items with their required feature flag from member_portal_config.
+    // Items with requiredFeature: null always show (Dashboard, Settings).
+    // Items gated by a feature only render if the user's tier permits it.
+    const allNavItems = [
+        { name: 'Walkthrough', href: '/walkthrough', icon: BookOpen, group: 'Guide', highlight: true, requiredFeature: null },
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, group: 'Home', requiredFeature: null },
+        { name: 'Writer Studio', href: '/writer', icon: Zap, group: 'Home', requiredFeature: 'can_write_emails' as const },
+        { name: 'Email Hub', href: '/email-hub', icon: Mail, group: 'Home', requiredFeature: 'can_view_metrics' as const },
+        { name: 'Brain', href: '/brain-chat', icon: Sparkles, group: 'Intelligence', requiredFeature: 'can_chat_brain' as const },
+        { name: 'Settings', href: '/settings', icon: Settings, group: 'System', requiredFeature: null },
     ];
 
-    // Check authentication
+    // Filter nav to only items the user's tier allows
+    const navigation = allNavItems.filter(item =>
+        item.requiredFeature === null || features[item.requiredFeature] !== false
+    );
+
+    // Derive sidebar groups dynamically from visible nav items (no hardcoded list)
+    const sidebarGroups = [...new Set(navigation.map(item => item.group))];
+
+    // Load auth + portal config on mount
     useEffect(() => {
-        checkAuth();
+        loadUserContext();
     }, []);
 
-    const checkAuth = async () => {
+    const loadUserContext = async () => {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
@@ -63,6 +67,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
         }
 
         setUserEmail(user.email || '');
+
+        // Load portal config (feature flags for this user's org/tier)
+        try {
+            const res = await fetch('/api/portal/config');
+            if (res.ok) {
+                const config = await res.json();
+                setFeatures(config.features || {});
+            }
+        } catch {
+            // On failure, features stays {} — all gates default to visible
+            // (matches ENTERPRISE_FALLBACK behavior in requireFeature.ts)
+        }
+
         setIsReady(true);
     };
 
@@ -134,8 +151,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                     `}>
                         <nav className="flex-1 py-md px-sm overflow-y-auto hide-scrollbar space-y-6">
                             {(() => {
-                                const groups = ['Guide', 'Overview', 'Content', 'Brain', 'Insights'];
-                                return groups.map((group) => {
+                                return sidebarGroups.map((group) => {
                                     const items = navigation.filter(item => item.group === group);
                                     if (items.length === 0) return null;
                                     return (

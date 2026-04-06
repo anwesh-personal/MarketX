@@ -123,9 +123,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if email already exists in Supabase Auth
-        const { data: existingAuth } = await supabase.auth.admin.listUsers();
-        const emailExists = existingAuth.users.some(u => u.email === email);
+        // Check if email already exists in Supabase Auth (paginated — default only returns 50)
+        let emailExists = false;
+        let page = 1;
+        const perPage = 100;
+        while (true) {
+            const { data: batch } = await supabase.auth.admin.listUsers({ page, perPage });
+            if (!batch?.users?.length) break;
+            if (batch.users.some(u => u.email === email)) {
+                emailExists = true;
+                break;
+            }
+            if (batch.users.length < perPage) break;
+            page++;
+            if (page > 10) break; // safety cap at 1000 users
+        }
 
         if (emailExists) {
             return NextResponse.json(
@@ -165,8 +177,7 @@ export async function POST(request: NextRequest) {
             console.error('Failed to generate invite link:', inviteError);
             // Don't fail - user is created, just log it
         } else {
-            console.log('✅ Invite email sent to:', email);
-            console.log('📧 Invite link (if email fails):', inviteData.properties.action_link);
+            // Invite sent — link available via inviteData.properties.action_link if needed
         }
 
         // Create user in users table
@@ -270,9 +281,7 @@ export async function PATCH(request: NextRequest) {
                 );
             }
 
-            console.log('✅ Password updated for user:', userId);
-            console.log('🔐 New password:', new_password);
-            console.log('📧 Supabase will send notification email (if SMTP configured)');
+            // Password updated — do NOT log credentials
         }
 
         // Update user in users table

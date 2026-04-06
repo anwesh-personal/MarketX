@@ -50,7 +50,7 @@ function SlideView({ slide }: { slide: MemberSlide }) {
                     <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                         onClick={() => router.push('/kb-manager')}
-                        className="mt-6 px-6 py-3 rounded-[var(--radius-lg)] bg-accent text-white font-bold text-sm flex items-center gap-2"
+                        className="mt-6 btn btn-primary rounded-[var(--radius-lg)] text-sm flex items-center gap-2"
                         style={{ boxShadow: '0 8px 32px var(--color-glow)' }}>
                         Get Started <ChevronRight size={16} />
                     </motion.button>

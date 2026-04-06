@@ -25,6 +25,13 @@ const dispatchSchema = z.object({
   htmlBody: z.string().min(1),
   textBody: z.string().optional(),
   fromName: z.string().max(100).optional(),
+  fromEmail: z.string().email().optional(),
+  /** MailWizz list UID — the list must already exist (pushed by Refinery) */
+  listUid: z.string().min(1),
+  /** Optional MailWizz segment UID to narrow within the list */
+  segmentUid: z.string().optional(),
+  /** Optional delivery server IDs to pin to specific servers */
+  deliveryServerIds: z.array(z.number()).optional(),
   recipients: z.array(z.object({
     email: z.string().email(),
     firstName: z.string().optional(),
@@ -71,8 +78,13 @@ export async function POST(req: NextRequest) {
       ...parsed.data.trackingTags,
       orgId: gate.orgId,
     },
+    meta: {
+      listUid: parsed.data.listUid,
+      segmentUid: parsed.data.segmentUid,
+      deliveryServerIds: parsed.data.deliveryServerIds,
+    },
   })
 
-  const status = result.success ? 200 : (result.error?.includes('exhausted') ? 429 : 500)
+  const status = result.success ? 200 : (result.error?.includes('CIRCUIT') ? 429 : 500)
   return NextResponse.json(result, { status })
 }

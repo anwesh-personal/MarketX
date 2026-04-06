@@ -191,85 +191,143 @@
     .btn {
         @apply inline-flex items-center justify-center gap-xs;
         @apply px-md py-sm rounded-md;
-        @apply font-medium text-sm;
+        font-family: var(--font-sans);
+        font-weight: var(--font-weight-semibold);
+        font-size: var(--text-sm);
+        line-height: var(--line-height-normal);
+        letter-spacing: 0.01em;
         cursor: pointer;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
         position: relative;
         overflow: hidden;
+        border: 1px solid transparent;
         transition: all var(--duration-normal) var(--easing);
     }
 
-    .btn::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: var(--gradient-accent-glow);
-        opacity: 0;
-        transition: opacity var(--duration-normal) var(--easing);
-        pointer-events: none;
+    .btn:focus-visible {
+        outline: var(--focus-ring-width) solid var(--color-border-focus);
+        outline-offset: var(--focus-ring-offset);
     }
 
-    .btn:hover::after { opacity: 1; }
+    /* Disabled — universal */
+    .btn:disabled,
+    .btn[disabled] {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+        transform: none !important;
+        box-shadow: none !important;
+    }
 
+    /* ---- PRIMARY: solid accent, max-contrast on-accent text ---- */
     .btn-primary {
         background: var(--color-accent);
         color: var(--color-on-accent);
-        border: 1px solid transparent;
+        border-color: transparent;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.08);
     }
     .btn-primary:hover {
         background: var(--color-accent-hover);
+        color: var(--color-on-accent);
         transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
+        box-shadow: var(--shadow-md), 0 4px 14px -2px rgba(var(--color-accent-rgb), 0.3);
     }
     .btn-primary:active {
         transform: translateY(0) scale(var(--active-scale));
         transition-duration: var(--duration-fast);
     }
 
+    /* ---- SECONDARY: surface bg, primary text, bordered ---- */
     .btn-secondary {
-        background: var(--color-surface);
+        background: var(--color-surface-elevated);
         color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
+        border-color: var(--color-border);
     }
     .btn-secondary:hover {
         background: var(--color-surface-hover);
+        color: var(--color-text-primary);
         border-color: var(--color-border-hover);
         transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+    .btn-secondary:active {
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
     }
 
+    /* ---- GHOST: transparent, subtle text ---- */
     .btn-ghost {
         background: transparent;
         color: var(--color-text-secondary);
-        border: 1px solid transparent;
+        border-color: transparent;
     }
     .btn-ghost:hover {
         background: var(--color-surface-hover);
         color: var(--color-text-primary);
     }
+    .btn-ghost:active {
+        background: var(--color-surface);
+        transform: scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
 
+    /* ---- OUTLINE: transparent bg, accent border + text ---- */
+    .btn-outline {
+        background: transparent;
+        color: var(--color-accent);
+        border-color: var(--color-accent);
+    }
+    .btn-outline:hover {
+        background: rgba(var(--color-accent-rgb), 0.1);
+        color: var(--color-accent);
+        border-color: var(--color-accent-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+    .btn-outline:active {
+        background: rgba(var(--color-accent-rgb), 0.15);
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
+
+    /* ---- DANGER: error bg, always white text ---- */
     .btn-danger {
         background: var(--color-error);
         color: #FFFFFF;
-        border: 1px solid transparent;
+        border-color: transparent;
+        text-shadow: 0 1px 1px rgba(0,0,0,0.12);
     }
     .btn-danger:hover {
-        background: var(--color-error);
-        opacity: 0.9;
+        filter: brightness(1.08);
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(var(--color-error-rgb), 0.25);
+        box-shadow: 0 4px 14px -2px rgba(var(--color-error-rgb), 0.35);
+    }
+    .btn-danger:active {
+        filter: brightness(0.95);
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
     }
 
+    /* ---- ACCENT GRADIENT: gradient bg, on-accent text ---- */
     .btn-accent-gradient {
         background: var(--gradient-primary);
         color: var(--color-on-accent);
-        border: 1px solid transparent;
+        border-color: transparent;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
     .btn-accent-gradient:hover {
+        filter: brightness(1.08) saturate(1.1);
         transform: translateY(-1px);
         box-shadow: var(--shadow-glow-lg);
     }
+    .btn-accent-gradient:active {
+        filter: brightness(0.95);
+        transform: translateY(0) scale(var(--active-scale));
+        transition-duration: var(--duration-fast);
+    }
 
+    /* ---- Size variants ---- */
     .btn-sm { @apply px-sm py-xs text-xs; }
     .btn-lg { @apply px-lg py-md text-base; }
     .btn-icon {

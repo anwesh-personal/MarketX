@@ -1,84 +1,36 @@
 /**
- * SATELLITE SEND ORCHESTRATOR
- * ===========================
- * Production-grade email dispatch that respects satellite pacing.
+ * CAMPAIGN SEND ORCHESTRATOR
+ * ==========================
+ * Dispatches campaigns through MailWizz.
  *
- * Instead of blasting all recipients through a single adapter call,
- * this orchestrator:
+ * MarketWriter's role:
+ *   1. Circuit breaker — block if complaint rate too high
+ *   2. Suppression filter — remove bounced/complained/unsub contacts
+ *   3. Load MailWizz credentials from email_provider_configs
+ *   4. Create campaign in MailWizz via API (list already pushed by Refinery)
  *
- *   1. Fetches all ACTIVE satellites for the org
- *   2. Computes per-satellite available capacity (warmup-aware)
- *   3. Distributes recipients across satellites (round-robin weighted by capacity)
- *   4. Sends each chunk through the adapter using the satellite's from address
- *   5. Records sends per satellite (updates current_daily_sent, warmup_day, status)
- *   6. Returns a detailed manifest of what went where
+ * MailWizz's role:
+ *   - Delivery server management (SMTP config, quotas, daily caps)
+ *   - Actual SMTP delivery + retries
+ *   - Domain/SPF/DKIM verification
+ *   - Send pacing and throttling
  *
- * This is the ONLY path through which bulk email should be sent.
- * Never call adapter.sendBulk() directly — always go through here.
- *
- * Architecture:
- *   Campaign Dispatch API → SatelliteSendOrchestrator → MailWizzAdapter.sendBulk()
- *                                                      → pacing/record
+ * MarketWriter does NOT manage sending_satellites or sending_domains.
+ * Those are MailWizz concerns.
  */
 
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { getEmailProviderAdapter } from './EmailProviderAdapter'
-import type { BulkSendParams, BulkSendResult, ProviderConfig } from './EmailProviderAdapter'
+import type { BulkSendParams, ProviderConfig } from './EmailProviderAdapter'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Satellite {
-  id: string
-  partner_id: string
-  domain_id: string
-  mailbox_email: string
-  mailbox_local_part: string
-  status: string
-  daily_send_cap: number
-  current_daily_sent: number
-  warmup_day: number
-  warmup_target_days: number
-  is_active: boolean
-  reputation_score: number
-  domain?: {
-    domain: string
-    provider: string
-    warmup_status: string
-    verification_status: string
-  }
-}
-
-interface SatelliteAllocation {
-  satellite: Satellite
-  availableCapacity: number
-  allocatedRecipients: BulkSendParams['recipients']
-}
-
-interface SendChunkResult {
-  satelliteId: string
-  satelliteEmail: string
-  recipientCount: number
-  success: boolean
-  campaignId?: string
-  error?: string
-}
 
 export interface OrchestratorResult {
   success: boolean
   totalRecipients: number
-  totalSent: number
-  totalFailed: number
-  chunks: SendChunkResult[]
-  /** Recipients that couldn't be allocated to any satellite (capacity exhausted) */
-  overflow: BulkSendParams['recipients']
+  suppressedCount: number
+  campaignId?: string
   error?: string
-}
-
-interface OrchestratorConfig {
-  /** Global daily cap per satellite from config_table (overrides DB per-satellite cap) */
-  globalDailyCap: number
-  /** Minimum volume during warmup (prevents 0-send days) */
-  warmupMinVolume: number
 }
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
@@ -92,221 +44,68 @@ export class SatelliteSendOrchestrator {
   }
 
   /**
-   * Dispatch a bulk campaign across the org's satellite constellation.
+   * Dispatch a campaign through MailWizz.
    *
-   * @param orgId - The organization ID
-   * @param params - Standard BulkSendParams (recipients, subject, htmlBody, etc.)
-   * @returns Detailed manifest with per-satellite results
+   * @param orgId  - The organization/partner ID
+   * @param params - Campaign content + recipient list reference
+   * @returns Result with campaignId from MailWizz
    */
   async dispatch(orgId: string, params: BulkSendParams): Promise<OrchestratorResult> {
     const db = this.supabase()
 
-    // ── 1. Load platform pacing config ──────────────────────────────────────
-    const config = await this.loadPacingConfig(db)
-
-    // ── 2. Fetch active satellites with their domain info ───────────────────
-    const { data: satellites, error: satErr } = await db
-      .from('sending_satellites')
-      .select(`
-        id, partner_id, domain_id, mailbox_email, mailbox_local_part,
-        status, daily_send_cap, current_daily_sent,
-        warmup_day, warmup_target_days, is_active, reputation_score,
-        sending_domains!inner(domain, provider, warmup_status, verification_status)
-      `)
-      .eq('partner_id', orgId)
-      .eq('is_active', true)
-      .in('status', ['active', 'warming'])
-      .order('reputation_score', { ascending: false })
-
-    if (satErr) {
+    // ── 1. CIRCUIT BREAKER ──────────────────────────────────────────────
+    const cb = await this.checkComplaintRate(db, orgId)
+    if (cb.tripped) {
       return {
-        success: false, totalRecipients: params.recipients.length,
-        totalSent: 0, totalFailed: 0, chunks: [], overflow: params.recipients,
-        error: `Failed to load satellites: ${satErr.message}`,
+        success: false,
+        totalRecipients: params.recipients.length,
+        suppressedCount: 0,
+        error: `CIRCUIT BREAKER: Complaint rate ${(cb.rate * 100).toFixed(3)}% exceeds threshold ${(cb.threshold * 100).toFixed(3)}% (${cb.complaints}/${cb.sends} in ${cb.lookbackDays}d). Sending paused.`,
       }
     }
 
-    // Only use satellites whose domains are verified
-    const eligibleSats: Satellite[] = (satellites || [])
-      .filter((s: any) => {
-        const domain = Array.isArray(s.sending_domains)
-          ? s.sending_domains[0]
-          : s.sending_domains
-        return domain?.verification_status === 'verified'
-      })
-      .map((s: any) => {
-        const domain = Array.isArray(s.sending_domains)
-          ? s.sending_domains[0]
-          : s.sending_domains
-        return { ...s, sending_domains: undefined, domain } as Satellite
-      })
+    // ── 2. SUPPRESSION FILTER ───────────────────────────────────────────
+    const { cleanRecipients, suppressedCount } = await this.filterSuppressed(
+      db, orgId, params.recipients,
+    )
 
-    if (eligibleSats.length === 0) {
+    if (suppressedCount > 0) {
+      console.log(`[Orchestrator] Filtered ${suppressedCount} suppressed for org=${orgId}`)
+    }
+
+    if (cleanRecipients.length === 0) {
       return {
-        success: false, totalRecipients: params.recipients.length,
-        totalSent: 0, totalFailed: 0, chunks: [], overflow: params.recipients,
-        error: 'No eligible satellites. Ensure at least one satellite is active/warming with a verified domain.',
+        success: false,
+        totalRecipients: params.recipients.length,
+        suppressedCount,
+        error: `All ${params.recipients.length} recipients are suppressed. No emails to send.`,
       }
     }
 
-    // ── 3. Compute per-satellite available capacity ─────────────────────────
-    const allocations = this.computeAllocations(eligibleSats, params.recipients, config)
-
-    if (allocations.allocatedChunks.length === 0) {
-      return {
-        success: false, totalRecipients: params.recipients.length,
-        totalSent: 0, totalFailed: 0, chunks: [], overflow: params.recipients,
-        error: 'All satellites have exhausted their daily send capacity. Try again tomorrow or provision more satellites.',
-      }
-    }
-
-    // ── 4. Load the provider adapter ────────────────────────────────────────
-    const providerType = eligibleSats[0].domain?.provider || 'mailwizz'
-    const { adapter, error: adapterError } = await this.loadProviderAdapter(db, orgId, providerType)
+    // ── 3. LOAD PROVIDER ADAPTER ────────────────────────────────────────
+    const { adapter, error: adapterErr } = await this.loadProviderAdapter(db, orgId, 'mailwizz')
     if (!adapter) {
       return {
-        success: false, totalRecipients: params.recipients.length,
-        totalSent: 0, totalFailed: 0, chunks: [], overflow: params.recipients,
-        error: adapterError || 'Failed to load email provider adapter',
+        success: false,
+        totalRecipients: params.recipients.length,
+        suppressedCount,
+        error: adapterErr || 'Failed to load MailWizz adapter',
       }
     }
 
-    // ── 5. Send each chunk through the adapter ──────────────────────────────
-    const chunks: SendChunkResult[] = []
-    let totalSent = 0
-    let totalFailed = 0
-
-    for (const alloc of allocations.allocatedChunks) {
-      if (alloc.allocatedRecipients.length === 0) continue
-
-      const chunkParams: BulkSendParams = {
-        ...params,
-        campaignName: `${params.campaignName} [${alloc.satellite.mailbox_email}]`,
-        fromEmail: alloc.satellite.mailbox_email,
-        fromName: params.fromName || alloc.satellite.mailbox_local_part,
-        recipients: alloc.allocatedRecipients,
-      }
-
-      try {
-        const result = await adapter.sendBulk(chunkParams)
-
-        if (result.success) {
-          // Record sends in the satellite's daily counter
-          await this.recordSends(db, alloc.satellite, alloc.allocatedRecipients.length)
-          totalSent += alloc.allocatedRecipients.length
-        } else {
-          totalFailed += alloc.allocatedRecipients.length
-        }
-
-        chunks.push({
-          satelliteId: alloc.satellite.id,
-          satelliteEmail: alloc.satellite.mailbox_email,
-          recipientCount: alloc.allocatedRecipients.length,
-          success: result.success,
-          campaignId: result.campaignId,
-          error: result.error,
-        })
-      } catch (err: any) {
-        totalFailed += alloc.allocatedRecipients.length
-        chunks.push({
-          satelliteId: alloc.satellite.id,
-          satelliteEmail: alloc.satellite.mailbox_email,
-          recipientCount: alloc.allocatedRecipients.length,
-          success: false,
-          error: err.message,
-        })
-      }
-    }
+    // ── 4. CREATE CAMPAIGN IN MAILWIZZ ──────────────────────────────────
+    const result = await adapter.sendBulk({
+      ...params,
+      recipients: cleanRecipients,
+    })
 
     return {
-      success: totalSent > 0,
+      success: result.success,
       totalRecipients: params.recipients.length,
-      totalSent,
-      totalFailed,
-      chunks,
-      overflow: allocations.overflow,
+      suppressedCount,
+      campaignId: result.campaignId,
+      error: result.error,
     }
-  }
-
-  // ─── Allocation Engine ──────────────────────────────────────────────────────
-
-  private computeAllocations(
-    satellites: Satellite[],
-    recipients: BulkSendParams['recipients'],
-    config: OrchestratorConfig,
-  ): { allocatedChunks: SatelliteAllocation[]; overflow: BulkSendParams['recipients'] } {
-    // Compute effective capacity per satellite
-    const satCaps: Array<{ sat: Satellite; cap: number }> = satellites.map((sat) => {
-      const effectiveDailyCap = Math.min(sat.daily_send_cap, config.globalDailyCap)
-
-      let warmupCap = effectiveDailyCap
-      if (sat.status === 'warming' || sat.warmup_day < sat.warmup_target_days) {
-        const rampFraction = Math.min(1, (sat.warmup_day + 1) / sat.warmup_target_days)
-        warmupCap = Math.max(config.warmupMinVolume, Math.round(effectiveDailyCap * rampFraction))
-      }
-
-      const remaining = Math.max(0, warmupCap - sat.current_daily_sent)
-      return { sat, cap: remaining }
-    }).filter((s) => s.cap > 0)
-
-    // Distribute recipients across satellites (greedy: fill highest-capacity first)
-    // Sort by capacity descending for even distribution
-    satCaps.sort((a, b) => b.cap - a.cap)
-
-    const allocations: SatelliteAllocation[] = satCaps.map((sc) => ({
-      satellite: sc.sat,
-      availableCapacity: sc.cap,
-      allocatedRecipients: [],
-    }))
-
-    let recipientIdx = 0
-    const totalCapacity = satCaps.reduce((sum, sc) => sum + sc.cap, 0)
-
-    // Weighted distribution — each satellite gets a proportional share
-    for (const alloc of allocations) {
-      if (recipientIdx >= recipients.length) break
-
-      const share = Math.ceil((alloc.availableCapacity / totalCapacity) * recipients.length)
-      const count = Math.min(share, alloc.availableCapacity, recipients.length - recipientIdx)
-
-      alloc.allocatedRecipients = recipients.slice(recipientIdx, recipientIdx + count)
-      recipientIdx += count
-    }
-
-    // Any leftovers that couldn't fit
-    const overflow = recipients.slice(recipientIdx)
-
-    return { allocatedChunks: allocations, overflow }
-  }
-
-  // ─── Record Sends ──────────────────────────────────────────────────────────
-
-  private async recordSends(db: any, satellite: Satellite, sendsCompleted: number) {
-    const newDailySent = satellite.current_daily_sent + sendsCompleted
-
-    // Advance warmup_day only once per calendar day.
-    // The daily reset cron sets current_daily_sent to 0 at midnight UTC.
-    // So if current_daily_sent was 0 before this send, this is the first send of the day.
-    const isFirstSendOfDay = satellite.current_daily_sent === 0
-    const newWarmupDay =
-      isFirstSendOfDay && satellite.warmup_day < satellite.warmup_target_days
-        ? satellite.warmup_day + 1
-        : satellite.warmup_day
-
-    const statusTransition =
-      satellite.status === 'warming' && newWarmupDay >= satellite.warmup_target_days
-        ? 'active'
-        : satellite.status
-
-    await db
-      .from('sending_satellites')
-      .update({
-        current_daily_sent: newDailySent,
-        warmup_day: newWarmupDay,
-        status: statusTransition,
-        last_send_at: new Date().toISOString(),
-      })
-      .eq('id', satellite.id)
   }
 
   // ─── Provider Loading ──────────────────────────────────────────────────────
@@ -350,24 +149,111 @@ export class SatelliteSendOrchestrator {
     return { adapter, error: null }
   }
 
-  // ─── Platform Config ───────────────────────────────────────────────────────
+  // ─── Complaint Rate Circuit Breaker ──────────────────────────────────────
 
-  private async loadPacingConfig(db: any): Promise<OrchestratorConfig> {
-    const { data: rows }: { data: any[] | null } = await db
-      .from('config_table')
-      .select('key, value')
-      .in('key', ['send_pacing_global_daily_cap', 'send_pacing_warmup_min_volume'])
+  private async checkComplaintRate(
+    db: any,
+    orgId: string,
+  ): Promise<{ tripped: boolean; rate: number; threshold: number; complaints: number; sends: number; lookbackDays: number }> {
+    let threshold = 0.001   // 0.1% — ISPs flag at this level
+    let lookbackDays = 7
+    let minSends = 100
 
-    const map: Record<string, any> = {}
-    for (const r of rows || []) {
-      map[r.key] = typeof r.value === 'object' && r.value !== null && 'value' in r.value
-        ? r.value.value
-        : r.value
+    try {
+      const { data: cfgRows } = await db
+        .from('config_table')
+        .select('key, value')
+        .in('key', ['complaint_rate_threshold', 'complaint_rate_lookback_days', 'complaint_rate_min_sends'])
+
+      if (cfgRows) {
+        for (const r of cfgRows) {
+          const val = typeof r.value === 'object' && r.value !== null && 'value' in r.value
+            ? r.value.value : r.value
+          if (r.key === 'complaint_rate_threshold') threshold = Number(val) || threshold
+          if (r.key === 'complaint_rate_lookback_days') lookbackDays = Number(val) || lookbackDays
+          if (r.key === 'complaint_rate_min_sends') minSends = Number(val) || minSends
+        }
+      }
+    } catch {
+      // config_table may not exist — use defaults
     }
 
+    const since = new Date()
+    since.setDate(since.getDate() - lookbackDays)
+
+    const { count: sendCount } = await db
+      .from('signal_event')
+      .select('*', { count: 'exact', head: true })
+      .eq('partner_id', orgId)
+      .eq('event_type', 'send')
+      .gte('occurred_at', since.toISOString())
+
+    const sends = sendCount ?? 0
+
+    if (sends < minSends) {
+      return { tripped: false, rate: 0, threshold, complaints: 0, sends, lookbackDays }
+    }
+
+    const { count: complaintCount } = await db
+      .from('signal_event')
+      .select('*', { count: 'exact', head: true })
+      .eq('partner_id', orgId)
+      .eq('event_type', 'complaint')
+      .gte('occurred_at', since.toISOString())
+
+    const complaints = complaintCount ?? 0
+    const rate = complaints / sends
+
+    return { tripped: rate >= threshold, rate, threshold, complaints, sends, lookbackDays }
+  }
+
+  // ─── Suppression List Filter ────────────────────────────────────────────
+
+  private async filterSuppressed(
+    db: any,
+    orgId: string,
+    recipients: BulkSendParams['recipients'],
+  ): Promise<{ cleanRecipients: BulkSendParams['recipients']; suppressedCount: number }> {
+    if (recipients.length === 0) {
+      return { cleanRecipients: [], suppressedCount: 0 }
+    }
+
+    const emails = recipients.map((r) => r.email.toLowerCase())
+
+    // Check partner-level suppression
+    const { data: partnerSuppressed } = await db
+      .from('partner_contact_suppression')
+      .select('email')
+      .eq('partner_id', orgId)
+      .eq('is_active', true)
+      .in('email', emails)
+
+    // Check global suppression
+    const { data: globalSuppressed } = await db
+      .from('global_contact_suppression')
+      .select('email')
+      .eq('is_active', true)
+      .in('email', emails)
+
+    const suppressedEmails = new Set<string>()
+    for (const row of partnerSuppressed || []) {
+      if (row.email) suppressedEmails.add(row.email.toLowerCase())
+    }
+    for (const row of globalSuppressed || []) {
+      if (row.email) suppressedEmails.add(row.email.toLowerCase())
+    }
+
+    if (suppressedEmails.size === 0) {
+      return { cleanRecipients: recipients, suppressedCount: 0 }
+    }
+
+    const cleanRecipients = recipients.filter(
+      (r) => !suppressedEmails.has(r.email.toLowerCase())
+    )
+
     return {
-      globalDailyCap: Number(map['send_pacing_global_daily_cap']) || 3000,
-      warmupMinVolume: Number(map['send_pacing_warmup_min_volume']) || 25,
+      cleanRecipients,
+      suppressedCount: recipients.length - cleanRecipients.length,
     }
   }
 }

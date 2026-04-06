@@ -351,6 +351,35 @@ app.get('/api/jobs/:jobId', async (req: Request, res: Response) => {
 })
 
 // =============================================================================
+// SCHEDULER MANAGEMENT
+// =============================================================================
+
+/**
+ * List all active repeatable (cron) jobs
+ */
+app.get('/api/scheduler', async (req: Request, res: Response) => {
+    try {
+        const queueMap = getQueues()
+        const scheduledQueue = queueMap.get(QueueName.SCHEDULED_TASK)
+        if (!scheduledQueue) {
+            return res.status(503).json({ error: 'Scheduled task queue not available' })
+        }
+        const repeatables = await scheduledQueue.getRepeatableJobs()
+        res.json({
+            jobs: repeatables.map(r => ({
+                key: r.key,
+                name: r.name,
+                cron: r.pattern,
+                timezone: r.tz || 'UTC',
+                next: r.next ? new Date(r.next).toISOString() : null,
+            })),
+        })
+    } catch (error: any) {
+        res.status(500).json({ error: error.message })
+    }
+})
+
+// =============================================================================
 // TRIGGER SERVICE INTEGRATION
 // =============================================================================
 

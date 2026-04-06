@@ -9,6 +9,7 @@ import engineExecutionWorker from './workers/engine-execution-worker'
 import scheduledTaskWorker from './workers/scheduled-task-worker'
 import masteryAgentWorker from './workers/mastery-agent-worker'
 import { startApiServer } from './api/server'
+import { registerScheduledJobs } from './scheduler/index'
 
 // Start the API server for queue management
 const API_PORT = parseInt(process.env.API_PORT || '3100')
@@ -40,13 +41,21 @@ console.log(`   - Running on port ${API_PORT}`)
 console.log('   - Endpoints: /api/health, /api/stats, /api/action')
 console.log('')
 console.log('═══════════════════════════════════════════════════════════')
-console.log('No internal scheduler. Jobs triggered by:')
-console.log('   - Email provider webhooks (any MTA: Mailwizz, Mailgun, SES, etc.)')
+console.log('⏰ Internal Scheduler:')
+console.log('   - satellite_daily_reset  → 00:00 UTC')
+console.log('   - analytics_rollup       → 01:00 UTC')
+console.log('   - learning_loop          → 03:00 UTC')
+console.log('')
+console.log('🔌 External Triggers:')
+console.log('   - Email provider webhooks (MailWizz, Mailgun, SES, etc.)')
 console.log('   - API endpoints')
-console.log('   - External systems / Scheduled tasks')
 console.log('═══════════════════════════════════════════════════════════')
 console.log('')
-console.log('✅ All workers started. Waiting for jobs...')
+
+// Register BullMQ repeatable jobs (idempotent — safe on every restart)
+registerScheduledJobs()
+  .then(() => console.log('✅ All workers + scheduler ready. Waiting for jobs...'))
+  .catch((err) => console.error('⚠️  Scheduler registration failed (non-fatal):', err.message))
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {

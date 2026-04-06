@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { X, Copy, Check, Edit2, Save, Loader2, Link2, Trash2, Shield, Tag, Hash, Eye, Clock, Unlink } from 'lucide-react'
+import { toast } from 'sonner'
 import { PromptBlock, CATEGORIES, TARGET_TYPES } from './types'
 
 interface AgentOption { id: string; name: string; type: string }
@@ -47,7 +48,7 @@ export function PromptLightbox({ block, onClose, onSave, onDelete, fetchWithAuth
                 }))
                 setAgents(templates)
             }
-        } catch { }
+        } catch (err: any) { toast.error('Failed to load agents: ' + (err.message || 'Unknown error')) }
         setLoadingAgents(false)
     }
 
@@ -58,7 +59,7 @@ export function PromptLightbox({ block, onClose, onSave, onDelete, fetchWithAuth
                 const data = await res.json()
                 setAssignments(data.assignments || [])
             }
-        } catch { }
+        } catch (err: any) { toast.error('Failed to load assignments: ' + (err.message || 'Unknown error')) }
     }
 
     const handleSave = async () => {
@@ -83,7 +84,7 @@ export function PromptLightbox({ block, onClose, onSave, onDelete, fetchWithAuth
             })
             setSelectedAgent('')
             await loadAssignments()
-        } catch { }
+        } catch (err: any) { toast.error('Assignment failed: ' + (err.message || 'Unknown error')) }
         setAssigning(false)
     }
 

@@ -39,7 +39,7 @@ import type { NextRequest } from 'next/server'
 
 // ─── Canonical Types ──────────────────────────────────────────────────────────
 
-export type CanonicalEventType = 'send' | 'open' | 'click' | 'reply' | 'bounce' | 'complaint'
+export type CanonicalEventType = 'send' | 'delivery' | 'open' | 'click' | 'reply' | 'bounce' | 'complaint' | 'unsubscribe'
 
 export interface CanonicalEmailEvent {
   type: CanonicalEventType
@@ -97,6 +97,8 @@ export interface BulkSendParams {
   recipients: Array<{ email: string; firstName?: string; lastName?: string; customFields?: Record<string, string> }>
   trackingTags?: SendEmailParams['trackingTags']
   scheduledAt?: string
+  /** Provider-specific extras (e.g. MailWizz listUid, segmentUid, deliveryServerIds) */
+  meta?: Record<string, unknown>
 }
 
 export interface BulkSendResult {

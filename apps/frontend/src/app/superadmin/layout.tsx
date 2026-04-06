@@ -149,6 +149,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         // Infrastructure
         { name: 'Infrastructure', href: '/superadmin/infrastructure', icon: Cpu, group: 'Infrastructure' },
         { name: 'Email Providers', href: '/superadmin/email-providers', icon: Mail, group: 'Infrastructure' },
+        { name: 'MTA Overview', href: '/superadmin/mta-overview', icon: Send, group: 'Infrastructure' },
         { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'Infrastructure' },
         { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'Infrastructure' },
         { name: 'Platform Config', href: '/superadmin/platform-config', icon: Settings, group: 'Infrastructure' },
