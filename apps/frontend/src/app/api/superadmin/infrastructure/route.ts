@@ -357,5 +357,5 @@ async function logAudit(changedBy: string, section: string, field: string, newVa
         section,
         field,
         new_value: newValue,
-    }).catch(() => {}) // non-blocking
+    }).then(() => {}, () => {}) // non-blocking, ignore errors
 }

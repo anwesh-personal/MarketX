@@ -239,13 +239,13 @@ export default function InfrastructurePage() {
                         <TargetTab deployment={deployment} vpsServers={vpsServers} onSave={saveField} saving={saving} testing={testing} onTest={runTest} />
                     )}
                     {activeTab === 'redis' && deployment && (
-                        <RedisTab deployment={deployment} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={k => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} />
+                        <RedisTab deployment={deployment} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={(k: string) => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} />
                     )}
                     {activeTab === 'worker' && deployment && (
-                        <WorkerTab deployment={deployment} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={k => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} />
+                        <WorkerTab deployment={deployment} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={(k: string) => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} />
                     )}
                     {activeTab === 'ai' && (
-                        <AIKeysTab aiKeys={aiKeys} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={k => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} newKey={newKey} setNewKey={setNewKey} />
+                        <AIKeysTab aiKeys={aiKeys} onSave={saveField} saving={saving} testing={testing} onTest={runTest} show={showSecrets} toggleShow={(k: string) => setShowSecrets(p => ({ ...p, [k]: !p[k] }))} newKey={newKey} setNewKey={setNewKey} />
                     )}
                     {activeTab === 'queues' && deployment && (
                         <QueuesTab deployment={deployment} onSave={saveField} saving={saving} />

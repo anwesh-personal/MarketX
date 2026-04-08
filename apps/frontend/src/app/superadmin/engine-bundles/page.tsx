@@ -411,9 +411,9 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
     const [error, setError] = useState<string | null>(null)
 
     const [basics, setBasics] = useState({
-        name: '', description: '', tier: 'echii' as const,
+        name: '', description: '', tier: 'echii' as string,
         brain_template_id: '', workflow_template_id: '',
-        default_api_key_mode: 'platform' as const,
+        default_api_key_mode: 'platform' as string,
     })
     const [defaultLlm, setDefaultLlm] = useState({ provider: 'anthropic', model: 'claude-3-5-sonnet-20241022', temperature: 0.7, max_tokens: 4000 })
     const [agents, setAgents] = useState<AgentConfig[]>([defaultAgent()])
@@ -569,7 +569,7 @@ function CreateBundleModal({ brainTemplates, workflowTemplates, onClose, onCreat
                             <div className="p-4 rounded-xl bg-surfaceHover border border-border text-sm text-textSecondary">
                                 This is the fallback LLM used by all agents unless they specify their own. Agents inherit from this and can override individually.
                             </div>
-                            <LlmPicker llm={defaultLlm} onChange={setDefaultLlm} />
+                            <LlmPicker llm={defaultLlm} onChange={patch => setDefaultLlm(prev => ({ ...prev, ...patch }))} />
                         </div>
                     )}
 
@@ -1032,7 +1032,7 @@ function CustomizeModal({ bundle, instance, fetchWithAuth, onClose, onSaved }: {
     const getEffectiveAgent = (idx: number): AgentConfig => {
         const base = agents[idx] || defaultAgent()
         const agentOverrides = draftOverrides?.agents?.[base.role] || {}
-        return deepMerge(base, agentOverrides)
+        return deepMerge(base, agentOverrides) as AgentConfig
     }
 
     const updateAgentOverride = (role: string, patch: Record<string, any>) => {

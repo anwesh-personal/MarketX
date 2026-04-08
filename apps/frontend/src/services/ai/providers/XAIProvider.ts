@@ -15,7 +15,11 @@ import {
     GenerationResult,
     ProviderCapabilities,
     CostConfig,
-    ProviderType
+    ProviderType,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
 } from '../types'
 
 export class XAIProvider extends AbstractProvider {
@@ -123,6 +127,66 @@ export class XAIProvider extends AbstractProvider {
             supportsEmbeddings: false,
             maxContextWindow: 8192
         }
+    }
+
+    // ============================================================
+    // BRAIN CHAT — multi-turn (X.AI uses OpenAI-compatible API)
+    // ============================================================
+    async chat(
+        messages: BrainChatMessage[],
+        options: BrainChatOptions,
+        apiKey: string
+    ): Promise<BrainChatResponse> {
+        const model = options.preferredModel || options.model || this.defaultModel
+        const body: Record<string, unknown> = {
+            model,
+            messages: messages.map(m => ({ role: m.role, content: m.content })),
+            max_tokens:  options.maxTokens  ?? 4096,
+            temperature: options.temperature ?? 0.7,
+        }
+
+        // X.AI doesn't support tool calling yet
+
+        const response = await fetch(`${PROVIDER_BASE_URLS.xai}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify(body),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || `X.AI chat error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+        const choice = data.choices?.[0]
+
+        return {
+            content:      choice?.message?.content ?? '',
+            toolCalls:    [],  // X.AI doesn't support tool calling
+            usage: {
+                promptTokens:     data.usage?.prompt_tokens     ?? 0,
+                completionTokens: data.usage?.completion_tokens ?? 0,
+                totalTokens:      data.usage?.total_tokens      ?? 0,
+            },
+            model,
+            providerType: this.name,
+            finishReason: (choice?.finish_reason as BrainChatResponse['finishReason']) ?? 'stop',
+        }
+    }
+
+    // X.AI does NOT offer an embeddings API.
+    // This is a correct capability boundary, not a stub.
+    async embed(_texts: string[], _apiKey: string): Promise<BrainEmbedResponse> {
+        throw this.createError(
+            'X.AI (Grok) does not support embeddings. Use OpenAI or Google for embedding generation.',
+            501,
+            false
+        )
     }
 }
 

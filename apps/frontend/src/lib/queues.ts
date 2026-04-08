@@ -33,7 +33,7 @@ export async function enqueueConversationSummary(data: {
 }
 
 export async function enqueueAnalytics(data: {
-    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine' | 'promotion-engine'
+    type: 'daily' | 'hourly' | 'realtime' | 'belief-confidence' | 'allocation-engine' | 'promotion-engine' | 'self-healing' | 'network-effect-monitor'
     date?: string
     orgId?: string
     lookbackDays?: number

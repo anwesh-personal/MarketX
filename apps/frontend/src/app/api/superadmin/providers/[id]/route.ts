@@ -44,7 +44,7 @@ export async function GET(
     { params }: { params: { id: string } }
 ) {
     const supabase = createClient()
-    const admin = await getSuperadmin(request)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const { data, error } = await supabase
@@ -63,7 +63,7 @@ export async function PATCH(
     { params }: { params: { id: string } }
 ) {
     const supabase = createClient()
-    const admin = await getSuperadmin(request)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     let body: unknown
@@ -96,7 +96,7 @@ export async function DELETE(
     { params }: { params: { id: string } }
 ) {
     const supabase = createClient()
-    const admin = await getSuperadmin(request)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const { data: existing } = await supabase

@@ -93,6 +93,8 @@ export abstract class AbstractProvider implements BaseProvider {
     abstract generate(prompt: string, options: GenerationOptions, apiKey: string): Promise<GenerationResult>
     abstract getModels(apiKey: string): Promise<AIModel[]>
     abstract getCapabilities(): ProviderCapabilities
+    abstract chat(messages: BrainChatMessage[], options: BrainChatOptions, apiKey: string): Promise<BrainChatResponse>
+    abstract embed(texts: string[], apiKey: string): Promise<BrainEmbedResponse>
 
     calculateCost(inputTokens: number, outputTokens: number, model: string): number {
         const config = this.getCostConfig(model)

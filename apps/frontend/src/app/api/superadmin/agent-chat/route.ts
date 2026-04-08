@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         })
 
         return NextResponse.json({
-            response: result.content,
+            response: result.response,
             metadata: {
                 agentTemplateId: template.id,
                 agentName: template.name,

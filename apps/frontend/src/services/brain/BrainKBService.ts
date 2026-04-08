@@ -252,7 +252,7 @@ class BrainKBService {
         const sectionMap: Record<string, string[]> = {}
         
         for (const doc of data) {
-            const section = doc.section as { name: string; display_name: string }
+            const section = (doc.section as unknown) as { name: string; display_name: string }
             const sectionName = section?.display_name ?? 'General'
             
             if (!sectionMap[sectionName]) {

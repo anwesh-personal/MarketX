@@ -252,7 +252,8 @@ function getTierWeight(tier: string | null | undefined, tierWeight: Record<strin
 }
 
 async function getBillingConfig(
-    supabase: ReturnType<typeof createClient>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    supabase: any
 ): Promise<{ planPricing: Record<string, number>; tierWeight: Record<string, number> }> {
     const { data, error } = await supabase
         .from('config_table')
@@ -269,8 +270,8 @@ async function getBillingConfig(
     const rows = new Map((data || []).map((row: any) => [row.key, row.value?.value || row.value]))
 
     return {
-        planPricing: rows.get('billing_plan_pricing') || DEFAULT_BILLING_PLAN_PRICING,
-        tierWeight: rows.get('billing_tier_weight') || DEFAULT_BILLING_TIER_WEIGHT,
+        planPricing: (rows.get('billing_plan_pricing') as Record<string, number>) || DEFAULT_BILLING_PLAN_PRICING,
+        tierWeight: (rows.get('billing_tier_weight') as Record<string, number>) || DEFAULT_BILLING_TIER_WEIGHT,
     }
 }
 

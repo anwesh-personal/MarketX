@@ -33,3 +33,4 @@ ALTER TABLE signal_event
   ));
 
 COMMIT;
+                                                          

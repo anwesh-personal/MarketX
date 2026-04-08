@@ -655,6 +655,8 @@ class BrainOrchestrator {
                     expansionUsed: false,
                     rerankingUsed: false,
                 },
+                gapDetected: true,
+                gapConfidence: 0,
             };
         }
     }

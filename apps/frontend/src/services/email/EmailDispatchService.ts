@@ -75,26 +75,26 @@ export class EmailDispatchService {
    * ONLY as a fallback when no satellites are provisioned.
    */
   async sendBulk(orgId: string, params: BulkSendParams): Promise<DispatchResult> {
-    // Primary path: satellite-paced dispatch
+    // Primary path: orchestrated dispatch (circuit breaker → suppression → MailWizz)
     const orchResult = await satelliteSendOrchestrator.dispatch(orgId, params)
 
-    if (orchResult.success || orchResult.totalSent > 0) {
+    if (orchResult.success) {
       return {
-        success: orchResult.success,
-        campaignId: orchResult.chunks[0]?.campaignId,
+        success: true,
+        campaignId: orchResult.campaignId,
         provider: 'satellite-orchestrated',
-        error: orchResult.overflow.length > 0
-          ? `${orchResult.totalSent} sent, ${orchResult.overflow.length} recipients exceeded daily capacity`
+        error: orchResult.suppressedCount > 0
+          ? `${orchResult.suppressedCount} recipients suppressed (bounced/complained/unsubscribed)`
           : undefined,
       }
     }
 
-    // Fallback: if NO satellites at all, try direct adapter (legacy / no-satellite orgs)
-    if (orchResult.error?.includes('No eligible satellites')) {
+    // Fallback: if orchestrator reports no MailWizz config, try direct adapter (legacy / no-config orgs)
+    if (orchResult.error?.includes('No active config') || orchResult.error?.includes('No eligible satellites')) {
       const { adapter, providerId, error: provErr } = await this.loadAdapter(orgId)
       if (!adapter) return { success: false, error: provErr || 'No active email provider for org' }
 
-      console.warn(`[EmailDispatchService] Org ${orgId} has no satellites — falling back to direct adapter send (no pacing enforcement)`)
+      console.warn(`[EmailDispatchService] Org ${orgId} — falling back to direct adapter send (no pacing enforcement)`)
       const result: BulkSendResult = await adapter.sendBulk(params)
       return { success: result.success, campaignId: result.campaignId, provider: providerId, error: result.error }
     }

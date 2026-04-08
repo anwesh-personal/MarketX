@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     let query = supabase
         .from('knowledge_object')
-        .select('id, scope, partner_id, object_type, confidence, sample_size, stability_score, revalidation_cycle, last_observed_at, next_revalidation_at, evidence_count')
+        .select('id, scope, partner_id, object_type, confidence, sample_size, stability_score, revalidation_cycle, last_observed_at, next_revalidation_at, evidence_count, review_notes')
         .eq('promotion_status', 'active')
         .lte('next_revalidation_at', now)
 

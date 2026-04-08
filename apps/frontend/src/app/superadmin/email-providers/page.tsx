@@ -65,7 +65,7 @@ interface Org { id: string; name: string }
 // ── Defaults ───────────────────────────────────────────────────
 
 const EMPTY_FORM = {
-    partner_id: '', scope: 'organization' as const, provider_type: 'mailwizz',
+    partner_id: '', scope: 'organization' as string, provider_type: 'mailwizz',
     display_name: '', is_active: false, is_default: false, priority: 0,
     api_base_url: '', api_key: '', api_secret: '', api_token: '',
     smtp_host: '', smtp_port: 587, smtp_username: '', smtp_password: '', smtp_encryption: 'tls',

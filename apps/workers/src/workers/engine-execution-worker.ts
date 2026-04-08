@@ -15,6 +15,8 @@ import { workflowExecutionService } from '../processors/workflow-execution-proce
 import { publishProgress, publishExecutionComplete } from '../utils/progress-publisher';
 import { runMasteryPipeline } from '../utils/mastery-pipeline';
 import { validateOutputQuality, logKnowledgeGap } from '../utils/quality-validator';
+import { verifyEmailsWithRefinery } from '../utils/refinery-verify';
+import { pushCampaignToMta } from '../utils/campaign-pusher';
 
 // ============================================================================
 // TYPES
@@ -209,6 +211,68 @@ async function processEngineExecution(job: Job<EngineExecutionJob>): Promise<Eng
                     // Note: Self-healing retry would go here in future.
                     // Currently we log the gap and continue — output is still stored.
                     // Full retry requires re-queuing the job with enhanced prompt.
+                }
+            }
+
+            // ─── PHASE 8A: REFINERY EMAIL VERIFICATION ──────────────
+            // Verify target emails against Refinery Nexus before dispatch.
+            // Non-blocking: on Refinery error, proceeds with all emails.
+            // Gated by system_config: ecosystem.refinery_verify_enabled
+            let verifiedEmails: string[] | null = null;
+            const rawEmails: string[] = (
+                result.lastNodeOutput?.content?.target_emails ||
+                input.writer_input?.targetEmails ||
+                []
+            );
+
+            if (rawEmails.length > 0 && orgId) {
+                try {
+                    const verifyResult = await verifyEmailsWithRefinery({
+                        emails: rawEmails,
+                        orgId,
+                    });
+                    if (verifyResult.ran) {
+                        verifiedEmails = verifyResult.safe;
+                        if (verifyResult.rejected.length > 0) {
+                            console.log(`🔍 Refinery: ${verifyResult.rejected.length} emails rejected, ${verifyResult.safe.length} safe`);
+                        }
+                    }
+                } catch (err: any) {
+                    console.warn(`⚠ Refinery verify error (non-blocking): ${err.message}`);
+                }
+            }
+
+            // ─── PHASE 8B: MTA CAMPAIGN PUSH ────────────────────────
+            // Push generated content to MailWizz (or configured MTA).
+            // Non-blocking: campaign push failure never kills the execution.
+            // Gated by system_config: ecosystem.mta_push_enabled
+            if (orgId && result.lastNodeOutput?.content) {
+                const writerOutput = result.lastNodeOutput.content;
+                // Only push if the execution produced a campaign-ready sequence
+                const hasSequence = Array.isArray(writerOutput?.emails) && writerOutput.emails.length > 0;
+                if (hasSequence) {
+                    try {
+                        const pushResult = await pushCampaignToMta({
+                            orgId,
+                            campaignName: writerOutput.campaign_name ||
+                                input.writer_input?.campaignName ||
+                                `Axiom Campaign - ${new Date().toISOString().slice(0, 10)}`,
+                            fromName: input.writer_input?.fromName || 'Axiom',
+                            fromEmail: input.writer_input?.fromEmail || '',
+                            listUid: input.writer_input?.listUid || '',
+                            emails: writerOutput.emails.map((e: any, i: number) => ({
+                                subject: e.subject || '',
+                                body: e.body || e.content || '',
+                                delayDays: i === 0 ? 0 : (e.delayDays ?? i),
+                            })),
+                            metadata: { executionId, engineId, orgId },
+                        });
+                        if (pushResult.success) {
+                            console.log(`📧 Campaign pushed to ${pushResult.provider}: ${pushResult.campaignUid}`);
+                        }
+                    } catch (err: any) {
+                        console.warn(`⚠ MTA campaign push error (non-blocking): ${err.message}`);
+                    }
                 }
             }
 

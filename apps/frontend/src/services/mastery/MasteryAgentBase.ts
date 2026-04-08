@@ -24,6 +24,8 @@ export interface KnowledgeObject {
     recommendation: string | null
     constraints: Record<string, any>
     locked_fields: string[]
+    applicable_industries?: string[]
+    applicable_geographies?: string[]
 }
 
 export interface DecisionResult {

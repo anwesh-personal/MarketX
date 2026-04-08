@@ -15,7 +15,11 @@ import {
     GenerationResult,
     ProviderCapabilities,
     CostConfig,
-    ProviderType
+    ProviderType,
+    BrainChatMessage,
+    BrainChatOptions,
+    BrainChatResponse,
+    BrainEmbedResponse,
 } from '../types'
 
 export class MistralProvider extends AbstractProvider {
@@ -144,6 +148,102 @@ export class MistralProvider extends AbstractProvider {
     private getContextWindow(modelId: string): number {
         if (modelId.includes('large')) return 32768
         return 8192
+    }
+
+    // ============================================================
+    // BRAIN CHAT — multi-turn (Mistral uses OpenAI-compatible API)
+    // ============================================================
+    async chat(
+        messages: BrainChatMessage[],
+        options: BrainChatOptions,
+        apiKey: string
+    ): Promise<BrainChatResponse> {
+        const model = options.preferredModel || options.model || 'mistral-large-latest'
+        const body: Record<string, unknown> = {
+            model,
+            messages: messages.map(m => {
+                const msg: Record<string, unknown> = { role: m.role, content: m.content }
+                if (m.tool_call_id) msg.tool_call_id = m.tool_call_id
+                if (m.tool_calls)   msg.tool_calls   = m.tool_calls
+                return msg
+            }),
+            max_tokens:  options.maxTokens  ?? 4096,
+            temperature: options.temperature ?? 0.7,
+        }
+
+        if (options.tools && options.tools.length > 0) {
+            body.tools = options.tools
+            body.tool_choice = 'auto'
+        }
+
+        if (options.responseFormat) {
+            body.response_format = options.responseFormat
+        }
+
+        const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/chat/completions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify(body),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || err.message || `Mistral chat error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+        const choice = data.choices?.[0]
+
+        return {
+            content:      choice?.message?.content    ?? '',
+            toolCalls:    choice?.message?.tool_calls ?? [],
+            usage: {
+                promptTokens:     data.usage?.prompt_tokens     ?? 0,
+                completionTokens: data.usage?.completion_tokens ?? 0,
+                totalTokens:      data.usage?.total_tokens      ?? 0,
+            },
+            model,
+            providerType: this.name,
+            finishReason: (choice?.finish_reason as BrainChatResponse['finishReason']) ?? 'stop',
+        }
+    }
+
+    // ============================================================
+    // EMBEDDINGS — Mistral has a native /embeddings endpoint
+    // ============================================================
+    async embed(texts: string[], apiKey: string): Promise<BrainEmbedResponse> {
+        const model = 'mistral-embed'
+
+        const response = await fetch(`${PROVIDER_BASE_URLS.mistral}/embeddings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+            body: JSON.stringify({ model, input: texts }),
+        })
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({ error: { message: `HTTP ${response.status}` } }))
+            throw this.createError(
+                err.error?.message || err.message || `Mistral embeddings error: ${response.status}`,
+                response.status,
+                response.status === 429 || response.status >= 500
+            )
+        }
+
+        const data = await response.json()
+        const embeddings: number[][] = data.data
+            .sort((a: { index: number }, b: { index: number }) => a.index - b.index)
+            .map((item: { embedding: number[] }) => item.embedding)
+
+        return {
+            embeddings,
+            model,
+            providerType: this.name,
+            totalTokens:  data.usage?.total_tokens ?? 0,
+        }
     }
 }
 

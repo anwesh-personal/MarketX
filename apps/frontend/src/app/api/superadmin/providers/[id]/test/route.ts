@@ -8,7 +8,7 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     const supabase = createClient()
-    const admin = await getSuperadmin(request)
+    const admin = await getSuperadmin(req)
     if (!admin) return NextResponse.json({ error: 'Superadmin access required' }, { status: 403 })
 
     const { data: provider, error: provErr } = await supabase

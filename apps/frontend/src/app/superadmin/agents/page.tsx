@@ -136,8 +136,8 @@ const EMPTY_FORM = {
     description: '',
     avatar_emoji: '🤖',
     avatar_color: 'primary',
-    category: 'general' as const,
-    product_target: 'market_writer' as const,
+    category: 'general' as string,
+    product_target: 'market_writer' as string,
     system_prompt: '',
     persona_prompt: '',
     instruction_prompt: '',
@@ -156,7 +156,7 @@ const EMPTY_FORM = {
     can_access_brain: true,
     can_write_to_brain: false,
     is_active: true,
-    tier: 'basic' as const,
+    tier: 'basic' as string,
 }
 
 // ============================================================

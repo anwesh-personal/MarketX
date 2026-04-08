@@ -88,12 +88,6 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
     try {
-        const supabase = createClient();
-        const updates = await request.json();
-
-        // Get existing config (singleton pattern)
-        const { data: existing } = await supabase
-            .from
     const admin = await getSuperadmin(request);
     if (!admin) {
       return NextResponse.json(
@@ -101,7 +95,13 @@ export async function PUT(request: NextRequest) {
         { status: 401 }
       );
     }
-('worker_deployment_config')
+
+        const supabase = createClient();
+        const updates = await request.json();
+
+        // Get existing config (singleton pattern)
+        const { data: existing } = await supabase
+            .from('worker_deployment_config')
             .select('id')
             .single();
 

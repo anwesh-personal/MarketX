@@ -262,10 +262,10 @@ export class AIProviderService {
             try {
                 const enrichedOptions: BrainChatOptions = {
                     ...options,
-                    model: options.preferredModel ?? options.model ?? config.selectedModel ?? undefined,
+                    model: options.preferredModel ?? options.model ?? config.selected_model ?? undefined,
                 }
 
-                const result = await provider.chat(messages, enrichedOptions, config.apiKey)
+                const result = await provider.chat(messages, enrichedOptions, config.api_key)
 
                 // Record success (non-blocking)
                 this.recordSuccess(config.id, result.usage.totalTokens, 0).catch(e =>
@@ -322,7 +322,7 @@ export class AIProviderService {
 
         for (const { config, provider } of embedChain) {
             try {
-                const result = await provider.embed(texts, config.apiKey)
+                const result = await provider.embed(texts, config.api_key)
 
                 this.recordSuccess(config.id, result.totalTokens, 0).catch(() => {})
 
