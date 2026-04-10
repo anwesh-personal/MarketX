@@ -124,8 +124,9 @@ export default function KBOnboardingWizard() {
             const json = await res.json()
 
             if (json.success && json.status === 'ready_for_generation') {
-                // Redirect to review page where generation can be triggered
-                window.location.href = '/kb-review'
+                // Client is done — superadmin will review and generate
+                setError('')
+                alert('Questionnaire submitted successfully! Our team will review and generate your Knowledge Base.')
             } else if (json.success && json.status === 'needs_revision') {
                 setError(`Validation failed: ${json.failed_count} constraint(s) need attention. Review the flagged fields.`)
             } else {

@@ -30,6 +30,8 @@ import {
     Sparkles,
     Package,
     GraduationCap,
+    FileEdit,
+    CheckCircle,
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { ThemeSelector } from '@/components/ThemeSelector';
@@ -159,6 +161,10 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
 
         // Reference
         { name: 'Interactive Tutorial', href: '/superadmin/tutorial', icon: GraduationCap, group: 'Reference' },
+
+        // Knowledge Base
+        { name: 'KB Builder', href: '/superadmin/kb-onboarding', icon: FileEdit, group: 'Knowledge Base' },
+        { name: 'KB Review', href: '/superadmin/kb-review', icon: CheckCircle, group: 'Knowledge Base' },
     ];
 
     return (
@@ -275,7 +281,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
                 >
                     <nav className="flex-1 py-sm overflow-y-auto hide-scrollbar">
                         {(() => {
-                            const groups = ['Platform', 'MarketX OS', 'Automation', 'AI & Brain', 'Infrastructure', 'Reference'];
+                            const groups = ['Platform', 'MarketX OS', 'Automation', 'AI & Brain', 'Infrastructure', 'Knowledge Base', 'Reference'];
                             return groups.map((group) => {
                                 const items = navigation.filter(item => item.group === group);
                                 if (items.length === 0) return null;
