@@ -15,6 +15,8 @@ import {
     Sparkles,
     BookOpen,
     Database,
+    FileEdit,
+    CheckCircle,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
@@ -44,6 +46,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { name: 'Email Hub', href: '/email-hub', icon: Mail, group: 'Home', requiredFeature: 'can_view_metrics' as const },
         { name: 'Brain', href: '/brain-chat', icon: Sparkles, group: 'Intelligence', requiredFeature: 'can_chat_brain' as const },
         { name: 'Knowledge Base', href: '/kb-manager', icon: Database, group: 'Intelligence', requiredFeature: 'can_view_kb' as const },
+        { name: 'KB Builder', href: '/kb-onboarding', icon: FileEdit, group: 'Intelligence', requiredFeature: 'can_view_kb' as const },
+        { name: 'KB Review', href: '/kb-review', icon: CheckCircle, group: 'Intelligence', requiredFeature: 'can_view_kb' as const },
         { name: 'Settings', href: '/settings', icon: Settings, group: 'System', requiredFeature: null },
     ];
 

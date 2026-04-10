@@ -32,6 +32,9 @@ export enum QueueName {
 
     // KB Extraction (document → AI → structured sections)
     KB_EXTRACTION = 'kb-extraction',
+
+    // KB Generation (questionnaire → 22-section Master KB)
+    KB_GENERATION = 'kb-generation',
 }
 
 // ============================================================================
@@ -87,6 +90,7 @@ interface QueueInstances {
     scheduledTask: Queue;
     masteryAgent: Queue;
     kbExtraction: Queue;
+    kbGeneration: Queue;
 }
 
 let _queues: QueueInstances | null = null;
@@ -204,6 +208,19 @@ function getQueues(): QueueInstances {
                     },
                 },
             }),
+
+            kbGeneration: new Queue(QueueName.KB_GENERATION, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1,
+                    attempts: 1,  // Don't retry full generation — user can manually retry
+                    backoff: {
+                        type: 'exponential',
+                        delay: 10000,
+                    },
+                },
+            }),
         };
     }
     return _queues;
@@ -227,6 +244,7 @@ export const queues = new Proxy({} as QueueInstances, {
             'engineExecution',
             'scheduledTask',
             'masteryAgent',
+            'kbGeneration',
         ];
     },
     getOwnPropertyDescriptor() {
