@@ -14,6 +14,7 @@ import {
     Mail,
     Sparkles,
     BookOpen,
+    Database,
 } from 'lucide-react';
 import { ThemeSelector } from '@/components/ThemeSelector';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
@@ -42,6 +43,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { name: 'Writer Studio', href: '/writer', icon: Zap, group: 'Home', requiredFeature: 'can_write_emails' as const },
         { name: 'Email Hub', href: '/email-hub', icon: Mail, group: 'Home', requiredFeature: 'can_view_metrics' as const },
         { name: 'Brain', href: '/brain-chat', icon: Sparkles, group: 'Intelligence', requiredFeature: 'can_chat_brain' as const },
+        { name: 'Knowledge Base', href: '/kb-manager', icon: Database, group: 'Intelligence', requiredFeature: 'can_view_kb' as const },
         { name: 'Settings', href: '/settings', icon: Settings, group: 'System', requiredFeature: null },
     ];
 

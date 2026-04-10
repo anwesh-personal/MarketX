@@ -28,7 +28,8 @@ export const AppliesToSchema = z.object({
 // ============================================================
 
 export const BrandRulesSchema = z.object({
-    brand_name_exact: z.literal("InMarket"), // STRICT: No hyphenation allowed!
+    /** The org's exact brand name — must match exactly in all generated content. Dynamic per org, never hardcoded. */
+    brand_name_exact: z.string().min(1, 'Brand name is required'),
     voice_rules: z.array(z.string()).min(1),
     compliance: z.object({
         forbidden_claims: z.array(z.string()),

@@ -52,17 +52,17 @@ const CATEGORIES = [
 
 const PIPELINE_STAGES = ['pre_send', 'post_reply', 'pre_extension', 'periodic', 'on_demand']
 
-const CATEGORY_GRADIENTS: Record<string, string> = {
-    contact: 'linear-gradient(135deg, rgba(var(--color-info-rgb), 0.35) 0%, rgba(var(--color-accent-rgb), 0.18) 50%, rgba(var(--color-info-rgb), 0.08) 100%)',
-    timing: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.35) 0%, rgba(var(--color-accent-rgb), 0.15) 50%, rgba(var(--color-warning-rgb), 0.08) 100%)',
-    angle: 'linear-gradient(135deg, rgba(148, 100, 255, 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(148, 100, 255, 0.08) 100%)',
-    pacing: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.3) 0%, rgba(var(--color-error-rgb), 0.18) 50%, rgba(var(--color-warning-rgb), 0.06) 100%)',
-    reply: 'linear-gradient(135deg, rgba(var(--color-info-rgb), 0.3) 0%, rgba(var(--color-accent-rgb), 0.22) 50%, rgba(var(--color-info-rgb), 0.08) 100%)',
-    buying_role: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(var(--color-accent-rgb), 0.06) 100%)',
-    buyer_stage: 'linear-gradient(135deg, rgba(var(--color-warning-rgb), 0.3) 0%, rgba(var(--color-success-rgb), 0.18) 50%, rgba(var(--color-warning-rgb), 0.06) 100%)',
-    uncertainty: 'linear-gradient(135deg, rgba(148, 100, 255, 0.3) 0%, rgba(var(--color-error-rgb), 0.18) 50%, rgba(148, 100, 255, 0.06) 100%)',
-    sequence: 'linear-gradient(135deg, rgba(var(--color-success-rgb), 0.35) 0%, rgba(var(--color-info-rgb), 0.18) 50%, rgba(var(--color-success-rgb), 0.06) 100%)',
-    custom: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.3) 0%, rgba(var(--color-info-rgb), 0.15) 50%, rgba(var(--color-accent-rgb), 0.06) 100%)',
+const CATEGORY_IMAGES: Record<string, string> = {
+    contact: 'url("/images/agents/contact.png")',
+    timing: 'url("/images/agents/timing.png")',
+    angle: 'url("/images/agents/angle.png")',
+    pacing: 'url("/images/agents/pacing.png")',
+    reply: 'url("/images/agents/reply.png")',
+    buying_role: 'url("/images/agents/buying_role.png")',
+    buyer_stage: 'url("/images/agents/buyer_stage.png")',
+    uncertainty: 'url("/images/agents/uncertainty.png")',
+    sequence: 'url("/images/agents/sequence.png")',
+    custom: 'url("/images/agents/custom.png")',
 }
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -463,7 +463,7 @@ export default function MasteryAgentsPage() {
                                     {/* Image area — gradient placeholder */}
                                     <div
                                         className="relative h-44 w-full overflow-hidden"
-                                        style={{ background: CATEGORY_GRADIENTS[agent.agent_category] || CATEGORY_GRADIENTS.custom }}
+                                        style={{ backgroundImage: CATEGORY_IMAGES[agent.agent_category] || CATEGORY_IMAGES.custom, backgroundSize: 'cover', backgroundPosition: 'center' }}
                                     >
                                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
                                         <div className="absolute inset-0 flex items-center justify-center">
@@ -508,7 +508,7 @@ export default function MasteryAgentsPage() {
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 {/* Modal Header — gradient hero */}
-                                <div className="relative overflow-hidden rounded-t-[calc(var(--radius-xl)*1.5)]" style={{ background: CATEGORY_GRADIENTS[selectedAgent.agent_category] || CATEGORY_GRADIENTS.custom }}>
+                                <div className="relative overflow-hidden rounded-t-[calc(var(--radius-xl)*1.5)]" style={{ backgroundImage: CATEGORY_IMAGES[selectedAgent.agent_category] || CATEGORY_IMAGES.custom, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                                     <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 25% 35%, var(--color-accent) 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
                                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-surface/60 to-transparent" />
                                     <div className="relative flex items-center justify-between px-lg py-lg">

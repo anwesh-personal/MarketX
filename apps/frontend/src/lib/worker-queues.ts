@@ -19,6 +19,9 @@ export enum QueueName {
 
     // Mastery Agents (strategic decisions)
     MASTERY_AGENT = 'mastery-agent',
+
+    // KB Extraction (document → AI → structured sections)
+    KB_EXTRACTION = 'kb-extraction',
 }
 
 // Parse REDIS_URL into {host, port, password} for BullMQ (does NOT accept {url})
@@ -64,6 +67,7 @@ let _queues: {
     engineExecution: Queue
     scheduledTask: Queue
     masteryAgent: Queue
+    kbExtraction: Queue
 } | null = null
 
 function getQueues() {
@@ -162,6 +166,15 @@ function getQueues() {
                     attempts: 3,
                 },
             }),
+
+            kbExtraction: new Queue(QueueName.KB_EXTRACTION, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1,
+                    attempts: 2,
+                },
+            }),
         }
     }
     return _queues
@@ -185,7 +198,7 @@ export const queues = new Proxy({} as {
         return actualQueues[prop as keyof typeof actualQueues]
     },
     ownKeys() {
-        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning', 'workflowExecution', 'engineExecution', 'scheduledTask', 'masteryAgent']
+        return ['kbProcessing', 'conversationSummary', 'analytics', 'learningLoop', 'dreamState', 'fineTuning', 'workflowExecution', 'engineExecution', 'scheduledTask', 'masteryAgent', 'kbExtraction']
     },
     getOwnPropertyDescriptor(target, prop) {
         return {

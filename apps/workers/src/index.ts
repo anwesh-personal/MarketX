@@ -8,6 +8,7 @@ import workflowExecutionWorker from './workers/workflow-execution-worker'
 import engineExecutionWorker from './workers/engine-execution-worker'
 import scheduledTaskWorker from './workers/scheduled-task-worker'
 import masteryAgentWorker from './workers/mastery-agent-worker'
+import kbExtractionWorker from './workers/kb-extraction-worker'
 import { startApiServer } from './api/server'
 import { registerScheduledJobs } from './scheduler/index'
 
@@ -35,6 +36,7 @@ console.log('   - Engine Execution (2 concurrent) - Deployed engine runs')
 console.log('   - Scheduled Task (5 concurrent) - Cron / event-triggered jobs')
 console.log('🎯 Mastery Agents:')
 console.log('   - Mastery Agent (8 concurrent) - 9 async decision agents')
+console.log('   - KB Extraction (3 concurrent) - Document → AI → structured KB')
 console.log('')
 console.log('🌐 Management API:')
 console.log(`   - Running on port ${API_PORT}`)
@@ -72,6 +74,7 @@ const shutdown = async (signal: string) => {
         engineExecutionWorker.close(),
         scheduledTaskWorker.close(),
         masteryAgentWorker.close(),
+        kbExtractionWorker.close(),
     ])
 
     console.log('✅ All workers shut down successfully')

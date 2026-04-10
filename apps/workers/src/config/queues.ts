@@ -29,6 +29,9 @@ export enum QueueName {
 
     // Mastery Agents (async, non-blocking)
     MASTERY_AGENT = 'mastery-agent',
+
+    // KB Extraction (document → AI → structured sections)
+    KB_EXTRACTION = 'kb-extraction',
 }
 
 // ============================================================================
@@ -83,6 +86,7 @@ interface QueueInstances {
     engineExecution: Queue;
     scheduledTask: Queue;
     masteryAgent: Queue;
+    kbExtraction: Queue;
 }
 
 let _queues: QueueInstances | null = null;
@@ -184,6 +188,19 @@ function getQueues(): QueueInstances {
                     backoff: {
                         type: 'exponential',
                         delay: 3000,
+                    },
+                },
+            }),
+
+            kbExtraction: new Queue(QueueName.KB_EXTRACTION, {
+                ...defaultOptions,
+                defaultJobOptions: {
+                    ...defaultOptions.defaultJobOptions,
+                    priority: 1,
+                    attempts: 2,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 5000,
                     },
                 },
             }),

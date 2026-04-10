@@ -29,6 +29,7 @@ import {
     Target,
     Sparkles,
     Package,
+    GraduationCap,
 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { ThemeSelector } from '@/components/ThemeSelector';
@@ -125,12 +126,14 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Organizations', href: '/superadmin/organizations', icon: Building2, group: 'Platform' },
         { name: 'Users', href: '/superadmin/users', icon: Users, group: 'Platform' },
         { name: 'Licenses', href: '/superadmin/licenses', icon: FileText, group: 'Platform' },
+        { name: 'Portal Tiers', href: '/superadmin/portal-tiers', icon: Shield, group: 'Platform' },
+        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'Platform' },
 
-        // MarketX OS (Briefs, Beliefs, ICP)
-        { name: 'Briefs', href: '/superadmin/briefs', icon: BookOpen, group: 'MarketX OS' },
-        { name: 'Belief Dashboard', href: '/superadmin/belief-dashboard', icon: Activity, group: 'MarketX OS' },
-        { name: 'ICP Manager', href: '/superadmin/icp-manager', icon: Target, group: 'MarketX OS' },
-        { name: 'Mastery Agents', href: '/superadmin/mastery-agents', icon: Bot, group: 'MarketX OS' },
+        // MarketX OS — in logical build order: Define target → Test messaging → Build brief → Optimize
+        { name: 'ICP Manager',     href: '/superadmin/icp-manager',       icon: Target,   group: 'MarketX OS' },
+        { name: 'Beliefs',         href: '/superadmin/belief-dashboard',  icon: Activity, group: 'MarketX OS' },
+        { name: 'Briefs',          href: '/superadmin/briefs',            icon: BookOpen, group: 'MarketX OS' },
+        { name: 'Mastery Agents',  href: '/superadmin/mastery-agents',    icon: Cpu,      group: 'MarketX OS' },
 
         // Workflows & Engines
         { name: 'Workflow Manager', href: '/superadmin/workflow-manager', icon: Workflow, group: 'Automation' },
@@ -138,7 +141,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Deployed Engines', href: '/superadmin/engines', icon: Cpu, group: 'Automation' },
 
         // AI & Brain
-        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Bot, group: 'AI & Brain' },
+        { name: 'AI Providers', href: '/superadmin/ai-providers', icon: Brain, group: 'AI & Brain' },
         { name: 'AI Models', href: '/superadmin/ai-management', icon: Cpu, group: 'AI & Brain' },
         { name: 'AI Playground', href: '/superadmin/ai-playground', icon: Sparkles, group: 'AI & Brain' },
         { name: 'Brain Templates', href: '/superadmin/brains', icon: Brain, group: 'AI & Brain' },
@@ -153,12 +156,9 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Background Jobs', href: '/superadmin/redis', icon: Database, group: 'Infrastructure' },
         { name: 'Workers', href: '/superadmin/workers', icon: Server, group: 'Infrastructure' },
         { name: 'Platform Config', href: '/superadmin/platform-config', icon: Settings, group: 'Infrastructure' },
-        { name: 'Portal Tiers', href: '/superadmin/portal-tiers', icon: Shield, group: 'Infrastructure' },
-        { name: 'Analytics', href: '/superadmin/analytics', icon: BarChart3, group: 'Infrastructure' },
-        { name: 'Settings', href: '/superadmin/settings', icon: Settings, group: 'Infrastructure' },
 
         // Reference
-        { name: 'Interactive Tutorial', href: '/superadmin/tutorial', icon: BookOpen, group: 'Reference' },
+        { name: 'Interactive Tutorial', href: '/superadmin/tutorial', icon: GraduationCap, group: 'Reference' },
     ];
 
     return (

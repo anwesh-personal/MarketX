@@ -109,6 +109,14 @@ const CATEGORIES = [
     { value: 'general', label: 'General', icon: Bot, tone: 'accent' as const, description: 'Multi-purpose agents' },
 ]
 
+const TEMPLATE_IMAGES: Record<string, string> = {
+    writer: 'url("/images/agents/templates/writer.png")',
+    research: 'url("/images/agents/templates/research.png")',
+    learning: 'url("/images/agents/templates/learning.png")',
+    builder: 'url("/images/agents/templates/builder.png")',
+    general: 'url("/images/agents/templates/general.png")',
+}
+
 const PRODUCTS = [
     { value: 'market_writer', label: 'Market Writer', icon: Mail },
     { value: 'market_builder', label: 'Market Builder', icon: Palette },
@@ -604,13 +612,14 @@ export default function AgentTemplatesPage() {
                                             className="flex w-full items-start gap-md p-lg text-left"
                                         >
                                             {/* Avatar */}
-                                            <div className={`
-                                                flex h-14 w-14 shrink-0 items-center justify-center
-                                                rounded-[var(--radius-lg)] border text-2xl
-                                                ${getAvatarColorClass(agent.avatar_color)}
-                                            `}>
-                                                {agent.avatar_emoji}
-                                            </div>
+                                            <div
+                                                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[var(--radius-lg)] border border-border/70 shadow-sm"
+                                                style={{
+                                                    backgroundImage: TEMPLATE_IMAGES[agent.category] || TEMPLATE_IMAGES.general,
+                                                    backgroundSize: 'cover',
+                                                    backgroundPosition: 'center'
+                                                }}
+                                            />
 
                                             {/* Info */}
                                             <div className="min-w-0 flex-1">
