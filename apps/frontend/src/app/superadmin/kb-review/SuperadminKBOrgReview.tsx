@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
-import { ArrowLeft, Check, Lock, Loader2, RotateCcw, Zap, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Check, Lock, Loader2, RotateCcw, Zap, CheckCheck, Download } from 'lucide-react'
 import { superadminFetch } from '@/lib/superadmin-auth'
 import { SuperadminPageHero, SuperadminBadge } from '@/components/SuperAdmin/surfaces'
 import SectionViewer from '@/components/kb-review/SectionViewer'
@@ -79,8 +79,27 @@ export default function SuperadminKBOrgReview({ orgId, orgName, questionnaireId,
     const draftCount = sections.filter(s => s.status === 'draft' || s.status === 'rejected').length
     const failedCount = sections.filter(s => s.status === 'failed').length
     const canLock = sections.length > 0 && sections.every(s => s.status === 'approved' || s.status === 'locked')
+    const isLocked = qrStatus === 'locked'
     const canGenerate = ['ready_for_generation', 'generation_partial_failure', 'generation_failed'].includes(qrStatus)
     const failedSections = sections.filter(s => s.status === 'failed').map(s => ({ section_number: s.section_number, section_title: s.section_title, error: s.reviewer_notes || 'Unknown' }))
+
+    // Progress estimation
+    const completedWithTime = sections.filter(s => s.generation_duration_ms && ['draft', 'approved', 'locked'].includes(s.status))
+    const avgMs = completedWithTime.length > 0 ? completedWithTime.reduce((sum: number, s: any) => sum + s.generation_duration_ms, 0) / completedWithTime.length : 0
+    const pendingCount = sections.filter(s => s.status === 'pending' || s.status === 'generating').length
+    const etaMinutes = avgMs > 0 && pendingCount > 0 ? Math.ceil((avgMs * pendingCount) / 60000) : 0
+
+    const exportKB = async () => {
+        if (!qrId) return
+        const res = await superadminFetch(`/api/superadmin/kb/export?org_id=${orgId}&questionnaire_id=${qrId}`)
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${orgName.replace(/[^a-zA-Z0-9]/g, '_')}_KB.md`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
 
     return (
         <div className="space-y-4">
@@ -95,6 +114,7 @@ export default function SuperadminKBOrgReview({ orgId, orgName, questionnaireId,
                         {draftCount > 0 && <button onClick={() => act('bulk_approve')} disabled={acting} className="btn btn-secondary btn-sm flex items-center gap-1"><CheckCheck className="w-3.5 h-3.5" /> Approve All ({draftCount})</button>}
                         {failedCount > 0 && <button onClick={() => act('regenerate_sections', { section_numbers: sections.filter(s => s.status === 'failed').map(s => s.section_number) })} disabled={acting} className="btn btn-secondary btn-sm flex items-center gap-1"><RotateCcw className="w-3.5 h-3.5" /> Retry Failed</button>}
                         {canLock && <button onClick={() => act('lock')} disabled={acting} className="btn btn-accent-gradient btn-sm flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> Lock KB</button>}
+                        {(isLocked || sections.length > 0) && <button onClick={exportKB} className="btn btn-secondary btn-sm flex items-center gap-1"><Download className="w-3.5 h-3.5" /> Export</button>}
                     </div>
                 }
             />
@@ -109,7 +129,10 @@ export default function SuperadminKBOrgReview({ orgId, orgName, questionnaireId,
                         <div className="bg-accent h-full transition-all" style={{ width: `${(draftCount / sections.length) * 100}%` }} />
                         {failedCount > 0 && <div className="bg-error h-full transition-all" style={{ width: `${(failedCount / sections.length) * 100}%` }} />}
                     </div>
-                    <span className="text-xs font-mono text-textTertiary whitespace-nowrap">{approvedCount} approved · {draftCount} draft{failedCount > 0 ? ` · ${failedCount} failed` : ''}</span>
+                    <span className="text-xs font-mono text-textTertiary whitespace-nowrap">
+                        {approvedCount} approved · {draftCount} draft{failedCount > 0 ? ` · ${failedCount} failed` : ''}
+                        {etaMinutes > 0 && ` · ~${etaMinutes}min remaining`}
+                    </span>
                 </div>
             )}
 

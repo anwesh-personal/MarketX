@@ -101,6 +101,15 @@ export default function KBOnboardingWizard() {
         }
     }, [questionnaireId, data])
 
+    // ─── Debounced auto-save on data change ─────────────────────
+    const debounceRef = React.useRef<NodeJS.Timeout | null>(null)
+    useEffect(() => {
+        if (!questionnaireId || loading) return
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => { saveStep(step) }, 2000)
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    }, [data, step, questionnaireId, loading, saveStep])
+
     // ─── Navigation ─────────────────────────────────────────────
     const goNext = async () => {
         await saveStep(step)

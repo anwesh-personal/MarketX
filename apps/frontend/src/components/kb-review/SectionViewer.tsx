@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import {
     Check, X, Edit3, Eye, AlertTriangle,
-    Clock, Cpu, FileText, RotateCcw,
+    Clock, Cpu, FileText, RotateCcw, History,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
@@ -16,6 +16,7 @@ interface Section {
     generation_duration_ms?: number
     provider_used?: string
     model_used?: string
+    edit_history?: Array<{ edited_by: string; edited_by_email?: string; edited_at: string; previous_content?: string; previous_length: number; new_length: number }>
 }
 
 interface Props {
@@ -204,7 +205,49 @@ export default function SectionViewer({ section, onApprove, onReject, onEdit }: 
                         <p className="text-xs text-textSecondary">{section.reviewer_notes}</p>
                     </div>
                 )}
+                {/* Edit history */}
+                {section.edit_history && section.edit_history.length > 0 && mode === 'view' && (
+                    <EditHistoryPanel history={section.edit_history} />
+                )}
             </div>
+        </div>
+    )
+}
+
+function EditHistoryPanel({ history }: { history: Section['edit_history'] }) {
+    const [open, setOpen] = useState(false)
+    const [viewIdx, setViewIdx] = useState<number | null>(null)
+    if (!history || history.length === 0) return null
+
+    return (
+        <div className="mt-4 border border-border/30 rounded-xl overflow-hidden">
+            <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 px-3 py-2 text-xs text-textTertiary hover:bg-surfaceHover transition-colors">
+                <History className="w-3 h-3" />
+                <span>{history.length} edit{history.length !== 1 ? 's' : ''}</span>
+                <span className="ml-auto text-[10px]">{open ? '▲' : '▼'}</span>
+            </button>
+            {open && (
+                <div className="border-t border-border/30 divide-y divide-border/20">
+                    {history.map((h, i) => (
+                        <div key={i} className="px-3 py-2 text-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="text-textSecondary">
+                                    {h.edited_by_email || h.edited_by.slice(0, 8)} · {new Date(h.edited_at).toLocaleString()}
+                                </span>
+                                <span className="text-textTertiary font-mono">{h.previous_length} → {h.new_length} chars</span>
+                            </div>
+                            {h.previous_content && (
+                                <button onClick={() => setViewIdx(viewIdx === i ? null : i)} className="mt-1 text-accent text-[10px] hover:underline">
+                                    {viewIdx === i ? 'Hide previous' : 'View previous content'}
+                                </button>
+                            )}
+                            {viewIdx === i && h.previous_content && (
+                                <pre className="mt-2 p-2 bg-surface rounded-lg text-[11px] text-textTertiary whitespace-pre-wrap max-h-48 overflow-y-auto">{h.previous_content}</pre>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
