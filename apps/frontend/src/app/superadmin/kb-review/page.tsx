@@ -1,5 +1,7 @@
-import KBReviewEditor from '@/components/kb-review/KBReviewEditor'
+'use client'
+
+import SuperadminKBDashboard from './SuperadminKBDashboard'
 
 export default function SuperAdminKBReviewPage() {
-    return <KBReviewEditor />
+    return <SuperadminKBDashboard />
 }

@@ -36,6 +36,7 @@ export default function KBOnboardingWizard() {
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+    const [submitted, setSubmitted] = useState(false)
     const [questionnaireId, setQuestionnaireId] = useState<string | null>(null)
     const [data, setData] = useState<QuestionnaireData>(emptyQuestionnaire())
     const [segments, setSegments] = useState<ICPSegment[]>([emptySegment()])
@@ -124,9 +125,8 @@ export default function KBOnboardingWizard() {
             const json = await res.json()
 
             if (json.success && json.status === 'ready_for_generation') {
-                // Client is done — superadmin will review and generate
                 setError('')
-                alert('Questionnaire submitted successfully! Our team will review and generate your Knowledge Base.')
+                setSubmitted(true)
             } else if (json.success && json.status === 'needs_revision') {
                 setError(`Validation failed: ${json.failed_count} constraint(s) need attention. Review the flagged fields.`)
             } else {
@@ -159,6 +159,32 @@ export default function KBOnboardingWizard() {
                 <div className="text-center space-y-3">
                     <Loader2 className="w-8 h-8 text-accent animate-spin mx-auto" />
                     <p className="text-sm text-textSecondary">Loading questionnaire...</p>
+                </div>
+            </div>
+        )
+    }
+
+    // ─── Submitted success state ─────────────────────────────────
+    if (submitted) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="text-center space-y-5 max-w-md">
+                    <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto">
+                        <Check className="w-8 h-8 text-success" />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-textPrimary mb-2">Questionnaire Submitted</h2>
+                        <p className="text-sm text-textSecondary leading-relaxed">
+                            Your Knowledge Base questionnaire has been submitted successfully.
+                            Our team will review your responses, generate your personalized KB sections,
+                            and notify you when it's ready.
+                        </p>
+                    </div>
+                    <div className="pt-2">
+                        <a href="/dashboard" className="btn btn-accent-gradient px-6 py-2.5 rounded-xl">
+                            Return to Dashboard
+                        </a>
+                    </div>
                 </div>
             </div>
         )

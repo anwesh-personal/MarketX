@@ -5,6 +5,7 @@ import {
     Check, X, Edit3, Eye, AlertTriangle,
     Clock, Cpu, FileText, RotateCcw,
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 interface Section {
     section_number: number
@@ -191,13 +192,8 @@ export default function SectionViewer({ section, onApprove, onReject, onEdit }: 
 
                 {/* View mode — render markdown content */}
                 {mode === 'view' && section.content && !isFailed && (
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <div
-                            className="text-sm text-textSecondary leading-relaxed whitespace-pre-wrap"
-                            style={{ fontFamily: 'inherit' }}
-                        >
-                            {section.content}
-                        </div>
+                    <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-textPrimary prose-p:text-textSecondary prose-strong:text-textPrimary prose-li:text-textSecondary prose-a:text-accent">
+                        <ReactMarkdown>{section.content}</ReactMarkdown>
                     </div>
                 )}
 
