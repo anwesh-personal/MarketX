@@ -1,15 +1,17 @@
 'use client'
 
 import React from 'react'
-import { QuestionnaireData, CTA_TYPES, MEETING_LENGTHS } from '../types'
+import { QuestionnaireData } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { Field, SectionHeader } from '../FormPrimitives'
 
 interface Props {
     data: QuestionnaireData
     onChange: (partial: Partial<QuestionnaireData>) => void
+    formConfig: KBFormConfig
 }
 
-export default function Step8Conversion({ data, onChange }: Props) {
+export default function Step8Conversion({ data, onChange, formConfig }: Props) {
     return (
         <div className="space-y-6">
             <SectionHeader
@@ -19,7 +21,7 @@ export default function Step8Conversion({ data, onChange }: Props) {
 
             <Field label="Primary CTA Type" required hint="What's the main action you want prospects to take?">
                 <div className="flex flex-wrap gap-2">
-                    {CTA_TYPES.map(opt => (
+                    {formConfig.ctaTypes.map(opt => (
                         <button key={opt} type="button" onClick={() => onChange({ primary_cta_type: opt })}
                             className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${data.primary_cta_type === opt ? 'bg-accent/10 border-accent text-accent font-medium' : 'border-border text-textSecondary hover:border-borderHover'}`}>
                             {opt}
@@ -46,7 +48,7 @@ export default function Step8Conversion({ data, onChange }: Props) {
             <div className="grid sm:grid-cols-2 gap-4">
                 <Field label="Meeting Length" required>
                     <div className="flex flex-wrap gap-2">
-                        {MEETING_LENGTHS.map(opt => (
+                        {formConfig.meetingLengths.map(opt => (
                             <button key={opt} type="button" onClick={() => onChange({ meeting_length: opt })}
                                 className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${data.meeting_length === opt ? 'bg-accent/10 border-accent text-accent font-medium' : 'border-border text-textSecondary hover:border-borderHover'}`}>
                                 {opt}

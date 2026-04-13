@@ -165,6 +165,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         // Knowledge Base
         { name: 'KB Builder', href: '/superadmin/kb-onboarding', icon: FileEdit, group: 'Knowledge Base' },
         { name: 'KB Review', href: '/superadmin/kb-review', icon: CheckCircle, group: 'Knowledge Base' },
+        { name: 'Form Config', href: '/superadmin/kb-form-config', icon: Settings, group: 'Knowledge Base' },
     ];
 
     return (

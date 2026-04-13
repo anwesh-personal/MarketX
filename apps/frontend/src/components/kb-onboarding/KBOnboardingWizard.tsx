@@ -7,6 +7,7 @@ import {
     Check, Loader2, AlertTriangle, Lock,
 } from 'lucide-react'
 import { QuestionnaireData, ICPSegment, ArtifactUpload, StepDef, emptyQuestionnaire, emptySegment } from './types'
+import { useKBFormConfig } from './useKBFormConfig'
 import { STEP_COLUMNS } from '@/lib/kb-section-registry'
 import Step1CompanyOffer from './steps/Step1CompanyOffer'
 import Step2ICPSegments from './steps/Step2ICPSegments'
@@ -41,6 +42,7 @@ export default function KBOnboardingWizard() {
     const [data, setData] = useState<QuestionnaireData>(emptyQuestionnaire())
     const [segments, setSegments] = useState<ICPSegment[]>([emptySegment()])
     const [artifacts, setArtifacts] = useState<ArtifactUpload[]>([])
+    const formConfig = useKBFormConfig()
 
     // ─── Load or create questionnaire on mount ──────────────────
     useEffect(() => { loadQuestionnaire() }, [])
@@ -294,15 +296,15 @@ export default function KBOnboardingWizard() {
                     )}
 
                     <div className="animate-fade-in">
-                        {step === 1 && <Step1CompanyOffer data={data} onChange={updateData} />}
-                        {step === 2 && <Step2ICPSegments data={data} onChange={updateData} segments={segments} onSegmentsChange={setSegments} questionnaireId={questionnaireId} />}
+                        {step === 1 && <Step1CompanyOffer data={data} onChange={updateData} formConfig={formConfig} />}
+                        {step === 2 && <Step2ICPSegments data={data} onChange={updateData} segments={segments} onSegmentsChange={setSegments} questionnaireId={questionnaireId} formConfig={formConfig} />}
                         {step === 3 && <Step3BuyingRoles segments={segments} onSegmentsChange={setSegments} questionnaireId={questionnaireId} />}
-                        {step === 4 && <Step4SalesProcess data={data} onChange={updateData} />}
+                        {step === 4 && <Step4SalesProcess data={data} onChange={updateData} formConfig={formConfig} />}
                         {step === 5 && <Step5ValueProp data={data} onChange={updateData} />}
                         {step === 6 && <Step6Objections data={data} onChange={updateData} />}
-                        {step === 7 && <Step7VoiceTone data={data} onChange={updateData} />}
-                        {step === 8 && <Step8Conversion data={data} onChange={updateData} />}
-                        {step === 9 && <Step9Artifacts artifacts={artifacts} onArtifactsChange={setArtifacts} questionnaireId={questionnaireId} />}
+                        {step === 7 && <Step7VoiceTone data={data} onChange={updateData} formConfig={formConfig} />}
+                        {step === 8 && <Step8Conversion data={data} onChange={updateData} formConfig={formConfig} />}
+                        {step === 9 && <Step9Artifacts artifacts={artifacts} onArtifactsChange={setArtifacts} questionnaireId={questionnaireId} formConfig={formConfig} />}
                     </div>
                 </div>
             </div>

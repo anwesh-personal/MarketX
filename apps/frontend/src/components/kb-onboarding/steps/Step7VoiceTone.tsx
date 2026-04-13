@@ -1,15 +1,17 @@
 'use client'
 
 import React from 'react'
-import { QuestionnaireData, COMMUNICATION_STYLES } from '../types'
+import { QuestionnaireData } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { Field, ChipSelect, SectionHeader } from '../FormPrimitives'
 
 interface Props {
     data: QuestionnaireData
     onChange: (partial: Partial<QuestionnaireData>) => void
+    formConfig: KBFormConfig
 }
 
-export default function Step7VoiceTone({ data, onChange }: Props) {
+export default function Step7VoiceTone({ data, onChange, formConfig }: Props) {
     return (
         <div className="space-y-6">
             <SectionHeader
@@ -20,7 +22,7 @@ export default function Step7VoiceTone({ data, onChange }: Props) {
             <Field label="Communication style (pick up to 3)" required
                 hint="This determines the personality of all generated content.">
                 <ChipSelect
-                    options={COMMUNICATION_STYLES}
+                    options={formConfig.communicationStyles}
                     selected={data.communication_style || []}
                     onChange={v => onChange({ communication_style: v.slice(0, 3) })}
                 />

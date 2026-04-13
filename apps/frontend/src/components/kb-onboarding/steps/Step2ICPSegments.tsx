@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { Target, Plus, X, ChevronDown, ChevronUp } from 'lucide-react'
-import { QuestionnaireData, ICPSegment, INDUSTRIES, COMPANY_SIZES, REVENUE_RANGES, GEOGRAPHIES, emptySegment } from '../types'
+import { QuestionnaireData, ICPSegment, emptySegment } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { Field, ChipSelect, CharCount, SectionHeader } from '../FormPrimitives'
 
 interface Props {
@@ -11,9 +12,10 @@ interface Props {
     segments: ICPSegment[]
     onSegmentsChange: (segs: ICPSegment[]) => void
     questionnaireId: string | null
+    formConfig: KBFormConfig
 }
 
-export default function Step2ICPSegments({ data, onChange, segments, onSegmentsChange, questionnaireId }: Props) {
+export default function Step2ICPSegments({ data, onChange, segments, onSegmentsChange, questionnaireId, formConfig }: Props) {
     const [expandedIdx, setExpandedIdx] = React.useState(0)
 
     const addSegment = () => {
@@ -86,23 +88,23 @@ export default function Step2ICPSegments({ data, onChange, segments, onSegmentsC
                             </Field>
 
                             <Field label="Target Industries" required>
-                                <ChipSelect options={INDUSTRIES} selected={seg.target_industries}
+                                <ChipSelect options={formConfig.industries} selected={seg.target_industries}
                                     onChange={v => updateSegment(idx, { target_industries: v })} allowCustom />
                             </Field>
 
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <Field label="Company Size (Headcount)" required>
-                                    <ChipSelect options={COMPANY_SIZES} selected={seg.company_size}
+                                    <ChipSelect options={formConfig.companySizes} selected={seg.company_size}
                                         onChange={v => updateSegment(idx, { company_size: v })} />
                                 </Field>
                                 <Field label="Revenue Range" required>
-                                    <ChipSelect options={REVENUE_RANGES} selected={seg.revenue_range}
+                                    <ChipSelect options={formConfig.revenueRanges} selected={seg.revenue_range}
                                         onChange={v => updateSegment(idx, { revenue_range: v })} />
                                 </Field>
                             </div>
 
                             <Field label="Target Geographies" required>
-                                <ChipSelect options={GEOGRAPHIES} selected={seg.geographies}
+                                <ChipSelect options={formConfig.geographies} selected={seg.geographies}
                                     onChange={v => updateSegment(idx, { geographies: v })} allowCustom />
                             </Field>
 

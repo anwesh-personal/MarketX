@@ -1,15 +1,17 @@
 'use client'
 
 import React from 'react'
-import { QuestionnaireData, PRICING_MODELS } from '../types'
+import { QuestionnaireData } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { Field, CharCount } from '../FormPrimitives'
 
 interface Props {
     data: QuestionnaireData
     onChange: (partial: Partial<QuestionnaireData>) => void
+    formConfig: KBFormConfig
 }
 
-export default function Step1CompanyOffer({ data, onChange }: Props) {
+export default function Step1CompanyOffer({ data, onChange, formConfig }: Props) {
     return (
         <div className="space-y-6">
             {/* Row 1: Name + Website */}
@@ -123,7 +125,7 @@ export default function Step1CompanyOffer({ data, onChange }: Props) {
                         onChange={e => onChange({ pricing_model: e.target.value })}
                     >
                         <option value="">Select...</option>
-                        {PRICING_MODELS.map(m => <option key={m} value={m}>{m}</option>)}
+                        {formConfig.pricingModels.map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                 </Field>
                 <Field label="Typical Deal Size / ACV" required

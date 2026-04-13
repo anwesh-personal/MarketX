@@ -2,16 +2,18 @@
 
 import React, { useRef, useState } from 'react'
 import { Upload, FileText, X, Loader2, Check, AlertTriangle } from 'lucide-react'
-import { ArtifactUpload, ARTIFACT_CATEGORIES } from '../types'
+import { ArtifactUpload } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { SectionHeader } from '../FormPrimitives'
 
 interface Props {
     artifacts: ArtifactUpload[]
     onArtifactsChange: (arts: ArtifactUpload[]) => void
     questionnaireId: string | null
+    formConfig: KBFormConfig
 }
 
-export default function Step9Artifacts({ artifacts, onArtifactsChange, questionnaireId }: Props) {
+export default function Step9Artifacts({ artifacts, onArtifactsChange, questionnaireId, formConfig }: Props) {
     const [uploading, setUploading] = useState(false)
     const [uploadError, setUploadError] = useState('')
     const [selectedCategory, setSelectedCategory] = useState('')
@@ -94,7 +96,7 @@ export default function Step9Artifacts({ artifacts, onArtifactsChange, questionn
                             onChange={e => setSelectedCategory(e.target.value)}
                         >
                             <option value="">Select category...</option>
-                            {ARTIFACT_CATEGORIES.map(c => (
+                            {formConfig.artifactCategories.map(c => (
                                 <option key={c.value} value={c.value}>{c.label}</option>
                             ))}
                         </select>
@@ -107,7 +109,7 @@ export default function Step9Artifacts({ artifacts, onArtifactsChange, questionn
                             ref={fileInputRef}
                             type="file"
                             className="hidden"
-                            accept={ARTIFACT_CATEGORIES.find(c => c.value === selectedCategory)?.accept || '*'}
+                            accept={formConfig.artifactCategories.find(c => c.value === selectedCategory)?.accept || '*'}
                             multiple
                             onChange={e => handleUpload(e.target.files)}
                         />
@@ -146,7 +148,7 @@ export default function Step9Artifacts({ artifacts, onArtifactsChange, questionn
                             <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-textPrimary truncate">{art.file_name}</div>
                                 <div className="text-[10px] text-textTertiary">
-                                    {ARTIFACT_CATEGORIES.find(c => c.value === art.category)?.label || art.category} · {formatSize(art.file_size)}
+                                    {formConfig.artifactCategories.find(c => c.value === art.category)?.label || art.category} · {formatSize(art.file_size)}
                                 </div>
                             </div>
                             {statusBadge(art.extraction_status)}
@@ -173,7 +175,7 @@ export default function Step9Artifacts({ artifacts, onArtifactsChange, questionn
             <div className="card p-5">
                 <h3 className="text-sm font-semibold text-textPrimary mb-3">Upload Checklist</h3>
                 <div className="grid sm:grid-cols-2 gap-2">
-                    {ARTIFACT_CATEGORIES.map(cat => {
+                    {formConfig.artifactCategories.map(cat => {
                         const hasUploads = artifacts.some(a => a.category === cat.value)
                         return (
                             <div key={cat.value} className="flex items-center gap-2 text-sm">

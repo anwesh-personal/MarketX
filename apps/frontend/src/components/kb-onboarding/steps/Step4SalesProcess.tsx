@@ -1,15 +1,17 @@
 'use client'
 
 import React from 'react'
-import { QuestionnaireData, SALES_CYCLE_OPTIONS, STAKEHOLDER_OPTIONS } from '../types'
+import { QuestionnaireData } from '../types'
+import { KBFormConfig } from '../useKBFormConfig'
 import { Field, CharCount, SectionHeader } from '../FormPrimitives'
 
 interface Props {
     data: QuestionnaireData
     onChange: (partial: Partial<QuestionnaireData>) => void
+    formConfig: KBFormConfig
 }
 
-export default function Step4SalesProcess({ data, onChange }: Props) {
+export default function Step4SalesProcess({ data, onChange, formConfig }: Props) {
     return (
         <div className="space-y-6">
             <SectionHeader
@@ -32,7 +34,7 @@ export default function Step4SalesProcess({ data, onChange }: Props) {
             <div className="grid sm:grid-cols-2 gap-4">
                 <Field label="Typical Sales Cycle" required>
                     <div className="flex flex-wrap gap-2">
-                        {SALES_CYCLE_OPTIONS.map(opt => (
+                        {formConfig.salesCycleOptions.map(opt => (
                             <button key={opt} type="button" onClick={() => onChange({ sales_cycle_length: opt })}
                                 className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${data.sales_cycle_length === opt ? 'bg-accent/10 border-accent text-accent font-medium' : 'border-border text-textSecondary hover:border-borderHover'}`}>
                                 {opt}
@@ -42,7 +44,7 @@ export default function Step4SalesProcess({ data, onChange }: Props) {
                 </Field>
                 <Field label="Typical # of Stakeholders" required>
                     <div className="flex flex-wrap gap-2">
-                        {STAKEHOLDER_OPTIONS.map(opt => (
+                        {formConfig.stakeholderOptions.map(opt => (
                             <button key={opt} type="button" onClick={() => onChange({ stakeholder_count: opt })}
                                 className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${data.stakeholder_count === opt ? 'bg-accent/10 border-accent text-accent font-medium' : 'border-border text-textSecondary hover:border-borderHover'}`}>
                                 {opt}
