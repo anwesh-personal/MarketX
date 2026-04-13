@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import {
     Check, X, Edit3, Eye, AlertTriangle,
-    Clock, Cpu, FileText, RotateCcw, History,
+    Clock, Cpu, FileText, RotateCcw, History, Star,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
@@ -17,6 +17,16 @@ interface Section {
     provider_used?: string
     model_used?: string
     edit_history?: Array<{ edited_by: string; edited_by_email?: string; edited_at: string; previous_content?: string; previous_length: number; new_length: number }>
+    ai_grade?: {
+        score: number
+        verdict: string
+        strengths?: string[]
+        weaknesses?: string[]
+        suggestion?: string
+        graded_at?: string
+        graded_by_model?: string
+        graded_by_provider?: string
+    } | null
 }
 
 interface Props {
@@ -79,6 +89,15 @@ export default function SectionViewer({ section, onApprove, onReject, onEdit }: 
                         {section.content && (
                             <span className="flex items-center gap-1">
                                 <FileText className="w-3 h-3" /> {section.content.length.toLocaleString()} chars
+                            </span>
+                        )}
+                        {section.ai_grade && (
+                            <span className={`flex items-center gap-1 font-semibold ${
+                                section.ai_grade.score >= 8 ? 'text-success' :
+                                section.ai_grade.score >= 6 ? 'text-accent' :
+                                section.ai_grade.score >= 4 ? 'text-warning' : 'text-error'
+                            }`}>
+                                <Star className="w-3 h-3" /> {section.ai_grade.score}/10 {section.ai_grade.verdict}
                             </span>
                         )}
                     </div>
@@ -203,6 +222,48 @@ export default function SectionViewer({ section, onApprove, onReject, onEdit }: 
                     <div className="mt-4 p-3 bg-error/5 border border-error/20 rounded-xl">
                         <div className="text-xs font-semibold text-error mb-1">Rejection Reason</div>
                         <p className="text-xs text-textSecondary">{section.reviewer_notes}</p>
+                    </div>
+                )}
+                {/* AI Grade details */}
+                {section.ai_grade && mode === 'view' && (
+                    <div className={`mt-4 p-3 rounded-xl border ${
+                        section.ai_grade.score >= 8 ? 'bg-success/5 border-success/20' :
+                        section.ai_grade.score >= 6 ? 'bg-accent/5 border-accent/20' :
+                        section.ai_grade.score >= 4 ? 'bg-warning/5 border-warning/20' : 'bg-error/5 border-error/20'
+                    }`}>
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <Star className="w-3.5 h-3.5" />
+                                <span className="text-xs font-bold">AI Grade: {section.ai_grade.score}/10 — {section.ai_grade.verdict}</span>
+                            </div>
+                            {section.ai_grade.graded_at && (
+                                <span className="text-[9px] text-textTertiary">
+                                    {section.ai_grade.graded_by_provider}/{section.ai_grade.graded_by_model} · {new Date(section.ai_grade.graded_at).toLocaleString()}
+                                </span>
+                            )}
+                        </div>
+                        {section.ai_grade.strengths && section.ai_grade.strengths.length > 0 && (
+                            <div className="mb-1.5">
+                                <span className="text-[10px] font-semibold text-success uppercase tracking-wider">Strengths</span>
+                                <ul className="mt-0.5 space-y-0.5">{section.ai_grade.strengths.map((s, i) => (
+                                    <li key={i} className="text-xs text-textSecondary flex items-start gap-1"><span className="text-success shrink-0">✓</span> {s}</li>
+                                ))}</ul>
+                            </div>
+                        )}
+                        {section.ai_grade.weaknesses && section.ai_grade.weaknesses.length > 0 && (
+                            <div className="mb-1.5">
+                                <span className="text-[10px] font-semibold text-error uppercase tracking-wider">Weaknesses</span>
+                                <ul className="mt-0.5 space-y-0.5">{section.ai_grade.weaknesses.map((w, i) => (
+                                    <li key={i} className="text-xs text-textSecondary flex items-start gap-1"><span className="text-error shrink-0">✗</span> {w}</li>
+                                ))}</ul>
+                            </div>
+                        )}
+                        {section.ai_grade.suggestion && (
+                            <div>
+                                <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Suggestion</span>
+                                <p className="mt-0.5 text-xs text-textSecondary">{section.ai_grade.suggestion}</p>
+                            </div>
+                        )}
                     </div>
                 )}
                 {/* Edit history */}

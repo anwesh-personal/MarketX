@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         // Also grab sections if they exist
         const { data: sections } = await supabase
             .from('kb_master_sections')
-            .select('section_number, section_title, status, content, generation_pass, generation_type, reviewer_notes, generation_duration_ms, provider_used, model_used, reviewed_by, reviewed_at, edit_history')
+            .select('section_number, section_title, status, content, generation_pass, generation_type, reviewer_notes, generation_duration_ms, provider_used, model_used, reviewed_by, reviewed_at, edit_history, ai_grade')
             .eq('questionnaire_id', questionnaire.id)
             .eq('org_id', orgId)
             .order('section_number', { ascending: true })

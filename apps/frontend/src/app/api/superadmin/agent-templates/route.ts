@@ -14,7 +14,7 @@ export interface AgentTemplate {
     description: string | null
     avatar_emoji: string
     avatar_color: string
-    category: 'writer' | 'research' | 'learning' | 'builder' | 'general'
+    category: 'writer' | 'research' | 'learning' | 'builder' | 'general' | 'evaluator'
     product_target: 'market_writer' | 'market_builder' | 'market_coach' | 'all'
     system_prompt: string
     persona_prompt: string | null
@@ -54,7 +54,7 @@ const createAgentTemplateSchema = z.object({
     description: z.string().optional(),
     avatar_emoji: z.string().max(10).default('🤖'),
     avatar_color: z.enum(['primary', 'success', 'warning', 'accent', 'info']).default('primary'),
-    category: z.enum(['writer', 'research', 'learning', 'builder', 'general']).default('general'),
+    category: z.enum(['writer', 'research', 'learning', 'builder', 'general', 'evaluator']).default('general'),
     product_target: z.enum(['market_writer', 'market_builder', 'market_coach', 'all']).default('market_writer'),
     system_prompt: z.string().default(''),
     persona_prompt: z.string().optional(),
@@ -133,6 +133,7 @@ export async function GET(req: NextRequest) {
                 learning: all.filter(t => t.category === 'learning').length,
                 builder: all.filter(t => t.category === 'builder').length,
                 general: all.filter(t => t.category === 'general').length,
+                evaluator: all.filter(t => t.category === 'evaluator').length,
             },
             byProduct: {
                 market_writer: all.filter(t => t.product_target === 'market_writer' || t.product_target === 'all').length,
