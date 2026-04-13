@@ -104,7 +104,7 @@ INSERT INTO public.agent_templates (
     8192,  -- max_tokens (grading reports can be long)
 
     '{}'::text[],   -- tools_enabled
-    '{}'::text[],   -- skills
+    '[]'::jsonb,    -- skills
     false,          -- has_own_kb
     '[]'::jsonb,    -- kb_object_types
     0.6,            -- kb_min_confidence
