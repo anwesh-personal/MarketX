@@ -163,7 +163,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
         { name: 'Interactive Tutorial', href: '/superadmin/tutorial', icon: GraduationCap, group: 'Reference' },
 
         // Knowledge Base
-        { name: 'KB Builder', href: '/superadmin/kb-onboarding', icon: FileEdit, group: 'Knowledge Base' },
+        { name: 'Form Preview', href: '/superadmin/kb-onboarding', icon: FileEdit, group: 'Knowledge Base' },
         { name: 'KB Review', href: '/superadmin/kb-review', icon: CheckCircle, group: 'Knowledge Base' },
         { name: 'Form Config', href: '/superadmin/kb-form-config', icon: Settings, group: 'Knowledge Base' },
     ];
