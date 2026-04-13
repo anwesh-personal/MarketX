@@ -15,6 +15,13 @@
 
 BEGIN;
 
+-- Add metadata column if it doesn't exist
+ALTER TABLE public.agent_templates
+    ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL;
+
+COMMENT ON COLUMN public.agent_templates.metadata IS
+    'Flexible JSONB for agent-specific configuration (hydration mappings, etc.)';
+
 INSERT INTO public.agent_templates (
     slug, name, description,
     avatar_emoji, avatar_color, category, product_target,
@@ -51,8 +58,8 @@ INSERT INTO public.agent_templates (
 
     NULL, NULL,  -- provider/model: use platform default
     0.4, 8192,  -- temperature, max_tokens
-    '{}'::text[], '[]'::jsonb,  -- tools, skills
-    false, '[]'::jsonb, 0.6,   -- has_own_kb, kb_object_types, kb_min_confidence
+    '{}'::text[], '[]'::jsonb,  -- tools (text[]), skills (jsonb)
+    false, '{}'::text[], 0.6,   -- has_own_kb, kb_object_types, kb_min_confidence
 
     -- INPUT SCHEMA — documents what the API sends to the agent
     '{
