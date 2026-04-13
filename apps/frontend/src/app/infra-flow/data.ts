@@ -42,7 +42,7 @@ export const PHASES: Phase[] = [
         outputs: ['partner_id', 'tenant_id', 'activation status', 'internal system container'],
         entryCondition: 'None',
         exitConditions: ['Agreement signed', 'Payment confirmed', 'Partner approved', 'Offer defined', 'Booking system verified', 'Compliance constraints documented'],
-        failureConditions: ['Unclear or unstable offer', 'Inability to fulfill qualified demand', 'Compliance ambiguity', 'Inability to define qualified lead'],
+        failureConditions: ['Unclear or unstable offer', 'Inability to fulfill qualified demand', 'Compliance ambiguity', 'Inability to define qualified lead', 'Expectation of campaign behavior instead of system behavior'],
         gates: [],
         systemLaws: ['No production before structural prerequisites are complete'],
         modules: ['Client and Offer Setup', 'Artifact and Intake Uploads'],
