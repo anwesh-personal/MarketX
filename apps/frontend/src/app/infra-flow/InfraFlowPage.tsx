@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo } from 'react'
 import ReactFlow, {
     Background, Controls, MiniMap,
     Node, Edge, ConnectionLineType,
+    useNodesState, useEdgesState,
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import { motion } from 'framer-motion'
@@ -42,44 +43,65 @@ const PROTOCOLS = [
 
 const nodeTypes = { phaseNode: PhaseNodeComponent }
 
-export default function InfraFlowPage() {
-    const [selected, setSelected] = useState<Phase | null>(null)
-
-    // Build React Flow nodes — zigzag layout
-    const nodes: Node[] = useMemo(() => ALL_PHASES.map((phase, i) => ({
+// Wider 3-column stagger layout with generous spacing
+function buildInitialNodes(onSelect: (p: Phase) => void, selected: Phase | null): Node[] {
+    const cols = [0, 380, 190] // left, right, center pattern
+    return ALL_PHASES.map((phase, i) => ({
         id: `phase-${phase.num}`,
         type: 'phaseNode',
-        position: {
-            x: (i % 2 === 0 ? 100 : 420) + (i < 5 ? 0 : 50),
-            y: i * 160,
-        },
+        draggable: true,
+        position: { x: cols[i % 3], y: i * 200 },
         data: {
             phase,
             selected: selected?.num === phase.num,
-            onClick: () => setSelected(selected?.num === phase.num ? null : phase),
+            onClick: () => onSelect(phase),
         },
-    })), [selected])
+    }))
+}
 
-    // Build edges with animated gradient
-    const edges: Edge[] = useMemo(() => ALL_PHASES.slice(0, -1).map((phase, i) => ({
+const INITIAL_EDGES: Edge[] = [
+    ...ALL_PHASES.slice(0, -1).map((phase) => ({
         id: `e-${phase.num}-${phase.num + 1}`,
         source: `phase-${phase.num}`,
         target: `phase-${phase.num + 1}`,
         type: 'smoothstep',
         animated: true,
-        style: {
-            stroke: phase.color,
-            strokeWidth: 2,
-            opacity: 0.5,
-        },
-    })), [])
+        label: `Phase ${phase.num} → ${phase.num + 1}`,
+        labelStyle: { fill: '#71717a', fontSize: 11, fontWeight: 600 },
+        labelBgStyle: { fill: '#09090f', fillOpacity: 0.9 },
+        labelBgPadding: [6, 4] as [number, number],
+        labelBgBorderRadius: 6,
+        style: { stroke: phase.color, strokeWidth: 2.5, opacity: 0.6 },
+    })),
+    // Regression edges
+    { id: 'reg-5-4', source: 'phase-5', target: 'phase-4', type: 'smoothstep', animated: false,
+      label: '⚠ routing fail', labelStyle: { fill: '#fca5a5', fontSize: 10, fontWeight: 600 }, labelBgStyle: { fill: '#1c1017', fillOpacity: 0.95 }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      style: { stroke: '#ef4444', strokeDasharray: '6,4', strokeWidth: 2, opacity: 0.4 } },
+    { id: 'reg-5-2', source: 'phase-5', target: 'phase-2', type: 'smoothstep', animated: false,
+      label: '⚠ suppression fail', labelStyle: { fill: '#fca5a5', fontSize: 10, fontWeight: 600 }, labelBgStyle: { fill: '#1c1017', fillOpacity: 0.95 }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      style: { stroke: '#ef4444', strokeDasharray: '6,4', strokeWidth: 2, opacity: 0.4 } },
+    { id: 'reg-5-3', source: 'phase-5', target: 'phase-3', type: 'smoothstep', animated: false,
+      label: '⚠ reply fail', labelStyle: { fill: '#fca5a5', fontSize: 10, fontWeight: 600 }, labelBgStyle: { fill: '#1c1017', fillOpacity: 0.95 }, labelBgPadding: [6, 3] as [number, number], labelBgBorderRadius: 6,
+      style: { stroke: '#ef4444', strokeDasharray: '6,4', strokeWidth: 2, opacity: 0.4 } },
+] as Edge[]
 
-    // Add regression edges
-    const regressionEdges: Edge[] = useMemo(() => [
-        { id: 'reg-5-4', source: 'phase-5', target: 'phase-4', label: 'routing fail', style: { stroke: '#ef4444', strokeDasharray: '5,5', strokeWidth: 1.5, opacity: 0.3 }, animated: false, type: 'smoothstep' },
-        { id: 'reg-5-2', source: 'phase-5', target: 'phase-2', label: 'suppression fail', style: { stroke: '#ef4444', strokeDasharray: '5,5', strokeWidth: 1.5, opacity: 0.3 }, animated: false, type: 'smoothstep' },
-        { id: 'reg-5-3', source: 'phase-5', target: 'phase-3', label: 'reply fail', style: { stroke: '#ef4444', strokeDasharray: '5,5', strokeWidth: 1.5, opacity: 0.3 }, animated: false, type: 'smoothstep' },
-    ] as Edge[], [])
+export default function InfraFlowPage() {
+    const [selected, setSelected] = useState<Phase | null>(null)
+    const handleSelect = useCallback((phase: Phase) => {
+        setSelected(s => s?.num === phase.num ? null : phase)
+    }, [])
+
+    const initialNodes = useMemo(() => buildInitialNodes(handleSelect, selected), [selected, handleSelect])
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+    const [edges] = useEdgesState(INITIAL_EDGES)
+
+    // Sync selection state into existing nodes
+    React.useEffect(() => {
+        setNodes(nds => nds.map(n => ({
+            ...n,
+            data: { ...n.data, selected: selected?.num === n.data.phase.num, onClick: () => handleSelect(n.data.phase) },
+        })))
+    }, [selected, handleSelect, setNodes])
 
     return (
         <div className="infra-flow-root">
@@ -167,13 +189,16 @@ export default function InfraFlowPage() {
                 <div className="flow-canvas">
                     <ReactFlow
                         nodes={nodes}
-                        edges={[...edges, ...regressionEdges]}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
                         nodeTypes={nodeTypes}
                         connectionLineType={ConnectionLineType.SmoothStep}
+                        nodesDraggable={true}
                         fitView
-                        fitViewOptions={{ padding: 0.3 }}
-                        minZoom={0.3}
-                        maxZoom={2}
+                        fitViewOptions={{ padding: 0.4 }}
+                        minZoom={0.2}
+                        maxZoom={2.5}
+                        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
                         proOptions={{ hideAttribution: true }}
                     >
                         <Background color="#1e1e2e" gap={20} size={1} />
