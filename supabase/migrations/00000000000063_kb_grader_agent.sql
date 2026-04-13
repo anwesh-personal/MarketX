@@ -103,8 +103,8 @@ INSERT INTO public.agent_templates (
     0.3,   -- temperature (low for consistent grading)
     8192,  -- max_tokens (grading reports can be long)
 
-    '[]'::jsonb,    -- tools_enabled
-    '[]'::jsonb,    -- skills
+    '{}'::text[],   -- tools_enabled
+    '{}'::text[],   -- skills
     false,          -- has_own_kb
     '[]'::jsonb,    -- kb_object_types
     0.6,            -- kb_min_confidence

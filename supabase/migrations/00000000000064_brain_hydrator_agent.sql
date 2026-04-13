@@ -51,7 +51,7 @@ INSERT INTO public.agent_templates (
 
     NULL, NULL,  -- provider/model: use platform default
     0.4, 8192,  -- temperature, max_tokens
-    '[]'::jsonb, '[]'::jsonb,  -- tools, skills
+    '{}'::text[], '{}'::text[],  -- tools, skills
     false, '[]'::jsonb, 0.6,   -- has_own_kb, kb_object_types, kb_min_confidence
 
     -- INPUT SCHEMA — documents what the API sends to the agent
