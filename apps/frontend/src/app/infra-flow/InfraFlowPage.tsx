@@ -12,6 +12,7 @@ import { PHASES_5_9 } from './data2'
 import PhaseNodeComponent from './PhaseNode'
 import DetailDrawer from './DetailDrawer'
 import './infra-flow.css'
+import './infra-flow2.css'
 
 const ALL_PHASES = [...PHASES, ...PHASES_5_9]
 
@@ -82,6 +83,7 @@ export default function InfraFlowPage() {
 
     return (
         <div className="infra-flow-root">
+            <div className="infra-bg-mesh" />
             <div className="infra-content">
                 {/* ─── Hero ─── */}
                 <div className="infra-hero">
