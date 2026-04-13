@@ -128,7 +128,7 @@ export default function SuperadminFormConfigPage() {
                             success={successKey === cfg.config_key}
                             expanded={expandedKey === cfg.config_key}
                             onToggle={() => setExpandedKey(expandedKey === cfg.config_key ? null : cfg.config_key)}
-                            isComplex={cfg.config_key === 'dropdown_artifact_categories'}
+                            configType={cfg.config_key === 'dropdown_artifact_categories' ? 'artifact' : 'simple'}
                             updatedAt={cfg.updated_at}
                         />
                     ))}
@@ -155,7 +155,7 @@ export default function SuperadminFormConfigPage() {
                                 success={successKey === cfg.config_key}
                                 expanded={expandedKey === cfg.config_key}
                                 onToggle={() => setExpandedKey(expandedKey === cfg.config_key ? null : cfg.config_key)}
-                                isComplex={cfg.config_key === 'steps'}
+                                configType={cfg.config_key === 'steps' ? 'step' : 'simple'}
                                 updatedAt={cfg.updated_at}
                             />
                         ))}
@@ -168,6 +168,8 @@ export default function SuperadminFormConfigPage() {
 
 // ─── Dropdown Editor Component ──────────────────────────────────
 
+type ConfigType = 'simple' | 'artifact' | 'step'
+
 interface DropdownEditorProps {
     configKey: string
     label: string
@@ -179,21 +181,22 @@ interface DropdownEditorProps {
     success: boolean
     expanded: boolean
     onToggle: () => void
-    isComplex: boolean
+    configType: ConfigType
     updatedAt: string
 }
 
 function DropdownEditor({
     configKey, label, description, values, onChange, onSave,
-    saving, success, expanded, onToggle, isComplex, updatedAt,
+    saving, success, expanded, onToggle, configType, updatedAt,
 }: DropdownEditorProps) {
     const [newValue, setNewValue] = useState('')
 
     const addItem = () => {
         if (!newValue.trim()) return
-        if (isComplex) {
-            // For artifact categories: add as object
+        if (configType === 'artifact') {
             onChange([...values, { value: newValue.trim().toLowerCase().replace(/\s+/g, '_'), label: newValue.trim(), accept: '.pdf,.docx,.doc,.txt,.md' }])
+        } else if (configType === 'step') {
+            onChange([...values, { num: values.length + 1, title: newValue.trim(), subtitle: '', icon: 'FileText' }])
         } else {
             onChange([...values, newValue.trim()])
         }
@@ -209,21 +212,23 @@ function DropdownEditor({
         const target = idx + dir
         if (target < 0 || target >= arr.length) return
         ;[arr[idx], arr[target]] = [arr[target], arr[idx]]
-        onChange(arr)
-    }
-
-    const updateItem = (idx: number, val: string) => {
-        const arr = [...values]
-        if (isComplex) {
-            arr[idx] = { ...arr[idx], label: val }
-        } else {
-            arr[idx] = val
+        // Re-number steps after reorder
+        if (configType === 'step') {
+            arr.forEach((item, i) => { item.num = i + 1 })
         }
         onChange(arr)
     }
 
-    const getDisplayLabel = (item: any) => {
-        return typeof item === 'object' ? item.label : item
+    const getDisplayLabel = (item: any): string => {
+        if (configType === 'step') return item.title || ''
+        if (configType === 'artifact') return item.label || ''
+        return String(item)
+    }
+
+    const updateField = (idx: number, field: string, val: string) => {
+        const arr = [...values]
+        arr[idx] = { ...arr[idx], [field]: val }
+        onChange(arr)
     }
 
     return (
@@ -240,7 +245,7 @@ function DropdownEditor({
                     <div className="text-left">
                         <div className="text-sm font-semibold text-textPrimary">{label}</div>
                         <div className="text-[10px] text-textTertiary">
-                            {values.length} options · {description || configKey}
+                            {values.length} {configType === 'step' ? 'steps' : 'options'} · {description || configKey}
                         </div>
                     </div>
                 </div>
@@ -266,24 +271,61 @@ function DropdownEditor({
                                     </button>
                                 </div>
                                 <GripVertical className="w-3.5 h-3.5 text-textTertiary/50 shrink-0" />
-                                <input
-                                    className="input flex-1 text-sm py-1.5"
-                                    value={getDisplayLabel(item)}
-                                    onChange={e => updateItem(idx, e.target.value)}
-                                />
-                                {isComplex && typeof item === 'object' && (
+
+                                {configType === 'step' ? (
+                                    /* ── Step editor: num (read-only) + title + subtitle + icon ── */
+                                    <>
+                                        <span className="text-xs font-mono text-textTertiary w-6 text-center shrink-0">{item.num}</span>
+                                        <input
+                                            className="input flex-1 text-sm py-1.5"
+                                            value={item.title || ''}
+                                            onChange={e => updateField(idx, 'title', e.target.value)}
+                                            placeholder="Step title"
+                                        />
+                                        <input
+                                            className="input w-44 text-xs py-1.5 text-textTertiary"
+                                            value={item.subtitle || ''}
+                                            onChange={e => updateField(idx, 'subtitle', e.target.value)}
+                                            placeholder="Subtitle"
+                                        />
+                                        <input
+                                            className="input w-28 text-xs py-1.5 text-textTertiary font-mono"
+                                            value={item.icon || ''}
+                                            onChange={e => updateField(idx, 'icon', e.target.value)}
+                                            placeholder="Icon name"
+                                            title="Lucide icon name (e.g. Building2, Target, Users)"
+                                        />
+                                    </>
+                                ) : configType === 'artifact' ? (
+                                    /* ── Artifact editor: label + accept types ── */
+                                    <>
+                                        <input
+                                            className="input flex-1 text-sm py-1.5"
+                                            value={item.label || ''}
+                                            onChange={e => updateField(idx, 'label', e.target.value)}
+                                            placeholder="Category label"
+                                        />
+                                        <input
+                                            className="input w-48 text-xs py-1.5 text-textTertiary"
+                                            value={item.accept || ''}
+                                            onChange={e => updateField(idx, 'accept', e.target.value)}
+                                            placeholder="File types (.pdf,.docx)"
+                                            title="Accepted file extensions"
+                                        />
+                                    </>
+                                ) : (
+                                    /* ── Simple string editor ── */
                                     <input
-                                        className="input w-48 text-xs py-1.5 text-textTertiary"
-                                        value={item.accept || ''}
+                                        className="input flex-1 text-sm py-1.5"
+                                        value={getDisplayLabel(item)}
                                         onChange={e => {
                                             const arr = [...values]
-                                            arr[idx] = { ...arr[idx], accept: e.target.value }
+                                            arr[idx] = e.target.value
                                             onChange(arr)
                                         }}
-                                        placeholder="File types (.pdf,.docx)"
-                                        title="Accepted file extensions"
                                     />
                                 )}
+
                                 <button
                                     onClick={() => removeItem(idx)}
                                     className="p-1.5 rounded-lg hover:bg-error/10 text-textTertiary hover:text-error transition-colors opacity-0 group-hover:opacity-100"
@@ -298,7 +340,11 @@ function DropdownEditor({
                     <div className="flex items-center gap-2">
                         <input
                             className="input flex-1 text-sm py-1.5"
-                            placeholder={isComplex ? "New category label..." : "Add new option..."}
+                            placeholder={
+                                configType === 'step' ? 'New step title...' :
+                                configType === 'artifact' ? 'New category label...' :
+                                'Add new option...'
+                            }
                             value={newValue}
                             onChange={e => setNewValue(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && addItem()}
@@ -336,3 +382,4 @@ function DropdownEditor({
         </div>
     )
 }
+
